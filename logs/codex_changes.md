@@ -1,0 +1,59 @@
+
+## 2026-11-10 ETH 接入：环境前置修复
+- 目的：修复 mjlab 导入时 mjENBL_MULTICCD 缺失。
+- 涉及：a2 Conda 环境 mujoco 包；本日志。
+- 实际修改：mujoco 4.0.0 → 3.5.0，pip --no-deps；其余依赖未升级。用户已明确授权。
+- 理由：匹配项目固定的 mujoco-warp 3.5.0 并满足 mjlab 1.2.0 下限。
+- 验证：安装完成；导入及仿真尚待验证。未声称策略效果改善。
+
+## 2026-11-10 ETH Actor 严格加载器
+- 文件：src/tasks/velocity/rl/eth_actor.py；本日志。
+- 新增：45→512→256→128→12 ELU Actor，严格加载全部 state_dict，包括 std 与归一化统计；SHA256 校验；有限值检查；确定性推理。
+- 核心逻辑：(obs-mean)/clamp_min(std,1e-5) 后裁剪 [-5,5]，与本地 ETH Python 一致；不加载 Critic/优化器。
+- 环境验证：原 mjENBL_MULTICCD 错误消失，pip check 通过；mjlab 导入仍被缺失 scipy 阻塞。补装被自动审批拒绝，等待用户授权。
+- 策略推理及实际仿真：尚未验证。
+
+## 2026-11-10 ETH 专属任务注册
+- 文件：src/tasks/velocity/config/a2/eth_env_cfg.py、同目录 __init__.py。
+- 新增 Unitree-A2-ETH-Flat；深复制原平地配置，仅 ETH Actor 去除 phase；关闭 ETH 基线噪声、随机化和推扰，固定初始化与速度指令；保持 0.005s × 4 控制周期。
+- 原 Flat/Rough 和公共配置未修改。奖励与物理失败终止条件继承保留。
+- 验证：尚待导入与仿真检查，不可作为已验证可用任务。
+- 用户已单独批准补装 scipy，安装进行中。
+
+## 2026-11-10 评估入口初版与加载检查
+- 新增 scripts/evaluate_eth_a2.py：四场景固定指令，自动重置前状态捕获，首次终止停止该项，JSON/NPZ 输出。
+- Actor 实测：13个 state_dict 字段严格加载成功，零输入推理输出全部有限；尚未完成参考实现对比。
+- 评估入口尚未执行验证，关节和数据接口待运行核查；桌面回放适配尚未完成。
+
+## 2026-11-10 冒烟测试实际结果
+- scipy 1.17.1 补装成功（用户明确批准），numpy 2.4.6 保留。
+- mjlab 已可导入；ETH 冒烟测试在 GPU 环境构造阶段失败，尚未执行物理步。
+- 实际阻塞：warp-lang 1.19.0 不提供 mjlab 1.2.0 的 Simulation._should_use_cuda_graph 所调用的 warp.context。
+- 已请求额外 Warp 版本修正授权；尚未修改 Warp。四项正式测试、录像、桌面回放、完整映射检查均未完成。
+- 补充推理验证：直接提取 ETH 本地 ActorNet 类，严格复制 MLP 和归一化；seed=42 的128条45维输入（标准正态×10）比较，本加载器与参考输出最大绝对误差为 0.0。该结果仅证明推理公式一致，不代表仿真控制兼容或运动成功。
+
+## 2026-11-10 Warp 修复与指令配置核查
+- 用户明确授权修正 Warp；执行 warp-lang 1.19.0 → 1.12.0（--no-deps），安装及运行验证进行中。
+- eth_env_cfg.py：禁用 heading 后同步清空 heading 范围，满足命令类校验；init_velocity_prob=0，禁止命令采样直接写入机器人速度。
+- 实际运动效果尚未验证。
+- scripts/play.py：仅 ETH 任务分支增加严格 Actor 加载、seed/vx/vy/wz 设置及目标项目输出目录，避免录像写进参考仓库。其他任务维持原 runner。桌面实际回放尚未验证。
+- evaluate_eth_a2.py：增加实际动作目标顺序断言、关节力矩、目标角、世界速度和角速度记录，增加相对初始化的位移；运行验证待执行。
+- 新增及修改的四个 Python 入口 AST 语法检查通过。
+- 新增 docs/eth_a2_flat.md：记录已证明控制契约、近似动力学与未验证事项；四项测试仍待执行。Warp 包仍在下载。
+- Warp 1.12.0 安装成功；实际 GPU 环境构造和内核编译成功，45维 Actor 顺序与12维动作顺序断言通过。
+- 冒烟发现 mjlab joint_torques 属性未实现，评估记录改用 actuator_force；不改变控制或动力学。
+- 评估接口更正：JointPositionAction 当前仅提供 _processed_actions，目标角记录改用该字段；首轮评估因字段错误中断，不能视为策略失败。
+- 四项30秒正式测试完成：均无终止、无自动重置、记录有限；平均vx：站立-0.000552，慢行0.272595，直行0.550400，停走整体0.088193 m/s。结果位于 logs/eth_a2_flat/eval_20261110_02；不等于精确跟踪或楼梯能力。
+- 回放增加 duration 参数；评估增加 task/speeds/vy/wz 显式参数，默认测试行为不变；补充轨迹姿态及关节统计。
+- 评估入口增加可选 --video：640×480、每5个控制步采样一帧（10fps），视频与每项结果同目录；先执行短时离屏渲染验证。
+- 离屏渲染验证完成：video_smoke_20261110 下四段2秒 MP4，最终速度参数CLI执行成功。pip check通过。
+- 新增正式结果 manifest.json 与 metrics.json，记录依赖、控制设置、姿态、关节范围与停走分段速度。文档追加实际结果与命令。
+- 评估捕获重置前各终止原因及falls字段，防止混淆非法接触与跌倒。原正式运行无任何终止，因此falls=0。
+- 尚未验证：桌面窗口（无DISPLAY）、多种子泛化、ETH动力学严格复现、PPO续训与楼梯能力。
+- 最终检查：play.py Unitree-A2-ETH-Flat --help 成功，duration/seed/vx/output-dir 参数已核实；最终语法检查、git diff --check通过；四个MP4均已生成。未提交或推送Git。
+
+## 2026-11-10 保存 ETH 回放公共基线
+- 目的：按用户授权先提交并推送现有 ETH 适配，为高程图和点云两条路线建立共同起点。
+- 涉及：既有 ETH 任务、Actor 加载器、play/evaluate 入口、docs/eth_a2_flat.md，以及 .gitignore 和本日志。
+- 实际修改：保留现有适配实现；忽略 Python 缓存，logs 仅跟踪 codex_changes.md，不纳入权重、轨迹与录像。未更改训练、奖励或控制参数。
+- 验证：已有轨迹与独立审查结果见前文；本次提交前执行 AST 语法与 diff 空白检查，不重新声明训练或楼梯能力。

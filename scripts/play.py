@@ -21,6 +21,12 @@ from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
 
 @dataclass(frozen=True)
 class PlayConfig:
+  duration: float | None = None
+  seed: int = 42
+  vx: float = 0.0
+  vy: float = 0.0
+  wz: float = 0.0
+  output_dir: str | None = None
   agent: Literal["zero", "random", "trained"] = "trained"
   checkpoint_file: str | None = None
   motion_file: str | None = None
@@ -46,6 +52,12 @@ def run_play(task_id: str, cfg: PlayConfig):
 
   env_cfg = load_env_cfg(task_id, play=True)
   agent_cfg = load_rl_cfg(task_id)
+  if task_id == "Unitree-A2-ETH-Flat":
+    env_cfg.seed = cfg.seed
+    command = env_cfg.commands["twist"]
+    command.ranges.lin_vel_x = (cfg.vx, cfg.vx)
+    command.ranges.lin_vel_y = (cfg.vy, cfg.vy)
+    command.ranges.ang_vel_z = (cfg.wz, cfg.wz)
 
   DUMMY_MODE = cfg.agent in {"zero", "random"}
   TRAINED_MODE = not DUMMY_MODE
@@ -106,6 +118,8 @@ def run_play(task_id: str, cfg: PlayConfig):
         f"[INFO]: Loading checkpoint: {checkpoint_name} (run: {run_id}, {cached_str})"
       )
     log_dir = resume_path.parent
+    if task_id == "Unitree-A2-ETH-Flat":
+      log_dir = Path(cfg.output_dir or "logs/eth_a2_flat/play")
 
   if cfg.num_envs is not None:
     env_cfg.scene.num_envs = cfg.num_envs
@@ -152,12 +166,16 @@ def run_play(task_id: str, cfg: PlayConfig):
 
       policy = PolicyRandom()
   else:
-    runner_cls = load_runner_cls(task_id) or MjlabOnPolicyRunner
-    runner = runner_cls(env, asdict(agent_cfg), device=device)
-    runner.load(
-      str(resume_path), load_cfg={"actor": True}, strict=True, map_location=device
-    )
-    policy = runner.get_inference_policy(device=device)
+    if task_id == "Unitree-A2-ETH-Flat":
+      from src.tasks.velocity.rl.eth_actor import EthActor
+      policy = EthActor.load(resume_path, device)
+    else:
+      runner_cls = load_runner_cls(task_id) or MjlabOnPolicyRunner
+      runner = runner_cls(env, asdict(agent_cfg), device=device)
+      runner.load(
+        str(resume_path), load_cfg={"actor": True}, strict=True, map_location=device
+      )
+      policy = runner.get_inference_policy(device=device)
 
   # Handle "auto" viewer selection.
   if cfg.viewer == "auto":
@@ -168,9 +186,9 @@ def run_play(task_id: str, cfg: PlayConfig):
     resolved_viewer = cfg.viewer
 
   if resolved_viewer == "native":
-    NativeMujocoViewer(env, policy).run()
+    NativeMujocoViewer(env, policy).run(num_steps=None if cfg.duration is None else round(cfg.duration / env.unwrapped.step_dt))
   elif resolved_viewer == "viser":
-    ViserPlayViewer(env, policy).run()
+    ViserPlayViewer(env, policy).run(num_steps=None if cfg.duration is None else round(cfg.duration / env.unwrapped.step_dt))
   else:
     raise RuntimeError(f"Unsupported viewer backend: {resolved_viewer}")
 

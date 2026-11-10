@@ -22,3 +22,12 @@ register_mjlab_task(
   rl_cfg=unitree_a2_ppo_runner_cfg(),
   runner_cls=VelocityOnPolicyRunner,
 )
+
+from .eth_env_cfg import unitree_a2_eth_flat_env_cfg
+
+register_mjlab_task(
+  task_id="Unitree-A2-ETH-Flat",
+  env_cfg=unitree_a2_eth_flat_env_cfg(),
+  play_env_cfg=unitree_a2_eth_flat_env_cfg(),
+  rl_cfg=unitree_a2_ppo_runner_cfg(),
+)
