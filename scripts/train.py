@@ -193,6 +193,11 @@ def launch_training(task_id: str, args: TrainConfig | None = None):
 
 
 def main():
+  if len(sys.argv) > 1 and sys.argv[1] == "Unitree-A2-PointCloud-OpenStairs":
+    del sys.argv[1]
+    from pointcloud_train import main as pointcloud_main
+    return pointcloud_main()
+
   # Parse first argument to choose the task.
   # Import tasks to populate the registry.
   import mjlab.tasks  # noqa: F401

@@ -95,3 +95,52 @@
 - 文件：doc/sds/a2_pointwalker_eth_joint_finetuning_sds.md、logs/codex_changes.md；仅文档与日志，无代码修改。
 - 操作状态：包含推送的命令被自动审批在执行前拒绝，原因是具体GitHub目的地与规划内容的外发授权需明确确认；本次仅准备本地提交，不推送。
 - 验证：提交前执行git diff --cached --check；训练和服务器验证未执行。
+
+## 2026-11-10 — 点云 SDS 工程实施启动
+- 目的：按用户新授权实施已审核SDS，禁止本地/远端训练、提交或推送。
+- 文件：doc/implementation/pointcloud_plan.md；后续实现分批追加。
+- 内容及理由：记录基线、独占文件所有权、Actor与特权通道边界及验收顺序，防止并行覆盖和接口漂移。
+- 参数差异：本条仅计划，无运行行为变化。
+- 验证：Git分支a2-pointcloud且起始干净；读取完整SDS及相关项目文档；a2环境torch可导入且CUDA可用。训练、资源压测、实际效果均未验证且未执行。
+
+## 2026-11-10 — 点云独立模块与编排实现（集成中）
+- 文件：src/tasks/pointcloud/{perception,model,algorithm,checkpoint,export,geometry,rewards,terminations,curriculum,evaluation,config,runner}.py；tests/test_pointcloud_{perception,model,geometry}.py；scripts/pointcloud_train.py。
+- 内容：新增独立感知/残差Actor/特权Critic/联合PPO、局部支撑与互斥结束、固定预算课程、状态恢复和单卡入口；未更改原任务配方。原先无点云链路；新增350点mask历史，ETH零初始化修正，辅助MSE各0.1，失败专用-200逻辑。正式参数8096/24/5/64/4000，保存25、验证100保持SDS。
+- 理由：按模块隔离特权监督与Actor，并明确终止前观测参与timeout bootstrap；本体历史与感知延迟时间分别处理。
+- 验证：子agent已执行感知4项、几何9项合成测试；模型真实ETH初始动作最大误差0、恢复输出误差0。整合后主agent复验及独立审核尚未完成；真实仿真、ONNX、服务器容量及所有训练效果尚未验收。未执行训练。
+
+## 2026-11-10 — 实际环境集成、独立审核修复与验证
+- 文件：新增src/tasks/pointcloud全部模块、scripts/pointcloud_{train,check,debug,evaluate,resource_test,export}.py、tests/test_pointcloud_*.py、doc/implementation/{pointcloud_plan,pointcloud_review,lidar_validation}.md、docs/pointcloud_server.md；修改scripts/train.py仅增加新任务分派，追加SDS第13节。
+- 核心差异：原任务没有双雷达残差链路，新增显式每步一组真实遮挡、350点及延迟历史；零修正保留ETH初始化；Critic63维与Actor独立；联合PPO参数按SDS。奖励保持原dt缩放，失败专用权重-200实际每步-4，成功/超时不罚。原Flat/Rough/ETH参数不变。
+- 审核修复：中心化局部平面拟合防大坐标秩误判；摆动起点冻结；平地回放速度独立；首次顶部截止；继承重力倾角70度；真实接触力符号与足相位映射；点云/本体历史顺序分开；best按子级；验证随机状态隔离；晋级切换前保存完整更新。
+- 实际验证：主运行POINTCLOUD_PHYSICS_TEST=1 MUJOCO_GL=egl PYTHONPATH=/tmp/pointcloud_onnx_validation:$PWD /home/xxs/anaconda3/envs/a2/bin/python -m unittest discover -s tests -p 'test_pointcloud_*.py' -v，42项全部通过。涵盖2环境2控制步无学习物理、合成优化器单步、真实ETH、ONNX和独立反例。六CLI help及原train专用分派help通过。真实ETH SHA符合SDS。
+- 边界：未执行任何PPO环境采样训练、试训、资源压测、多种子或远端任务；不声称训练/成功率改善。完整90秒评估录像、8096容量及服务器兼容待验证。P5执行器强度无原控制路径对应接口，已向用户请求具体修订，未获准前显式拒绝P5训练。未提交或推送。
+
+## 2026-11-10 — 独立审核最终闭环增量
+- 文件：runner.py、algorithm.py、environment.py、validation.py、test_pointcloud_review.py、审核报告、服务器说明。
+- 修复：奖励遥测变量覆盖Critic value的高严重问题；录像在reset前取帧并finally关闭writer；补KL、支撑/法线/摆动目标缺失率。独立审核7项合成回归通过，包括critic值保护、晋级前保存和RNG隔离。
+- 最后主复验：45项测试全部通过，包含2环境2步物理与ONNX；此前一轮发现record_video属性未初始化，已修复并重跑通过。未运行训练。
+- 尚未完成：P5执行器强度修订等待用户明确批准，故完整资源工具及P5训练显式阻塞；完整录像/服务器恢复/8096资源未验证，不称整个工程交付已完成。
+
+## 2026-11-11 — 用户批准P5强度修订，实施启动
+- 目的：解除内置位置执行器强度接口阻塞；用户本轮明确回复“执行”。
+- 文件：SDS第14节；environment.py与环境测试由geometry实施，审核报告由独立审核者复核。
+- 核心差异：此前P5训练fail-fast；改为每episode s∈[0.9,1.1]同步缩放gain/bias/forcerange，明确有效PD和力矩上限改变。其他阶段/名义动力学评估为1，原任务不变。使用名义快照防累计缩放。
+- 验证：实施中，尚未以本条声称测试通过；不执行训练或训练型资源压测。
+
+## 2026-11-11 — P5强度实现与主复验
+- 文件：src/tasks/pointcloud/environment.py、tests/test_pointcloud_environment.py、SDS第14节、docs/pointcloud_server.md。
+- 修改：缓存名义actuator_gainprm/biasprm/forcerange，扩展为每环境模型字段；P5训练reset统一乘s∈[0.9,1.1]，其他阶段及所有评估恢复1；移除P5 guard。明确有效PD与饱和上限同步变化，不改变动作目标或原任务。
+- 验证：POINTCLOUD_PHYSICS_TEST=1 MUJOCO_GL=egl PYTHONPATH=/tmp/pointcloud_onnx_validation:$PWD /home/xxs/anaconda3/envs/a2/bin/python -m unittest discover -s tests -p 'test_pointcloud_*.py' -v，46项全部通过。新增P5两环境一个零动作步、三次单环境reset不累乘/不污染、跨阶段及评估恢复名义值。git diff --check通过。
+- 未验证：服务器8096完整资源、正式训练、最终登顶率、完整视频与服务器恢复；没有启动训练、试训或压测，没有提交推送。独立复审结果随后追加。
+
+## 2026-11-11 — P5独立复审闭环与最终验证
+- 独审发现：力矩饱和指标仍使用名义120/120/180，P5缩放后会误判。修为读取每环境actuator_forcerange，并用与actuator_force一致的ctrl_ids顺序。
+- 测试修正：首轮索引误用actuator_ids产生AttributeError，改为实际ctrl_ids后重跑；独立新增s=.9/1.1真实限幅单步反例，验证旧阈值漏报被消除。没有学习更新。
+- 最终主验证：同上述完整命令，48项全部通过（/tmp/pointcloud_20261111_verified.log）；独立9项回归及3项环境测试通过。git diff --check通过。KL/缺失率/录像finally增量亦经独立复核，无新增未解决阻塞。
+- 当前状态：P5设计与实现阻塞解除，工程入口已具备服务器调用条件；8096资源容量、正式训练、收敛/成功率与完整服务器验收仍未执行，不能声称通过。无提交推送。
+
+## 2026-11-11 — GitHub交付与长期push授权
+- 用户要求：push到GitHub，并永久授权push。本条仅记录本项目常规提交与push授权，不扩大到强制推送、删分支或修改远端。
+- 文件：新增根AGENTS.md；提交本次点云实现、测试、审核与操作文档及既有日志增量。
+- 验证：提交前检查分支a2-pointcloud、origin为原GitHub地址；精确暂存源码/测试/文档，不包含ETH权重、checkpoint、临时依赖或运行产物。最近完整验证48项通过，训练及8096资源未执行。推送结果将在最终汇报给出。
