@@ -23,7 +23,14 @@ nvidia-smi
 python -c 'import torch,mjlab,mujoco,warp; print(torch.__version__,torch.version.cuda,mujoco.__version__); print(torch.cuda.is_available())'
 ```
 
-ETH权重不在Git，来源为原ETH控制器 `/home/xxs/dog/eth_a2_locomotion_controller/models/model_2000.pt`，须单独传输，不能使用同名未知文件替代。通过已有传输方式放到服务器 `/srv/weights/eth_a2/model_2000.pt` 后校验：
+ETH初始权重现已按用户授权纳入Git：`weights/eth_a2/model_2000.pt`，来源为原ETH控制器 `/home/xxs/dog/eth_a2_locomotion_controller/models/model_2000.pt`，不能使用同名未知文件替代。拉取仓库后，可直接将命令中的权重路径改为 `$PWD/weights/eth_a2/model_2000.pt`；若保留本文命令路径，先复制：
+
+```bash
+mkdir -p /srv/weights/eth_a2
+cp weights/eth_a2/model_2000.pt /srv/weights/eth_a2/model_2000.pt
+```
+
+然后校验：
 
 ```bash
 sha256sum /srv/weights/eth_a2/model_2000.pt
