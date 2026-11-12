@@ -160,3 +160,6 @@
 
 ### 连续迭代显存交接修复
 GPU1分块版已实际完成第1次8096环境PPO更新，loss=0.11375，接触/约束溢出均0，PyTorch峰值17779008000 bytes；第2次采样Warp graph因显存不足退出。`runner.py`在每次update返回前删除本轮batch/losses引用并empty_cache，使PyTorch可回收缓存释放给Warp。48项测试44通过4跳过。连续GPU迭代待复验，未宣称容量验收通过。
+
+## 2026-11-12 W&B实时曲线同步
+新增 `scripts/wandb_follow.py`：独立读取已有训练的config.json与metrics.jsonl，通过W&B SDK补传历史并每5秒等待新指标；iteration作横轴，固定run id支持恢复，支持project/entity和once检查。无需重启训练，不上传权重、录像或代码。验证：offline模式成功导入当前21轮指标；服务器未登录，在线上传尚未验证。使用前在服务器执行wandb login，再启动同步脚本。训练指标每轮写一次，约115秒刷新。
