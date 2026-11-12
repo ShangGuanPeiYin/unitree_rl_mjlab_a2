@@ -166,3 +166,5 @@ GPU1分块版已实际完成第1次8096环境PPO更新，loss=0.11375，接触/�
 
 ## 2026-11-12 修复首次评估GLX失败并恢复训练
 文件：scripts/pointcloud_train.py。原先在项目导入之后设置MUJOCO_GL，自动任务注册已提前导入MuJoCo，导致第100轮录像使用GLX并gladLoadGL失败。现用标准库argparse预读physical-gpu，在所有项目导入之前设置CUDA_VISIBLE_DEVICES、MUJOCO_GL=egl、MUJOCO_EGL_DEVICE_ID。GPU1实际加载第75轮checkpoint，完成5步评估并写入/tmp/a2-egl-check.mp4。48项测试44通过4跳过。恢复从75开始，统一reset环境；8096环境、4000总上限、25保存、100验证不变。新输出与W&B run保留重跑分支，完整第100轮评估尚待执行。
+
+验证补记：首次未指定EGL的沙箱回归在GL上下文导入中出现2项IndexError；显式MUJOCO_GL=egl在服务器复跑48项，44通过4跳过。GPU1恢复日志已确认resume_reset iteration=75，完整评估尚待第100轮执行。
