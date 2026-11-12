@@ -37,6 +37,11 @@ class PointCloudActor(nn.Module):
         self.velocity = nn.Linear(128,3)
         self.clearance = nn.Linear(128,4)
     def features(self, obs_history, points, mask, ages):
+        # Bound temporary attention projections without changing PPO batches.
+        if obs_history.shape[0] > 256:
+            return torch.cat([self.features(obs_history[i:i+256], points[i:i+256],
+                                           mask[i:i+256], ages[i:i+256])
+                              for i in range(0, obs_history.shape[0], 256)], dim=0)
         n=self.eth.obs_normalizer
         normalized=((obs_history-n._mean)/n._std.clamp_min(1e-5)).clamp(-5,5)
         s=self.query(torch.cat((torch.cat((normalized,torch.tensor([.08,.06,.04,.02,0.],device=normalized.device,dtype=normalized.dtype)[None,:,None].expand(normalized.shape[0],-1,-1)),-1).flatten(1),obs_history[:,-1,6:9]),-1))
