@@ -48,10 +48,10 @@ class PointCloudActor(nn.Module):
         q=self.q(s).reshape(b,16,1,32)
         k=self.k(x).reshape(b,-1,16,32).transpose(1,2)
         v=self.v(x).reshape(b,-1,16,32).transpose(1,2)
-        logits=(q*k).sum(-1)/32**0.5
+        logits=torch.matmul(q,k.transpose(-1,-2)).squeeze(-2)/32**0.5
         weights=torch.softmax(logits.masked_fill(~valid[:,None,:],-1e9),-1)*valid[:,None,:]
         weights=weights/weights.sum(-1,keepdim=True).clamp_min(1e-6)
-        z=(weights[...,None]*v).sum(-2).reshape(b,512)
+        z=torch.matmul(weights.unsqueeze(-2),v).squeeze(-2).reshape(b,512)
         if not self.use_points: z=torch.zeros_like(z)
         return self.fusion(torch.cat((s,z),-1))
     def forward(self, obs_history, points, mask, ages):

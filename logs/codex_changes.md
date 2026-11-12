@@ -150,3 +150,7 @@
 - 文件：weights/eth_a2/model_2000.pt、同目录README.md、AGENTS.md、docs/pointcloud_server.md及本日志。
 - 内容：原样复制指定初始权重，补来源、大小和SHA256；服务器文档支持直接使用仓库权重。未改变模型、训练参数或核心逻辑。
 - 验证：源文件4,717,301字节，SHA256与SDS完全一致；复制后再次校验并检查Git补丁。未执行训练，本次不涉及新模型效果验证。
+
+## 2026-11-12T12:08:09 减少点云注意力显存并在GPU1启动训练
+
+目的：修复8096环境采样在广播乘法处申请5.41GiB中间张量导致的OOM。文件：`src/tasks/pointcloud/model.py`。将QK逐元素乘法求和与加权V逐元素乘法求和改为矩阵乘法，保持网络参数、奖励、课程和8096环境配方。原始：`logits=(q*k).sum(-1)/32**0.5`、`z=(weights[...,None]*v).sum(-2).reshape(b,512)`；修改后：`logits=torch.matmul(q,k.transpose(-1,-2)).squeeze(-2)/32**0.5`、`z=torch.matmul(weights.unsqueeze(-2),v).squeeze(-2).reshape(b,512)`。验证：48项测试44通过4跳过，含ONNX通过；独立输出/梯度对比通过，输出最大误差3.8743e-7。GPU训练结果待实际运行，不宣称已完成容量验收。用户明确要求在GPU1正式训练，沿用8096/4000/24/5/64、保存25、验证100、seed42。
