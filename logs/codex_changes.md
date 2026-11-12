@@ -163,3 +163,6 @@ GPU1分块版已实际完成第1次8096环境PPO更新，loss=0.11375，接触/�
 
 ## 2026-11-12 W&B实时曲线同步
 新增 `scripts/wandb_follow.py`：独立读取已有训练的config.json与metrics.jsonl，通过W&B SDK补传历史并每5秒等待新指标；iteration作横轴，固定run id支持恢复，支持project/entity和once检查。无需重启训练，不上传权重、录像或代码。验证：offline模式成功导入当前21轮指标；服务器未登录，在线上传尚未验证。使用前在服务器执行wandb login，再启动同步脚本。训练指标每轮写一次，约115秒刷新。
+
+## 2026-11-12 修复首次评估GLX失败并恢复训练
+文件：scripts/pointcloud_train.py。原先在项目导入之后设置MUJOCO_GL，自动任务注册已提前导入MuJoCo，导致第100轮录像使用GLX并gladLoadGL失败。现用标准库argparse预读physical-gpu，在所有项目导入之前设置CUDA_VISIBLE_DEVICES、MUJOCO_GL=egl、MUJOCO_EGL_DEVICE_ID。GPU1实际加载第75轮checkpoint，完成5步评估并写入/tmp/a2-egl-check.mp4。48项测试44通过4跳过。恢复从75开始，统一reset环境；8096环境、4000总上限、25保存、100验证不变。新输出与W&B run保留重跑分支，完整第100轮评估尚待执行。

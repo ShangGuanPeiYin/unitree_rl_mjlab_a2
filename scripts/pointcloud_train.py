@@ -1,5 +1,15 @@
 """Server-only explicit single-GPU training entry point."""
 import os
+import argparse
+
+# Task registration imports MuJoCo: select CUDA/EGL before any project import.
+_bootstrap = argparse.ArgumentParser(add_help=False)
+_bootstrap.add_argument('--physical-gpu', type=int, default=0)
+_gpu = _bootstrap.parse_known_args()[0].physical_gpu
+os.environ['CUDA_VISIBLE_DEVICES'] = str(_gpu)
+os.environ['MUJOCO_GL'] = 'egl'
+os.environ['MUJOCO_EGL_DEVICE_ID'] = str(_gpu)
+
 from src.tasks.pointcloud.config import TrainSettings, parser
 
 def main():
