@@ -108,6 +108,10 @@ class PointCloudRunner:
             sample_seconds=sample_end-start,update_seconds=end-sample_end,
             transitions_per_second=count/(end-start),
             peak_memory_bytes=torch.cuda.max_memory_allocated() if torch.cuda.is_available() else 0)
+        # Let Warp reuse GPU memory between PPO updates and physics steps.
+        del batch, losses
+        if str(self.env.device).startswith('cuda'):
+            torch.cuda.empty_cache()
         return metrics
 
     def save(self, directory):
