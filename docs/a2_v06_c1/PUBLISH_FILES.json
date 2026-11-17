@@ -1,0 +1,608 @@
+{
+  "base_commit": "42d4a1152e54af5584cf709bf5f679b06da808a1",
+  "branch": "codex/a2-c1-continue-20261117",
+  "contract_sha256": "997eb7d0911e6c98899a1847a193c4b689650afd31b04b1a2509a4dcd2104f94",
+  "excluded": [
+    "checkpoints and ETH model",
+    "training outputs and runtime logs",
+    "credentials",
+    "unrelated scripts/train.py and scripts/play.py changes"
+  ],
+  "files": {
+    "doc/sds/SDS_A2_IdealHeightMap_Stairs40_v0.6.md": {
+      "reason": "normative frozen contract document: sds",
+      "sha256": "1ed4bf5fa8f83d4276e278c7d161be3b6d9c0032cbdc1e3540dade9606e6ad60"
+    },
+    "doc/sds/SDS_A2_Stairs_v0.6_C1_Continue_030_060.md": {
+      "reason": "approved final C1/Q010 normative contract ruling",
+      "sha256": "22d3c77a6af62042eb98f8b310ea3d1d7e8554b77a811ad618be2a4e0a35c34c"
+    },
+    "docs/a2_v06_c1/WORK_REPORT.md": {
+      "reason": "final implementation/training/validation report; no model or runtime raw data",
+      "sha256": "fee4eca0e379646ad6ee6c8a1c33a71dfa60f2cb080f9fb7280356faae627084"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/Q001_v06_decision.md": {
+      "reason": "normative frozen contract document: q001_decision",
+      "sha256": "5f3f2aa397fb5cf5ce286788e76384e8b19914c758e0ae29e50a67aa4d71a4b1"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/Q002_v06_decision.md": {
+      "reason": "normative frozen contract document: q002_decision",
+      "sha256": "3ebc7441f9be457cb135846366fe23926d02ec69e2232e0502d6c318ce5ccd52"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/Q003_v06_decision.md": {
+      "reason": "normative frozen contract document: q003_decision",
+      "sha256": "45129da87b905ab8bb7c2e3cb3b246be15c1ededea65c27fc5682d8a9fa7fa16"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/Q004_v06_decision.md": {
+      "reason": "normative frozen contract document: q004_decision",
+      "sha256": "768dc38a53b50effc5738785b3f8344820f0c7ef41abe2e5a08e6484458efe07"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/Q005_v06_decision.md": {
+      "reason": "normative recovery/known-limitation ruling; no runtime log or model",
+      "sha256": "0159b03296ae078c96d6fd32851e736ce97a5119a89475b6bc4d85004464cb2d"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/Q006_ERRATA_lost_50.md": {
+      "reason": "normative recovery/known-limitation ruling; no runtime log or model",
+      "sha256": "f3c64d2e81e06d1c0d0a8c5c71476f08e50849e82c98b791a542b8f9339e5c3c"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/Q006_v06_decision.md": {
+      "reason": "normative recovery/known-limitation ruling; no runtime log or model",
+      "sha256": "798a7cf4603fc50abbe6a83c30e20680fb884824c7cccddb78679bc698d5bd09"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/Q007_ERRATA_source_and_migration.md": {
+      "reason": "normative recovery/known-limitation ruling; no runtime log or model",
+      "sha256": "db1952c6e2c5d4dfc2946c0eade78ea818708003834e80f6c7df209adb3a9bde"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/Q007_v06_decision.md": {
+      "reason": "normative recovery/known-limitation ruling; no runtime log or model",
+      "sha256": "567df511509ee7414f113432be3b55f34e47655a4da53e7e16ffd2e72887a48f"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/Q008_v06_decision.md": {
+      "reason": "normative recovery/known-limitation ruling; no runtime log or model",
+      "sha256": "68caa982eed00dfaa0008e57b0560629a82554abce4d5631425eceb44cb07548"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/W0_FREEZE.md": {
+      "reason": "normative frozen contract document: w0_freeze",
+      "sha256": "d1b51bc771e216e69eefd6da8ad834e6f1bb983145eb8c19d6297d5480a3c1f0"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/W0_FREEZE_ADDENDUM_1.md": {
+      "reason": "normative frozen contract document: w0_addendum_1",
+      "sha256": "b7553319abeb754b3a2838215e9110713435533b336af068ac89967f6b9c59ef"
+    },
+    "logs/a2_ideal_stairs_v06/implementation/coordination/W0_FREEZE_ADDENDUM_2.md": {
+      "reason": "normative frozen contract document: w0_addendum_2",
+      "sha256": "c1dc2a8a092c086d876f43b41b5f6ebea7f68bdf24d93be5a4b045be18878dfc"
+    },
+    "logs/a2_ideal_stairs_v06_c1/implementation/coordination/C1_EVALUATION_ROUTING_RULING.md": {
+      "reason": "approved final C1/Q010 normative contract ruling",
+      "sha256": "d90d3f7c16713a193c50a39fe75ffb177627f3167ee09eeadecdf9529893954b"
+    },
+    "logs/a2_ideal_stairs_v06_c1/implementation/coordination/C1_RECOVERY_INITIALIZATION_RULING.md": {
+      "reason": "approved final C1/Q010 normative contract ruling",
+      "sha256": "6fdb2b3e36a42bb925975d506eefb0468b39aa046b42c8024fd505a75c3c6606"
+    },
+    "logs/a2_ideal_stairs_v06_c1/implementation/coordination/Q010_FIRST_EPISODE_DECISION.md": {
+      "reason": "approved final C1/Q010 normative contract ruling",
+      "sha256": "4e6901de863676fb97b7a82dcc5c2ac952921e3e8803d7a1360b987a457cf828"
+    },
+    "logs/a2_ideal_stairs_v06_c1/implementation/coordination/c1_observer.py": {
+      "reason": "reproducible engineering/launch/read-only audit INPUT CODE, not runtime output",
+      "sha256": "86555e91a048eff53ccffaa494bb9db07c34d6dd7b4319596a560fc58662291c"
+    },
+    "logs/a2_ideal_stairs_v06_c1/implementation/coordination/check_observer_snapshot.py": {
+      "reason": "narrow reproducible engineering snapshot regression INPUT CODE",
+      "sha256": "6318075d156c27000025d574c4008a401eba5a1d3fbdfa82fae255df123835c8"
+    },
+    "logs/a2_ideal_stairs_v06_c1/implementation/run_c1.sh": {
+      "reason": "reproducible engineering/launch/read-only audit INPUT CODE, not runtime output",
+      "sha256": "0afdbc7a3cae70e01d4cda4d1e0e542359caebd3d0ba4dc9f2f7d684cfdacd2f"
+    },
+    "logs/a2_ideal_stairs_v06_c1/implementation/run_engineering.py": {
+      "reason": "final engineering observer INPUT CODE; snapshot fix only, stage versions retained in local evidence",
+      "sha256": "63beea6264eb1be92fbabdc158a532a3b48da9d1f5c47a04fe43d034b1644d4d"
+    },
+    "scripts/a2_v06_bootstrap.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "8f581d3124ad13f518a4928aa61c066336a8b128224c089487888587da3daafd"
+    },
+    "scripts/check_a2_ideal_stairs_v06_migration.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "a31263492b81a933c67c60c27a536407e6d00424ff40edf2b2600dcdcb4db8a0"
+    },
+    "scripts/diagnostics/analyze_a2_v06_rewards.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "0b3f0570f0a8a29b780ba71c356aa1291bd6af9f0a8454854b836e5f0a0c0915"
+    },
+    "scripts/evaluate_a2_ideal_stairs_v06.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "e4d1c53d21188110252e7d331179f5ed24eac64410e727d8bb95d0ab28a6deec"
+    },
+    "scripts/play_a2_ideal_stairs_v06.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "8741ed583aef3b5385a381fcbf71e90db933b7891ddca470ec392f937b434407"
+    },
+    "scripts/run_a2_ideal_stairs_v06.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "918607bf1165d60c6e9252c4c05b917e79155074c1bd2e5db068c52bf0cd8afc"
+    },
+    "scripts/run_a2_ideal_stairs_v06_c1.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "9cc20097ee159584bd5feb9db669cce075742a6636c99db04fef74d8eb227c8c"
+    },
+    "scripts/smoke_a2_ideal_stairs_v06.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "ba7256014fa3097fb5e4a2ed0b168ef8bd09397fa9cfb69491a35e38fc750773"
+    },
+    "scripts/test_a2_ideal_stairs_v06.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "408c546f62430ca51f81cbb5cbc6747cfa5e0b8468ffa885f45bea2402f64e4a"
+    },
+    "scripts/train_a2_ideal_stairs_v06.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "ed559bc0fbaf3f383857b790ddb7e8dab3293a56d07b9cdf9f3e3360b736346b"
+    },
+    "scripts/validate_a2_ideal_stairs_v06_c1.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "5f5db4c88695f6da68c1cecca0b5c82e4cb5b17e5568b87d703a06dbfe3aacdc"
+    },
+    "src/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "cfa1a7f468fbedc17cbd25a2b52ab5b824cd5f5bcaaffcf8ddbf8c75837ee6f0"
+    },
+    "src/assets/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/assets/robots/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "9f45d1126dc5fe58e9673adb5f3c8b4eaa6f20d4a4af5a75e0f9a183ecc7095e"
+    },
+    "src/assets/robots/unitree_a2/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "be77f5ef193ce72df657a7b0c66530394dcf9c5c60e77526d820d16b8dca6667"
+    },
+    "src/assets/robots/unitree_a2/a2_constants.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "551b2e4456aff4af1671c7d9986b86b7d8180e351acc56da3096207087c8b94e"
+    },
+    "src/assets/robots/unitree_as2/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "58c7ca7082d5e4514f6059f06e4702d098c17ee187aad00c16a983000dad9dd9"
+    },
+    "src/assets/robots/unitree_as2/as2_constants.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "4e0099a1b3557e049fe2f5679e22bf3f64c061ae0d26c329fb029ef3e78c87e7"
+    },
+    "src/assets/robots/unitree_g1/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "c11e649d6d5209becaf6dbca2d09dee83c17844b5d941c2e1cc6f16ba618bf14"
+    },
+    "src/assets/robots/unitree_g1/g1_23dof_constants.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "962ef56e1d8897d88b46c288cd71308dff986fc576ade51d26ec6471ae0efb94"
+    },
+    "src/assets/robots/unitree_g1/g1_constants.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "136b59af97082a74fd3a2a4250bc2e290b3ba6a26533b1492be52114dd844c5d"
+    },
+    "src/assets/robots/unitree_go2/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "d52bb3e1a2f7acf191ee18c78b421c7a7e8da63379db8224e08900526b8653f5"
+    },
+    "src/assets/robots/unitree_go2/go2_constants.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "c1406f6e469b8b6bb24bb7f9b122612c74cec412a8b9b5d9cddf64e37fb19a0f"
+    },
+    "src/assets/robots/unitree_h1_2/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "c6c2bd34c3290d48239d89d048a3662542f19763b99f316969b8e01ca70c3fba"
+    },
+    "src/assets/robots/unitree_h1_2/h1_2_constants.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "7834dce95d01c54551110431f3f09e2860f995d594cd465a2e243d3ffeef4c2f"
+    },
+    "src/assets/robots/unitree_h2/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "34f8273e6e0edbd9d6d5c90e75af75c02856c7a8adc8ad3c9a570059c8b307db"
+    },
+    "src/assets/robots/unitree_h2/h2_constants.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "a8d9f9f0a84a87f4abbb8b258bc581c41e15ca5b7aefe2bfcefdd5fe805f6c9f"
+    },
+    "src/assets/robots/unitree_r1/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "7b1d0e60e1920b150aef7b0649d2d89fb75e094ffcf181df2e2d1d4347ffece1"
+    },
+    "src/assets/robots/unitree_r1/r1_constants.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "ec9627e18def3b0cee7789260f2a7a844d7c70a69341fefcf907a6b3d845f559"
+    },
+    "src/tasks/velocity/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "479a0ae48d56e95521d9cfd6ccb3bbcebc2bf985355d96879ce3a50d20a142ea"
+    },
+    "src/tasks/velocity/config/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/tasks/velocity/config/a2/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "d3260027ff970b32dd4913b9977083c8e693fdb0a0d4bae497fed90e951ba485"
+    },
+    "src/tasks/velocity/config/a2/env_cfgs.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "130878ca621c04f9ae245aefd9a66e290409df290f3fe6ed3248ff696526a7ab"
+    },
+    "src/tasks/velocity/config/a2/eth_env_cfg.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "f9c0b7057ceef28432077ce4461d76b935f3ecb39461679914bb7d7701c11859"
+    },
+    "src/tasks/velocity/config/a2/ideal_stairs_env_cfg.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "f0561d5200a348f26e48928247334463cc843b4e519585b7e6c87769e1741ad5"
+    },
+    "src/tasks/velocity/config/a2/rl_cfg.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "13c6c13b9cfc8023f58887fe49fa0d6ffbc4a2f30796974aa4d79f3e17bbe39b"
+    },
+    "src/tasks/velocity/mdp/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "231f35d88929e89ae17dbf403b6d049dd9f1f8bba21bfaf74a087bb9435e7dfe"
+    },
+    "src/tasks/velocity/mdp/curriculums.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "1577cd47b45d6812bee934c4edf89cfaec1b07e16e1acbc21de28049a8324f35"
+    },
+    "src/tasks/velocity/mdp/observations.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "1207e5bdd8b780fcfdf140ee4dc1d0aa787d4df40e0038ccb6f049748e7355df"
+    },
+    "src/tasks/velocity/mdp/rewards.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "5deb9a9ef2bffba30a29c757cf7cb833280e6d18d3e69f430dfa519680ff0034"
+    },
+    "src/tasks/velocity/mdp/terminations.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "24d0abf600372026327d32d10f133f9a7cba117de85604515d20eeb7884ba13d"
+    },
+    "src/tasks/velocity/mdp/velocity_command.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "f9f55d5507e318494a690cb7929d4e4ae92419cea76425fbab0873914b279482"
+    },
+    "src/tasks/velocity/rl/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "c0df1a85535f191511cf7ee3d45c6bf9236081e8a72903e0b52e0a017a07d6df"
+    },
+    "src/tasks/velocity/rl/ideal_heightmap_actor_critic.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "3d9a6d5cfaa266e3e5ce8cb1c8a499cc0fb26936a95653ec8f94557b88c85a8d"
+    },
+    "src/tasks/velocity/rl/ideal_stairs_runner.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "85ffb711fa75edd9da3db497bf11232f28c4b990a0db0fe7793182bf9b13802a"
+    },
+    "src/tasks/velocity/rl/runner.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "1a12eb152cb307b57e024814a3a3f9026458759bab6cf43a5cfcccc0b9a0e0cf"
+    },
+    "src/tasks/velocity/v02/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "15c36bb13ff010b20169a864fbad48683e3a3223bcf4f810643da35e87bfccf2"
+    },
+    "src/tasks/velocity/v02/contacts.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "631811c944a388599ae64c192d0b22bc53477ddbc2d7f054588e444c63e8e650"
+    },
+    "src/tasks/velocity/v02/env_cfg.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "e01f20a2355d0d51c9e681a5b4bdcd0c6bf5d4febf0587640363e5b1f189f224"
+    },
+    "src/tasks/velocity/v02/map.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "4bfaa5fa00d89f6c4183c7c02a8b27ce6a72e30bc6ae030276805413426d41ba"
+    },
+    "src/tasks/velocity/v02/rewards.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "80721e83516d246086e2605c3b6c2c38c33b7a12590016d38afbc64b9701b137"
+    },
+    "src/tasks/velocity/v02/spec.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "4d1755c93bb6b2f9ff8398711254f8b771a569aa24bacb5c3b7c48c755913ae5"
+    },
+    "src/tasks/velocity/v02/terrain.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "0f151687714c3724355ca86faa723f2f08288ffd135cb5049a63de2b750ea993"
+    },
+    "src/tasks/velocity/v02_formal/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "a40ad534a4f7f1499605d464059bd69b31444afbe151da786c8047f7e9d7336c"
+    },
+    "src/tasks/velocity/v02_formal/env.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "bb2eec8d712941d529b7024ed689d9b03633c929cf150c7a2e32cf6e5f84e4f4"
+    },
+    "src/tasks/velocity/v02_formal/spec.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "a434dfff55e907837da81811352e7de76fcacb13b5f8c4e91bcd1fbaa0b0aa14"
+    },
+    "src/tasks/velocity/v02_formal/success.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "e69ee0145f2e7845b6e0abed6eb3b07f7f9735b0d0a741f53ebced8485c5f921"
+    },
+    "src/tasks/velocity/v03/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "5dfadae490cbef010bfe4a719ea7e84f67d1be51aab131d09dabd845999eefc4"
+    },
+    "src/tasks/velocity/v03/ppo.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "757cc08c47e9da34a86c6de0ed105eda30bbf3da38b8c621350b4d72b10f9c9f"
+    },
+    "src/tasks/velocity/v05_r2/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "d3af20b1a5e904be163fdadc00d42e0909e85a979f8a1f8b405546ccba9514e6"
+    },
+    "src/tasks/velocity/v05_r2/env.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "aa383403e57c7e64a78e62f08cdbdcd28eed19499c09496fcb5209452c734efe"
+    },
+    "src/tasks/velocity/v05_r2/evaluation.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "98ee8f9c33f38d2cc9c2575f8a2929053a30629fd19579bf0789137fe0b894a1"
+    },
+    "src/tasks/velocity/v05_r2/model.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "b81e40ad23741d4e5024552adcf0a159df076c50898c77446fc1e1c30cb8ee49"
+    },
+    "src/tasks/velocity/v05_r2/ppo.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "850b882b720db675b11ac4629e6db6e6dbd3f24f1c86b49c99fadff43b10916f"
+    },
+    "src/tasks/velocity/v05_r2/recovery.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "22b2ee89dc58fce859d6d16a6012f27bf11925589dd718244eb100e81df04982"
+    },
+    "src/tasks/velocity/v05_r2/rewards.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "8dcbfc4ba760f87a4fe45e46c893579ef8670cd9c646688e5873dba115b336e6"
+    },
+    "src/tasks/velocity/v05_r2/runner.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "f5ded428786ca092bc1c8c9635c23d17405b3d04fa008959f5176232c491ce34"
+    },
+    "src/tasks/velocity/v05_r2/spec.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "8dd3366022f70c91aecc412cb7480ba51dfbdebfebf713713c5ed741ed980489"
+    },
+    "src/tasks/velocity/v05_r2/speed.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "70cffffae8efdfab9dc042ac3857733ec753982210d9f424dd52ca2a9cc7ff59"
+    },
+    "src/tasks/velocity/v06/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "faacd5f31bf355d95d75b45fda16eab8c6383242941fe6d021b43ef308fce93b"
+    },
+    "src/tasks/velocity/v06/c1_contract.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "9fc7144a9bab75745d2f5676e8dc93b56921bec5561d9eed3b01c366e8f4081a"
+    },
+    "src/tasks/velocity/v06/c1_runtime.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "97c88fca179ddd2f3715388d98f77065b9f0201465c1c81e0978d5a662a69802"
+    },
+    "src/tasks/velocity/v06/connection.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "663b69d192a7a894ec38e1a56e5d660e514801d44b1340a15a3a765654ddf24c"
+    },
+    "src/tasks/velocity/v06/contacts.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "c528ee08b3b01cd1d013c6242db535a5fc59a22917a7f974af9f949cb1ccf076"
+    },
+    "src/tasks/velocity/v06/continuation_c1.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "2d893bbe9aea5005007548080debd9bdf83b4fa377b9356c83a0ec26d289fc0b"
+    },
+    "src/tasks/velocity/v06/curriculum.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "c784d84f95b394c78183e3c2c600df5062708ec5c170b078bf7497a56a114954"
+    },
+    "src/tasks/velocity/v06/env.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "36a7e2aab2191f7a1f21b46910efc4efa539e9a68906fcebc862c8f334ef585d"
+    },
+    "src/tasks/velocity/v06/env_cfg.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "0574a60afbc36d0beed8e6a168f027caa74bf2faca316234c867945718dc0d79"
+    },
+    "src/tasks/velocity/v06/evaluation.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "0d28b6c6a19af4e916b381909f281342023026a16633c89606ddc9333665f814"
+    },
+    "src/tasks/velocity/v06/evaluation_records.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "293046f6deddbddbef903f6b2a4059e363f487c687b435c2b2afb5bd91df9500"
+    },
+    "src/tasks/velocity/v06/events.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "503d22c85877ecc0ef568212dc391f07c70b47f4f13f1166633dde69083ca3ef"
+    },
+    "src/tasks/velocity/v06/ledger.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "6205dd86d5b5903612d3641c861ba50ba36b9f9c0e8e9893a6ebaafe265c97bc"
+    },
+    "src/tasks/velocity/v06/map.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "30bb462699e9224a535d02eb809f2bcd1d309f149de897d24ccd5a348d03319e"
+    },
+    "src/tasks/velocity/v06/model.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "a08b50f8c10bc20280a0ce0e39fd07c8ebb6f64526f5c69bce4b062c3e032e7a"
+    },
+    "src/tasks/velocity/v06/orchestration.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "7ca34d8ee49bd842985fbf73282089e5506502809732843415cf2ccfc1d78de7"
+    },
+    "src/tasks/velocity/v06/ppo.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "d03afd4e53131e78b6d1324da416edc084f1e24939dda1f3c781003c3285d2b2"
+    },
+    "src/tasks/velocity/v06/recovery.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "5c9720ca68b1e5581b846a5d12592cfbc279de2858a2d939d13ec6cb2b9481f1"
+    },
+    "src/tasks/velocity/v06/rewards.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "326ff3580cf6924f08bcc3d62b7ee0105fdc2ab501f58fb9afcc65b1a02227e6"
+    },
+    "src/tasks/velocity/v06/runner.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "ffee82477362de6ce4ba39e55939b99c680750eb56574eab37f6afcdbae51002"
+    },
+    "src/tasks/velocity/v06/spec.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "a3f7acd92ca670f14cbe1de2a77ee1c2c5fb07b5e97a414c7939c5f0d9a2c3c7"
+    },
+    "src/tasks/velocity/v06/speed.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "532055374aff4ef16e69f3d5960050bd6ea01488cf11875bae43eebde5daa539"
+    },
+    "src/tasks/velocity/v06/telemetry.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "08810dfd1813ae36ecf3caaf92d083f49d35fcd0876e111a9f1bc950580b2692"
+    },
+    "src/tasks/velocity/v06/terrain.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "bada26734530068c14c565c1fd65bbfff7df3e6c3336d927ec7aa97a09ff8b57"
+    },
+    "src/tasks/velocity/velocity_env_cfg.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "87a58574713e66c406ee5defd33240c30646092be495480249c84646799e8bc3"
+    },
+    "src/terrains/__init__.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "9d750a857c8db9d1db61665d77e1616f272081550965d0b45ca1332e636739d3"
+    },
+    "src/terrains/ideal_stairs_atlas.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "7853300f62dad52628e7cb9948cd23e6e5ae613d0392afe46bd05652e4952107"
+    },
+    "src/terrains/open_stairs.py": {
+      "reason": "final v4 production static import dependency",
+      "sha256": "d886c9fa1d9b5342c0b0292c92383396d7c927bdffd10270e8b26ab2b6ef5a81"
+    },
+    "tests/test_v06_c1_continuation.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "e806f8379920b020c6f0605ded09e9106daa6a3fa69cf821f624210611a7d413"
+    },
+    "tests/test_v06_c1_contract.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "5261d02c4b098b50e89fe7801f453a8dceb4a5cffc234bfae6077de063ba39cd"
+    },
+    "tests/test_v06_c1_evaluation_routing.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "6d73017dafae1252183b73cf6af99167c25cea7ebf36f84b0623c1a645dcbe6d"
+    },
+    "tests/test_v06_c1_retention_protocol.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "4da20f7fe9d4327c2988901c9d8c8f8d6614b35a3e34c14112f1adcfa8840fc7"
+    },
+    "tests/test_v06_connection.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "94dd2c5343b1e1f3da038420baa8489677244b41f5c28ac1f6747d63d8a68c62"
+    },
+    "tests/test_v06_contacts_events.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "d124381407d940edbc03706ea379bc49d253472bbdd4c2d71e2b690d4ebd1d2b"
+    },
+    "tests/test_v06_curriculum.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "6c12731ea1d714666e91b563ef700eab42fbe5f44cdbc03534e4ca2bbd833d84"
+    },
+    "tests/test_v06_entrypoints.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "a9db52af8a7dca465de1720c404b1f62cf2dc8d91586afcb094f08e68685296a"
+    },
+    "tests/test_v06_env.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "8b01817b3ef145deb2429c274881b29fc182f3c66098f641cdbe397c9a8a4722"
+    },
+    "tests/test_v06_evaluation.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "02919c4ac6df2f0ace037537c056652bec2e6f15704c6d5340ebd3be6b3bd798"
+    },
+    "tests/test_v06_migration.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "0d9fbf9859cad2bbfe137837b4ec7ea50a2ac06601b2227fb56ca4ff6a895310"
+    },
+    "tests/test_v06_model.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "8bd26c78926ed011c7bb9fa09a4f0a80387ace9003e43e3f04f1a5e01d8762d0"
+    },
+    "tests/test_v06_orchestration.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "529e077202096b8d59f305f5bb37a9904a81c548fca95c5f6dad1728812b3c1c"
+    },
+    "tests/test_v06_ppo.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "cbb31a94811f41eeef4f18c9102befd582c0e22fba24bbb9ed0e23703ede216c"
+    },
+    "tests/test_v06_q006.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "080ae33ee1275cccc2afe7e4b743fb61f31f0de9911d2d7fd3a0450ceb850b20"
+    },
+    "tests/test_v06_q007.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "356320c60499281ed89452f71c227bea2a0496da42d12148ba3368c041fcc97e"
+    },
+    "tests/test_v06_q010_first_episode.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "879360870212f0add4e3f565aab828e99ade84956b17db19019001cc9fee4a9d"
+    },
+    "tests/test_v06_q010_records.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "df4e451911a6eb6afcf77dda320be05b8a175d70061cc512fc699ed5549fe286"
+    },
+    "tests/test_v06_q010_records_recovery.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "d7c37de97fe83451e1c2c46ac8a5ffe4bfa0e31a08ed041dee02ca4b68dbc21b"
+    },
+    "tests/test_v06_recovery.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "dd70b3c03e69d21e5ac6f55587bd7474d0769ed3465ec474677e55bc343c7064"
+    },
+    "tests/test_v06_retention_targets.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "5f6d58918b51ec6ecc48afcd9979f0e442acc8e2cdce1b7ac6904eb6a09f6ce3"
+    },
+    "tests/test_v06_reward_contract.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "55581bfd361df7083b35576a43574bd166f56c5e8b466f82472dca4a7f95414d"
+    },
+    "tests/test_v06_reward_counterexamples.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "49caa0b7a195e3bf83ebc27c78747cdb2cc70f57f8083ba97419fd1ef27881b4"
+    },
+    "tests/test_v06_rewards.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "d9167cec7d453a9ad02bef4b977012ed7c3ae4a9026dcf428fdf518f152837b1"
+    },
+    "tests/test_v06_runner.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "b46857f2cc50c03515460794a1e9bf594761a245b04231ba154a0ed1afb4a32c"
+    },
+    "tests/test_v06_schema.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "3ec30c25d93842bb47630c8385e21915cfd092110ca28c3d72f0d2a328850776"
+    },
+    "tests/test_v06_spec.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "942dabbd10947b8eb7c90807cb65303f496f9229bfedee5d411f0345ec7e7fee"
+    },
+    "tests/test_v06_terrain.py": {
+      "reason": "final v4 fixed regression / C1 and Q010 acceptance test",
+      "sha256": "f52b2d0c3a8537370dc0795e2e22dcfe540b808982f14610940e15dc263fdc20"
+    }
+  },
+  "schema": "a2-c1-github-publication-candidate-v4",
+  "source_closure_sha256": "eae063c549d310f66a1931ec49ea3a22d16f3d6bcc0007a045e1779e94d7b54b",
+  "status": "v4_verified_for_publication_not_yet_uploaded"
+}

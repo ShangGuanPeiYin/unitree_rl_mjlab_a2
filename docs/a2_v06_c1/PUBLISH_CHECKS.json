@@ -1,0 +1,61 @@
+{
+  "schema": "a2-c1-publication-checks-v2",
+  "source_closure_sha256": "eae063c549d310f66a1931ec49ea3a22d16f3d6bcc0007a045e1779e94d7b54b",
+  "contract_sha256": "997eb7d0911e6c98899a1847a193c4b689650afd31b04b1a2509a4dcd2104f94",
+  "production_source_identical_v3_v4": true,
+  "runtime_imports": "passed",
+  "real_cpu_environment": {
+    "num_envs": 2,
+    "device": "cpu",
+    "seed": 42,
+    "phase": "D",
+    "substage": "D25",
+    "level_tick": 100,
+    "proprio_shape": [
+      2,
+      45
+    ],
+    "reset": "passed",
+    "vx_bounds": [
+      0.3,
+      0.6
+    ],
+    "learning_updates": 0
+  },
+  "private_weights_included": false,
+  "final_cpu_gpu_independent_acceptance": "accepted_true_blocking_zero",
+  "command_context": "isolated /tmp/a2-c1-publish-20261117; CUDA_VISIBLE_DEVICES empty",
+  "full_cpu": {
+    "passed": 587,
+    "failed": 0,
+    "skipped": 0,
+    "exit_code": 0
+  },
+  "explicit_c1_q010": {
+    "passed": 61,
+    "failed": 0,
+    "skipped": 0,
+    "exit_code": 0
+  },
+  "gpu": {
+    "smoke_updates": 2,
+    "probe_updates": 56,
+    "source_reload_learning_updates": 0,
+    "baseline_cases": 30,
+    "retention_protocol_cases": 30,
+    "actual_flat_500_windows": 15,
+    "all_final_stages_exit_zero": true
+  },
+  "independent_report_sha256": "1330109b1559c0eb6f8c9ab474693d9e7196bc78fc444d28777267295dc07e5a",
+  "independent_verdict_sha256": "b8575747b95a58a6a5b653861c00feeff90d3faa4df0e6f923c2585f74896769",
+  "implementation_report_sha256": "76a6bea785d031f7f07188644868e8da560b634ceb24abae73fa6fe7c51782a2",
+  "manifest_sha256": "efadb8177b82a6a316fc96bd29b99e5d0f8ed1bcdece82399293eec523ac3de6",
+  "production_first_update_verified": 4225,
+  "production_source_is_original_4224": true,
+  "known_limits": [
+    "full_evaluation_rng_isolation_not_established_Q008",
+    "authorized additional recovery initialization RNG consumption",
+    "D20 baseline 3/5,2/5,1/5; final40 goal not established"
+  ],
+  "publication_state": "verified_for_publication_not_yet_uploaded"
+}
