@@ -1,0 +1,52 @@
+{
+  "schema": "a2-c1-stop4817-integrated-report-independent-review-v1",
+  "created": "2026-11-17T12:02:44.715669+00:00",
+  "reviewer": "/root/c1_reviewer",
+  "report_path": "/home/xxs/dog/unitree_rl_mjlab_a2/docs/a2_v06_c1/STOP4817_AUDIT.md",
+  "report_sha256": "91ce3c7b216359d52ac291b7a68691c3450a88c2c4dc44770bfef8a51a193cdf",
+  "accepted": true,
+  "blocking": 0,
+  "scope": "factual accuracy of integrated readonly stop audit; not permission to alter rules, unlock terminal or resume training",
+  "source_evidence_preserved": true,
+  "project_files_modified_by_reviewer": false,
+  "independent_stop_audit": {
+    "md": "/tmp/a2_c1_stop4817_independent_audit.md",
+    "md_sha256": "af00f088fa5ce9a4e926230e0afe7b30b06386dd154c34ac4454bda7fa227594",
+    "json": "/tmp/a2_c1_stop4817_independent_audit.json",
+    "json_sha256": "59188d250ff7e49c23007441643e7e0b9f7b069a25aca176002944bb7380e5e9"
+  },
+  "checks": {
+    "D20_two_windows": "direct second64 at4505/4805 all64 failure; persisted first EMA1/0; original arithmetic and control flow hard1->2/cooldown4->3 then reset new gen cooldown5, no cooldown protection",
+    "four_window_time_evidence": "4811 strict persistent reward/time-bound inference;4812 direct;4815or4816 range only;4817 direct; raw rows128 complete+31 prefix,97 absent correctly labeled",
+    "same_generation": "actual reset gen71->72 at4805;4812 D25 lowest hold does not change gen; EMA/FIFO/minimum streak retained",
+    "minimum200": "original macro D cumulative>=200, stop2117; not new generation200, gen72 has12 updates",
+    "candidate_math": "zero-failure EMA values0.84875/0.8232875/0.798588875 correct; raw-window/320-consumed/newgen200 examples explicitly conditional, unauthorized and unimplemented; FIFO14 excluded",
+    "gate_vs_train": "360 actual frozen first cases and threeSHA/bindings verified; sample vs mean/continuous vs3 speeds/model time distinction; D25 spawn bounds same; no4817 mean behavior claim",
+    "retention": [
+      {
+        "update": 4400,
+        "flat_retention": 0,
+        "stair_retention": 5
+      },
+      {
+        "update": 4600,
+        "flat_retention": 0,
+        "stair_retention": 0
+      },
+      {
+        "update": 4800,
+        "flat_retention": 0,
+        "stair_retention": 9
+      }
+    ],
+    "legacy_pending": "four ledger partial/current txn fieldsNone; result.pending_evaluations[]; top-level pending_transition actual4800 gate_passed and raw gate.streak6 retained, report avoids claiming every pending field empty",
+    "sampler": "actual stop.pt vs result curriculum differs only sampler_rng_state; canonical JSON SHA9f5326ed...fb67 and2c2f986f...d822 verified; documented stop.save-before-schedule ordering matches frozen control flow; no splice/rewind",
+    "checkpoint_integrity": "actual stop SHAa41963a8...76e64;53 tensor keys finite;45 Adam states finite and step96340; stopped lifecycle interpretation preserves stop_state dominance",
+    "evaluation_cost": "24 actual sidecars/630 records; useful203151/actual213864/extra10713control;855456/extra42852physics exactly recomputed",
+    "SDS": "original SDS6.3 text explicitly macro200 and invalid regression cannot clear independent stop count"
+  },
+  "method": "readonly JSON/MD/source inspection and CPU torch.load dictionaries plus pure sidecar content hash verification; no new pytest, policy evaluation, environment/model construction, simulation or training",
+  "not_repeated": "Git remote provenance and process-exit statements remain root-owned existing evidence; no network or process mutation in this narrow review",
+  "inaccuracies": [],
+  "does_not_authorize_resume_or_recipe_change": true
+}

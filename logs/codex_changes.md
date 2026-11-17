@@ -2510,3 +2510,25 @@ V9_terminal_stop_delivery_recovery_20261113.json记录原Telemetry+WandbBackend�
 实际结果：GitHub connector create_tree返回403 Resource not accessible by integration，未创建提交或分支，不能将账号repo push权限误当集成token写权限。随后仅检查本机既有gh认证状态，账号ShangGuanPeiYin、keyring有效、repo scope存在；SSH agent未连接。采用单次git credential.helper调用gh auth git-credential，不读取/打印token、不修改全局Git认证、不改变remote或生产工作树。
 涉及文件：本日志与隔离发布树中同步副本；后续commit只含既定117个变更文件的已验范围。
 验证：原最终树d873549f5802161517c890b5c1fba4fd84d7e902逐字范围/97源/28测试/凭据模式检查通过；本次仅追加真实发布失败及回退记录。接下来本地提交并实际push，结果另记，不提前声称成功。正式训练与observer继续运行。
+
+
+## 2026-11-17T19:59:45+08:00 — update4817停止只读审计与GitHub首提交核验
+
+目的：响应主决策最新指令，优先核查原规则停机，不解终态或另起训练；同时如实记录已授权GitHub推送结果。
+涉及文件：docs/a2_v06_c1/STOP4817_AUDIT.md；implementation/STOP4817_INTEGRITY_COST.json、STOP4817_EVALUATION_COST.json、STOP4817_COUNTERFACTUAL.json；本日志。仅派生报告新增，生产/source/原证据未改。
+实际结果：17:14:08启动，18:05:53在4817 minimum_level_failure停；新增593更新/11860Adam/14573568control/58294272physics，24评估sidecar另213864control/855456physics。实际checkpoint SHA a41963a8bf5e6f1d4810b0a0c912ac65747d61bd481ea3432ef638a99e076e64与sidecar一致；四事务字段None、pending_evaluations空，legacy pending_transition4800仍留，普通resume拒绝。checkpoint/result仅sampler RNG为原停止保存后再schedule的两时间点，不拼接。
+实现/设计说明：原D20连续两hard窗使两次各5更新退回；D25/gen72四窗EMA .875/.85671875/.8413296875/.819839796875均过原.8阈值，D宏已超过200，4812只hold而不切代清零。明确窗口1/3逐行缺失及推定时点，不伪称全部256行可复算；只读候选数学比较未授权未实施。首个根审计脚本误用不存在runner键而KeyError，按实际ledger schema修正后退出0，未改产品。
+验证：593条实际PPO遥测连续、与stop计数一致，53模型键形状/有限性与45Adam有限性通过；独立复核时间线/窗口正在对整合报告最后审阅。无新增仿真或效果改善主张。
+GitHub：本机既有gh keyring完成实际push，远端分支codex/a2-c1-continue-20261117指向1cdcf1ac71dccac04700adc5aacfcad529eedc18；远端Git tree63c963f2c40dccc186986dcbf9704cbcb5dec249与本地已验树一致。首代码提交117变更文件，多为此前未跟踪必要依赖；不包含权重/无关脚本修改，不合并main。后续仅补实际停止审计文档，不改配方。
+
+
+## 2026-11-17T20:00:56+08:00 — 停止审计文字精确化
+
+涉及docs/a2_v06_c1/STOP4817_AUDIT.md：明确D25训练与standard门禁出生范围相同，差别是sample/mean动作、连续/固定三速及模型时点，4800后17次PPO与切换而未测4817mean；避免读成训练出生更难。依据独立只读审计与冻结代码，无新测试/仿真/源码修改，原证据不变。最终报告SHA由独立审查确认后发布。
+
+
+## 2026-11-17T20:04:15+08:00 — 停止报告独立通过与最终状态文档发布准备
+
+涉及docs/a2_v06_c1/WORK_REPORT.md、STOP4817_REVIEW.json、PUBLISH_CHECKS.json、PUBLISH_FILES.json；implementation/stop4817/独立与执行MD/JSON永久副本；本日志。STOP4817_AUDIT.md原SHA91ce3c7b216359d52ac291b7a68691c3450a88c2c4dc44770bfef8a51a193cdf保持不再改。
+实际修改与理由：主汇报首段改为4817已停止，明确4263为历史快照；补593新增成本、D20两窗快退/D25四窗慢EMA、停止完整性边界，避免用户把早快照当当前运行。复制独立事实复核原字节SHA52b23903bcee31fe80197a2c2ca06f58ac976dc7385bba0de767faabe15ca464，accepted=true/blocking0，只批准文档准确性。独立原审计MD af00f088fa5ce9a4e926230e0afe7b30b06386dd154c34ac4454bda7fa227594 / JSON59188d250ff7e49c23007441643e7e0b9f7b069a25aca176002944bb7380e5e9，执行MD d24ee704d5b339001a296e7d8b2c1b7354849d5d4ac79c1b69add6a0c510a071 / JSON752e926f92a886c8fbc2204f62e1db6e7a48bde8eeb73ab2ed01f7f4db75c50e均保存副本。
+验证：独立最终窄审事实、4窗证据等级、24评估成本、sampler两个SHA与遗留pending均吻合，无不准确项；无新增pytest/仿真/训练/源码改动。仅将六个最终文档/日志变更提交到已授权同一分支，不合并main；正式停止终态不解除，候选规则未实施。下一步实际push并远端核验，结果再记本地日志。

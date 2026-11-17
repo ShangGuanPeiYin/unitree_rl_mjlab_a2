@@ -57,5 +57,19 @@
     "authorized additional recovery initialization RNG consumption",
     "D20 baseline 3/5,2/5,1/5; final40 goal not established"
   ],
-  "publication_state": "verified_for_publication_not_yet_uploaded"
+  "publication_state": "implementation_pushed_verified_stop_audit_fact_checked",
+  "published_implementation_commit": "1cdcf1ac71dccac04700adc5aacfcad529eedc18",
+  "published_implementation_tree": "63c963f2c40dccc186986dcbf9704cbcb5dec249",
+  "production_final_state": "curriculum_stalled",
+  "production_final_update": 4817,
+  "production_new_updates": 593,
+  "production_budget_exhausted": false,
+  "production_stop_checkpoint_sha256": "a41963a8bf5e6f1d4810b0a0c912ac65747d61bd481ea3432ef638a99e076e64",
+  "stop_audit": {
+    "report_sha256": "91ce3c7b216359d52ac291b7a68691c3450a88c2c4dc44770bfef8a51a193cdf",
+    "review_sha256": "52b23903bcee31fe80197a2c2ca06f58ac976dc7385bba0de767faabe15ca464",
+    "accepted": true,
+    "blocking": 0,
+    "scope": "document facts only; no new training or rule changes authorized"
+  }
 }

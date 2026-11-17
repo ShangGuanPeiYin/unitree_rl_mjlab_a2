@@ -17,9 +17,17 @@
       "reason": "approved final C1/Q010 normative contract ruling",
       "sha256": "22d3c77a6af62042eb98f8b310ea3d1d7e8554b77a811ad618be2a4e0a35c34c"
     },
+    "docs/a2_v06_c1/STOP4817_AUDIT.md": {
+      "reason": "read-only final stop audit; no runtime raw records or model",
+      "sha256": "91ce3c7b216359d52ac291b7a68691c3450a88c2c4dc44770bfef8a51a193cdf"
+    },
+    "docs/a2_v06_c1/STOP4817_REVIEW.json": {
+      "reason": "independent integrated audit fact-check verdict; no authority for new training",
+      "sha256": "52b23903bcee31fe80197a2c2ca06f58ac976dc7385bba0de767faabe15ca464"
+    },
     "docs/a2_v06_c1/WORK_REPORT.md": {
-      "reason": "final implementation/training/validation report; no model or runtime raw data",
-      "sha256": "fee4eca0e379646ad6ee6c8a1c33a71dfa60f2cb080f9fb7280356faae627084"
+      "reason": "final implementation/training/validation report including actual4817 stop",
+      "sha256": "1484ae3894a75d4bcf09bd48fdb06b9d5064238761a465e372b20af674700f85"
     },
     "logs/a2_ideal_stairs_v06/implementation/coordination/Q001_v06_decision.md": {
       "reason": "normative frozen contract document: q001_decision",
@@ -602,7 +610,8 @@
       "sha256": "f52b2d0c3a8537370dc0795e2e22dcfe540b808982f14610940e15dc263fdc20"
     }
   },
+  "published_implementation_commit": "1cdcf1ac71dccac04700adc5aacfcad529eedc18",
   "schema": "a2-c1-github-publication-candidate-v4",
   "source_closure_sha256": "eae063c549d310f66a1931ec49ea3a22d16f3d6bcc0007a045e1779e94d7b54b",
-  "status": "v4_verified_for_publication_not_yet_uploaded"
+  "status": "implementation_pushed_stop_audit_verified_for_followup_publication"
 }
