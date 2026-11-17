@@ -9,6 +9,7 @@
   },
   "created_at": "2026-11-18T00:05:28+08:00",
   "formal": {
+    "R_executed": false,
     "actual_first_ppo": {
       "adam_steps": 20,
       "control_samples": 24576,
@@ -16,20 +17,519 @@
       "optimizer_steps": 20,
       "physics_substeps": 98304
     },
-    "cumulative_learning": {
-      "adam_steps": 96360,
-      "control_samples": 118407168,
-      "physics_substeps": 473628672,
-      "update": 4818
+    "artifact_sha256": {
+      "contract.json": "37dba722bf8cc08572451ea152b3e37ac1897a7231e8db27506037075d289d45",
+      "result.json": "f7218e5f24059891983e725e25efddcfff88fedd74f222a7ebbf669e0af08faa",
+      "segment.json": "58b0c08f77d207d6fd5d2644bf7087d97b337e84ad3db92c288196a40ce1d9ca",
+      "stop.json": "bfdb4fc9ca586aa86e16cc7cf820281adf68df405c85c58063b2c55005992e59",
+      "terminal.json": "8d11f8901b912d352e7bb011682331982e90fc0cfe9d5f7800f342e22062aeb9"
     },
+    "budget": {
+      "phase": "V",
+      "phase_budget": 4000,
+      "phase_exhausted": false,
+      "phase_spent": 300,
+      "substage": null,
+      "substage_budget": null,
+      "substage_exhausted": false,
+      "substage_spent": 0,
+      "total_budget": 48000,
+      "total_exhausted": false,
+      "total_remaining": 41600,
+      "total_spent": 6400,
+      "update": 6400
+    },
+    "budget_audit": {
+      "checks": {
+        "ledger_arithmetic": true,
+        "phase_spend_within_budgets": true,
+        "total_within_budget": true,
+        "update_equals_phase_spend": true
+      },
+      "consistent": true,
+      "remaining": 41600,
+      "spent_by_phase": {
+        "D": 2800,
+        "F0": 200,
+        "H": 2500,
+        "L": 600,
+        "R": 0,
+        "V": 300
+      },
+      "total_budget": 48000,
+      "update": 6400
+    },
+    "cumulative_learning": {
+      "adam_steps": 128000,
+      "control_samples": 157286400,
+      "epochs": 5,
+      "learning_rate": 1.5000000000000005e-05,
+      "minibatches": 4,
+      "num_envs": 512,
+      "optimizer_step": 128000,
+      "physics_substeps": 629145600,
+      "rollout": 48,
+      "update": 6400
+    },
+    "curriculum_complete": false,
+    "duration_s": 13195.544105052948,
+    "error_file_present": false,
+    "evaluation": {
+      "actual_control_samples": 1138630,
+      "actual_physics_substeps": 4554520,
+      "batches": 64,
+      "cases": 1680,
+      "cases_by_kind": {
+        "diagnostic": 480,
+        "flat_retention": 120,
+        "stair_retention": 120,
+        "validation": 960
+      },
+      "extra_control_samples": 24344,
+      "extra_physics_substeps": 97376,
+      "useful_control_samples": 1114286
+    },
+    "execution_terminated": true,
+    "failure_class": "training_failure",
     "final_300_test_completed": false,
+    "final_audit_sha256": "6fbc8410ce22666465c123290fdfea32d95cbaf57cef947fc67c50713eef14c9",
+    "final_cpu_only_cuda_initialized": false,
     "first_resource_limits_ok": true,
     "first_update": 4818,
+    "formal_billed_cap": 48100,
+    "formal_billed_updates": 6500,
+    "frozen_current_hashes_verified": {
+      "document_hashes": 30,
+      "legacy_test_hashes": 28,
+      "observer_hashes": 3,
+      "source_hashes": 94,
+      "test_hashes": 22
+    },
+    "generation": 79,
+    "generation_updates": 300,
+    "h00_retention": [
+      {
+        "counts": [
+          0,
+          0,
+          3
+        ],
+        "failed_cases": 12,
+        "reasons_by_speed": [
+          {
+            "timeout": 5
+          },
+          {
+            "timeout": 5
+          },
+          {
+            "posture": 1,
+            "success": 3,
+            "timeout": 1
+          }
+        ],
+        "sha256": "6a94af47a56b1e50d975848b322c10c6f9d42a23fb445711a1e0e7b744c488dc",
+        "stop": false,
+        "streak": 1,
+        "update": 5000
+      },
+      {
+        "counts": [
+          0,
+          5,
+          4
+        ],
+        "failed_cases": 6,
+        "reasons_by_speed": [
+          {
+            "nonfoot": 2,
+            "posture": 3
+          },
+          {
+            "success": 5
+          },
+          {
+            "success": 4,
+            "timeout": 1
+          }
+        ],
+        "sha256": "9df93e9e784230098c573033b9178d53a439d7dafc8d3cd8f62693f674439553",
+        "stop": false,
+        "streak": 0,
+        "update": 5200
+      },
+      {
+        "counts": [
+          0,
+          1,
+          5
+        ],
+        "failed_cases": 9,
+        "reasons_by_speed": [
+          {
+            "posture": 2,
+            "side": 3
+          },
+          {
+            "side": 4,
+            "success": 1
+          },
+          {
+            "success": 5
+          }
+        ],
+        "sha256": "8f6332377b737bfdcb18aaa0e25996e31d5b92780adf2e590b94b9f4324cd0d1",
+        "stop": false,
+        "streak": 0,
+        "update": 5400
+      },
+      {
+        "counts": [
+          0,
+          0,
+          2
+        ],
+        "failed_cases": 13,
+        "reasons_by_speed": [
+          {
+            "timeout": 5
+          },
+          {
+            "timeout": 5
+          },
+          {
+            "success": 2,
+            "timeout": 3
+          }
+        ],
+        "sha256": "ed96b1b1dabff04c78065f712cf5153cbb28411d0a59381ff39d891a99373580",
+        "stop": false,
+        "streak": 1,
+        "update": 5600
+      },
+      {
+        "counts": [
+          2,
+          5,
+          5
+        ],
+        "failed_cases": 3,
+        "reasons_by_speed": [
+          {
+            "body": 2,
+            "nonfoot": 1,
+            "success": 2
+          },
+          {
+            "success": 5
+          },
+          {
+            "success": 5
+          }
+        ],
+        "sha256": "b2a1632484605654ffd42e2b4bbad99b9c8a2c6cf4e5baa292f214d0fcf241fd",
+        "stop": false,
+        "streak": 0,
+        "update": 5800
+      },
+      {
+        "counts": [
+          3,
+          5,
+          3
+        ],
+        "failed_cases": 4,
+        "reasons_by_speed": [
+          {
+            "posture": 1,
+            "side": 1,
+            "success": 3
+          },
+          {
+            "success": 5
+          },
+          {
+            "success": 3,
+            "timeout": 2
+          }
+        ],
+        "sha256": "e64aae5f48026f59759d0cb006d0d97312097e26ad22abe2cbd00f8c09d06669",
+        "stop": false,
+        "streak": 0,
+        "update": 6000
+      },
+      {
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "failed_cases": 15,
+        "reasons_by_speed": [
+          {
+            "timeout": 5
+          },
+          {
+            "timeout": 5
+          },
+          {
+            "timeout": 5
+          }
+        ],
+        "sha256": "24fa6426c42c0ae3618d7011af2be2c2642206fa5a91e3cd191fb0e3d38e2fef",
+        "stop": false,
+        "streak": 1,
+        "update": 6200
+      },
+      {
+        "counts": [
+          0,
+          0,
+          1
+        ],
+        "failed_cases": 14,
+        "reasons_by_speed": [
+          {
+            "posture": 1,
+            "side": 4
+          },
+          {
+            "nonfoot": 2,
+            "side": 3
+          },
+          {
+            "nonfoot": 2,
+            "side": 2,
+            "success": 1
+          }
+        ],
+        "sha256": "31c1315f28c2ee7f49bdfe3c5bbed08937a0de9d5c032400ce886ddb8b2b80a1",
+        "stop": true,
+        "streak": 2,
+        "update": 6400
+      }
+    ],
     "launched_at": "2026-11-17T23:55:17+08:00",
+    "limitations": [
+      "No R phase or final 300-case target acceptance was executed.",
+      "Full evaluation RNG isolation remains not established under Q008.",
+      "Resource measurements are sampled observations, not continuous peaks.",
+      "Original lifecycle_state=running, retention.enabled=false and pending-boundary metadata remain in historical result/checkpoint fields; stop.json, terminal stop-state, ledger stop-state, current retention schedule and process exit are authoritative. No raw production fields were rewritten."
+    ],
     "pid": 2065399,
+    "processes_exited": [
+      2065399,
+      2066831
+    ],
     "resume_update": 4817,
+    "segment_learning": {
+      "adam_steps": 31660,
+      "control_samples": 38903808,
+      "physics_substeps": 155615232,
+      "updates": 1583
+    },
+    "segment_updates_by_stage": {
+      "D20": 200,
+      "D22": 200,
+      "D25": 283,
+      "L12": 200,
+      "L20": 200,
+      "L40": 200,
+      "V": 300
+    },
     "source_checkpoint_sha256": "a41963a8bf5e6f1d4810b0a0c912ac65747d61bd481ea3432ef638a99e076e64",
-    "training_complete": false
+    "stop_checkpoint": {
+      "all_45_adam_states_steps": 128000,
+      "model_tensors_finite": true,
+      "ordinary_terminal_not_automatically_resumable": true,
+      "path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v07/continue_seed42_from004817_trial01/checkpoints/stop_006400.pt",
+      "pending_boundary_present": true,
+      "sha256": "30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2"
+    },
+    "stop_phase": "V",
+    "stop_state": "behavior_regression",
+    "stop_update": 6400,
+    "stopped_at": "2026-11-18T03:35:24+08:00",
+    "target_achieved": false,
+    "training_complete": true,
+    "validation_gates": [
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "D",
+        "sha256": "920df7a2a7169214c8ceb9cada73009d9c1978c2f53da004ac7e9c97d87550c5",
+        "substage": "D25",
+        "update": 4900
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "D",
+        "sha256": "dd8dc07744a261004a11e1162fa3b75da95b148844e11f5a031e18d339bf5b4a",
+        "substage": "D25",
+        "update": 5000
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "D",
+        "sha256": "81136e64c00b9684f3c76d9911883e14906af881ea1c80b0db68796f5a0f234b",
+        "substage": "D25",
+        "update": 5100
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "D",
+        "sha256": "c841354846cd5ad4ec78f3fd73525fa7e7bf333c5b7c843e2d7896faf8918e44",
+        "substage": "D22",
+        "update": 5200
+      },
+      {
+        "counts": [
+          20,
+          20,
+          19
+        ],
+        "phase": "D",
+        "sha256": "35d56cb83fa9fef5f0ee234b65c1fe5f00059101eb693d52004824bc3c62c8c6",
+        "substage": "D22",
+        "update": 5300
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "D",
+        "sha256": "f1fb52a2b5a314530a9e03edc9ea8bfd8748f5c85efcad7a0a704fae4548b762",
+        "substage": "D20",
+        "update": 5400
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "D",
+        "sha256": "bbbbc818866d9ab27ad1833e248ccf6d69a55f52b9fa7dfe8deb4c7664310be7",
+        "substage": "D20",
+        "update": 5500
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "L",
+        "sha256": "1fba9d79d2efab053c5c79653d0e2c6147d520427333c46616dc06654e936c13",
+        "substage": "L12",
+        "update": 5600
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "L",
+        "sha256": "672cbacca8d549625d71b0a47fb1345cf7a5f95aeb52c5b45b7c034d3f1bcce8",
+        "substage": "L12",
+        "update": 5700
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "L",
+        "sha256": "583b8ac1292e97ec14ff6312ba9c3bc09fab084da739b47cf3e689cc1d4888eb",
+        "substage": "L20",
+        "update": 5800
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "L",
+        "sha256": "cbaa728a367dc31e7304953dbb0bd66e91902890d89e7163db5267df745a6bcb",
+        "substage": "L20",
+        "update": 5900
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "L",
+        "sha256": "82da84279358253caf03eaa1025efecc216b0c03fc5048fc01ecba3b9a65650c",
+        "substage": "L40",
+        "update": 6000
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "L",
+        "sha256": "226e7e577c3361c08c530332d028f5fefeae0ab6656a85481e09dd397e68f426",
+        "substage": "L40",
+        "update": 6100
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "V",
+        "sha256": "6b45fadeaa63865dbbb1ef8c1472096014a996d431997a09ff1da347ea8d5ce3",
+        "substage": null,
+        "update": 6200
+      },
+      {
+        "counts": [
+          20,
+          20,
+          20
+        ],
+        "phase": "V",
+        "sha256": "e40b773694e148ecdbbf7e634a36cf4321c75f67a0f443fce3d2a3f06a85bd9e",
+        "substage": null,
+        "update": 6300
+      },
+      {
+        "counts": [
+          20,
+          19,
+          19
+        ],
+        "phase": "V",
+        "sha256": "4a7749e6fe2fc819da366e3c3528bd69fc7fc3c60ebd251d2e906e80264b67f9",
+        "substage": null,
+        "update": 6400
+      }
+    ]
   },
   "freeze_sha256": "f9f67f08a7120b479ed6dfe3dd9916df2c8492ee1e6971d72f807da60f890aa1",
   "gpu": {
@@ -315,6 +815,14 @@
     "verdict_sha256": "50fd5dd9badff07eeb992cf7698437aceb2e8d74b61573a55b249eccc84d36b1"
   },
   "private_artifacts": "Weights, raw runtime, case trajectories and credentials remain local; exact evidence hashes are in the independent verdict.",
+  "publication": {
+    "branch": "codex/a2-v07-d22-curriculum",
+    "code_commit": "19aa48db5831c176bf81a177fbfe1d5a53fe7746",
+    "report_commit": "This file is part of the later report-only commit; inspect Git history for its immutable commit identity.",
+    "source_closure_unchanged": true,
+    "weights_and_raw_runtime_uploaded": false
+  },
   "schema": "a2-v07-public-validation-summary-v1",
-  "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a"
+  "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a",
+  "updated_at": "2026-11-18T03:41:05+08:00"
 }

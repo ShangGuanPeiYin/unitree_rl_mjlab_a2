@@ -2847,3 +2847,108 @@ FORMAL_FIRST_UPDATE_AUDIT.json与formal_audit/FIRST_UPDATE_004818.json保存实�
 ## 2026-11-18T00:05:28+08:00 — 专用分支提交前固定发布集合
 
 新增docs/a2_v07/VALIDATION_SUMMARY.json与PUBLISH_CHECKS.json，公开紧凑验收/工程费用/起点及正式首4818审计事实，不放权重或逐步运行原件。刷新独立发布树明确白名单：完整94源/22测试/30文档/3根输入，v2合同/manifest、4独立验收文件、紧凑结果与工作报告/修改日志；仅专用codex/a2-v07-d22-curriculum，basebf30366，活动main不切换。接下来先凭据模式扫描/暂存清单与tree核对，再按既有push授权提交推送；当前尚未完成commit/push，训练独立继续至合同终态。
+
+
+## 2026-11-18T00:09:20+08:00 — v0.7专用分支实际提交推送完成
+
+明确发布payload175项、相对基线100文件变化，凭据模式扫描0候选，未纳权重/raw运行目录/凭据。run_v07.sh发布权限保留源755（相对初始暂存仅mode变化，内容hash与冻结不变）；实际commit 19aa48db5831c176bf81a177fbfe1d5a53fe7746，tree 88ba049d2d87455e4191a3da660198d7fc2b4406。已有本机gh credential helper仅一次Git进程配置，未改全局auth/未打印密钥；普通push origin codex/a2-v07-d22-curriculum成功，ls-remote实际SHA与本地HEAD相等，commit绑定tree相等，工作树clean。活动项目仍main/HEAD42d…，没有merge main/force/PR通知。PUBLISH_RESULT.json保真实结果与链接；训练独立继续，当前仍未确认最终训练完成。发布报告将于合同结束按实际补最终结果，不把当前首阶段报告冒充训练终态。
+
+
+## 2026-11-18T00:15:00+08:00 — 首4900资格与发布后持续状态核实
+
+CPU只读实际curriculum_004900.pt：gen73、gu83、gate_streak0，gate_log passed=true但counted=false/reason generation_younger_than_100_updates；原始分数60/60未提前计晋级。audit formal_audit/GATE_004900_QUALIFICATION.json绑定该checkpoint SHAe66415958813dff1bdd30cacf5b84f69cffda4dc4155841402ac6cd6c471aebb，tool exit0，无GPU/PPO/生产写。正式观察最新5000（D25），尚非终态。
+
+持续WORK_REPORT补实际code commit 19aa48db5831c176bf81a177fbfe1d5a53fe7746、remote tree 88ba049d2d87455e4191a3da660198d7fc2b4406 与分支链接、发布范围和当前训练状态；不可变工程报告/验收211证据保持。当前公开commit内报告是初次发布时快照，最终训练终态后将同分支补最终工作报告和修改日志，避免停在已开始的结果。
+
+
+## 2026-11-18T00:32:34+08:00 — 正式首D22晋级与H00首告警
+
+实际5100 transitions原件确认D25→D22，gen73→74、gu0、frontier22、D22spent0/cap6000；此前4900低gu83没计，5000及5100两次validation均三速各20/20共60/60，正常晋级不被1000保护阻挡。已存formal_audit/TRANSITION_005100_D22.json绑定原件SHA、花费和门禁。正式D25本段共283更新，D22从5101开始，当前只读observer5178、非终态。
+
+5000 flat保持15/15 failure0/streak0；H00三速0/5、0/5、3/5，12未通过（含超时），streak1/required2/stopfalse，next5200。raw保持passed字段因原5例对18required口径仍false，按Q008独立case计数解释，不将flat当失败或H00当全成功。1000保护不豁免保持检查，继续原合同不修改/豁免/重评挑seed；下一5200若再≥12失败将按原规则停。此处不预言结果。
+
+
+## 2026-11-18T00:42:52+08:00 — 5200首次D22门禁及保持告警实际清零
+
+5200 D22三速各20/20合60/60，flat各5/5合15/15；H00实际9/15，failed6低于12，streak0/stopfalse，next5400。5100新gen74转移after保留h00旧streak1，非换代自动清；本次是实测6失败触发原清零规则。根审计HOLD_005200_CLEAR.json绑定保持原件SHA，不新增门槛/豁免、不改源码或采样。训练继续，D22至当时5232已132新更新，下一5300第二合格门禁待实际结果。
+
+
+## 2026-11-18T00:48:09+08:00 — 正式5300晋级D20
+
+5300 D22三速20/20、20/20、19/20，配合5200各20/20达到两轮门禁，实际D22→D20，gen75/gu0。D25本段283、D22本段200；历史D20spent34保留，累计cap9000不重置（仍余8966）。原件及SHA存formal_audit/TRANSITION_005300_D20.json；无recipe/控制修改，无重评挑结果。训练继续，最终目标尚未验证。
+
+
+## 2026-11-18T01:00:35+08:00 — 5400 D20固定病例对照（只读复用既有评估）
+
+正式D20首次门禁三速各20/20共60/60。逐项匹配续训前D20的15个既定case_id和完整descriptor，实际同病例=True，物理tile18/lessonD20均真；原始15例通过4，5400相同15例通过15。没有新跑GPU/挑seed，只读既有first_episode原件，audit D20_FIXED_CASE_COMPARISON_005400.json绑定两原件SHA。若descriptor完全一致，才可限于此固定子集说实测通过数变化；不将其归因于某单项修改、不外推最终40级/实机或训练终态。保持检查仍按程序继续。
+
+
+## 2026-11-18T01:09:24+08:00 — 正式5500晋级12级楼梯
+
+新增formal_audit/TRANSITION_005500_L12.json并追加协调台账，记录原始transition与门禁SHA。5500 D20三速各20/20，结合5400达到两有效门禁，实际进入L12（12级楼梯）/gen76gu0/frontier19；本段D20训练200更新，历史34保留故累计234，L12预算仍1500。5400平地15/15、H00 6/15（9失败低于12）/streak0/stopfalse，下一保持5600。验证为只读解析并断言上述实际JSON，exit0；不改生产源码、训练参数或控制，不新增GPU测试。最终40级和最终验收尚未验证，训练继续。
+
+
+## 2026-11-18T01:12:14+08:00 — 更新持续工作报告的已验事实
+
+修改docs/a2_v07/WORK_REPORT.md，纠正验收前留下的CPU运行中、验收待签、尚未push等过时表述；补5000至5500实际课程进展、D20固定15例4→15对照范围、各保持检查和未完成的最终300例，避免工程验收/已晋级冒充训练完成。依据此前已核验的CPU、签署验收、远端SHA及门禁/transition/保持JSON；本次仅文档一致性断言6处精确替换均通过，不修改冻结源/合同/奖励/PPO或控制，不新增GPU/训练测试。当前活动报告尚未最终推送，待合同终态补最终结果统一发布。
+
+
+## 2026-11-18T01:22:49+08:00 — 5600 H00保持首告警留证
+
+新增formal_audit/HOLD_005600_ALARM.json，追加协调台账，保存实际保持及gate原件SHA。L12首次validation三速各20/20，flat15/15；H00三速通过[0, 0, 2]合2/15，13失败达到原告警线，streak1/stopfalse，下一5800，未豁免保持或因L12保护清零。只读JSON断言通过/exit0；无生产源码、配方、控制改动或额外GPU。未来门禁/保持与最终40级均待实际执行，不预言结果。
+
+
+## 2026-11-18T01:33:57+08:00 — 正式5700晋级20级楼梯
+
+新增formal_audit/TRANSITION_005700_L20.json并追加协调台账，依据真实transition及gate断言通过/exit0。L12在5600及5700均三速各20/20，共200新更新；5700实际进入L20/gen77gu0/frontier20，初始spent0/cap1500。转移后H00告警streak1保留，next5800未改，未借换代豁免保持。仅留证，无生产源码/配方/控制改动，无额外GPU；最终40级目标仍未验证。
+
+
+## 2026-11-18T01:47:45+08:00 — 5800保持告警实际清零
+
+新增formal_audit/HOLD_005800_CLEAR.json并追加协调台账。L20首次门禁60/60、flat15/15；H00三速[2, 5, 5]合12/15、failed3/streak0/stopfalse/next6000，实际成绩触发原规则清零，非换代或人为豁免。依据原始gate/保持JSON及SHA，只读断言通过/exit0，无生产源码、配方、控制改动或额外GPU；下一5900第二L20门禁及最终40级未验证。
+
+
+## 2026-11-18T02:00:41+08:00 — 正式5900晋级40级楼梯课程
+
+新增formal_audit/TRANSITION_005900_L40.json并追加协调台账，真实transition/gate断言通过/exit0。L20在5800/5900各三速20/20，共200新更新；5900实际进入L40/gen78gu0/frontier21，初始spent0/cap3000。最终tile21未误用新增D22的tile22。保持streak均0、next6000继承，未改配方或控制、未加GPU。当前只是进入40级课程，尚未L40门禁/V/R及最终300例，不能声称最终通过。
+
+
+## 2026-11-18T02:38:25+08:00 — 正式6100从L40进入V阶段
+
+新增formal_audit/TRANSITION_006100_V.json并追加协调台账。真实transition/gate断言通过/exit0：L40在6000/6100各三速20/20，共200新更新，6100实际进入V/gen79gu0/frontier21，Vspent0/cap4000。原V规则至少1200更新、1000起计门禁，R至少600、400起计，保持时钟next6200/告警均0继承；6000实际flat15/15、H00 11/15 failed4不告警。没有配方/源码/控制修改或额外GPU；这只是40级课程双门禁通过，V/R及最终每速100例尚未完成，不能宣称最终目标成功。
+
+
+## 2026-11-18T03:00:10+08:00 — 6200 H00保持首告警留证
+
+新增formal_audit/HOLD_006200_ALARM.json并追加协调台账，真实gate/保持JSON只读断言通过/exit0并绑定SHA及失败原因。V100早期爬楼门禁60/60，按原V gate_start1000规则尚不作晋级计数；flat15/15，H00三速均0/5合0/15、15失败、streak1/stopfalse/next6400。保持失败与爬楼通过分别记录，未豁免、未清告警、未改源/配方/控制、未加GPU；下一6400若连续告警应原规则停，结果待实际。
+
+
+## 2026-11-18T03:39:46+08:00 — 正式6400合同停止及最终CPU审计
+
+新增formal_audit/FINAL_FORMAL_AUDIT.json并追加协调台账，保留终态原件、停止checkpoint及64完整评估SHA。6400 H00三速0/5、0/5、1/5，14失败/streak2，接6200的15失败/streak1触发原behavior_regression/training_failure停止；本轮40级门禁20/20、19/20、19/20合58/60，flat15/15。V仅300更新、R及最终300例未做，最终目标未完成，不能用40级课程门禁替代最终验收。
+
+实际CPU只读验证：schema9/contract/source closure、94源/22测试/30文档/3observer/28旧测试全177项当前hash一致；1583个4818..6400连续commit及SHA完整；45Adam状态均128000步、模型参数有限、累计learning与result一致、预算审计true、源a419不变、stop模型SHA30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2。训练与observer PID均已退出，无error.json，CUDA未初始化，exit0。正式新PPO1583/31660Adam/38903808control/155615232physics；64评价1680例actual1138630control/4554520physics，useful1114286、extra24344control可复算。账面6400/48000、含旧lost100的formal_billed6500/48100；剩余额度不授权越过终态。
+
+原result/checkpoint中lifecycle_state=running及旧retention.enabled/pending字段仍残留；审计明示它们与实际终态不同，以stop.json/terminal/ledger_stop_state、当前retention schedule和进程退出为准，未篡改原始字段。普通终态不自动恢复，未清告警/改配方/续训；未测最终目标/实机，完整eval RNG隔离仍Q008未建立。后续仅补最终工作报告并按既有授权推送专用分支。
+
+
+## 2026-11-18T03:41:05+08:00 — 补完整正式终态工作报告与公开摘要
+
+修改docs/a2_v07/WORK_REPORT.md和VALIDATION_SUMMARY.json，按FINAL_FORMAL_AUDIT实际证据补6400 H00连续告警停止、阶段更新数/门禁/保持表、费用、模型SHA、原LR自适应变化、进程退出和177项hash核对。明确执行结束但最终目标未完成：V300、R0、每速100例未做；不以L40双60/60替代最终验收。公开摘要将training_complete解释为执行已终止，并另显式execution_terminated=true、target_achieved=false、curriculum_complete=false，避免混淆。补原legacy lifecycle/pending字段限制及禁止普通终态自动恢复、Q008和资源采样范围。仅报告/摘要修改，未更改生产源/奖励/PPO/控制或原结果，未跑新GPU；文档事实来源CPU审计与原件，最终公开副本核验/推送待下一步。
+
+
+## 2026-11-18T03:42:12+08:00 — 最终结果报告发布准备
+
+持续修正文档发布时态，最终只刷新既有白名单中的WORK_REPORT.md、VALIDATION_SUMMARY.json、codex_changes.md及PUBLISH_FILES.json，训练源码/测试/冻结合同/独立验收快照不改。保留既有175项payload清单且逐项SHA重算、自身hash排除；将对公开副本与冻结闭包、显式暂存diff和凭据模式作核验后，以专用codex/a2-v07-d22-curriculum普通追加提交/push。此条是准备记录，实际提交/远端核对结果待操作后另追加，不冒称已完成。独立终态报告核对正在进行，未重开GPU或训练。
+
+
+## 2026-11-18T03:49:03+08:00 — 最终报告发布副本实际核验
+
+新增coordination/PUBLISH_FINAL_PREPARATION.json记录实际175项白名单哈希和149冻结公开文件逐字节一致、源码闭包未变、凭据模式扫描0发现；仅4项报告相关差异。git diff --check通过，公开摘要回读与FINAL_FORMAL_AUDIT的终态/1583新PPO/64批1680例费用、模型SHA、未达最终目标标记完全一致。活动分支仍main/42d4a1152e54af5584cf709bf5f679b06da808a1，独立发布工作树未改活动HEAD。接下来仅显式暂存该4文件并记录PUBLISH_FINAL_STAGED.json，独立终态事实复核完成后普通追加提交/push；当前尚未完成最终报告push。
+
+
+## 2026-11-18T03:52:44+08:00 — 最终事实报告独立限定PASS与提交前确认
+
+原独立reviewer /root/c1_reviewer实际只读复核终态stop/terminal/result、6200/6400 H00原始病例、L40/V关键门禁、1583连续提交和64评估费用、唯一stop6400 checkpoint/45Adam及遗留字段后，返回限定PASS、实质不一致0。coordination/FINAL_OUTCOME_REVIEW_RECEIPT.json为根忠实转录的回执，明确非reviewer自行落盘签名，不伪装成重新源码/旧211证据准入；输入WORK_REPORT SHA397361eb3772722521ce63e943743db1db3fc289169e6fab6ecc7d87bd699ebb、摘要SHAcdb88f6bd5cdfa91813124fe575e546c3991a98e1ac2081c3350e7163db62245、最终审计SHA6fbc8410ce22666465c123290fdfea32d95cbaf57cef947fc67c50713eef14c9。reviewer未写共享日志或GPU；根保留已审报告和摘要原字节，仅刷新本日志/PUBLISH_FILES。
+
+接下来coordination/PUBLISH_FINAL_STAGED_v2.json记录最终四文件/树哈希、重复凭据模式扫描和diffcheck；只向已授权专用分支普通追加报告提交/push，无权重/raw目录/源码变更。实际远端结果待推送后另记，当前不是已推送结论。

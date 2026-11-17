@@ -7,8 +7,8 @@
     "doc/sds/SDS_A2_Stairs_v0.7_D22_CautiousCurriculum.md": "303ae40a5c5e3fe82f9f0df3aae8d153136e016439087c8db9701aeb17197aca",
     "docs/a2_v07/ENGINEERING_WORK_REPORT.md": "519de6e85b9ee23722734991c8a19c7c51f3c1d224d9d0753d39d823f5544f40",
     "docs/a2_v07/PUBLISH_CHECKS.json": "d163ddd4813ccc87aecf4d01be167b9c54edaada8539be143ce7994ff2ca988d",
-    "docs/a2_v07/VALIDATION_SUMMARY.json": "7bd4e605dcc7d28e96967a0a657383d0d11be723be4948b0630753c713f8cdea",
-    "docs/a2_v07/WORK_REPORT.md": "b8d43a23d881cf61618652c038450c002b55980df775ed25df5e5aaeb8e3f9d6",
+    "docs/a2_v07/VALIDATION_SUMMARY.json": "cdb88f6bd5cdfa91813124fe575e546c3991a98e1ac2081c3350e7163db62245",
+    "docs/a2_v07/WORK_REPORT.md": "397361eb3772722521ce63e943743db1db3fc289169e6fab6ecc7d87bd699ebb",
     "logs/a2_ideal_stairs_v06/implementation/coordination/Q001_v06_decision.md": "5f3f2aa397fb5cf5ce286788e76384e8b19914c758e0ae29e50a67aa4d71a4b1",
     "logs/a2_ideal_stairs_v06/implementation/coordination/Q001_v06_interface_and_airtime.md": "d4422224403f78f3151bcef8e24f39644bbfe346f896e4daade75f02ffd1c84a",
     "logs/a2_ideal_stairs_v06/implementation/coordination/Q002_v06_decision.md": "3ebc7441f9be457cb135846366fe23926d02ec69e2232e0502d6c318ce5ccd52",
@@ -61,7 +61,7 @@
     "logs/a2_ideal_stairs_v07/implementation/freeze/v2/V07_SOURCE_FREEZE.json": "f9f67f08a7120b479ed6dfe3dd9916df2c8492ee1e6971d72f807da60f890aa1",
     "logs/a2_ideal_stairs_v07/implementation/run_engineering.py": "9088ee0f3f47d3c6d95178dee1dea16556ff67ba86ef42a55830296f7545edf0",
     "logs/a2_ideal_stairs_v07/implementation/run_v07.sh": "47b8f7c3f9b91a1c2fb169f53f0744c18edf03fad332af8a9182fc57c8e104fe",
-    "logs/codex_changes.md": "7c4563e0c7157c32bdfe24f67faa53d27bf95deb66648b83c155e505e69207b5",
+    "logs/codex_changes.md": "11e9e18e90e9defc098c06ac95272ea2049f83105260a375a0d8979480f71c1a",
     "scripts/a2_v07_bootstrap.py": "4ed3fa07d90f04760a4ae4dc9ab1267c4e7ffdd17825b7a6cc76c8727632f8a4",
     "scripts/evaluate_a2_ideal_stairs_v07.py": "a87c0e1c88856ffdd4ef6e1c4ff36f0bcaf17d1e33cd96a3501ed9795bff1d93",
     "scripts/run_a2_ideal_stairs_v07.py": "a4ba59e28c99809177984f5985212dd2f6d0ff737f23f0400f07f0ea561cfd16",
@@ -183,5 +183,7 @@
   "schema": "a2-v07-publish-files-v1",
   "self_path": "docs/a2_v07/PUBLISH_FILES.json",
   "self_sha_excluded": true,
-  "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a"
+  "snapshot": "Final formal outcome at update6400; source code and accepted closure unchanged.",
+  "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a",
+  "updated_at": "2026-11-18T03:52:44+08:00"
 }
