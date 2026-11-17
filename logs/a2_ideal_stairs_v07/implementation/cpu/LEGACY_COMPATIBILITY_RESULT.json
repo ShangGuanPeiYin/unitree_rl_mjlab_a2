@@ -1,0 +1,28 @@
+{
+  "schema": "a2-v07-legacy-compatibility-result-v1",
+  "command": [
+    "/home/xxs/anaconda3/envs/a2/bin/python",
+    "scripts/test_a2_ideal_stairs_v06.py",
+    "--pattern",
+    "test_v06_*.py",
+    "--maxfail",
+    "0"
+  ],
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "2",
+    "MKL_NUM_THREADS": "2",
+    "PYTEST_ADDOPTS": "-rs"
+  },
+  "started_at": 1794923942.1884377,
+  "duration_seconds": 1228.7273626327515,
+  "exit_code": 0,
+  "final_summary": "summary   : collected=587 passed=587 failed=0 skipped=0 errors=0",
+  "log": "logs/a2_ideal_stairs_v07/implementation/cpu/full_legacy_v06_compatibility.log",
+  "log_sha256": "52189e6f5f91c01f1e2073947faf6894526958b8326c5abbeff2d507a665d894",
+  "source_files": 97,
+  "test_files": 28,
+  "changed_files": [],
+  "old_source_unchanged": true,
+  "new_native_source_frozen": false
+}

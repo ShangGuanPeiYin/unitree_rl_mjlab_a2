@@ -1,0 +1,32 @@
+# Q007 跨源码受限恢复桥清单（保持集协议修复 + update400 任务迁移）
+
+- Q005 裁决 SHA256：`0159b03296ae078c96d6fd32851e736ce97a5119a89475b6bc4d85004464cb2d`。
+- Q006 裁决 SHA256：`798a7cf4603fc50abbe6a83c30e20680fb884824c7cccddb78679bc698d5bd09`；Q006 勘误 `f3c64d2e81e06d1c0d0a8c5c71476f08e50849e82c98b791a542b8f9339e5c3c`。
+- Q007 裁决：`logs/a2_ideal_stairs_v06/implementation/coordination/Q007_v06_decision.md`，SHA256 `567df511509ee7414f113432be3b55f34e47655a4da53e7e16ffd2e72887a48f`（54 行）。
+- Q007 勘误：`logs/a2_ideal_stairs_v06/implementation/coordination/Q007_ERRATA_source_and_migration.md`，SHA256 `db1952c6e2c5d4dfc2946c0eade78ea818708003834e80f6c7df209adb3a9bde`：恢复源更正为 `exception_000400.pt`，不是 `boundary_000400.pt`。
+- **指定恢复源**：`logs/a2_ideal_stairs_v06/train_seed42_trial02_resume_000100_q006/checkpoints/exception_000400.pt`，SHA256 `50e939963e7986477f7f9472daa9e1bf527f11b08d11c67d957a1af7092492b5`。
+  - 该容器已完成 PPO 400（Adam 8000；控制样本 9,830,400；子步 39,321,600），learning_rate=`0.00011390625000000003`；stop_state=None、lifecycle=running、pending_update=None、incomplete_update=None；pending.results 含 400 validation `0ccaa01f4161fa1006d49e41cb8bec298e68bd6c76a7f3d9bb195de603e45fd7` 与 diagnostic `d7468056efc6ef8911fa26736a430f16a2d68b4717c22640a150e146e1b6caf8`，gate.records 含 400 通过。
+- **绝不作为恢复源**：`logs/a2_ideal_stairs_v06/train_seed42_trial02_resume_000100_q006/checkpoints/boundary_000400.pt`，SHA256 `2a81110d588e5822eded1029f6a4180a6f78a6fa58c0231c65e360adaf4f3097`（评估前对照，pending.results=[]、gate.records 无 400；桥梁/普通恢复均显式拒绝，字节未改）。
+- 旧 checkpoint 内 `source_closure_sha256`：`68e71f27292f223dc9332300f52a638358507291c9c0e0a3e8632e884c7e0e56`（Q006 段修复后闭包；对象/算法为 `recovery.source_block()` 对 `spec.source_hashes()` 映射做 canonical JSON SHA256）。
+- 新 Q007 修复源码闭包：`ebec92ba8f9c48a1ae15b1a72a067500a183098748eeff2631ee4c484ab4be60`（91 个条目；恢复时重算并写入 receipt）。
+  - 关键模块 SHA256：
+- `runner.py`: `e05fb74b7bdd137e95c6050c69df936c5b9977f9bca4861fd8daaebd6065af0c`
+- `recovery.py`: `7294a9812947464ae88d18c5d86566056816c9051f9a16f36f3d31716fe8494a`
+- `evaluation.py`: `af82b8092bc88708c4d8cdd43f33930a0d59c487b36122f79283802b78b28588`
+- `model.py`: `1fc186ff464db9e39d65c76256a72214dd6b54802a9f0218203609482fdaaae1`
+- `orchestration.py`: `7ca34d8ee49bd842985fbf73282089e5506502809732843415cf2ccfc1d78de7`
+- `ledger.py`: `cb5054f0db76e531e002e0c7bb9f642ef11f33023ed8d2bf3c4307f12172364c`
+- `spec.py`: `4866b11f749cbdbf296ac34a5579fded219f0bc1c2cb6c964637ccdf7e5e009d`
+- `scripts/train_a2_ideal_stairs_v06.py`: `a80fc7ee0e84a6beb7928ba1dec46286efda2e6b0124f990fd875941267e5e33`
+- `tests/test_v06_q007.py`: `356320c60499281ed89452f71c227bea2a0496da42d12148ba3368c041fcc97e`
+- `tests/test_v06_retention_targets.py`: `5f6d58918b51ec6ecc48afcd9979f0e442acc8e2cdce1b7ac6904eb6a09f6ce3`
+- **一次性未完成任务迁移（Q007 §4）**：仅 `exception_000400` 的 pending flat 任务（旧 tile=1、旧表 SHA `afb64ce64395297bd73ea3a842b1c8a9ecc1ae7fce97d0fe888cbf60cfecc5eb`，标 `protocol_invalid` 保留）→ 新 tile=0、新固定 flat 表 SHA `4a887682e0257fa04cc7707a87ea18656ad2c7f1c5169335f0d66adf695da627`（冻结代码按 seed42、0.3/0.5/0.8、standard 出生 x[-1.1,-0.9]/y±0.05/yaw±5° 生成，F0 500 步/净位移≥5c−1e-9/|y|≤0.20/|yaw|≤10°）。
+  - 旧任务、新任务、新表完整内容、替换理由和 Q007 SHA 写入追加清单 `logs/a2_ideal_stairs_v06/implementation/Q007_task_migration.json`（plan_sha256 `298f76a6ef98921f79b690301f7355098b2fdaf82346cd4993b83f27c644f085`）与运行段 `recovery_q007/task_migration_000400.json`，均在执行 15 例前完成。
+  - validation/diagnostic 任务与 gate/diagnostic 记录、streak 原样继承，调用次数 0、不重放；仅未完成 flat 任务被替换；新 checkpoint 二次 load 不再迁移/不计双。
+- 恢复语义：`resume_contract(..., allow_bridge=True)` 只接受上述 exception SHA 与旧闭包；boundary400 被显式拒绝；其他来源/未知 hash/已完成错误任务拒绝；新代码合法保存的 checkpoint 在同一冻结源码下正常二次恢复，无需 `--allow-q007-bridge`，不伪造旧 SHA。
+- Q007 段：唯一新目录 `logs/a2_ideal_stairs_v06/train_seed42_trial02_resume_000400_q007`（必须不存在才创建）；run 身份 `trial02`、segment `trial02_q007_resume_000400`；元数据 `rollback_from_update=400`、`resume_from_update=400`、`lost_updates=0`、`replay_billed_updates=false`、`replay_pending_evaluations=true`。
+- 恢复事务（Q007 §4）：load → 迁移清单落盘 → 原子保存并正式 reload 验证 `resume_loaded_000400` → 仅执行一次 flat 15 例 → 一次课程决策（原晋退/预算/停机规则）→ 保存并验证 `resume_ready_000400` → 允许 401。保留 exception 自身完整 RNG（含 CUDA 记录；记录其与 boundary 不同，不拼接、不声称全状态一致）；当前 lr 用 checkpoint 的 `0.00011390625000000003`。
+- CLI：`--allow-q007-bridge`；`--allow-q005-bridge/--allow-q006-bridge` 旧语义保留。默认输出段 `train_seed42_trial02_resume_000400_q007`。
+- 成本（Q007 §5）：活动分支 cap 30000，已消费 400、剩 29600；累计正式上限仍 30100；公式 trial01 损失 50 + Q005 丢失 50 + 活动分支最多 30000（原 trial02 前 100 已在活动分支内，不另加）；当前实际累计 500（活动 400 + 两项损失各 50）。台账 `logs/a2_ideal_stairs_v06/implementation/Q007_cost_ledger.json`（`Q007_cost_ledger.json`）。
+- 实际 diff 范围：保持集 target_tile/速度/出生/步限与判据修复、`_due_tasks`/`run_gate`/待重放目标统一、Q007 源+单任务受限迁移、pending 结果检查点持久化、loaded/ready400 与 RNG 证据保留、Q007 台账；未改奖励/PPO/课程/门禁速度/seed/资源限额。
+- 独立验收 SHA256（D 填）：`0658f4a1e5232728a0037aff7b510107de16ab3522008454b95f658ee722007b`（= `logs/a2_ideal_stairs_v06/implementation/V06_IMPLEMENTATION_ACCEPTANCE.md` 第 11 版报告正文 SHA256；结论 accepted，blocking 0）。

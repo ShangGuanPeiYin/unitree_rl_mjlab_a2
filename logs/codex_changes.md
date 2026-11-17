@@ -2532,3 +2532,318 @@ GitHub：本机既有gh keyring完成实际push，远端分支codex/a2-c1-contin
 涉及docs/a2_v06_c1/WORK_REPORT.md、STOP4817_REVIEW.json、PUBLISH_CHECKS.json、PUBLISH_FILES.json；implementation/stop4817/独立与执行MD/JSON永久副本；本日志。STOP4817_AUDIT.md原SHA91ce3c7b216359d52ac291b7a68691c3450a88c2c4dc44770bfef8a51a193cdf保持不再改。
 实际修改与理由：主汇报首段改为4817已停止，明确4263为历史快照；补593新增成本、D20两窗快退/D25四窗慢EMA、停止完整性边界，避免用户把早快照当当前运行。复制独立事实复核原字节SHA52b23903bcee31fe80197a2c2ca06f58ac976dc7385bba0de767faabe15ca464，accepted=true/blocking0，只批准文档准确性。独立原审计MD af00f088fa5ce9a4e926230e0afe7b30b06386dd154c34ac4454bda7fa227594 / JSON59188d250ff7e49c23007441643e7e0b9f7b069a25aca176002944bb7380e5e9，执行MD d24ee704d5b339001a296e7d8b2c1b7354849d5d4ac79c1b69add6a0c510a071 / JSON752e926f92a886c8fbc2204f62e1db6e7a48bde8eeb73ab2ed01f7f4db75c50e均保存副本。
 验证：独立最终窄审事实、4窗证据等级、24评估成本、sampler两个SHA与遗留pending均吻合，无不准确项；无新增pytest/仿真/训练/源码改动。仅将六个最终文档/日志变更提交到已授权同一分支，不合并main；正式停止终态不解除，候选规则未实施。下一步实际push并远端核验，结果再记本地日志。
+
+
+## 2026-11-17T20:05:41+08:00 — GitHub最终推送核验与停止审计交付
+
+涉及implementation/PUBLISH_RESULT.json及本追加记录（本地执行结果，不再为自引用结果无限追加提交）。实际push exit0，远端refs/heads/codex/a2-c1-continue-20261117=bf3036672349b30ee953b7697d843f000df54035；GitHub实际commit API tree=e827c921234a11f7a1b96ac8941aa79ba3574bbe，等于本地已审暂存树。父实现commit1cdcf1ac71dccac04700adc5aacfcad529eedc18；最后提交仅6文档/日志文件，源码与已验闭包完全不变。没有force、main合并、权重上传或全局认证修改。
+停止审计报告SHA91ce3c7b216359d52ac291b7a68691c3450a88c2c4dc44770bfef8a51a193cdf及独立事实复核SHA52b23903bcee31fe80197a2c2ca06f58ac976dc7385bba0de767faabe15ca464已随最终分支发布。当前训练在4817原规则终态；未解终态、未改规则、未重启。原始停止文件与checkpoint保持原SHA。工程验收通过与训练目标未完成分开汇报，最终40级300例未执行。
+
+
+## 2026-11-17T20:19:58.943462+08:00 — v0.7 SDS落盘与A2upstairs执行交接准备
+
+- 目的：落实用户批准的新增D22、谨慎退级及扩大预算方案，交给A2upstairs实施。
+- 文件：doc/sds/SDS_A2_Stairs_v0.7_D22_CautiousCurriculum.md；logs/a2_ideal_stairs_v07/implementation/coordination/V07_EXECUTION_PROMPT.md、V07_HANDOFF_MANIFEST.json。
+- 实际修改：仅新增SDS及交接文档；SDS来自已批准方案原文，仅将当前状态更新为用户已批准执行。未改生产代码，未启动仿真/训练。
+- 计划关键差异（尚未实现）：D25→D22→D20；新增1000更新保护；D/L改正式评估三次低成功且无明显改善才退级/最低停机；D预算6000/6000/9000，总预算36000→48000；奖励/PPO不变。
+- 设计理由：减小踏深跨度、提供新难度学习机会、避免慢EMA造成早停。
+- 验证：SDS提取完整性及关键字段断言通过，SDS SHA 303ae40a5c5e3fe82f9f0df3aae8d153136e016439087c8db9701aeb17197aca；stop4817源SHA实算匹配。生产测试未执行，行为改善未验证。
+
+- 2026-11-17T20:21:01.074641+08:00 交接补充：已通过Codex线程工具向A2upstairs成功投递SDS与执行提示词，新增V07_DISPATCH_RECEIPT.json；SDS二次SHA一致。最新可见执行线程配置：{'turn_id': '01a1e973-8d9e-78e3-be49-1f274d65db70', 'model': 'gpt-6.1-sol', 'effort': 'high'}。工具投递成功不等同实施或训练完成，实际验收与正式启动等待执行方回执。
+
+
+## 2026-11-17T20:26:35+08:00 — v0.7接单、授权核验、前置冻结与分工
+
+目的：按用户批准SDS303ae40a5c5e3fe82f9f0df3aae8d153136e016439087c8db9701aeb17197aca实施新D22/谨慎课程/48000预算，先保护旧C1与无关工作区。
+涉及logs/a2_ideal_stairs_v07/implementation/before/BEFORE_MANIFEST.json、before/source/97源+28测试实际副本、git_status.txt/git_diff.patch、INITIAL_RESOURCES.json及coordination/GLOBAL_CONSTRAINTS、TASK_A/B/REVIEW_BRIEF、PROGRESS.md。
+实际内容/理由：只读核原始用户4506和4552均role=user，本线程实际gpt-6.1-sol/high；源stop4817 SHA a41963a8...e076e64精确一致；旧C1冻结97源/28测试逐项SHA一致，保存源/stop/control等原件SHA和当前所有修改清单。A负责native版本/geometry/env，B负责policy/recovery/runner，shared spec单owner、namespace先交接后并行；reviewer独立。根统一修改日志，避免并发覆盖。发布按已授权专用worktree，不切训练目录。
+验证：前置哈希检查实际通过；资源脚本检测16逻辑/8物理CPU、RAM可用18.78GB/disk452GB，RTX3070Ti8GB整卡1080MiB、compute app为空。未写v07生产代码，CPU/GPU正式验收及训练效果均未验证，未启动旧C1或正式学习。
+
+
+## 2026-11-17T20:28:37+08:00 — v07代理配置与技能台账
+
+新增coordination/AGENT_DISPATCH.json并追加PROGRESS.md，创建.superpowers/sdd/本SDS专属忽略目录及progress指针。目的：记录根实际sol/high与A显式spawn、B/reviewer复用配置，防上下文压缩重派；主进度唯一来源仍coordination/PROGRESS.md。技能默认禁止并行implementer与模型tier建议按用户SDS的A/B+独立全sol/high安排覆盖；单文件owner不变。仅协调元数据，无生产行为变更，未执行训练/CPU/GPU验收。
+
+
+## 2026-11-17T20:30:56+08:00 — v07执行A行为测试首批与课程排序接口
+
+涉及tests/test_v07_spec.py、test_v07_terrain.py、test_v07_environment.py；协调PROGRESS.md。目的：先以独立手算锚点验证新D22/native版本预算和23tile真实接线，防物理ID22被当最终课程。实际新增测试覆盖旧0..21 TerrainSpec值保留、D22碰撞ray/解析高度/map/contact索引、0.3/0.5/0.6超时1828/1297/1164、2.12成功位置线和CPU真实tile22环境。A生产文件未改，测试此刻尚未运行，等待B namespace交接，不声称通过。A/B已确认接口CURRICULUM_TILE_ORDER不含flat=(1..17,22,18,19,20,21)，PHYSICAL_TILE_COUNT=23、FINAL_TILE_ID=21，B role_tiles消费A spec排序；不是自行改变配方。
+
+
+## 2026-11-17T20:32:21+08:00 — v07独立namespace骨架及bootstrap RED/GREEN
+
+执行B新增src/tasks/velocity/v07/下21普通模块的机械派生、scripts/a2_v07_bootstrap.py、tests/test_v07_namespace.py及cpu/b_namespace_red/green.log；未复制C1激活/runtime/migration，删除v07 spec尾部C1激活路径，架构保持v06-route-state-v1。目的：建立独立版本，不通过先激活C1再覆盖常量运行。此时spec其余仍旧机械值，由A原生化，不能称v07合同已完成。
+验证：根实读raw日志，namespace两个行为测试先因缺bootstrap失败2项，随后2 passed/0.06s；验证旧任务包不隐式导入和已正常加载任务根不被替换。未跑完整CPU或GPU。B将spec/terrain/env_cfg/env/map/contacts/events/speed8文件正式交A单owner，后续B不改，根已通知A。
+独立reviewer提出首/二load是否继承已接受C1额外初始化语义未逐字明确，根已转主决策裁决；未擅自改seed或回卷RNG。64窗证据持久化与晋退保存失败后的幂等恢复作为B必要验收重点，非新增配方。
+
+
+## 2026-11-17T20:32:44+08:00 — v07恢复初始化主决策澄清
+
+新增coordination/V07_RECOVERY_INITIALIZATION_RULING.md并追加PROGRESS.md。主决策明确确认restore_checkpoint_rng→原schedule一次→原PPO reset一次，允许变化槽重复初始化额外随机消耗，禁止seed/回卷/拼接，不称位精确。首迁移gen72→73一次，后续load保留保护进度/退级队列/保持时钟；首二load四时点RNG、reset槽次、缓存与状态完整性必须实测。新文档SHA1f84b142b70cc952eeca6e0a630f76d5d28f3d3b542cf2bcf5084d19be94a3cf将绑定最终验收，不改原SDS303ae40a…；当前仅澄清记录，未改生产代码或执行GPU，实际恢复效果待验。
+
+
+## 2026-11-17T20:34:32+08:00 — v07执行A native合同与D22地形首轮实施
+
+涉及A owner spec.py、terrain.py及env_cfg/env/map/contacts/events/speed版本接线，均在src/tasks/velocity/v07；对应tests/test_v07_spec/terrain/environment。实际修改：schema9、code0.7.0、新recipe；D子预算6000/6000/9000、D21000/全48000；训练/评估速度沿C1不变；追加物理D22=22、FINAL21、23tile合法范围与.22深度，独立课程难度序；env几何表非法ID的>len修为>=len，仅v07允许新增tile。设计理由：物理编号稳定、final不取最大ID，geometry/heights/collision从同表派生。
+验证状态：A报告原文A_RED_01.txt为10failed+2setup errors(exit1)，不把setup errors计作行为验证通过；native import现场exit0。GREEN与完整CPU/GPU仍待执行，根未据此宣称通过；奖励/PPO/原出生与物理终止未改。A/B待script源码闭包与新policy config接线；恢复补充裁决SHA1f84b142…已通知两owner及reviewer。
+
+
+## 2026-11-17T20:36:52+08:00 — v07 A局部GREEN与独立接口预审
+
+A本批涉及native spec REGRESSION_POLICY_CONFIG合同配置、FROZEN_DOCUMENTS恢复补充裁决与真实旧Q001..Q004文档路径、v07实际入口源码清单（B提供6scripts/continuation_v07/runtime/regression_policy/evaluation_records），对应spec/terrain测试。首轮误将规范文档名机械替换v07导致A_RED_02 exit1，已恢复真实只读规范路径；局部spec+terrain A_GREEN_02实际11passed/0skip/0error、4.01s exit0。首GREEN_01另有1failure是独立float32夹具1.32+.8与字面2.12舍入不等，改测试float64核数学线，未改生产终止；原失败保留，实际CPU环境边界尚待进一步说明/独立审。
+A CPU env测试到step遇继承Warp全局默认cuda:0与CPU contact_frame不匹配（A_ENV_GREEN_01 1failed1passed exit1）。根明确只按此前C1 CPU环境隐藏CUDA重跑，保留原日志，不patch contacts、不称GPU证据。
+Reviewer新增coordination/REVIEW_PREFLIGHT.md SHA db1d14f0a3010506c916b026dd84fa807dcb2bfd15eb5728e1b232fdfa59c1ba，实核完整SDS/源4817/Qv07-001三SHA，指出64窗原行持久化与跨gen晋退恢复原子性需实现验收；1000保护不是宏累计、5000/5100可早晋级、坏队列最早5900/6000/6100及32883可新增上界已明确。只读预审，不是最终accepted；未写产品或执行者测试，无GPU/正式学习。
+
+
+## 2026-11-17T20:38:40+08:00 — v07启动输入脚本与局部接线进度
+
+主协调新增implementation/run_v07.sh：显式seed42/cuda0/512+8/rollout48/epochs5/minibatches4、速度两端[.3,.6]、总48000/D21000、原PPO断言及save100/diag50/gate100，唯一stop4817+SHA、独立验收、固定v07 manifest/新输出目录；默认不学习，仅预检，待全验后根加--execute。入口/参数名已由B明确确认；实际脚本预检与GPU尚未执行，不声称可启动。CLI初始lr3e-4仅校验配方，实际Adam lr7.59375e-5必须恢复。
+A批次4真实CPU env在隐藏CUDA后2passed/6.25s（A_ENV_GREEN_02），原device失败保留，未改contacts。float32数学夹具与实际tile22线：独立1.32+.8为2.1200001239776611，而实际N*d为1.3199999332427979，实际line=2.119999885559082，字面2.12通过、下一小浮点不通过；证据A_FLOAT32_BOUNDARY，未改原终止逻辑。新增geometry_routing测试先发现B evaluation以<=FINAL误拒tile22，B已按真实物理表改路由，报告6pass。
+B排序接口局部8pass（b首green因patch定位未应用仍失败，真实green2为通过，旧失败保留），不把前失败日志当通过。完整相关CPU/GPU/恢复仍待统一冻结验收，无正式学习。
+
+
+## 2026-11-17T20:41:20+08:00 — v07执行A限定交付与审查包
+
+A新增coordination/TASK_A_REPORT.md、A_OWNER_SHA256.json，根生成TASK_A_REVIEW_PACKAGE.diff（8owner相对实际冻结C1基线与4新行为测试完整差异，含SHA）。A限定功能已完成；11 spec/terrain+2真实CPU env+6 routing分项合计19对应GREEN，不误称单次19项完整套件，B role8另列。source静态闭包此刻84路径，但B3模块/5scripts尚pending，不能称最终source freeze已完成。
+设计/验证：原0..21值保持、D22追加/解析碰撞/23数组与真实CPU命令场景、native48000统一合同、float32实线与数学夹具区别已报告，失败原文保留。A暂停重CPU/GPU并等待定点review；root交独立reviewer核spec compliance和质量，正式完整CPU/GPU及训练效果仍未验证。新增材料属执行与审查证据，不改原C1或原停止终态。
+
+
+## 2026-11-17T20:42:49+08:00 — v07 worker/工程脚本单owner再分工
+
+新增coordination/TASK_A2_BRIEF.md并追加PROGRESS.md。目的：A地形限定任务完成后并行承担worker与五stage实际工程协议，让B专注谨慎退级/恢复事务；SDS范围和模型配置不变。B明确尚未创建/改两脚本，现train_a2_ideal_stairs_v07.py及validate_a2_ideal_stairs_v07.py与其tests交A独占；B不再编辑，其余入口/runtime/migration仍B，根工程观察器/启动脚本不变。说明真实D22 smoke、56probe、双load、45baseline、30保持的路径/成本/资源接口，GPU统一冻结后才执行。此步仅任务brief，未改配方或执行GPU，A2尚未验证。
+
+
+## 2026-11-17T20:46:07+08:00 — v07原生隔离发布工作树请求
+
+SDS7.3明确要求独立worktree发布，工具发现当前已提供原生create_worktree，因此优先使用而非手动git worktree。只读inventory确认无合适v07树、远端专用分支不存在；以已发布C1最终bf30366为基底发起native async创建，operation591ca6b7-de45-4ef6-8b83-e4f090cb4bd1，状态pending，不重复创建。新增coordination/PUBLISH_WORKTREE_PENDING.json并记进度；活动项目checkout保持原处，未拷源码/暂存/上传，不将pending称创建完成。
+
+
+## 2026-11-17T20:47:29+08:00 — v07隔离发布工作树完成（原生工具上下文回退）
+
+原生worktree async操作返回任务入口不是Git仓库错误，未返回路径；git inventory确认未部分创建，不重复native操作。SDS明确授权独立发布树，故回退git worktree add，以bf30366创建/tmp/a2-v07-publish-20261117、专用分支codex/a2-v07-d22-curriculum，exit0且HEAD正确。更新coordination/PUBLISH_WORKTREE_PENDING.json为native_failed_cli_created并记PROGRESS。活动项目main/旧C1发布树/pointcloud均不切换、不覆盖；尚未拷v07源码、暂存、提交或上传。仅Git发布元数据准备，无训练配方变化。
+
+
+## 2026-11-17T21:01:37+08:00 — v07局部审查/工程协议与原配方数值对拍
+
+A1独立审计新增coordination/TASK_A_REVIEW.md SHA95e63571542276b57c5ba90696ef3a492574bf4ae7f7ea05bcd1bb43512d015b：规格与质量限定PASS，确认缺陷0/A1 blocking0，原97源28测试/8保全件SHA、A8文件/4tests/85KB diff及3局部GREEN日志已读；不作全v07放行。
+B03新增v07/regression_policy.py、tests/test_v07_regression_policy.py、tests/v07_test_support.py，实现完整60首records+三SHA/当前model/optimizer/source/任务身份验证，保护999不入队、相邻100的rolling3低成功与Δ6改善、exact事务重放/冲突拒绝。局部b_policy_red24failed→green24passed/11.60s，manager/schema/事务尚待；根生成TASK_B03_REVIEW_PACKAGE.diff供独立审，不以纯policy通过代替生产runner。
+A2新增两worker/validate脚本及test_v07_worker/test_v07_engineering_protocol，先13RED缺入口，后14pass2deselected（B迁移模块未齐）如实保留；现完整16passed/20.50s、0failed/skipped/errors/deselected。D22 smoke、56probe真实50诊断15records、双load单次入口、45baseline/30保持、每批资源与actual/extra物理成本/三SHA持久接口齐。CPU15sidecar夹具非物理回合，最终改4槽3步+1槽8步每批，60首/120actual/60extra更贴真实等待；旧不一致夹具45/120/75日志保留。根生成A2完整差异包，实际GPU均未执行。
+根独占新增tests/test_v07_recipe_parity.py，目的：SDS要求奖励/PPO不变的独立数值对拍。18帧4槽全部奖励项非零/状态/部分reset/失败优先与冻结C1真实路径逐项相等；GAE含timeout手算锚；两版真实ActorCritic相同输入/RNG下整20Adam，45非空Adam状态、参数和全部梯度/损失诊断逐项相等。仅CPU synthetic数据无env.step、无源checkpoint修改/正式计费，CPU计算不是GPU工程58更新账。首run collection因旧fixture再次激活bootstrap拒绝native namespace而error；改独立Tensor输入/真实models、不mock或放宽bootstrap。第二run2pass1fail仅测试漏预期optimizer_initialized=True，修为完整字段/45状态step20；第三run真实3pass/9.01s。所有原失败保留，生产计算路径未改。
+A/B确认最终旧v06/C1与v07完整套件各用干净进程，保持旧bootstrap守卫和原文件不改；不为方便混合收集扩大新行为。完整同freezeCPU/GPU仍待，未声称训练效果改善。
+
+
+## 2026-11-17T21:12:36+08:00 — v07工程双load观察输入与B03独立恢复一致性finding
+
+根新增implementation/run_engineering.py，仅source-reload增强两个真实512load观察，第一套close/release/empty_cache后才建第二套；其余4stage原样交A2生产validator。沿已批准RNG顺序不加reset/seed，观察阶段/_reset_ids后只记快照，不修改模型/PPO/课程结果。固定检查D25/gen73/phase_iter2117、角色102/164/123/123/合法tiles、命令、最终obs/reward/termination/history/map缓存、模型/完整Adam/normalizer/learning、空RP队列及5000保持时钟；深拷贝reset events防旧C1别名缺陷。observer_hashes须匹配最终freeze，执行前后都核；未freeze则拒绝。默认只plan/help，未GPU。语法已AST parse通过，真实help CPU导入日志root_engineering_help.log，实际双load尚未验证；runtime.py仍B WIP，因此不声称能正式启动。
+B03独立报告TASK_B03_REVIEW.md SHA274215013c9ad2cfb68cd087ffaef07538f37b369c523bd584dd693420eb1dad，对当前a38362d5…源而非旧包e0e…发现P2恢复state一致性blocker（1条合法坏eval本应continue，篡改last_decision为regress且伪3条counts仍validate/replay接受；及队列末key绑定不全）。只证明损坏恢复state可被接受，不声称正常producer已经产生此错。根按原SDS完整恢复范围交原B做R1，先保存当前快照/反例RED再修及相关GREEN、限定复审；不改阈值/配方，源码漂移与旧包区别保留。B拟去冗余可篡改动作缓存、duplicate只continue并全key绑定，manager跨gen事务仍需真故障测试，不能由设计文字代替。
+当前实际GPU与正式学习0，完整冻结CPU/GPU尚未执行；原C1证据与stop终态保持。
+
+
+## 2026-11-17T21:35:48+08:00 — v07两个限定R1关闭与窗口/原生恢复接线进度
+
+B03 R1：policy当前SHA c0ae8ca976501d4050f9377222b47f743c4d88c9d0c923dddee6cdaef208c8e4，去除持久化动作cache、重复只continue/duplicate无动作，last_applied与队列末完整6字段绑定，合法跨gen空队列保旧receipt。真实3反例RED后policy/manager/migration同批52passed/13.57s（根实读raw），独立仅限定轻量复核exit0，原P2已关闭、B03 blocking0；TASK_B03_REVIEW.md保留初审追加R1双限定PASS，新SHA471c6777cf9b52345ff364131fdf94a617d25470e7bd02a8c1bda44ff62c63cf。
+A2 R1：train worker在真实update50返回后、51前独立捕获模型/完整Adam/当前source-contract-task/主诊断entry并SHA绑定，55只消费该P50原件；strict生产首终态与case/env/tile/pose/command/outcome核验，合法失败不加成功门槛。原2反例RED实证；两次完整run17pass15fail为新CPU夹具签名和tiny.std接口错误，均保留日志且未放宽生产守卫；最终完整32passed/24.07s、0fail/skip/error/deselected。独立限定5项轻量消费者复核合法50→55与全失败正例、4种破坏拒绝，exit0；TASK_A2_REVIEW.md初审后追加R1双PASS，SHA8e720f6250a3932af11a6ba7ad52520bd5b2577315ff2d16a9a87a568d023815，F-A2-01/P2关闭/A2 blocking0（不是全v07放行）。R1限定diff804675dc8fbd60c9b87232b1236f8a4f9bcff15c31b08328e59eb3de8985022a，5文件SHA包d2d93306552391a83c0ae882ae9c780b903eb7918f8e623eaaab71c7d701ee6a。
+A1 spec仅必需依赖tuple追加window_evidence，原spec4a197353…快照保留，新6480567fdd3c6fd9265d102e54f742f56276c6f2e3b32cf9a9b60e89fabf2253，单行diff与before/after已独立通过；原A1包/报告不改，未重跑未变geometry。
+B06/07：新增v07/window_evidence.py及对应tests，把实际64原行不可变原子落盘置于FIFO pop/EMA前，sink失败不得消费；窗口10RED后首次9pass1fail是NaN夹具先canonical报错，修夹具后10pass/0.93s；与native首/二裸load同批11pass/20.34s。runner审计属性v07_initialization_audit、recovery/v07_initialization_004817.json、schema9顶层policy恢复已实际CPU接线，模型45Adam/normalizer/lr/计费和原source保留；两次真实512GPUload仍未执行。
+B课程事务目标：3RED后首GREEN1fail3pass为历史transition夹具计数，修夹具后5pass/67.14s；包括真实run自动exception→裸load续同poststate不重PPO/重apply、64文件落盘后报错恢复、最低子级新reason停机拒resume。root已实读原文但B稳定报告/完整独立审尚待，不能把5项当全恢复验收。普通无评估/无晋退不额外每update保存全模型，仍常规100；prepared/applied事务按SDS边界持久化，不新增训练配方。
+当前GPU/正式学习均0、最终完整CPU未执行，旧C1/源4817原件不变。
+
+
+## 2026-11-17T21:42:43+08:00 — v07外部control接线未定义问题上报
+
+B只读发现当前runtime继承C1尚未把control.json读取连接runner.stop_flag，原orchestrator同步等worker结束才read_control，pause只在返回后映射supervisor.status=stopped。根核真实代码并向主决策Qv07-002请求明确action=stop/pause/错误control的分类与可恢复范围，不擅改协议或为方便恢复放宽终态守卫；最终开训前须闭合。仅追加PROGRESS与本记录，无生产更改、无新训练；其余已定义实现继续。
+B另补SDS既定独立stop优先于课程处理，目标测试正在RED/GREEN；常规checkpoint100不改。runtime组合18passed/24.57s（真实bare模型/45Adam+RecordingEnv，不冒称512物理GPU），源evaluation/gate旧当前表移parent历史，新当代native表为空，原source/历史字节保留；端到端与完整验收仍待稳定包。
+
+
+## 2026-11-17T21:46:50+08:00 — Qv07-002外部控制主决策裁定落盘
+
+新增coordination/V07_CONTROL_PROTOCOL_RULING.md，SHAdad4580188773b0345f3f741b5f8a3d9f988652d7a257c8e2205dcd1d23adbd1，主决策两条原文约束完整保留，原SDS303ae40a…不改，进入最终验收绑定。允许最小外部control接线：continue继续，stop/pause均保存退出为user_requested_stop，pause reason=operator_pause且不自动恢复；有效请求锁存，reason/resume_authorized不能替action。坏JSON/结构/action/读取错误按ControlProtocolError工程异常保存退出，不计训练/监控失败，原control字节与错误证据保留，不异常写failed。原子写控制；入口pending前/每新PPO前/完整边界后轮询，不中断collect/Adam；当前更新完整计费，待评估不伪完成，既有终态不重写，命中后不resource/final GPU。
+当前仅落盘澄清与PROGRESS，未自改控制协议代码。B按已明确边界实施真实runtime→runner控制注入测试，独立同SHA验收后才允许正式学习；其它奖励/课程/预算保持。
+
+
+## 2026-11-17T21:56:29+08:00 — v0.7 独立只读监测与实测验证记录
+
+- 修改目的：按批准SDS将正式续训的提交计费、代际和D22/D20停留证据独立汇总；不介入训练决策或控制。新增 `logs/a2_ideal_stairs_v07/implementation/coordination/v07_observer.py`、`tests/test_v07_observer.py`；新增限定SHA清单 `ROOT_OBSERVER_SHA256.json`，持续台账同步追加。
+- 实际行为：只接受4817/a419指定首段与原生recipe/6阶段预算、gen73/gu0回执；审计目录必须在生产run之外。完整新批次先验证连续commit与spent平衡，再汇总各stage/gen已计费数量、D22/D20连续区间、全局48000账面余量及按当前/未来phase剩余cap计算的可行上界，100历史丢失更新计入formal账。使用4817原学习计数锚，每新update精确加24576控制样本/98304物理步/20Adam。终态stop/result/error关闭区间。后续native segment需新审计合同，明确拒绝误用首段streak种子。
+- 保留判读沿用原C1 Q008 summary-only逻辑，原C1文件不改：flat/H00各自15case，失败≥12累计连续告警，低于12清零；不把raw passed=false的低失败表说成15/15成功。不宣称完整eval RNG已隔离。监测仅写独立audit，不写control、不恢复/选模型、不运行Torch/仿真。
+- 验证：`root_observer_red.log` 实际3 failed（实现文件缺失）；新增实现后 `root_observer_green.log` 实际3 passed/0failed/0skip，0.02s，CPU CUDA隐藏、OMP/MKL=2。覆盖实际文件连续提交4818–4820、阶段/代计数、账面43180与阶段上界32880、源Adam/control锚、重复读取不重记、生产字节完全不变、终态区间闭合、输出在生产内拒绝、缺4819拒绝、10/15失败清告警但raw false保留。未声称正式训练/真实GPU已验证。
+- B最新事实（非根新增训练逻辑）：真实源handoff→异常保存→native续完及已有队列新segment实际2 passed/43.92s；bounded完整集成首次18pass1fail仅测试manifest lambda漏root参数，修夹具后该项1pass/16.76s，原失败日志保留。Qv07-002 helper9RED→9GREEN0.45s，真实runtime→runner7项已实际RED88.54s，当前仍接线中，未判通过。
+
+
+## 2026-11-17T21:59:31+08:00 — 根限定审查包与旧版完整兼容性验证启动
+
+新增coordination/ROOT_REVIEW_BRIEF.md、ROOT_REPORT.md、ROOT_OWNER_SHA256.json、ROOT_REVIEW_PACKAGE.diff，实际五文件diffSHA11a96f27335b8971aa9c2f361660d982fb1854ac6ae2c9d283b653cec48d8c3d，已交原独立reviewer限定检查；非全局验收。旧版CPU回归启动前实核97旧源/28旧测试均与before manifest一致。命令与环境写入LEGACY_COMPATIBILITY_RESULT.json（完成后生成），原始完整日志cpu/full_legacy_v06_compatibility.log；新v07代码仍WIP未冻结，故这次仅声明旧版兼容性检查，不将运行中结果当作通过。CUDA_VISIBLE_DEVICES空、OMP/MKL=2、PYTEST_ADDOPTS=-rs，旧测试入口test_v06_*.py/maxfail0。无GPU或正式学习启动。
+
+
+## 2026-11-17T22:03:18+08:00 — v0.7执行中技术报告
+
+新增docs/a2_v07/WORK_REPORT.md，将课程几何、D/L EMA→同代60例评估的前后变化、1000代内保护、3次低成功/改善6次规则、6000/6000/9000及48000预算与43183账面/32883阶段可行余量、512+8/48步/20Adam/保存100设置、恢复与Q002控制裁定、CPU/GPU/独立验收与发布边界连贯说明。状态明确标为执行中，不宣称完整CPU/GPU、正式学习、最终目标或推送已完成，不宣称行为改善。后续只按真实证据补全报告。
+
+
+## 2026-11-17T22:05:07+08:00 — ROOT限定独立审查及F-ROOT-01修复round1/5
+
+- 独立审查TASK_ROOT_REVIEW.md（SHAf66f7bffc60909357a8a388222c47f57f976899ac36224c9186988a5d1a970ee）完整五文件REQUEST_CHANGES、P2/block1。真实V/R的substage=None与已有D25等字符串键混用，JSON sort_keys抛TypeError且两宏阶段会混淆。其余工程wrapper/shell/parity限定静态接口未发现新增确认阻塞；真实GPU/B最终验收仍未完成。
+- 修改：保存ROOT_R1_BEFORE五源原件与SHA；仅v07_observer.py将无substage的统计键改为commit.phase（V/R各自稳定字符串），D/L仍原substage，不改课程/奖励/预算或外部控制。tests/test_v07_observer.py增加真实文件D22→D20→V→R两种批次模式；实际2RED（原TypeError）、修后完整5GREEN0.03s，原3项继续通过。纯stdlib/CPU不仿真，不改变生产字节；记录字典JSON往返、下次读取/幂等、两个D阶段span与六update精确费用。
+- 新ROOT_R1_FIX.diff、ROOT_R1_OWNER_SHA256.json；ROOT_REPORT与PROGRESS追加，等待原reviewer限定闭环，不能将局部修复自行判全局accepted。
+- A spec仅追加operator_control必需项：当前specSHA c79a0afec8daa1f8ab67e3e7d9991997c49d5f4c77a8ed83ef6891b6089e07c0；A2_Q002_OPERATOR_REQUIRED_VERIFY.json实际exit0，当前pending=[]、94源，删该项隔离root时精确failclosed。该delta在B在途测试退出后执行，无几何/GPU重跑；SDS/裁定不改。
+
+
+## 2026-11-17T22:07:31+08:00 — ROOT R1限定独立闭环
+
+原reviewer在TASK_ROOT_REVIEW.md保留原REQUEST_CHANGES并追加R1，当前报告SHA3d752e68c9ae8861b7e5abe0e9ad956ee3d399361ce1706adaa7d624b73e999c，spec/quality均PASS_WITHIN_ROOT_R1，F-ROOT-01/P2关闭、本包blocking0。实际读R1diff与2RED/5GREEN原文，独立原V/None、R/None真实JSON两分支复验exit0，stage独立key/JSON往返/重读幂等/producer不变；/tmp/a2_v07_root_r1_independent_recheck.json SHAe4d93e795405e0698bee71f8650fc53074fdaf8d719451172d55b127ad7e6ff1。未重复已通过5项，未作全局accepted；完整B审查/冻结CPU/GPU与正式学习仍待完成。
+
+
+## 2026-11-17T22:13:19+08:00 — B完整稳定交付与v1源码冻结/全native CPU启动
+
+- B交付22源+14测试/支持夹具、48原始CPU日志。根逐SHA实核84项无漂移；TASK_B_HANDOFF.json SHA03d373bbc8e77a201728f28ede45a64678d78c8d1259b16e0a5864fc8bb92b4e，207561字节实际完整差异97f61d8d9d8d6936d11bf469a27e209fd3b1fcb9216ea8fc19dc8c32d948d1ba，TASK_B_REPORT SHA c6caa0a5a68bb8de66d5f49d702ae13fec0989b987e4155d5c88d351b9e009c0。完整核心已交原独立reviewer，尚未作全局验收。
+- B11实际改变：operator_control.py新增legal continue/pause/stop、锁存、原子publish和ControlProtocolError原字节证据；runtime绑定stop_flag；runner入口pending前/每PPO前/完整已计费边界后检查，新请求保本次完整更新/pending评估并退出，已终态不改写，命中后不再resource/final GPU；orchestration不覆写原control为failed。原坏控制不会被训练/监控失败吞并。实际7项整链RED后17GREEN81.70s；后续锁存证据IO先失败也不能被continue撤销，1RED后helper11项在13GREEN19.70s组合内通过。全部原日志保留。
+- 最后manager仅补两行拒绝“已有当前policy receipt却无applied课程证明”的duplicate，防止把损坏边界当continue偷偷开下一PPO；阈值不改、pure policy R1 SHA不改。b_unproven_duplicate_red.log实际1failed8.34s，green实际1passed8.26s。B无在途CPU/不再自选改动，等待review。
+- 新增freeze/v1全129个输入副本（94源+22native测试+30文档+3根输入，另绑定28旧测试SHA）及V07_CONTRACT.json/V07_SOURCE_FREEZE.json。冻结文件SHA df89d47e510f8ad4e4ba47f4264ef31c26e68c999ccca1ec6d55af20a00fac6a，源码闭包2d3411488d294e4ff2e743b975f1bdd1485d8ebb0a1f393d970cf8083eabb6c6，合同7a7d9f75786338c978ee62c336aa1044b80b9de4c5ba127c5f606ff7b7f1db7a。accepted=false/core_review_pending=true，冻结不是准入；若review修复，必须新版本冻结和重新验证，不覆盖旧证据。
+- 全native CPU启动session69524，明确CUDA隐藏、OMP/MKL2、PYTEST_ADDOPTS=-rs，test_v07_*.py/maxfail0，前核全部冻结输入无漂移且正式目录不存在；完成后将生成cpu/NATIVE_CPU_RESULT_v1.json与原文full_native_v07_v1.log。旧完整587兼容性CPU session32406仍在运行。当前两套均不冒称完成，未GPU/正式学习。
+
+计数更正（不覆盖上条原记录）：v1副本总数为149＝94源＋22测试＋30文档＋3根输入，上条文字“129”系按仅10必需文档的早期心算误写；实际JSON与落盘副本从创建起均为30文档/149项，SHA与数据未变。28旧测试另以SHA绑定且before保原件。
+
+
+## 2026-11-17T22:17:07+08:00 — v1完整native CPU实际结束
+
+完整同freeze v1 CPU实际exit0，219collected/219passed/0failed/0skipped/0errors，耗时253.48s。cpu/full_native_v07_v1.log SHA69f1b1e7b393c8478ff4ab61889d7d51860b9706a79f4684398e3a2494860086；NATIVE_CPU_RESULT_v1.json记录明确命令/环境/冻结SHA，前后全部冻结输入changed_files=[]，正式目录仍不存在。根已读取原文末摘要与回执并核log SHA。此为当前v1 CPU事实，不等于核心独立验收通过；reviewer正在验证两个恢复候选，未最终定finding，如需修复必须新freeze与受影响完整CPU重验。旧版兼容完整CPU仍运行；未GPU/正式学习/推送。
+
+
+## 2026-11-17T22:21:24+08:00 — 旧v0.6/C1完整兼容性CPU结束
+
+实际exit0，587collected/587passed/0failed/0skipped/0errors，1228.73s（pytest原文1227.44s）。cpu/LEGACY_COMPATIBILITY_RESULT.json与full_legacy_v06_compatibility.log SHA52189e6f5f91c01f1e2073947faf6894526958b8326c5abbeff2d507a665d894；根已读完整结束摘要/回执并核log SHA。前后97旧源和28旧测试changed_files=[]，没有改旧namespace或放宽旧bootstrap。与v1native219项分开干净CPU进程完成，避免不同namespace常量污染。
+
+独立核心审查已实际确认2个P2恢复证据/控制缺口，故v1虽CPU全绿仍不准GPU：applied事务缺失windows证明和规范beforeFIFO/EMA消费一致性未拒绝（结构化损坏反例，非正常producer实际漏行）；pause已锁存但证据IO失败后，exception native新段能丢锁存并continue。等待原reviewer完整报告，由B一次限定TDD修复，随后新闭包完整native CPU复验。旧源/测试不改则本587事实继续作为兼容性证据；不无因重复20min套件。未GPU/正式学习/推送。
+
+
+## 2026-11-17T22:24:42+08:00 — B核心独立报告与一次R1任务
+
+TASK_B_CORE_REVIEW.md实际SHA9ca6bdf73b5019b11bbeada6bcd35b16831485a2dec7d6b3668f4fd687cd3398，原reviewer完整3519行/207561字节真实diff和36源/测试+48日志/before SHA核对，spec/quality REQUEST_CHANGES、P2block2，无其他新增确认P0/P1/P2。根全文读取，新增TASK_B_CORE_R1_BRIEF.md交原B一次修复两项。
+
+F01实际variant1：正常规范64消费beforeFIFO64→postFIFO0、EMA0→1，丢windows绑定/临时原件并重算postSHA仍接受；before仍有raw，不能称全部raw丢失。variant2连beforeFIFO也漏存为空仍接受，证明消费关系校验不足。是坏缓存恢复校验反例，不称正常producer实际漏行。F02实际native runtime+裸model/完整Adam+RecordingEnv，pause观察锁存后证据IO失败自动exception4817；新段continue恢复到verifiedready/learning guard放行，0PPO，不能称实际训练了4818。回执/tmp/a2_v07_b_core_independent_counterexamples.json SHAa72695bdf599f336fa610b0ebe54c7205a3575d3c3d519706bdd12b8215192f0；补F01variant2回执SHA675450a7c7929e825cf241463b6a126a639a3031853de50e101ce03da1146d53，均CPU工具actualexit0、无GPU/物理env/PPO。
+
+修复设计选择（已批准Q002范围内）：对checkpoint中未解决的已观察valid pause/stop，在native学习恢复准入fail closed，保留原error/audit/raw，不给pause自动继续协议，不把所有无锁存坏JSON一并改成新终态。窗证明须闭合消费前后状态和实际原件，合法无消费/换代reset/独立stop不误杀；不恢复重跑PPO/评估。B先保存原包+before并取得覆盖RED→GREEN；原reviewer限定闭环。v1所有证据保留，新v2闭包完整native CPU重验后才有GPU候选。
+
+
+## 2026-11-17T22:30:44+08:00 — B核心R1原件及RED在途登记
+
+B_CORE_R1_BEFORE已存完整36源/测试及原handoff/report/diff/review/brief，MANIFEST实际SHA c3ac06445213bc52b5656caec14d8a510debba65960930be8a1d6db6dcbef699。相对原handoff本时点变化文件：["tests/test_v07_control_runtime.py", "tests/test_v07_runner.py"]；系R1正在进行的目标测试/实现，不是漂移被忽略。cpu/b_core_r1_red.log已开始产生真实失败，仍在途不报完整计数。B拟最小闭合before_state SHA/显式消费及前后FIFO/EMA/代际关系，并在resume准入拒绝未处理有效latch而保持原件读取保存；未GPU/正式学习，v1冻结及219/587历史证据原样保留。最终diff/完整RED→GREEN/独立闭环仍待完成。
+
+
+## 2026-11-17T22:35:58+08:00 — B核心R1真实RED与最小实现登记
+
+目标b_core_r1_red.log已结束exit1：9failed/4合法对照passed/17deselected、121.69s，缺陷与合法路径区分保留，不将expected RED称训练失败。当前相对原handoff变化文件/SHA：{"src/tasks/velocity/v07/recovery.py": "65b10f1a27c0369aa63924eb274fde9f27dc563da121fd0ff71db80f8fc9e695", "src/tasks/velocity/v07/runner.py": "537a1cd850b09e536bf3454ef3c6da4d945b35a901d2cf33356af9cdba4f4d00", "tests/test_v07_control_runtime.py": "e1e0adc2af8253f69eca0772b5bd014414a790ccf67604d0ba803a5da9bb1cfb", "tests/test_v07_recovery.py": "40e36e41af82b68d490ea1ec138a8affed188de4ba6f7e6463db0ac8b366bbad", "tests/test_v07_runner.py": "ac656e20a5910055b01ee89f10e397161f2029502d495bbb790ddae3f3c23862"}。实际产品修改仅runner.py/recovery.py：mandatory before状态SHA锚、显式consumed_windows和independent_stop状态，要求原件数与实际消费数一致，交叉前后FIFO/EMA及换代合法清零；resume_contract从当前exception原证据读取未解决valid pause/stop锁存，早于新env/GPU/pending拒绝学习恢复。无锁存坏JSON仍可按原规则纠正，不改成新终态；原error/raw保留，purepolicy/recipe/A/root输入不改。
+
+覆盖GREEN session44467在途（runner/recovery/control_runtime/runtime/operator_control相关五文件），命令及最终EXIT将写原日志，新增无锁存坏JSON纠正续用正对照；尚未读取最终结果，不声称修复通过。原v1/原handoff/旧源/全部失败证据保留，正式目录仍未创建。
+
+
+## 2026-11-17T22:45:20+08:00 — B CORE R1固定包、A2单行冻结版本与v2完整CPU启动
+
+- B R1受影响完整57项实际GREEN/0failed/0skip、331.61s，原文command+SHELL_EXIT_CODE=0，根已全文摘要实读并核SHA2aab73ccf38c783a47a9c171695833ddf16e2728efe42339b0b2c66c8904678b。RED原文9fail4合法pass121.69s SHA d00b4bad11d829464eeb6303f885457887baaa1cbf143904a0bc9ebdd2293900保留。覆盖命令/测试/输出齐全后，原reviewer已接限定双finding复核，不自行判闭环。
+- TASK_B_CORE_R1_HANDOFF SHA7e77f33f337ecf58a582b04eac38b804db3797b1a7528402ffa493ee57360ea4；FIX.diff ac1f1aee7c652bbe55e1ab3b11bdbed161392377074f3db9e6a5119b8695fcaf；完整新baseline diff eca9342873e001608a0728559758b47da44b8c52197ad3a8888f43e401a7a941。实际仅runner/recovery产品+3tests，31其他Bowner原字节不变、purepolicy仍c0ae8c…8c8e4；根实核全部36新SHA。B报告R1完整追加，不覆盖原记录，当前SHAede690a056b7b3597f036d0fa06cd60263996bbc810502cdafdee970d3559d48。
+- B测试全部exit后，A仅scripts/validate_a2_ideal_stairs_v07.py FREEZE_PATH由freeze/v1改freeze/v2，保旧v1不可覆盖，默认GPU输出仍gpu/v1不擅改，后续根显式--output-dir gpu/v2/stage。新validator SHA55158db282850b881fb46fc8890b58b8e41338510b074a0e8e616099eac61ad5；A2_FREEZE_V2_BEFORE.py/最小diff/前后SHA/VERIFY.json和TASK_A2报告保存。CPU nativeimport/AST/自SHA入94闭包实际exit0，cuda_initialized=false，无GPU/正式目录。此metadata变动晚于57项，故不冒称57已覆盖新总闭包。
+- 新freeze/v2创建实际149副本＝94源+22测试+30文档+3根输入，另28旧test SHA；冻结SHAf9f67f08a7120b479ed6dfe3dd9916df2c8492ee1e6971d72f807da60f890aa1，source829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a，contractb8857d4b18482f391eb9ec713ea8b6a7236af77bb14d7f8fdd6bf9f931fbba77。与v1仅3source/3tests变化，文档/rootinputs无变化；v1及219项历史数据保留而不作新版准入，冻结仍明确accepted=false/独立复审待定。
+- v2完整native CPU session49862已启动，command/env与全部冻结输入核对在cpu/NATIVE_CPU_RESULT_v2.json完成后生成，原文full_native_v07_v2.log，不overwrite证据。无GPU/正式学习/推送；正式目录不存在。
+
+
+## 2026-11-17T22:52:12+08:00 — B核心R1独立闭环、v2完整CPU与GPU smoke开工条件
+
+原reviewer在TASK_B_CORE_REVIEW保留初审追加R1，当前SHA3fbd00fcc66a409be7a8b886452333b37dd43bb582f6040d4bfacb94bd84b5a4。两项F-B-CORE-01/02均ADDRESSED，spec/quality PASS_WITHIN_B_CORE_R1，B核心block0，R1/5 addressed2/open0。245行新diff与36current/36before实核5变31不变，9RED4合法对照/57GREEN+shell0均读过未重跑。独立7轻量检查actualexit0：丢window两variant/重算before&count0拒绝、合法64接受，pause/stop在真实runtime入口早于新model/env拒且无ready，无锁存坏JSON合同合法。前两次reviewer临时terminal夹具错误已透明记录，不算产品失败/通过。独立回执SHA1a3ad24e41db9d9d9adef27b88181340606edafc0a3d499c9701717918683b12已从/tmp原字节复制到coordination/independent_evidence，原件保留；A2单行freeze路径也限定PASS，无旧fallback。仍非全局GPUaccepted。
+
+根实际读取v2完整CPU原文与结果：236collected/236passed/0failed/0skip/0errors，exit0，355.52s（pytest354.28s）；full_native_v07_v2.log SHA5ac3207a1388681967e191760c4fb649a44f24658f2622848236a367ac462313。全部149冻结输入及28旧test前后changed=[]，正式目录未创建。旧587兼容证据和旧97源/28tests继续不改；不重复已过旧套件。
+
+CPU与核心限定阻塞均清后，准备第一GPU工程smoke：同v2f9f67f… source829683…/contractb8857d…、seed42、cuda:0、D22、8env、2update、rollout48、5epoch×4minibatch。理论工程费用2learning/768control/3072physics/40Adam（必须以实际输出核对），不计正式48000；每批检查资源上限，无行为成功率准入。后续四GPU严格串行，不在当前smoke完成前启动。当前正式学习0/正式目录不存在，最终独立MD+JSON accepted=true仍待五GPU证据。
+
+
+## 2026-11-17T22:55:35+08:00 — GPU v2 第1项D22 smoke实际通过；第2项probe准备
+
+实际GPU smoke进程exit0、19.61s，源码/测试/文档/根输入无漂移，正式目录未创建。8env物理tile均22，phaseD/substageD22；两实际PPO更新计768control/3072physics/40Adam，与计划完全一致。smoke/smoke.json和smoke.EXECUTION_RESULT.json/完整stdout均保存gpu/v2；stdoutSHA cc4b454d59dc6149db124f232633ad623ac815583309b16d68e0d0891f91e004。两批测后resourcechecks均true：整卡1330MiB、进程346MiB，host最小16563MiB、disk最小451.9352GiB；称测后观测值，不冒称连续全程精确峰值。
+
+下一串行工程probe计划seed42/devicecuda0、512train+8eval、56实际update=5warm+50measured+1recovery；需真实50诊断15例和55→56恢复。理论PPO总费用1376256control/5505024physics/1120Adam须据实际回执核对，诊断实际/有效/等待额外步单独计，全部不计正式48000。smoke进程已退出后才启动probe，所有后续GPU仍待其完成。
+
+
+## 2026-11-17T23:12:02+08:00 — GPU v2 第2项probe实际通过与独立50计账核对
+
+probe实际exit0、607.58s，全部冻结输入changed=[]，正式目录不存在；stdoutSHA37b520ec1636ff0cad11339365110bb9141c1ceda0a95f35371e60b158824922。56真实PPO为5warm+50measured+1recovery，总1376256control/5505024physics/1120Adam；55checkpoint时1100Adam/1351680control，裸load后只增1update=20Adam/24576control/98304physics，不重ETH、不重放计费。
+
+真实update50已生成15个非空first_episode、主diagnostic与records原件。独立probe_boundary50.json SHA b249b8abfc79b4295e115cfc7f3c78c4a937208840cc34621be02a1c87a4c9ca，learning50/Adam1000，与诊断identity逐字段相等，源/合同均v2，根再核fileSHA。诊断有效54805control/219220physics，实际相同，extra0。解释已查真实生产factory：eval_num_envs=8是批上限，原同速诊断每速5例所以实际每批5env（source num_envs=len(batch)未改）；本次同速病例均同一timeout，故没有等待额外步，不是丢计另外3个闲置env。这个事实如实写probe.ROOT_AUDIT.json，未改既有批处理或添加新行为准入。
+
+50个measured资源样本全部达标：整卡观测max4223MiB、process max3230MiB、host min16187MiB、disk min451.9088GiB；另诊断中根只读nvidia查询一次whole4255/process3262、GPUutil38%，亦低于阈值，此为观测不冒称连续精确峰值。GPU工程model50诊断不能当4817源基线或效果改进。
+
+新FINAL_BRANCH_SOURCE_REVIEW.diff/MAP.json已在运行等待时整理：57个当前产品/测试/根输入与原冻结C1基线逐SHA比较，source-only包SHAc7688058064322790939e4398c9cfa52593202b6ac2ab3ff17977f3b34b5487d，590780字节/10951行；不修改任何冻结输入，不是最终accepted，全部GPU证据待齐再交原reviewer整体验收。
+
+现在准备串行第3项：原4817/a419、512真实trainenv首次/二次零学习load，先释放第一实例再建第二；核loaded/ready、完整model/45Adam/normalizer/真实lr、gen73/gu0、角色/命令/四RNG/reset缓存及资源，不增PPO，工程恢复artifact不准正式resume。
+
+
+## 2026-11-17T23:15:51+08:00 — GPU v2 第3项原4817两次512零学习load实际通过
+
+进程exit0/33.84s，首实例释放后才建立第二512实例，weakref env/model均已释放。两次loaded/ready实际save_verified aligned=true、update仍4817，actual Adam/optimizer96340、control118382592、physics473530368，LR7.593750000000002e-05，0PPO/不正式计账。原source a419 parent继承，首migrate gen73/gu0一次；二次裸load保该状态，不再迁移。全部model/45非空Adam/normalizer/metadata/learning/source/currentLR checks为true。
+
+双真实env全部31个cache/观测/episode/终止/奖励/低成功队列/保持时钟等布尔checks为true；D/D25、gen73、stage_iteration2117、无tileoverride，roles flat102/frontier164/near123/easy123，allowed flat0/frontier17/near15,16/easy1..14。首命令vx0.3006627–0.5993547、二次0.3022777–0.5994387，vy/wz全0。Q001额外初始化如实：各2次reset调用，首693槽次=512distinct+181extra，二次676=512+164；没有额外seed/回卷，四时点六RNG+sampler摘要原件保存。不声称轨迹位精确或Q008完整eval RNG隔离。
+
+两次资源检查均true：whole1633MiB/process640MiB，host最小16931MiB，disk451.8425GiB；首次释放后whole1545/process552。stdoutSHA2f38185c5c37cbee05875431cae3d5eee675ab095b8e8b09f254b36ceb7f1a8d，source-reload.ROOT_AUDIT.json保存根核摘要和原reportSHA，全部freeze unchanged/正式目录未创建，工程产物resumable_for_production=false。
+
+下一串行第4项：原4817模型mean policy，D25/D22/D20×0.3/0.5/0.6各5例=45，0学习，真实首回合/费用/资源与成功失败如实记录，不增行为准入或挑seed重跑。
+
+检查项数量更正（历史不覆盖）：上一条文字“31个”应为各28项，实际JSON/ROOT_AUDIT一直逐项保存真实checks且全部true；只纠正文案心算，不改变任何测试、结果、源码或费用。
+
+
+## 2026-11-17T23:21:17+08:00 — GPU v2 第4项原4817续训前45例基线实际完成
+
+实际exit0/93.67s，sourcea419/4817原模型mean policy，0学习、before/after模型摘要ec687834dc7045ae95b7e027e88f326c7fddfd339fafaa4f54a6c561a2a355f9一致。D25/D22/D20×三速各5例=45首回合完整；D25各速5/5合15/15，D22各速5/5合15/15，D20 0.3速0/5（nonfoot3/posture2）、0.5速3/5（nonfoot1/posture1）、0.6速1/5（nonfoot4），合4/15。此是原模型续训起点，非v07学习改善、非正式晋级资格，不增行为准入或重跑挑结果。
+
+有效12365control，实际13240，等待extra875（物理实际52960、extra3500）；9批资源checks全true，所有冻结输入unchanged、正式目录未创建。原baseline.json/summarySHA/recordsSHA及45条first_episode保本机，根compact baseline.ROOT_AUDIT.json绑定原report SHA/原模型/SDS源合同；stdoutSHA0ecfc2b938c3c54e3aefa4f694348dcba05e71b224b2ca568ef0f7548fa7cda5。
+
+下一串行第5项保持协议：原4817模型平地/H00各15例，0学习，真实first_terminal或flat500窗及有效/实际/额外步核对。成功率仍如实报告，不用工程检查替代正式保持门禁或最终300例。五项完成后才交原独立reviewer全闭包MD/JSON验收；没有正式学习/push。
+
+
+## 2026-11-17T23:29:24+08:00 — 全五GPU实际完成、费用总账、发布准备与最终独立任务
+
+最后保持协议exit0/154.20s，0学习/模型摘要不变；flat15个真实非terminal500窗全部合格，H00三速0/5、0/5、5/5（合5/15，10失败不等于15成功，仍低于原12告警线）。有效20400control/实际24730/extra4330，physics实际98920/extra17320，6批资源全true。stdoutSHA93b13f6a70a2d4aacd947a06d67105c7ad62fe3a4aee8561e01ad6c2a37eebdf，retention-protocol.ROOT_AUDIT.json绑定原report。所有五GPUexit0、同v2 source/contract、freeze无变化、正式目录不存在。
+
+新增ENGINEERING_SUMMARY_v2.json：GPU PPO58update=1377024control/5508096physics/1160Adam；90工程eval有效87570/实际92775/extra5205control、371100physics；GPU总1469799control/5879196physics，不正式计账。资源原件抽取23个唯一snapshot，观测whole max4255MiB/process max3262MiB/host min15455MiB/disk min451.8366GiB；另root诊断instant4255/3262，均达限，不冒称连续精确峰值。
+
+独立发布树精确复制164项，仅existing tracked差异logs/codex_changes，未暂存/commit/push；PUBLISH_PREPARATION.json保存名单/逐SHA。PUBLISH_CHECKS_v2.json实际CPU新进程通过：94源闭包/合同/30文档同v2，真实2env D22一控制步reward/obs finite、23物理tiles、CUDA未初始化、不读私有模型、不创建正式目录；CPU费用2control/8physics/0PPO另记。CUDA隐藏时Warp的driver error100初始化消息为CPU不可见提示，实际全部检查及tool exit0，不当作GPU测试。
+
+更新docs/a2_v07/WORK_REPORT.md当前状态及已测费用/基线/保持/限制/全部实施裁定代价；新增FINAL_ACCEPTANCE_BRIEF.md，配合已生成57文件源码包c7688058…487d及freeze/source/test/doc/observer maps和全部实际证据，交原独立reviewer最终整体验收MD/JSON。当前仍accepted未签、正式update仍4817，下一4818，账面余43183/未来phase上界32883，最终300未执行；不伪造效果或训练结束。
+
+
+## 2026-11-17T23:30:40+08:00 — 验收前工程报告不可变快照
+
+新增docs/a2_v07/ENGINEERING_WORK_REPORT.md，SHA519de6e85b9ee23722734991c8a19c7c51f3c1d224d9d0753d39d823f5544f40，与当前预正式WORK_REPORT原字节相同。最终验收绑定此不可变工程快照；持续WORK_REPORT/PROGRESS/codex_changes将按正式执行更新，避免将持续台账错误封成不许增长的验收输入。FINAL_ACCEPTANCE_BRIEF追加该明确说明，无源码/测试/合同变化、无正式学习。
+
+
+## 2026-11-17T23:36:47+08:00 — 发布流程按已有授权执行的两项裁定
+
+已读finishing-a-development-branch技能。明确用户/SDS专用分支push授权优先于技能通用重复选择菜单；仅按既定分支，不新增PR通知/merge main/force，保留工作树。活动项目同冻结完整236/587与五GPU已实际通过，发布树全部代码/测试/文档/根输入字节一致且实际CPU2env/闭包/合同检查通过；按开发者不无因重复通过套件要求，不再为相同字节在副本重复大套件。两项选择及若判断错误的具体代价写入PROGRESS和持续WORK_REPORT；不可变ENGINEERING_WORK_REPORT保持原字节用于正在进行的独立验收。另只读核对旧C1实际本地telemetry，当前环境无WANDB_API_KEY或v06/v07启用flag，将延续既有本地遥测默认，不擅自增删云服务配置；未读取/打印任何密钥。
+
+
+## 2026-11-17T23:47:05+08:00 — 最终独立复核明确资源采样范围
+
+reviewer独立复算全部197证据SHA及7类检查，原件回执/tmp/a2_v07_final_evidence_independent_verification.json SHAe26b031bd6e6835a5a6910ef1aa78cd5675206324f00eb9c2cea6240b8fad0f9，actualexit0、CUDA未初始化；最初/tmp/profile.py遮蔽cProfile导致的reviewer脚本启动失败已定位，改从项目cwd -c执行同脚本通过，非产品修改/测试重跑。全部57target真实hunk重建与94/22/30/3及旧97/28/8preserve匹配，原件回执SHA1f14281b5af9b2e3985eb1520e85f861bb007fbb9346da64c59ea33f0f2eac70。最终正式签署尚在生成，不自行声称accepted。
+
+复核发现应精确报告资源采样覆盖：probe.samples为updates6–55恰50点，评价3点均50；55→56功能已真实核对，但其资源未另采。根实际读取原SDS§9.3（5warm+50measured+1recovery）与新版§6.2，同意按明示50测量窗，不增第51准入/不额外GPU、不外推恢复期或连续全程峰值。无已确认超限，但也不能称未采样的恢复窗口已实测达标。此限制已写持续WORK_REPORT，最终reviewer将写入独立MD/JSON；既有ENGINEERING_SUMMARY及工程报告不可变快照不改。
+
+
+## 2026-11-17T23:52:48+08:00 — 最终独立accepted及正式准入manifest
+
+原独立reviewer正式签署accepted=true/blocking=0，仅指定4817→v07固定v2工程准入，非训练目标完成。MD SHAab1808ce3e2b3917638f78174c051635a9911f56803b25233383ce90199aa5a1，JSON SHA50fd5dd9badff07eeb992cf7698437aceb2e8d74b61573a55b249eccc84d36b1；另新增独立INPUTS/EVIDENCE项目回执（后者a89b2853841a3539f0bddd1ce4415eaad0c471d2bada2f249168e06ab90b2f5c，原/tmp e26快照仍保留）。根全文读MD，实核94/22/30/3全部map及211实际证据SHA、reportSHA、源a419、freeze f9一致，未仅依agent口头结论。资源50点/恢复期未单采、Q008、D20/H00起点和最终300未做限制均原样保留。
+
+新增V07_BRIDGE_MANIFEST.json，SHAbb52a2b14c8c4b43a8519e89e6a7e9245a486218cbafb0105c63b2f8bd097188，schema严格整数9、manifest_schema a2-v07-bridge-manifest-v1、recipe/SDS/source/contract全绑定及独立MDJSON两SHA，目标唯一正式目录；生成时formaldir仍不存在。下一步按授权无execute预检，实核不创建正式目录/CUDA不初始化，再自动正式execute，不重复请求许可。当前尚无正式新PPO。
+
+
+## 2026-11-17T23:55:17+08:00 — 正式v0.7进程已按既有授权启动
+
+无execute预检实际exit0、CUDA未初始化、formaldir未创建，原JSON另存preflight/v07_noexecute_preflight.json避免execute同名覆盖丢证据。最终MDJSON/source/input核对通过后，后台新session启动PID2065399，精确bash run_v07.sh --execute，stdout仅写implementation/formal_stdout.log，FORMAL_LAUNCH.json保命令/env/来源/验收/manifest哈希。来源4817/a419、下一应4818，既有本地telemetry默认不变，无凭据读取/打印。此时仅证明进程已spawn，loaded/ready/首PPO与资源仍待实测，不冒称首更新通过或训练完成。
+
+
+## 2026-11-17T23:58:54+08:00 — 首4818真实PPO/资源核实与只读审计启动
+
+FORMAL_FIRST_UPDATE_AUDIT.json与formal_audit/FIRST_UPDATE_004818.json保存实际首遥测和已核源相加累计：source4817→4818只增20Adam/24576control/98304physics，累计96360/118407168/473628672；loaded/ready aligned且gen73gu0/lr7.593750000000002e-05/全部8preserved_checks true。首实际资源update4818 whole3759/process2756MiB，host16484MiB，disk451.80598GiB，四阈值均true。一次只读打印曾误用telemetry顶层update引发KeyError，现按train.completed_update层级读取修正，无产品修改/训练失败。
+
+启动只读observer PID2066831，原冻结observer225132…不改，poll30，审计输出implementation/formal_audit在生产目录外；FORMAL_OBSERVER_LAUNCH.json保命令/PID/hash。持续WORK_REPORT更新启动事实，工程快照/211已签证据不动。当前最新只读遥测4856，非终态；继续至合同通过或有证据停止，发布另按已授权专用分支执行。
+
+
+## 2026-11-18T00:05:28+08:00 — 专用分支提交前固定发布集合
+
+新增docs/a2_v07/VALIDATION_SUMMARY.json与PUBLISH_CHECKS.json，公开紧凑验收/工程费用/起点及正式首4818审计事实，不放权重或逐步运行原件。刷新独立发布树明确白名单：完整94源/22测试/30文档/3根输入，v2合同/manifest、4独立验收文件、紧凑结果与工作报告/修改日志；仅专用codex/a2-v07-d22-curriculum，basebf30366，活动main不切换。接下来先凭据模式扫描/暂存清单与tree核对，再按既有push授权提交推送；当前尚未完成commit/push，训练独立继续至合同终态。

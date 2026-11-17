@@ -1,0 +1,320 @@
+{
+  "contract_sha256": "b8857d4b18482f391eb9ec713ea8b6a7236af77bb14d7f8fdd6bf9f931fbba77",
+  "cpu": {
+    "errors": 0,
+    "failed": 0,
+    "legacy_passed": 587,
+    "native_passed": 236,
+    "skipped": 0
+  },
+  "created_at": "2026-11-18T00:05:28+08:00",
+  "formal": {
+    "actual_first_ppo": {
+      "adam_steps": 20,
+      "control_samples": 24576,
+      "minibatch_count": 20,
+      "optimizer_steps": 20,
+      "physics_substeps": 98304
+    },
+    "cumulative_learning": {
+      "adam_steps": 96360,
+      "control_samples": 118407168,
+      "physics_substeps": 473628672,
+      "update": 4818
+    },
+    "final_300_test_completed": false,
+    "first_resource_limits_ok": true,
+    "first_update": 4818,
+    "launched_at": "2026-11-17T23:55:17+08:00",
+    "pid": 2065399,
+    "resume_update": 4817,
+    "source_checkpoint_sha256": "a41963a8bf5e6f1d4810b0a0c912ac65747d61bd481ea3432ef638a99e076e64",
+    "training_complete": false
+  },
+  "freeze_sha256": "f9f67f08a7120b479ed6dfe3dd9916df2c8492ee1e6971d72f807da60f890aa1",
+  "gpu": {
+    "baseline": [
+      {
+        "case_pass_count": 5,
+        "reasons": {
+          "success": 5
+        },
+        "substage": "D25",
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.3,
+        "window_end_count": 0
+      },
+      {
+        "case_pass_count": 5,
+        "reasons": {
+          "success": 5
+        },
+        "substage": "D25",
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.5,
+        "window_end_count": 0
+      },
+      {
+        "case_pass_count": 5,
+        "reasons": {
+          "success": 5
+        },
+        "substage": "D25",
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.6,
+        "window_end_count": 0
+      },
+      {
+        "case_pass_count": 5,
+        "reasons": {
+          "success": 5
+        },
+        "substage": "D22",
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.3,
+        "window_end_count": 0
+      },
+      {
+        "case_pass_count": 5,
+        "reasons": {
+          "success": 5
+        },
+        "substage": "D22",
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.5,
+        "window_end_count": 0
+      },
+      {
+        "case_pass_count": 5,
+        "reasons": {
+          "success": 5
+        },
+        "substage": "D22",
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.6,
+        "window_end_count": 0
+      },
+      {
+        "case_pass_count": 0,
+        "reasons": {
+          "nonfoot": 3,
+          "posture": 2
+        },
+        "substage": "D20",
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.3,
+        "window_end_count": 0
+      },
+      {
+        "case_pass_count": 3,
+        "reasons": {
+          "nonfoot": 1,
+          "posture": 1,
+          "success": 3
+        },
+        "substage": "D20",
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.5,
+        "window_end_count": 0
+      },
+      {
+        "case_pass_count": 1,
+        "reasons": {
+          "nonfoot": 4,
+          "success": 1
+        },
+        "substage": "D20",
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.6,
+        "window_end_count": 0
+      }
+    ],
+    "evaluation": {
+      "actual_control_samples": 92775,
+      "actual_physics_substeps": 371100,
+      "cases": 90,
+      "extra_control_samples": 5205,
+      "extra_physics_substeps": 20820,
+      "useful_control_samples": 87570
+    },
+    "ppo": {
+      "adam_updates": 1160,
+      "control_samples": 1377024,
+      "learning_updates": 58,
+      "physics_substeps": 5508096
+    },
+    "resource_scope": {
+      "additional_51st_resource_gate_required": false,
+      "blocking": 0,
+      "continuous_exact_peak_established": false,
+      "diagnostic_resource_samples": 3,
+      "diagnostic_sample_updates": [
+        50,
+        50,
+        50
+      ],
+      "measured_samples": 50,
+      "measured_updates": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55
+      ],
+      "observed_limit_violation": false,
+      "recovery55_to56_function_verified": true,
+      "recovery55_to56_resources_separately_sampled": false,
+      "requirement_basis": [
+        "v0.6 SDS section9.3: 5 warmup +50 measured +1 recovery",
+        "v0.7 SDS section6.2 retains the same56 structure"
+      ],
+      "resolution": "The explicit measured50 window is satisfied; do not extrapolate observed maxima to recovery55to56 or continuous peaks. Root independently confirmed the same reading; no extra GPU or recipe change."
+    },
+    "retention": [
+      {
+        "case_pass_count": 5,
+        "kind": "flat_retention",
+        "reasons": {
+          "timeout": 5
+        },
+        "terminal_count": 0,
+        "total": 5,
+        "vx": 0.3,
+        "window_end_count": 5
+      },
+      {
+        "case_pass_count": 5,
+        "kind": "flat_retention",
+        "reasons": {
+          "timeout": 5
+        },
+        "terminal_count": 0,
+        "total": 5,
+        "vx": 0.5,
+        "window_end_count": 5
+      },
+      {
+        "case_pass_count": 5,
+        "kind": "flat_retention",
+        "reasons": {
+          "timeout": 5
+        },
+        "terminal_count": 0,
+        "total": 5,
+        "vx": 0.6,
+        "window_end_count": 5
+      },
+      {
+        "case_pass_count": 0,
+        "kind": "stair_retention",
+        "reasons": {
+          "posture": 1,
+          "side": 1,
+          "timeout": 3
+        },
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.3,
+        "window_end_count": 0
+      },
+      {
+        "case_pass_count": 0,
+        "kind": "stair_retention",
+        "reasons": {
+          "body": 2,
+          "posture": 1,
+          "timeout": 2
+        },
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.5,
+        "window_end_count": 0
+      },
+      {
+        "case_pass_count": 5,
+        "kind": "stair_retention",
+        "reasons": {
+          "success": 5
+        },
+        "terminal_count": 5,
+        "total": 5,
+        "vx": 0.6,
+        "window_end_count": 0
+      }
+    ],
+    "stage_exit_codes": {
+      "baseline": 0,
+      "probe": 0,
+      "retention-protocol": 0,
+      "smoke": 0,
+      "source-reload": 0
+    },
+    "total": {
+      "control_samples": 1469799,
+      "physics_substeps": 5879196
+    }
+  },
+  "independent": {
+    "accepted": true,
+    "blocking": 0,
+    "report_sha256": "ab1808ce3e2b3917638f78174c051635a9911f56803b25233383ce90199aa5a1",
+    "verdict_sha256": "50fd5dd9badff07eeb992cf7698437aceb2e8d74b61573a55b249eccc84d36b1"
+  },
+  "private_artifacts": "Weights, raw runtime, case trajectories and credentials remain local; exact evidence hashes are in the independent verdict.",
+  "schema": "a2-v07-public-validation-summary-v1",
+  "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a"
+}

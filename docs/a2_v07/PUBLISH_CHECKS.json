@@ -1,0 +1,58 @@
+{
+  "contract_match": true,
+  "contract_sha256": "b8857d4b18482f391eb9ec713ea8b6a7236af77bb14d7f8fdd6bf9f931fbba77",
+  "created_at": 1794929052.535842,
+  "cuda_initialized": false,
+  "documents_match": true,
+  "git_commit_or_push_performed": false,
+  "private_checkpoint_loaded": false,
+  "production_directory_created": false,
+  "schema": "a2-v07-publish-checks-v2",
+  "small_cpu_environment": {
+    "control_samples": 2,
+    "device": "cpu",
+    "finite_observations": true,
+    "finite_step_reward": true,
+    "frontier_tile_id": 22,
+    "num_envs": 2,
+    "observation_shapes": {
+      "heightmap": [
+        2,
+        3,
+        48,
+        32
+      ],
+      "history": [
+        2,
+        5,
+        45
+      ],
+      "privileged": [
+        2,
+        35
+      ],
+      "proprio": [
+        2,
+        45
+      ],
+      "route_error": [
+        2,
+        3
+      ]
+    },
+    "phase": "D",
+    "physical_tile_count": 23,
+    "physical_tile_ids": [
+      22,
+      22
+    ],
+    "physics_substeps": 8,
+    "ppo_updates": 0,
+    "seed": 42,
+    "substage": "D22"
+  },
+  "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a",
+  "source_files": 94,
+  "source_hashes_match": true,
+  "worktree": "/tmp/a2-v07-publish-20261117"
+}

@@ -1,0 +1,33 @@
+{
+  "schema": "a2-v07-native-cpu-result-v2",
+  "command": [
+    "/home/xxs/anaconda3/envs/a2/bin/python",
+    "scripts/test_a2_ideal_stairs_v07.py",
+    "--pattern",
+    "test_v07_*.py",
+    "--maxfail",
+    "0"
+  ],
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "2",
+    "MKL_NUM_THREADS": "2",
+    "PYTEST_ADDOPTS": "-rs"
+  },
+  "started_at": 1794926673.899556,
+  "duration_seconds": 355.5170211791992,
+  "exit_code": 0,
+  "final_summary": "summary   : collected=236 passed=236 failed=0 skipped=0 errors=0",
+  "log": "logs/a2_ideal_stairs_v07/implementation/cpu/full_native_v07_v2.log",
+  "log_sha256": "5ac3207a1388681967e191760c4fb649a44f24658f2622848236a367ac462313",
+  "freeze_path": "logs/a2_ideal_stairs_v07/implementation/freeze/v2/V07_SOURCE_FREEZE.json",
+  "freeze_sha256": "f9f67f08a7120b479ed6dfe3dd9916df2c8492ee1e6971d72f807da60f890aa1",
+  "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a",
+  "contract_sha256": "b8857d4b18482f391eb9ec713ea8b6a7236af77bb14d7f8fdd6bf9f931fbba77",
+  "sds_sha256": "303ae40a5c5e3fe82f9f0df3aae8d153136e016439087c8db9701aeb17197aca",
+  "source_files": 94,
+  "test_files": 22,
+  "changed_files": [],
+  "frozen_inputs_unchanged": true,
+  "production_directory_created": false
+}

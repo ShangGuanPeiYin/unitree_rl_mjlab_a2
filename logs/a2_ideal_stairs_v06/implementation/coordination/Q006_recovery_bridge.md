@@ -1,0 +1,26 @@
+# Q006 跨源码受限恢复桥清单（Q005 扩展）
+
+- Q005 裁决 SHA256：`0159b03296ae078c96d6fd32851e736ce97a5119a89475b6bc4d85004464cb2d`。
+- Q006 裁决：`logs/a2_ideal_stairs_v06/implementation/coordination/Q006_v06_decision.md`，SHA256 `798a7cf4603fc50abbe6a83c30e20680fb884824c7cccddb78679bc698d5bd09`（57 行）。
+- Q006 勘误：`logs/a2_ideal_stairs_v06/implementation/coordination/Q006_ERRATA_lost_50.md`，SHA256 `f3c64d2e81e06d1c0d0a8c5c71476f08e50849e82c98b791a542b8f9339e5c3c`；实际丢失 101–150 共 50 次（1,228,800 控制样本 / 4,915,200 子步 / 1,000 Adam）。
+- 旧 checkpoint（trial02 update100）：`logs/a2_ideal_stairs_v06/train_seed42_trial02/checkpoints/boundary_000100.pt`
+- 旧 checkpoint 完整 SHA256：`8ca0760e8c7a67da2c2143927e6ba5baf2459deba1967b0756a2aa601e58e805`（原字节未改写）。
+- 旧 checkpoint 内 `source_closure_sha256`：`3ff5b4b5711a2774701055244031fe389e0dc495b8280379014126a3fa049f4e`
+  - 对象/算法：`recovery.source_block()` 对 `spec.source_hashes()` 返回的“路径→SHA256”映射做本仓库 canonical JSON 的 SHA256。
+- 新修复源码闭包：`68e71f27292f223dc9332300f52a638358507291c9c0e0a3e8632e884c7e0e56`（`spec.source_hashes()` 在修复后源码上重算，91 个条目；由 Q006 段恢复时重新计算并写入 receipt）。
+  - 关键模块 SHA256：
+- `runner.py`: `c4961055164951f532330d2d33da64cffe364b28f54b7e7ae9214c60d2132fef`
+- `recovery.py`: `32f6b5fe32435df460cb7eafea5345d318576e8e5315f862c9f74f6681855db4`
+- `model.py`: `1fc186ff464db9e39d65c76256a72214dd6b54802a9f0218203609482fdaaae1`
+- `orchestration.py`: `4dfd4e61568974ef42fab5645bb48fa57f4ef5e5c2938510751a4f91abeb03c3`
+- `ledger.py`: `0c446159050a6ed5ba1e61a466e1135e62a178b76ebeda702e48027daf6f92fa`
+- `spec.py`: `4866b11f749cbdbf296ac34a5579fded219f0bc1c2cb6c964637ccdf7e5e009d`
+- `scripts/train_a2_ideal_stairs_v06.py`: `9212043bdfd34aec7876480b8d6f13bfac513f25ec19cf387cd6795fda39804f`
+- `tests/test_v06_q006.py`: `02b318832af557e87c460ee5cd2b6012d33c8383aab2eb262fc1dca86a796fe8`
+- 恢复语义：`recovery.resume_contract(..., allow_bridge=True)` 只接受上述 checkpoint SHA 与旧闭包 SHA；`allow_bridge=False` 时该 checkpoint 被显式拒绝；其他来源仍按通用源码校验拒绝。新代码合法保存的 checkpoint 使用当前源码闭包，可在同一冻结源码下**正常二次恢复**，无需 `--allow-q005-bridge/--allow-q006-bridge`，也不要求伪造旧 SHA。
+- Q006 段：唯一新目录 `logs/a2_ideal_stairs_v06/train_seed42_trial02_resume_000100_q006`（必须不存在才创建）；run 身份 `trial02`、segment 身份 `trial02_q006_resume_000100`；元数据 `rollback_from_update=150`、`resume_from_update=100`、`lost_updates=50`、`replay_billed_updates=true`。
+- CLI：`--allow-q005-bridge` 保留旧语义（Q005 manifest 校验）；新增 `--allow-q006-bridge` 走本清单（Q005+Q006+勘误的全部 SHA 校验）并记录 Q006 段标记。二者共用同一受限 bridge 与同一输出段命名。
+- 恢复后顺序（Q006 §4）：`load` → 原子保存并正式 reload 验证 `resume_loaded_000100` → 按 checkpoint 内同一 case 表身份重跑 update100 validation 60 例 + diagnostic 15 例并完成一次课程决策（不执行 PPO100、不计学习成本）→ 保存并验证 `resume_ready_000100`（pending 已清、streak/课程已提交）→ 才允许 101。旧 Q005 段 60/60 只作历史，不叠加 streak、不择优、不拼接 case。
+- 预算（Q006 §3）：活动分支 cap 30000（rollback 后剩 29900）；正式执行累计上限 30100（trial01 50 + trial02 活动 ≤30000 + 丢失 101–150 50）；满额 739,737,600 控制样本 / 2,958,950,400 物理子步 / 602,000 Adam。台账见 `logs/a2_ideal_stairs_v06/implementation/Q006_cost_ledger.json`。
+- 实际 diff 范围：仅 Q006 授权的 ETH `transfer_metadata` 恢复与校验、`resume_loaded`/`resume_ready` 原子保存+独立正式 reload 验证、pending boundary 幂等补完与 case/update/phase/generation 身份校验、Q006 段/受限桥元数据、30100 台账模块及对应测试；未改奖励/PPO/课程/速度/随机化/终止/门禁阈值/资源限额。
+- 独立验收 SHA256（D 填）：`80129189c56e93413b69dc0ee62daa9cf0158f8622aca47bb2cb8acdf5c2cc53`（本报告正文即 `logs/a2_ideal_stairs_v06/implementation/V06_IMPLEMENTATION_ACCEPTANCE.md` 第 10 版；结论 accepted，blocking 0）。

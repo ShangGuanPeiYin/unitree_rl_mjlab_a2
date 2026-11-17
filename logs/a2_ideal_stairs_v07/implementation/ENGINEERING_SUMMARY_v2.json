@@ -1,0 +1,413 @@
+{
+  "actual_probe_diagnostic_batch_envs": 5,
+  "baseline_summary": [
+    {
+      "case_pass_count": 5,
+      "reasons": {
+        "success": 5
+      },
+      "substage": "D25",
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.3,
+      "window_end_count": 0
+    },
+    {
+      "case_pass_count": 5,
+      "reasons": {
+        "success": 5
+      },
+      "substage": "D25",
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.5,
+      "window_end_count": 0
+    },
+    {
+      "case_pass_count": 5,
+      "reasons": {
+        "success": 5
+      },
+      "substage": "D25",
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.6,
+      "window_end_count": 0
+    },
+    {
+      "case_pass_count": 5,
+      "reasons": {
+        "success": 5
+      },
+      "substage": "D22",
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.3,
+      "window_end_count": 0
+    },
+    {
+      "case_pass_count": 5,
+      "reasons": {
+        "success": 5
+      },
+      "substage": "D22",
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.5,
+      "window_end_count": 0
+    },
+    {
+      "case_pass_count": 5,
+      "reasons": {
+        "success": 5
+      },
+      "substage": "D22",
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.6,
+      "window_end_count": 0
+    },
+    {
+      "case_pass_count": 0,
+      "reasons": {
+        "nonfoot": 3,
+        "posture": 2
+      },
+      "substage": "D20",
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.3,
+      "window_end_count": 0
+    },
+    {
+      "case_pass_count": 3,
+      "reasons": {
+        "nonfoot": 1,
+        "posture": 1,
+        "success": 3
+      },
+      "substage": "D20",
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.5,
+      "window_end_count": 0
+    },
+    {
+      "case_pass_count": 1,
+      "reasons": {
+        "nonfoot": 4,
+        "success": 1
+      },
+      "substage": "D20",
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.6,
+      "window_end_count": 0
+    }
+  ],
+  "contract_sha256": "b8857d4b18482f391eb9ec713ea8b6a7236af77bb14d7f8fdd6bf9f931fbba77",
+  "counts_against_formal_training": false,
+  "created_at": "2026-11-17T23:29:24+08:00",
+  "engineering_evaluation": {
+    "actual_control_samples": 92775,
+    "actual_physics_substeps": 371100,
+    "cases": 90,
+    "extra_control_samples": 5205,
+    "extra_physics_substeps": 20820,
+    "useful_control_samples": 87570
+  },
+  "engineering_gpu_total": {
+    "control_samples": 1469799,
+    "physics_substeps": 5879196
+  },
+  "engineering_ppo": {
+    "adam_updates": 1160,
+    "control_samples": 1377024,
+    "learning_updates": 58,
+    "physics_substeps": 5508096
+  },
+  "evaluation_capacity": 8,
+  "flat_500_window_count": 15,
+  "formal_state": {
+    "adam_steps": 96340,
+    "book_remaining": 43183,
+    "control_samples": 118382592,
+    "formal_billed_updates_including_historical_lost": 4917,
+    "formal_learning_started": false,
+    "future_phase_cap_upper_bound_remaining": 32883,
+    "global_cap": 48000,
+    "physics_substeps": 473530368,
+    "update": 4817
+  },
+  "freeze_path": "logs/a2_ideal_stairs_v07/implementation/freeze/v2/V07_SOURCE_FREEZE.json",
+  "freeze_sha256": "f9f67f08a7120b479ed6dfe3dd9916df2c8492ee1e6971d72f807da60f890aa1",
+  "full_evaluation_rng_isolation": "not_established_Q008",
+  "independent_final_acceptance_pending": true,
+  "release_cpu_environment_check": {
+    "control_samples": 2,
+    "physics_substeps": 8,
+    "ppo_updates": 0
+  },
+  "resource_observations": {
+    "additional_root_probe_diagnostic_observation": {
+      "gpu_utilization_percent": 38,
+      "process_mib": 3262,
+      "whole_device_mib": 4255
+    },
+    "continuous_exact_peak_not_claimed": true,
+    "max_process_mib": 3262,
+    "max_whole_device_mib": 4255,
+    "min_disk_free_gib": 451.8366165161133,
+    "min_host_available_mib": 15455,
+    "snapshot_count": 23
+  },
+  "retention_summary": [
+    {
+      "case_pass_count": 5,
+      "kind": "flat_retention",
+      "reasons": {
+        "timeout": 5
+      },
+      "terminal_count": 0,
+      "total": 5,
+      "vx": 0.3,
+      "window_end_count": 5
+    },
+    {
+      "case_pass_count": 5,
+      "kind": "flat_retention",
+      "reasons": {
+        "timeout": 5
+      },
+      "terminal_count": 0,
+      "total": 5,
+      "vx": 0.5,
+      "window_end_count": 5
+    },
+    {
+      "case_pass_count": 5,
+      "kind": "flat_retention",
+      "reasons": {
+        "timeout": 5
+      },
+      "terminal_count": 0,
+      "total": 5,
+      "vx": 0.6,
+      "window_end_count": 5
+    },
+    {
+      "case_pass_count": 0,
+      "kind": "stair_retention",
+      "reasons": {
+        "posture": 1,
+        "side": 1,
+        "timeout": 3
+      },
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.3,
+      "window_end_count": 0
+    },
+    {
+      "case_pass_count": 0,
+      "kind": "stair_retention",
+      "reasons": {
+        "body": 2,
+        "posture": 1,
+        "timeout": 2
+      },
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.5,
+      "window_end_count": 0
+    },
+    {
+      "case_pass_count": 5,
+      "kind": "stair_retention",
+      "reasons": {
+        "success": 5
+      },
+      "terminal_count": 5,
+      "total": 5,
+      "vx": 0.6,
+      "window_end_count": 0
+    }
+  ],
+  "schema": "a2-v07-engineering-summary-v2",
+  "sds_sha256": "303ae40a5c5e3fe82f9f0df3aae8d153136e016439087c8db9701aeb17197aca",
+  "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a",
+  "stage_report_sha256": {
+    "baseline": "fc527bd7f442d5f9347853ec4ce3dda02a485b86cee8d3ffc60aa6506dc1ed80",
+    "probe": "9f5945a6339fdc0919d1e0d02d1d5eafab6fc4db83308d0c878ae6a785c368a5",
+    "retention-protocol": "ce96c51af0b82fd1341efd0af3549b2a71014c55d7dcc0cf5a39baa02d4330e3",
+    "smoke": "f5c0a75ecb4948d42cf65942fe202bfefcee3164852367b4972ddc6230763f05",
+    "source-reload": "14fc88e383855210734c93ff2f757599d9963df388dca1830908c975953fad3f"
+  },
+  "stages": {
+    "baseline": {
+      "changed_files": [],
+      "command": [
+        "/home/xxs/anaconda3/envs/a2/bin/python",
+        "logs/a2_ideal_stairs_v07/implementation/run_engineering.py",
+        "--stage",
+        "baseline",
+        "--device",
+        "cuda:0",
+        "--seed",
+        "42",
+        "--output-dir",
+        "logs/a2_ideal_stairs_v07/implementation/gpu/v2/baseline",
+        "--execute"
+      ],
+      "contract_sha256": "b8857d4b18482f391eb9ec713ea8b6a7236af77bb14d7f8fdd6bf9f931fbba77",
+      "counts_against_formal_training": false,
+      "duration_seconds": 93.6697359085083,
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "0",
+        "MKL_NUM_THREADS": "2",
+        "MUJOCO_GL": "egl",
+        "OMP_NUM_THREADS": "2"
+      },
+      "exit_code": 0,
+      "freeze_sha256": "f9f67f08a7120b479ed6dfe3dd9916df2c8492ee1e6971d72f807da60f890aa1",
+      "production_directory_created": false,
+      "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a",
+      "stage": "baseline",
+      "started_at": 1794928583.55115,
+      "stdout": "logs/a2_ideal_stairs_v07/implementation/gpu/v2/baseline.stdout.log",
+      "stdout_sha256": "0ecfc2b938c3c54e3aefa4f694348dcba05e71b224b2ca568ef0f7548fa7cda5"
+    },
+    "probe": {
+      "changed_files": [],
+      "command": [
+        "/home/xxs/anaconda3/envs/a2/bin/python",
+        "logs/a2_ideal_stairs_v07/implementation/run_engineering.py",
+        "--stage",
+        "probe",
+        "--device",
+        "cuda:0",
+        "--seed",
+        "42",
+        "--output-dir",
+        "logs/a2_ideal_stairs_v07/implementation/gpu/v2/probe",
+        "--execute"
+      ],
+      "contract_sha256": "b8857d4b18482f391eb9ec713ea8b6a7236af77bb14d7f8fdd6bf9f931fbba77",
+      "counts_against_formal_training": false,
+      "duration_seconds": 607.5822076797485,
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "0",
+        "MKL_NUM_THREADS": "2",
+        "MUJOCO_GL": "egl",
+        "OMP_NUM_THREADS": "2"
+      },
+      "exit_code": 0,
+      "freeze_sha256": "f9f67f08a7120b479ed6dfe3dd9916df2c8492ee1e6971d72f807da60f890aa1",
+      "production_directory_created": false,
+      "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a",
+      "stage": "probe",
+      "started_at": 1794927361.2836528,
+      "stdout": "logs/a2_ideal_stairs_v07/implementation/gpu/v2/probe.stdout.log",
+      "stdout_sha256": "37b520ec1636ff0cad11339365110bb9141c1ceda0a95f35371e60b158824922"
+    },
+    "retention-protocol": {
+      "changed_files": [],
+      "command": [
+        "/home/xxs/anaconda3/envs/a2/bin/python",
+        "logs/a2_ideal_stairs_v07/implementation/run_engineering.py",
+        "--stage",
+        "retention-protocol",
+        "--device",
+        "cuda:0",
+        "--seed",
+        "42",
+        "--output-dir",
+        "logs/a2_ideal_stairs_v07/implementation/gpu/v2/retention-protocol",
+        "--execute"
+      ],
+      "contract_sha256": "b8857d4b18482f391eb9ec713ea8b6a7236af77bb14d7f8fdd6bf9f931fbba77",
+      "counts_against_formal_training": false,
+      "duration_seconds": 154.20322060585022,
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "0",
+        "MKL_NUM_THREADS": "2",
+        "MUJOCO_GL": "egl",
+        "OMP_NUM_THREADS": "2"
+      },
+      "exit_code": 0,
+      "freeze_sha256": "f9f67f08a7120b479ed6dfe3dd9916df2c8492ee1e6971d72f807da60f890aa1",
+      "production_directory_created": false,
+      "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a",
+      "stage": "retention-protocol",
+      "started_at": 1794928887.390603,
+      "stdout": "logs/a2_ideal_stairs_v07/implementation/gpu/v2/retention-protocol.stdout.log",
+      "stdout_sha256": "93b13f6a70a2d4aacd947a06d67105c7ad62fe3a4aee8561e01ad6c2a37eebdf"
+    },
+    "smoke": {
+      "changed_files": [],
+      "command": [
+        "/home/xxs/anaconda3/envs/a2/bin/python",
+        "logs/a2_ideal_stairs_v07/implementation/run_engineering.py",
+        "--stage",
+        "smoke",
+        "--device",
+        "cuda:0",
+        "--seed",
+        "42",
+        "--output-dir",
+        "logs/a2_ideal_stairs_v07/implementation/gpu/v2/smoke",
+        "--execute"
+      ],
+      "contract_sha256": "b8857d4b18482f391eb9ec713ea8b6a7236af77bb14d7f8fdd6bf9f931fbba77",
+      "counts_against_formal_training": false,
+      "duration_seconds": 19.60983943939209,
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "0",
+        "MKL_NUM_THREADS": "2",
+        "MUJOCO_GL": "egl",
+        "OMP_NUM_THREADS": "2"
+      },
+      "exit_code": 0,
+      "freeze_sha256": "f9f67f08a7120b479ed6dfe3dd9916df2c8492ee1e6971d72f807da60f890aa1",
+      "production_directory_created": false,
+      "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a",
+      "stage": "smoke",
+      "started_at": 1794927160.254912,
+      "stdout": "logs/a2_ideal_stairs_v07/implementation/gpu/v2/smoke.stdout.log",
+      "stdout_sha256": "cc4b454d59dc6149db124f232633ad623ac815583309b16d68e0d0891f91e004"
+    },
+    "source-reload": {
+      "changed_files": [],
+      "command": [
+        "/home/xxs/anaconda3/envs/a2/bin/python",
+        "logs/a2_ideal_stairs_v07/implementation/run_engineering.py",
+        "--stage",
+        "source-reload",
+        "--device",
+        "cuda:0",
+        "--seed",
+        "42",
+        "--output-dir",
+        "logs/a2_ideal_stairs_v07/implementation/gpu/v2/source-reload",
+        "--execute"
+      ],
+      "contract_sha256": "b8857d4b18482f391eb9ec713ea8b6a7236af77bb14d7f8fdd6bf9f931fbba77",
+      "counts_against_formal_training": false,
+      "duration_seconds": 33.83579158782959,
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "0",
+        "MKL_NUM_THREADS": "2",
+        "MUJOCO_GL": "egl",
+        "OMP_NUM_THREADS": "2"
+      },
+      "exit_code": 0,
+      "freeze_sha256": "f9f67f08a7120b479ed6dfe3dd9916df2c8492ee1e6971d72f807da60f890aa1",
+      "production_directory_created": false,
+      "source_closure_sha256": "829683d61d7732cf683c96ebc6f659769e60c7324a386ba95227ac3fb53e274a",
+      "stage": "source-reload",
+      "started_at": 1794928333.695592,
+      "stdout": "logs/a2_ideal_stairs_v07/implementation/gpu/v2/source-reload.stdout.log",
+      "stdout_sha256": "2f38185c5c37cbee05875431cae3d5eee675ab095b8e8b09f254b36ceb7f1a8d"
+    }
+  }
+}
