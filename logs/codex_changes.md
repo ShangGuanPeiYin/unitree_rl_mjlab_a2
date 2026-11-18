@@ -3140,3 +3140,16 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-18｜6800 H00报告完成
 
 15例valid15/invalid0/error0，success0/failure15（timeout7/posture4/side2/nonfoot1/final_unstable1），三速各0/5。实际评估27994控制样本/111976物理子步，完整raw/事务及gpu/FORMAL_H00_006800_A_SUMMARY.json保留。仍按SDS只报告，不触发旧H00行为回归停训；阶段A400/4000，边界保存校验后继续原配方，整体门禁尚未通过。
+
+### 2026-11-18｜协调主控独立CPU预览6800
+
+主控消息称用户想看6800效果，由主控尝试独立CPU回放，要求正式worker继续。root仅新增coordination/REPLAY_6800_HANDOFF.json/md及共享outbox，未录制或启动GPU回放。实际核验6800 durable boundary18 SHA22a671084485099a06cfa45b6b2b53b901181f1e0a793e8f7364008ac2f69fe7与later21 SHA3ae4504a684d5f3a8d3625aa1c57db43f96c8396341172349e17b9c15ef3b3d9的model/optimizer/normalizer/learning完整digest相同；给出原生CPU入口与固定final:E .5L40病例、右侧相机/2秒减速20秒驻留、完整命令及纯CPU渲染尚未实测说明。明确不能往冻结WT src/scripts新增文件，不把只读策略回放当正式恢复或GPU定量复现。正式worker2438417不受中断，训练配方不改。
+
+### 2026-11-18｜6900站稳失败窗口只读复算
+
+原raw中60例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_support': 58, 'endpoint_stop_max_speed': 2}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_006900_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-18｜6900第五轮阶段A门禁未通过
+
+正式新增500更新，A门禁valid120/invalid0/error0、success38/failure82、gate_pass=false。平地0.3为0/20（flat_progress20），0.5为20/20，0.6为18/20（flat_progress2）；L40上楼停车三速均0/20（final_unstable各20）。全部原因final_unstable60/flat_progress22/success38。15批实际评估220816控制样本/883264物理子步，完整raw/事务和gpu/FORMAL_GATE_006900_A_SUMMARY.json保留。
+原末窗口只读复算60例：首个不合格项四足同时有效支撑占比不足90%为58例、最大水平速度超标2例；不把外观看似静止等同满足全部联合站稳判据，也不改>5N有效支撑及90%阈值。逐例实测指标见FORMAL_GATE_006900_A_STAND_ANALYSIS.json。继续A500/4000内原预算，仍无连续完整通过；当前边界持久校验进行中。
