@@ -39,7 +39,7 @@ class TaskMachine:
         x=x.detach().cpu() if isinstance(x,torch.Tensor) else torch.as_tensor(x)
         self.start_x[ids]=x;self.previous_x[ids]=x;self.flat_valid[ids]=True
         for i in ids.tolist():
-            c=self.cases[i];self.limits[i]=spec.FLAT_WALK_STEPS if c['task']=='flat_stop' else int(timeout_steps(c['tile_id'],torch.tensor(c['speed'])).item());tile=build_terrain_specs()[c['tile_id']];self.points[i]=float(c.get('trigger_p',sum(spec.TRIGGER_RANGES.get(c['task'],(0.,0.)))/2))*tile.N*tile.step_depth;self.direction[i]=c['initial_direction'];self.goal[i]=c['initial_direction'];self.leg_transition_budget[i]=spec.TRANSITION_STEPS if c['initial_direction']<0 else 0;self.events[i]=[];self.direction_checks[i]=[];self.leg_ids[i]=0;self.budget_events[i]=[dict(event='travel',leg=0,step=0,steps=self.limits[i])]
+            c=self.cases[i];self.limits[i]=spec.FLAT_WALK_STEPS if c['task']=='flat_stop' else int(timeout_steps(c['tile_id'],torch.tensor(c['speed'])).item());tile=build_terrain_specs()[c['tile_id']];point=c.get('trigger_p');point=sum(spec.TRIGGER_RANGES.get(c['task'],(0.,0.)))/2 if point is None else point;self.points[i]=float(point)*tile.N*tile.step_depth;self.direction[i]=c['initial_direction'];self.goal[i]=c['initial_direction'];self.leg_transition_budget[i]=spec.TRANSITION_STEPS if c['initial_direction']<0 else 0;self.events[i]=[];self.direction_checks[i]=[];self.leg_ids[i]=0;self.budget_events[i]=[dict(event='travel',leg=0,step=0,steps=self.limits[i])]
             if c['initial_direction']<0:self._budget(i,'startup_transition',spec.TRANSITION_STEPS)
     def set_cases(self,cases):self.cases=[canonical_case(c) for c in cases]
     def _limit(self,i):return self.limits[i]
@@ -49,6 +49,12 @@ class TaskMachine:
         # One batched device-to-host snapshot; no CUDA scalar access in FSM.
         packed=torch.stack((x,top,bottom,stand_ok,physical_failure,executed,timeout,transition,requested),-1).detach().cpu()
         v=packed.unbind(-1)
+        # Labels describe the command already used by this action. The first
+        # zero hold action arrives while the logical machine is still DECEL.
+        action_mode=self.mode.clone()
+        first_hold=(self.mode==self.DECEL)&(v[5].abs()<=spec.COMMAND_TOLERANCE)&(v[8].abs()<=spec.COMMAND_TOLERANCE)&~v[7].bool()
+        action_mode[first_hold]=self.HOLD
+        self.action_segments=[('mid' if int(self.stop_kind[i])==1 else 'top' if int(self.goal[i])>0 else 'bottom')+'_'+('walk','deceleration','hold','done')[int(action_mode[i])] for i in range(len(self.cases))]
         out=self._advance_cpu(v[0],v[1].bool(),v[2].bool(),v[3].bool(),v[4].bool(),v[5],v[6].bool(),v[7].bool(),v[8])
         result=torch.stack((out["request"],out["arrival"].float(),out["success"].float(),out["failure"].float()),-1).to(self.output_device)
         return dict(request=result[:,0],arrival=result[:,1].bool(),success=result[:,2].bool(),failure=result[:,3].bool(),reason=out["reason"])

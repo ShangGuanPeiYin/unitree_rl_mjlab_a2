@@ -3014,3 +3014,12 @@ CPU只读实际curriculum_004900.pt：gen73、gu83、gate_streak0，gate_log pas
 
 第1轮复审I1已关闭；I2剩余R1：重复当前同向目标可冒充E1/E2换向。修改evaluation.py与test_v08_evaluation.py，绑定Case的初始/旧巡航方向和幅值，排除重复目标重启插值；E3反向/E4分别验证真实100减速、300/1000零驻留、从0重新100步起动。受改helper还校验E1/E2负/正请求及E3零请求恰为trigger_p首次方向crossing，数值/病例不变。
 验证：三个相关测试文件41通过、1第三方警告、10.04秒；baseline/final SHA复算未变。E3同向的触发仍由真实Env FSM执行（未人为加反向门槛），E4触觉登顶仍Env/窗口核验，整体集成待审。已归档FIX_ROUND2_REPORT；原审查者复审待完成；正式0。
+
+### 2026-11-18｜Task2独立审查通过与Task1实际接口阻断
+
+Task2第2轮独立复审关闭I2/R1，局部规范和质量blocking=0，完整报告已归档TASK2_REVIEW_FIX2_ACCEPTED.md；这不替代真实Env/GPU整体准入。Task1初审发现首hold标签滞后一帧会使E3/E4成功raw被拒、物理失败标识缺失导致错误分类，已交原owner定向修复；不放宽验收、不将全部failure贴物理。当前未启动GPU工程或正式学习。
+
+### 2026-11-18｜Task1独立审查修复第1轮
+
+修改env.py/tasks.py/spec.py与test_v08_env.py：按已锁存动作的executed/requested/transition标记首零速驻留，保留k100减速、k101驻留；终态导出真实physical_failure/failure_kind/failure_masks，区分body/fall与任务timeout/cannot_reverse。真实冻结make_cases接入发现trigger_p=None构造失败，按批准schema将未提供触发点使用内部fallback，非E不触发，真实训练E仍U区间采样、eval指定点不变。删除重复contract死定义前后canonical JSON逐字相同，SHA cf1edf4d8509ae135a87af874a7049ca0da3a376b47f245b00e2a5e222fca59f。
+验证：必要Task1组33通过、1现有警告、29.43秒；真实CPU首hold/物理分类/frozen baseline-gate-E4构造，以及合成运动学producer→独立consumer E3/E4均覆盖，合成fixture不证明策略物理成功。未改evaluator/旧依赖/训练数值/门槛，独立复审待完成，GPU和正式训练仍0。

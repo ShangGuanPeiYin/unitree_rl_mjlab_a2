@@ -78,9 +78,6 @@ def reward_config():
         diagnostics=dict(scope='signed_constant_cruise_segments_only',reward_payment=False,termination=False,h00='report_only',history_samples=STALL_HISTORY_SAMPLES,dx_fraction=STALL_DX_FRACTION_PER_SECOND,consecutive_samples=STALL_CONSECUTIVE_SAMPLES))
     return out
 
-def contract(**kwargs):
-    return dict(code_version=CODE_VERSION,recipe_version=RECIPE_VERSION,protocol_id=PROTOCOL_ID,source_update=SOURCE_UPDATE,init_path=INIT_PATH,init_sha256=INIT_SHA256,phase_order=PHASE_ORDER,phase_budgets=deepcopy(PHASE_BUDGETS),phase_allocations=deepcopy(PHASE_ALLOCATIONS),transition_steps=TRANSITION_STEPS,endpoint_hold_steps=ENDPOINT_HOLD_STEPS,mid_hold_steps=MID_HOLD_STEPS,reward=reward_config(),ppo=deepcopy(PPO_CONFIG))
-
 def contract_sha256(value=None): return legacy.contract_sha256(contract() if value is None else value)
 def reward_config_sha256(): return legacy.contract_sha256(reward_config())
 

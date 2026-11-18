@@ -221,11 +221,24 @@ class V08Env(ManagerBasedRlEnv):
         return dict(kind=kind,count=int(self.tasks.hold_steps[i]),xy=self.standing.xy[i,-n:].detach().cpu().tolist(),values=self.standing.values[i,-n:].detach().cpu().tolist())
     def _records(self,state,result,done):
         records=[]
-        for i in done.nonzero().flatten().tolist():
+        terminal_ids=done.nonzero().flatten().detach().cpu().tolist()
+        if not terminal_ids:return records
+        mask_names=tuple(state.failure_masks)
+        mask_rows=torch.stack([state.failure_masks[name] for name in mask_names],-1).detach().cpu()
+        for i in terminal_ids:
+            failure_masks=dict(zip(mask_names,mask_rows[i].tolist()))
+            physical_failure=bool(result['failure'][i]) and any(failure_masks.get(name,False) for name in ('side','bounds','body','nonfoot','posture','fall'))
             c=self.tasks.cases[i];windows=deepcopy(self.stop_windows[i]);
             if self.tasks.hold_steps[i]>0:windows.append(self._export_window(i))
-            records.append(dict(env_id=i,case_id=c.get('case_id',f'env-{i}'),task=c['task'],script=c.get('script'),tile_id=int(self.tile_ids[i]),phase=self.phase,role=self.roles[i],seed=c.get('seed',self.run_seed),command=c['speed'],cruise_speed=c['speed'],success=bool(result['success'][i]),failure=bool(result['failure'][i]),timeout=result['reason'][i]=='timeout',reason=result['reason'][i],segment=self._record_segments[i],complete=True,raw_complete=self.evaluation,finite=True,terminal_step=int(self.episode_length_buf[i]),control_samples=int(self.episode_length_buf[i]),duration=float(self.episode_length_buf[i])*spec.CONTROL_DT,initial_pose=self.episode_initial_pose[i].cpu().tolist(),flat_progress=dict(net_dx=float(self.flat_walk_end[i]-self.episode_start_local_x[i]),max_abs_y=float(self.flat_max_y[i]),max_abs_yaw=float(self.flat_max_yaw[i]),walk_steps=min(int(self.episode_length_buf[i]),spec.FLAT_WALK_STEPS)),direction_checks=deepcopy(self.tasks.direction_checks[i]),max_stair_abs_yaw=float(self.max_stair_abs_yaw[i]),stop_windows=windows,time_budget_events=deepcopy(self.tasks.budget_events[i]),events=deepcopy(self.tasks.events[i]),trace=deepcopy(self.trace[i]),first_step_valid=bool(self.first_step_acquired[i]),active_samples=int(self.stall.active_samples[i]),stall_samples=int(self.stall.stall_samples[i]),forward_distance=float(state.local[i,0]-self.episode_start_local_x[i]),max_abs_y=float(self.max_lateral[i]),max_abs_yaw_deg=float(self.max_abs_yaw[i])*180/math.pi,reward_sums={k:float(v[i]) for k,v in self.episode_reward_sums.items()},protocol_id=self.protocol,recipe=spec.RECIPE_VERSION))
+            records.append(dict(env_id=i,case_id=c.get('case_id',f'env-{i}'),task=c['task'],script=c.get('script'),tile_id=int(self.tile_ids[i]),phase=self.phase,role=self.roles[i],seed=c.get('seed',self.run_seed),command=c['speed'],cruise_speed=c['speed'],success=bool(result['success'][i]),failure=bool(result['failure'][i]),physical_failure=physical_failure,failure_kind='physical' if physical_failure else 'task' if bool(result['failure'][i]) else None,failure_masks=failure_masks,timeout=result['reason'][i]=='timeout',reason=result['reason'][i],segment=self._record_segments[i],complete=True,raw_complete=self.evaluation,finite=True,terminal_step=int(self.episode_length_buf[i]),control_samples=int(self.episode_length_buf[i]),duration=float(self.episode_length_buf[i])*spec.CONTROL_DT,initial_pose=self.episode_initial_pose[i].cpu().tolist(),flat_progress=dict(net_dx=float(self.flat_walk_end[i]-self.episode_start_local_x[i]),max_abs_y=float(self.flat_max_y[i]),max_abs_yaw=float(self.flat_max_yaw[i]),walk_steps=min(int(self.episode_length_buf[i]),spec.FLAT_WALK_STEPS)),direction_checks=deepcopy(self.tasks.direction_checks[i]),max_stair_abs_yaw=float(self.max_stair_abs_yaw[i]),stop_windows=windows,time_budget_events=deepcopy(self.tasks.budget_events[i]),events=deepcopy(self.tasks.events[i]),trace=deepcopy(self.trace[i]),first_step_valid=bool(self.first_step_acquired[i]),active_samples=int(self.stall.active_samples[i]),stall_samples=int(self.stall.stall_samples[i]),forward_distance=float(state.local[i,0]-self.episode_start_local_x[i]),max_abs_y=float(self.max_lateral[i]),max_abs_yaw_deg=float(self.max_abs_yaw[i])*180/math.pi,reward_sums={k:float(v[i]) for k,v in self.episode_reward_sums.items()},protocol_id=self.protocol,recipe=spec.RECIPE_VERSION))
         return records
+    def _record_action_trace(self,state,request):
+        raw=torch.stack((state.local[:,0],state.local[:,1],state.yaw,self.executed_c,self.command_state.executed_requested,self.command_state.executed_transition.float(),self.requested_c,self.command[:,0],request),-1).detach().cpu().tolist()
+        steps=self.episode_length_buf.detach().cpu().tolist()
+        for i,(step,row) in enumerate(zip(steps,raw)):
+            event=row[8] if math.isfinite(row[8]) else None
+            self.trace[i].append(dict(control_step=int(step),boundary=False,local_x=row[0],local_y=row[1],yaw=row[2],executed_c=row[3],requested_c=row[4],transition=bool(row[5]),next_requested_c=row[6],next_actor_c=row[7],request_event=event,segment=self._record_segments[i],position_semantics='after_action_boundary'))
+            if event is not None:self.tasks.events[i].append(dict(event='request',step=int(step),target=event))
     def segment(self,i):
         mode=int(self.tasks.mode[i]);return ('walk','deceleration','hold','done')[mode]
     def step(self,action):
@@ -253,8 +266,8 @@ class V08Env(ManagerBasedRlEnv):
         self.flat_walk_end=torch.where(flat_walk,state.local[:,0],self.flat_walk_end);self.flat_max_y=torch.where(flat_walk,torch.maximum(self.flat_max_y,state.local[:,1].abs()),self.flat_max_y);self.flat_max_yaw=torch.where(flat_walk,torch.maximum(self.flat_max_yaw,state.yaw.abs()),self.flat_max_yaw)
         self.tasks.flat_valid&=((~flat_walk)|((state.local[:,1].abs()<=spec.BOTTOM_LATERAL_MAX)&(state.yaw.abs()<=spec.LEVEL_ROLL))).cpu()
         old_mode=self.tasks.mode.clone();old_hold=self.tasks.hold_steps.clone();old_kind=self.tasks.stop_kind.clone()
-        self._record_segments=[('mid' if int(old_kind[i])==1 else 'top' if int(self.tasks.goal[i])>0 else 'bottom')+'_'+('walk','deceleration','hold','done')[int(old_mode[i])] for i in range(self.num_envs)]
         result=self.tasks.advance(state.local[:,0],self.climb.consecutive_steps>=spec.BOTTOM_ARRIVAL_FRAMES,self.bottom_count>=spec.BOTTOM_ARRIVAL_FRAMES,stable,physical,self.executed_c,torch.zeros_like(physical),transition=self.command_state.executed_transition,requested=self.command_state.executed_requested)
+        self._record_segments=list(self.tasks.action_segments)
         for i in result['failure'].nonzero().flatten().detach().cpu().tolist():
             if bool(state.failure[i]):result['reason'][i]=events.REASON_NAMES[int(state.reason[i])]
             elif bool(yaw_fail[i]):result['reason'][i]='wrong_direction_yaw'
@@ -284,13 +297,7 @@ class V08Env(ManagerBasedRlEnv):
         clear=new_stop|restarting.to(self.device)
         if clear.any():self.standing.reset(clear.nonzero().flatten())
         self.command[:,0]=self.command_state.advance();self.command[:,1:]=0
-        if self.evaluation:
-            raw=torch.stack((state.local[:,0],state.local[:,1],state.yaw,self.executed_c,self.command_state.executed_requested,self.command_state.executed_transition.float(),self.requested_c,self.command[:,0],request),-1).detach().cpu().tolist()
-            steps=self.episode_length_buf.detach().cpu().tolist()
-            for i,(step,row) in enumerate(zip(steps,raw)):
-                event=row[8] if math.isfinite(row[8]) else None
-                self.trace[i].append(dict(control_step=int(step),boundary=False,local_x=row[0],local_y=row[1],yaw=row[2],executed_c=row[3],requested_c=row[4],transition=bool(row[5]),next_requested_c=row[6],next_actor_c=row[7],request_event=event,segment=self._record_segments[i],position_semantics='after_action_boundary'))
-                if event is not None:self.tasks.events[i].append(dict(event='request',step=int(step),target=event))
+        if self.evaluation:self._record_action_trace(state,request)
 
         terminal=self._observations(update=True);done=result['success']|result['failure'];episodes=self._records(state,result,done)
         self._last_step_diagnostics=dict(executed_c=self.executed_c.clone(),requested_c=self.requested_c.clone(),mode=self.tasks.mode.clone(),hold_steps=self.tasks.hold_steps.clone(),active_samples=self.stall.active_samples.clone(),stall_samples=self.stall.stall_samples.clone(),stall_dx_1s=self.stall.dx_1s.clone())
