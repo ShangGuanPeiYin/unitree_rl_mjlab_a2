@@ -3195,3 +3195,19 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-18｜7100说明参数校对
 
 对照冻结runner.boundary_plan实际代码，阶段说明草稿曾将50更新诊断频率误写为周期保存频率；已在FORMAL_PROGRESS_007100.md更正为每50更新诊断、每100更新周期checkpoint，边界事件另存。只纠正文档，训练源/既有日志/保存行为均未修改。验证为只读代码与实际interval checkpoint回执；未运行额外测试。
+
+### 2026-11-18｜7200边界回执耗时只读观察
+
+新增cpu/FORMAL_BOUNDARY_WALL_OBSERVATIONS_007200.json，绑定实际7100序号35–39及7200序号40六份metadata SHA/mtime；37→38为416.132秒、38→39为416.028秒，按冻结runner顺序这两段是连续保存，无新增物理。其他间隔可能含门禁/正式学习，不能当作纯save/validation benchmark；回执间隔也不是单独CPU函数基准。正式worker2438417保持running，已新增800更新到7200、A800/4000；未暂停、重启、缓存、回滚或更改src/scripts/freeze/配方。将该事实追加Q5协调说明和MAIN_OUTBOX，供主线后续裁定；当前仍继续原正式run。仅只读/stat小文件观察并记录，无额外测试/物理/学习。
+
+### 2026-11-18｜7200站稳失败窗口只读复算
+
+原raw中2例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_support': 2}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007200_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-18｜7200完整门禁与平地原轨迹分析
+
+真实120/120 valid、invalid/error/engineering0，success58/failure62；up_L40三速0.3/0.5/0.6分别18/20、20/20、20/20，三组首次单次达标，较7100的楼梯0/60在同一冻结病例上增加为58/60；flat三速仍各0/20，A整体门禁false且streak0，不代表课程或策略整体通过。失败flat_progress60/final_unstable2；两例站稳首先失败仍为endpoint_stop_support。实际门禁176512控制样本/706048物理子步，完整raw/事务及gpu/FORMAL_GATE_007200_A_SUMMARY.json保留。新增gpu/FORMAL_GATE_007200_A_FLAT_MOTION_ANALYSIS.json按原0..400真实边界重算60个平地8秒轨迹：三速平均净前进1.0206/2.5151/3.1180米，原要求1.92/3.20/3.84米，60例均距离不足，部分另有横移/偏航超限。不是完全没有走动，也不能把该60个提前在行走阶段失败写成完成平地停车测试。全部计算仅CPU读取原raw，无新物理/学习/阈值改动；早于不可变sidecar安装时诊断guard曾拒绝（summary索引不存在），确认安装后才正式记录本结果，无重复评估。当前A正式800/4000，唯一worker2438417继续；H00本边界结果仍待实际完成。
+
+### 2026-11-18｜7200小型结果证据归档
+
+为隔离分支审阅归档7200门禁summary、两例失败站稳指标、60例平地轨迹统计及6份回执时间观察共4份小型JSON；仅复制结果索引/统计，不含权重或大体积逐步raw。精确路径失败计数：三组各20/20即合计60/60偏航超过10度；横移超过0.2米分别0/20、10/20、12/20，合计22/60；前一项“部分另有横移/偏航”现以此精确计数为准。上楼58/60仅是7200一次固定病例的结果，A整体门禁仍false；所有训练数值和冻结代码保持原样。验证：记录来源raw SHA已重算绑定，JSON来自已实际完成的120valid门禁；无新增训练/评估。

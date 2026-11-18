@@ -1,0 +1,66 @@
+{
+  "time": "2026-11-18T22:36:56.131966+08:00",
+  "observations": [
+    {
+      "file": "boundary_007100_0035.json",
+      "update": 7100,
+      "sequence": 35,
+      "reason": "boundary",
+      "receipt_mtime": "2026-11-18T21:39:36.149549+08:00",
+      "receipt_mtime_unix": 1795009176.1495492,
+      "sha256": "68895c091f2d6c595df7deda3a46e2b77b45aacafa9cca1ad0620b4bd662e50d"
+    },
+    {
+      "file": "boundary_event_007100_0036.json",
+      "update": 7100,
+      "sequence": 36,
+      "reason": "boundary_event",
+      "receipt_mtime": "2026-11-18T21:45:43.679193+08:00",
+      "receipt_mtime_unix": 1795009543.6791925,
+      "sha256": "2b1e048acab67ee767720d2c9921cf70a0c5a2fd22c466f7e45214390ebebed5",
+      "wall_since_previous_receipt_seconds": 367.52964329719543
+    },
+    {
+      "file": "boundary_event_007100_0037.json",
+      "update": 7100,
+      "sequence": 37,
+      "reason": "boundary_event",
+      "receipt_mtime": "2026-11-18T22:06:12.758742+08:00",
+      "receipt_mtime_unix": 1795010772.7587423,
+      "sha256": "fe904dbde46777ef5cbc3c0f1b1c4d8ca2cc0c8b98f41a589ae98aad13e5c027",
+      "wall_since_previous_receipt_seconds": 1229.0795497894287
+    },
+    {
+      "file": "interval_007100_0038.json",
+      "update": 7100,
+      "sequence": 38,
+      "reason": "interval",
+      "receipt_mtime": "2026-11-18T22:13:08.890977+08:00",
+      "receipt_mtime_unix": 1795011188.890977,
+      "sha256": "121571196b4664b7caeced0599be30aeb7d86cf3187ff4efd7076b9cad5cdbb9",
+      "wall_since_previous_receipt_seconds": 416.13223457336426
+    },
+    {
+      "file": "boundary_event_007100_0039.json",
+      "update": 7100,
+      "sequence": 39,
+      "reason": "boundary_event",
+      "receipt_mtime": "2026-11-18T22:20:04.918899+08:00",
+      "receipt_mtime_unix": 1795011604.918899,
+      "sha256": "e5de862f5245d3e8c609357164891624280fcb8788dfd3e10b1e4509efd53f99",
+      "wall_since_previous_receipt_seconds": 416.0279221534729
+    },
+    {
+      "file": "boundary_007200_0040.json",
+      "update": 7200,
+      "sequence": 40,
+      "reason": "boundary",
+      "receipt_mtime": "2026-11-18T22:33:52.372054+08:00",
+      "receipt_mtime_unix": 1795012432.372054,
+      "sha256": "29bfc61349d3280d9eef9190c3ebd0050e2a673f6be14c38c1d61b835c44f36f",
+      "wall_since_previous_receipt_seconds": 827.453155040741
+    }
+  ],
+  "qualification": "Metadata receipt mtime wall intervals, not isolated checkpoint/validation benchmarks; may include gate physics or learning. Only source-declared consecutive-save intervals37→38→39 avoid intervening physics. Read-only observations; no formal pause/restart/cache/recipe/freeze changes.",
+  "formal_worker_pid": 2438417
+}

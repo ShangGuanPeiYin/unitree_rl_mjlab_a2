@@ -1,0 +1,475 @@
+{
+  "policy_update": 7200,
+  "source_sidecar": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/evaluations/gate_A_007200.json",
+  "source_sha256": "4009a24278818cdbb7ba21607023b1ca42eea2af20f703a70e31b6f7e633d863",
+  "groups": [
+    {
+      "speed": 0.3,
+      "n": 20,
+      "required_dx": 1.92,
+      "net_dx_min": 0.6089657843112946,
+      "net_dx_mean": 1.0206051444634796,
+      "net_dx_max": 1.1773440539836884,
+      "insufficient_distance": 20,
+      "lateral_above_0_2": 0,
+      "yaw_above_10_deg": 20,
+      "max_abs_y": 0.09167671203613281,
+      "max_abs_yaw_deg": 37.71301927581963
+    },
+    {
+      "speed": 0.5,
+      "n": 20,
+      "required_dx": 3.2,
+      "net_dx_min": 2.4779866337776184,
+      "net_dx_mean": 2.515129801630974,
+      "net_dx_max": 2.5618141889572144,
+      "insufficient_distance": 20,
+      "lateral_above_0_2": 10,
+      "yaw_above_10_deg": 20,
+      "max_abs_y": 0.22329829633235931,
+      "max_abs_yaw_deg": 34.44021119160296
+    },
+    {
+      "speed": 0.6,
+      "n": 20,
+      "required_dx": 3.84,
+      "net_dx_min": 3.0718060731887817,
+      "net_dx_mean": 3.117972809076309,
+      "net_dx_max": 3.1587290167808533,
+      "insufficient_distance": 20,
+      "lateral_above_0_2": 12,
+      "yaw_above_10_deg": 20,
+      "max_abs_y": 0.22873440384864807,
+      "max_abs_yaw_deg": 35.37193437175733
+    }
+  ],
+  "rows": {
+    "0.3": [
+      {
+        "case_id": "gate-A-flat-0.3-000",
+        "net_dx": 1.027606826275587,
+        "required_dx": 1.92,
+        "max_abs_y": 0.07373965531587601,
+        "max_abs_yaw_deg": 34.430642096575774
+      },
+      {
+        "case_id": "gate-A-flat-0.3-001",
+        "net_dx": 0.7765481770038605,
+        "required_dx": 1.92,
+        "max_abs_y": 0.09126874804496765,
+        "max_abs_yaw_deg": 30.435476620833143
+      },
+      {
+        "case_id": "gate-A-flat-0.3-002",
+        "net_dx": 0.6895261406898499,
+        "required_dx": 1.92,
+        "max_abs_y": 0.08377903699874878,
+        "max_abs_yaw_deg": 28.134507125313615
+      },
+      {
+        "case_id": "gate-A-flat-0.3-003",
+        "net_dx": 1.1248251050710678,
+        "required_dx": 1.92,
+        "max_abs_y": 0.06516893953084946,
+        "max_abs_yaw_deg": 36.64836695403848
+      },
+      {
+        "case_id": "gate-A-flat-0.3-004",
+        "net_dx": 1.1670267581939697,
+        "required_dx": 1.92,
+        "max_abs_y": 0.08448777347803116,
+        "max_abs_yaw_deg": 37.403741480012286
+      },
+      {
+        "case_id": "gate-A-flat-0.3-005",
+        "net_dx": 1.08865587413311,
+        "required_dx": 1.92,
+        "max_abs_y": 0.08758088946342468,
+        "max_abs_yaw_deg": 35.44018503703868
+      },
+      {
+        "case_id": "gate-A-flat-0.3-006",
+        "net_dx": 1.1391693651676178,
+        "required_dx": 1.92,
+        "max_abs_y": 0.05997637286782265,
+        "max_abs_yaw_deg": 36.593356610463196
+      },
+      {
+        "case_id": "gate-A-flat-0.3-007",
+        "net_dx": 1.1114419773221016,
+        "required_dx": 1.92,
+        "max_abs_y": 0.08441177010536194,
+        "max_abs_yaw_deg": 36.89937299094186
+      },
+      {
+        "case_id": "gate-A-flat-0.3-008",
+        "net_dx": 1.1336233913898468,
+        "required_dx": 1.92,
+        "max_abs_y": 0.071632981300354,
+        "max_abs_yaw_deg": 36.66832476679326
+      },
+      {
+        "case_id": "gate-A-flat-0.3-009",
+        "net_dx": 1.0765369534492493,
+        "required_dx": 1.92,
+        "max_abs_y": 0.08504166454076767,
+        "max_abs_yaw_deg": 35.326506783587575
+      },
+      {
+        "case_id": "gate-A-flat-0.3-010",
+        "net_dx": 0.9779136851429939,
+        "required_dx": 1.92,
+        "max_abs_y": 0.04701019078493118,
+        "max_abs_yaw_deg": 33.74863063247708
+      },
+      {
+        "case_id": "gate-A-flat-0.3-011",
+        "net_dx": 1.0558616667985916,
+        "required_dx": 1.92,
+        "max_abs_y": 0.09167671203613281,
+        "max_abs_yaw_deg": 35.88554410677478
+      },
+      {
+        "case_id": "gate-A-flat-0.3-012",
+        "net_dx": 0.6089657843112946,
+        "required_dx": 1.92,
+        "max_abs_y": 0.09049364924430847,
+        "max_abs_yaw_deg": 29.810630424992866
+      },
+      {
+        "case_id": "gate-A-flat-0.3-013",
+        "net_dx": 1.1089392453432083,
+        "required_dx": 1.92,
+        "max_abs_y": 0.0760200247168541,
+        "max_abs_yaw_deg": 36.79606979484001
+      },
+      {
+        "case_id": "gate-A-flat-0.3-014",
+        "net_dx": 1.102204903960228,
+        "required_dx": 1.92,
+        "max_abs_y": 0.0826394259929657,
+        "max_abs_yaw_deg": 36.4340765990185
+      },
+      {
+        "case_id": "gate-A-flat-0.3-015",
+        "net_dx": 1.1773440539836884,
+        "required_dx": 1.92,
+        "max_abs_y": 0.08395516127347946,
+        "max_abs_yaw_deg": 37.71301927581963
+      },
+      {
+        "case_id": "gate-A-flat-0.3-016",
+        "net_dx": 0.7426744997501373,
+        "required_dx": 1.92,
+        "max_abs_y": 0.07777900993824005,
+        "max_abs_yaw_deg": 31.117539311350615
+      },
+      {
+        "case_id": "gate-A-flat-0.3-017",
+        "net_dx": 1.0722604766488075,
+        "required_dx": 1.92,
+        "max_abs_y": 0.07851114124059677,
+        "max_abs_yaw_deg": 36.31805900577667
+      },
+      {
+        "case_id": "gate-A-flat-0.3-018",
+        "net_dx": 1.1139158830046654,
+        "required_dx": 1.92,
+        "max_abs_y": 0.06771270185709,
+        "max_abs_yaw_deg": 35.58374878320318
+      },
+      {
+        "case_id": "gate-A-flat-0.3-019",
+        "net_dx": 1.117062121629715,
+        "required_dx": 1.92,
+        "max_abs_y": 0.056999869644641876,
+        "max_abs_yaw_deg": 35.81936981900111
+      }
+    ],
+    "0.5": [
+      {
+        "case_id": "gate-A-flat-0.5-000",
+        "net_dx": 2.5074150562286377,
+        "required_dx": 3.2,
+        "max_abs_y": 0.1915937066078186,
+        "max_abs_yaw_deg": 33.85225143237534
+      },
+      {
+        "case_id": "gate-A-flat-0.5-001",
+        "net_dx": 2.4779866337776184,
+        "required_dx": 3.2,
+        "max_abs_y": 0.22329829633235931,
+        "max_abs_yaw_deg": 34.1864218526128
+      },
+      {
+        "case_id": "gate-A-flat-0.5-002",
+        "net_dx": 2.4934512972831726,
+        "required_dx": 3.2,
+        "max_abs_y": 0.2049359828233719,
+        "max_abs_yaw_deg": 33.95569464735519
+      },
+      {
+        "case_id": "gate-A-flat-0.5-003",
+        "net_dx": 2.5618141889572144,
+        "required_dx": 3.2,
+        "max_abs_y": 0.15705500543117523,
+        "max_abs_yaw_deg": 33.60470830138115
+      },
+      {
+        "case_id": "gate-A-flat-0.5-004",
+        "net_dx": 2.5243725776672363,
+        "required_dx": 3.2,
+        "max_abs_y": 0.1831389218568802,
+        "max_abs_yaw_deg": 34.061927994610976
+      },
+      {
+        "case_id": "gate-A-flat-0.5-005",
+        "net_dx": 2.52377712726593,
+        "required_dx": 3.2,
+        "max_abs_y": 0.1972370743751526,
+        "max_abs_yaw_deg": 34.26932668875842
+      },
+      {
+        "case_id": "gate-A-flat-0.5-006",
+        "net_dx": 2.4924901723861694,
+        "required_dx": 3.2,
+        "max_abs_y": 0.21997079253196716,
+        "max_abs_yaw_deg": 34.38452807439444
+      },
+      {
+        "case_id": "gate-A-flat-0.5-007",
+        "net_dx": 2.4826099276542664,
+        "required_dx": 3.2,
+        "max_abs_y": 0.20781932771205902,
+        "max_abs_yaw_deg": 33.90740179482861
+      },
+      {
+        "case_id": "gate-A-flat-0.5-008",
+        "net_dx": 2.5192484855651855,
+        "required_dx": 3.2,
+        "max_abs_y": 0.18304665386676788,
+        "max_abs_yaw_deg": 33.85810148939946
+      },
+      {
+        "case_id": "gate-A-flat-0.5-009",
+        "net_dx": 2.5548959970474243,
+        "required_dx": 3.2,
+        "max_abs_y": 0.16916970908641815,
+        "max_abs_yaw_deg": 33.645720172252496
+      },
+      {
+        "case_id": "gate-A-flat-0.5-010",
+        "net_dx": 2.524889826774597,
+        "required_dx": 3.2,
+        "max_abs_y": 0.17698274552822113,
+        "max_abs_yaw_deg": 33.77655244580409
+      },
+      {
+        "case_id": "gate-A-flat-0.5-011",
+        "net_dx": 2.500627338886261,
+        "required_dx": 3.2,
+        "max_abs_y": 0.20711328089237213,
+        "max_abs_yaw_deg": 34.368046827927195
+      },
+      {
+        "case_id": "gate-A-flat-0.5-012",
+        "net_dx": 2.507144331932068,
+        "required_dx": 3.2,
+        "max_abs_y": 0.2047811895608902,
+        "max_abs_yaw_deg": 34.44021119160296
+      },
+      {
+        "case_id": "gate-A-flat-0.5-013",
+        "net_dx": 2.50612074136734,
+        "required_dx": 3.2,
+        "max_abs_y": 0.21188651025295258,
+        "max_abs_yaw_deg": 33.86050230089272
+      },
+      {
+        "case_id": "gate-A-flat-0.5-014",
+        "net_dx": 2.5333614349365234,
+        "required_dx": 3.2,
+        "max_abs_y": 0.18865609169006348,
+        "max_abs_yaw_deg": 34.30441678561936
+      },
+      {
+        "case_id": "gate-A-flat-0.5-015",
+        "net_dx": 2.5433878302574158,
+        "required_dx": 3.2,
+        "max_abs_y": 0.17777611315250397,
+        "max_abs_yaw_deg": 33.82271427930962
+      },
+      {
+        "case_id": "gate-A-flat-0.5-016",
+        "net_dx": 2.50305038690567,
+        "required_dx": 3.2,
+        "max_abs_y": 0.20480483770370483,
+        "max_abs_yaw_deg": 34.082329769661804
+      },
+      {
+        "case_id": "gate-A-flat-0.5-017",
+        "net_dx": 2.4901387691497803,
+        "required_dx": 3.2,
+        "max_abs_y": 0.21359683573246002,
+        "max_abs_yaw_deg": 33.88952035958152
+      },
+      {
+        "case_id": "gate-A-flat-0.5-018",
+        "net_dx": 2.5582746267318726,
+        "required_dx": 3.2,
+        "max_abs_y": 0.1636570394039154,
+        "max_abs_yaw_deg": 33.77895325729735
+      },
+      {
+        "case_id": "gate-A-flat-0.5-019",
+        "net_dx": 2.4975392818450928,
+        "required_dx": 3.2,
+        "max_abs_y": 0.21160836517810822,
+        "max_abs_yaw_deg": 34.39374199958478
+      }
+    ],
+    "0.6": [
+      {
+        "case_id": "gate-A-flat-0.6-000",
+        "net_dx": 3.120587468147278,
+        "required_dx": 3.84,
+        "max_abs_y": 0.1951126903295517,
+        "max_abs_yaw_deg": 34.82787906851455
+      },
+      {
+        "case_id": "gate-A-flat-0.6-001",
+        "net_dx": 3.1506006717681885,
+        "required_dx": 3.84,
+        "max_abs_y": 0.18075011670589447,
+        "max_abs_yaw_deg": 34.6010314107055
+      },
+      {
+        "case_id": "gate-A-flat-0.6-002",
+        "net_dx": 3.128709554672241,
+        "required_dx": 3.84,
+        "max_abs_y": 0.1841098815202713,
+        "max_abs_yaw_deg": 34.732485231471564
+      },
+      {
+        "case_id": "gate-A-flat-0.6-003",
+        "net_dx": 3.1258063316345215,
+        "required_dx": 3.84,
+        "max_abs_y": 0.20315633714199066,
+        "max_abs_yaw_deg": 34.875417185137835
+      },
+      {
+        "case_id": "gate-A-flat-0.6-004",
+        "net_dx": 3.1078145503997803,
+        "required_dx": 3.84,
+        "max_abs_y": 0.21353013813495636,
+        "max_abs_yaw_deg": 34.765915592364195
+      },
+      {
+        "case_id": "gate-A-flat-0.6-005",
+        "net_dx": 3.1043200492858887,
+        "required_dx": 3.84,
+        "max_abs_y": 0.21001935005187988,
+        "max_abs_yaw_deg": 34.083074260281336
+      },
+      {
+        "case_id": "gate-A-flat-0.6-006",
+        "net_dx": 3.1543431282043457,
+        "required_dx": 3.84,
+        "max_abs_y": 0.17010468244552612,
+        "max_abs_yaw_deg": 34.42719285104492
+      },
+      {
+        "case_id": "gate-A-flat-0.6-007",
+        "net_dx": 3.1035149097442627,
+        "required_dx": 3.84,
+        "max_abs_y": 0.21247760951519012,
+        "max_abs_yaw_deg": 35.300989196848406
+      },
+      {
+        "case_id": "gate-A-flat-0.6-008",
+        "net_dx": 3.0987876653671265,
+        "required_dx": 3.84,
+        "max_abs_y": 0.21504732966423035,
+        "max_abs_yaw_deg": 34.54217225553292
+      },
+      {
+        "case_id": "gate-A-flat-0.6-009",
+        "net_dx": 3.1587290167808533,
+        "required_dx": 3.84,
+        "max_abs_y": 0.17302390933036804,
+        "max_abs_yaw_deg": 34.47468315634402
+      },
+      {
+        "case_id": "gate-A-flat-0.6-010",
+        "net_dx": 3.086084008216858,
+        "required_dx": 3.84,
+        "max_abs_y": 0.22873440384864807,
+        "max_abs_yaw_deg": 35.16752047027719
+      },
+      {
+        "case_id": "gate-A-flat-0.6-011",
+        "net_dx": 3.107968330383301,
+        "required_dx": 3.84,
+        "max_abs_y": 0.20948253571987152,
+        "max_abs_yaw_deg": 34.61551141174593
+      },
+      {
+        "case_id": "gate-A-flat-0.6-012",
+        "net_dx": 3.124233841896057,
+        "required_dx": 3.84,
+        "max_abs_y": 0.1917567253112793,
+        "max_abs_yaw_deg": 34.53749357595146
+      },
+      {
+        "case_id": "gate-A-flat-0.6-013",
+        "net_dx": 3.108051300048828,
+        "required_dx": 3.84,
+        "max_abs_y": 0.20607483386993408,
+        "max_abs_yaw_deg": 34.63817056431744
+      },
+      {
+        "case_id": "gate-A-flat-0.6-014",
+        "net_dx": 3.1246867775917053,
+        "required_dx": 3.84,
+        "max_abs_y": 0.20419710874557495,
+        "max_abs_yaw_deg": 34.743748213412914
+      },
+      {
+        "case_id": "gate-A-flat-0.6-015",
+        "net_dx": 3.1027519702911377,
+        "required_dx": 3.84,
+        "max_abs_y": 0.2099195420742035,
+        "max_abs_yaw_deg": 34.552533652503826
+      },
+      {
+        "case_id": "gate-A-flat-0.6-016",
+        "net_dx": 3.126912474632263,
+        "required_dx": 3.84,
+        "max_abs_y": 0.19659103453159332,
+        "max_abs_yaw_deg": 34.639632224799826
+      },
+      {
+        "case_id": "gate-A-flat-0.6-017",
+        "net_dx": 3.0718060731887817,
+        "required_dx": 3.84,
+        "max_abs_y": 0.2278537154197693,
+        "max_abs_yaw_deg": 35.37193437175733
+      },
+      {
+        "case_id": "gate-A-flat-0.6-018",
+        "net_dx": 3.1164976358413696,
+        "required_dx": 3.84,
+        "max_abs_y": 0.2056237757205963,
+        "max_abs_yaw_deg": 34.73765909976785
+      },
+      {
+        "case_id": "gate-A-flat-0.6-019",
+        "net_dx": 3.1372504234313965,
+        "required_dx": 3.84,
+        "max_abs_y": 0.1950875222682953,
+        "max_abs_yaw_deg": 34.81342297313622
+      }
+    ]
+  },
+  "qualification": "CPU-only from preserved physical boundary0..400 traces. Does not evaluate a policy or change the fixed distance/y/yaw criteria."
+}
