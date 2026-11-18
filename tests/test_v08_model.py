@@ -18,6 +18,9 @@ def test_source_output_and_optimizer_exact_equivalence():
     new=model.V08ActorCritic();new.load_state_dict(source['model'])
     obs={key:torch.zeros((2,*shape),dtype=torch.float32) for key,shape in model.OBSERVATION_SHAPES.items()}
     assert torch.equal(old(obs),new(obs)) and torch.equal(old.evaluate(obs),new.evaluate(obs))
+    nonzero=model.synthetic_observations(batch=2,seed=42,device='cpu')
+    assert bool(nonzero['proprio'].abs().sum()>0)
+    assert torch.equal(old(nonzero),new(nonzero)) and torch.equal(old.evaluate(nonzero),new.evaluate(nonzero))
     opt=ppo.build_optimizer(new);opt.load_state_dict(source['optimizer'])
     assert ppo.optimizer_membership(opt,new)['exactly_once']
     assert len(opt.state)==45

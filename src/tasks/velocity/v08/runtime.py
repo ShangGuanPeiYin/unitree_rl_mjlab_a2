@@ -174,14 +174,21 @@ def zero_learning(contract,output_dir):
     if mode=='replay':return replay_cases(model,contract,output_dir,frozen,cases,policy)
     table=table_from_json(cases['baseline:A' if mode=='baseline' else 'final:E' if mode=='final' else 'gate:E']['table'])
     runner=build_case_runner(model,contract,phase=table.phase)
-    result=evaluate_cases(model,table,runner,optimizer=optimizer,counters=deepcopy(policy['learning']),device=contract['device'])
     identity=dict(update=policy['learning']['update'],phase=table.phase,kind=table.kind,case_table_sha256=table.sha256,
         source_sha256=SOURCE_SHA256,recipe_sha256=recovery.digest(recovery.jsonable(spec.contract())),freeze_sha256=frozen['sha256'])
-    payload=pack_result(result,identity);binding=write_sidecar(Path(output_dir)/'evaluation.json',payload)
+    transaction=recovery.EvaluationTransaction(output_dir,identity,table,Path(output_dir)/'evaluation.json',runner)
+    cached=transaction.recover()
+    if cached is None:
+        transaction.start()
+        result=evaluate_cases(model,table,transaction,optimizer=optimizer,counters=deepcopy(policy['learning']),device=contract['device'])
+        result,reference=transaction.finish(result)
+    else:result,reference=cached
+    payload=pack_result(result,identity);binding=reference['binding']
     complete=result.summary['valid']==result.summary['expected'] and not result.summary['engineering_error']
     report=dict(mode=mode,complete=complete,source_checkpoint_sha256=SOURCE_SHA256,freeze_sha256=frozen['sha256'],
         case_tables_sha256=recovery.digest(cases),acceptance_sha256=admission['acceptance']['sha256'] if admission else None,
-        evaluation=dict(payload=payload,binding=binding),control_samples=runner.control_samples,physics_substeps=runner.control_samples*4,
+        evaluation=dict(payload=payload,binding=binding),evaluation_transaction=reference,
+        control_samples=reference['control_samples'],physics_substeps=reference['control_samples']*4,
         learning_updates=0,evidence_kind='real_policy_and_physics',policy_capability_established=mode=='final' and result.summary['gate_pass'],
         policy_checkpoint_sha256=contract.get('policy_sha256') or SOURCE_SHA256)
     recovery.write_json(Path(output_dir)/(mode+'_result.json'),report)
@@ -291,6 +298,7 @@ def admit_output(contract):
     if not receipts:raise ValueError('native durable checkpoint receipts missing')
     latest=max(receipts)[2]
     verify_learning_journal(output,int(latest['update']))
+    recovery.verify_evaluation_journal(output)
     if Path(latest['path']).resolve()!=candidate or latest['sha256']!=sha or recovery.sha256(candidate)!=sha:
         raise ValueError('native recovery requires latest durable checkpoint; rollback is not authorized')
     return True

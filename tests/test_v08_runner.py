@@ -169,3 +169,140 @@ def test_observed_stop_stays_latched_when_evidence_write_fails(tmp_path,monkeypa
     write_control(control.path,{'action':'continue'})
     monkeypatch.setattr(control,'_snapshot',original)
     assert control.poll()['action']=='stop'
+
+def boundary_fixture(tmp_path):
+    """Native serialization fixture at6600; no real PPO or robot actions."""
+    from src.tasks.velocity.v08 import runner,model,ppo,continuation_v08 as migration
+    from src.tasks.velocity.v08.curriculum import CurriculumManager
+    class Env:
+        num_envs=8;device='cpu'
+        def __init__(self):self.phase='A';self.resets=0;self.schedule=None;self._rng={};self._sampler={}
+        def reset(self):self.resets+=1;return self.get_observations(),{}
+        def get_observations(self):return model.synthetic_observations(batch=8)
+        def set_schedule(self,schedule,stage_iteration=0):
+            changed=self.phase!=schedule.phase;self.phase=schedule.phase;self.schedule=schedule;self.stage_iteration=stage_iteration
+            if changed:self.reset()
+        def state_dict(self):
+            value=copy.deepcopy(logical_fixture());value.update(phase=self.phase,case_templates=list(self.schedule.cases),
+                generation=self.schedule.generation,roles=list(self.schedule.roles),stage_iteration=self.stage_iteration)
+            return value
+        def load_state_dict(self,value,restore_physics=False):
+            assert restore_physics is False
+            self.phase=value['phase'];self.reset()
+        def rng_state(self):return self._rng
+        def sampler_rng_state(self):return self._sampler
+        def load_rng_state(self,x):self._rng=x
+        def load_sampler_rng_state(self,x):self._sampler=x
+    env=Env();net=model.V08ActorCritic();trainer=ppo.PPOTrainer(net,env);manager=CurriculumManager(num_envs=8)
+    r=runner.V08Runner(net,trainer,manager,env,tmp_path,mode='smoke')
+    state,_=migration.migrate_stop_6400(migration.load_designated_source(),source_sha256=migration.SOURCE_SHA256)
+    r.initialize(state)
+    r.ledger.state.update(engineering_updates=200,control_samples=200*8*48,physics_substeps=200*8*48*4)
+    trainer.learning_state.update(completed_ppo_updates=6600,optimizer_steps=132000)
+    for moment in trainer.optimizer.state.values():moment['step'].fill_(132000)
+    manager.state.spent_by_phase['A']=200;manager.state.last_update=6600;manager.state.generation_updates=200
+    manager.state.gate_streak=1;manager.state.last_gate_update=6500
+    return r
+
+@pytest.mark.parametrize('pending_gate',[False,True])
+def test_native_phase_handoff_finishes_before_one_fresh_reset_and_any_ppo(tmp_path,pending_gate):
+    from src.tasks.velocity.v08 import recovery
+    r=boundary_fixture(tmp_path)
+    r.ledger.state['pending_boundary']=dict(update=6600,phase='A',events=['gate'],index=0 if pending_gate else 1)
+    if not pending_gate:r.curriculum.record_gate(dict(gate_pass=True,phase='A'),update=6600)
+    original=r.env.state_dict();path,sha=r.save_verified('handoff_fixture')
+    original_rng=recovery.load_verified(path,sha)['rng']
+    # This is a synthetic passing gate result, not a physics acceptance claim.
+    def finish_gate(kind,phase=None):
+        assert r._ready is False
+        with pytest.raises(ValueError,match='reset'):r.ppo.collect()
+        r.curriculum.record_gate(dict(gate_pass=True,phase=phase),update=6600)
+    r._evaluate=finish_gate
+    before=r.env.resets;r.load(path,sha)
+    assert r.curriculum.phase=='B' and r.env.phase=='B'
+    assert r.env.resets-before==1
+    assert r.saved_task_provenance['phase']=='A'
+    # Any PPO entry observes current task/phase, even after a persisted handoff.
+    observed=[]
+    class BeforePPO(RuntimeError):pass
+    def observe():observed.append((r.curriculum.phase,r.env.phase));raise BeforePPO('no synthetic update executed')
+    r.ppo.train_step=observe
+    with pytest.raises(BeforePPO):r.step()
+    assert observed==[('B','B')]
+    assert r.curriculum.state.spent_by_phase['B']==0
+    if pending_gate:
+        snapshots=[recovery.load_verified(p,__import__('json').loads(p.with_suffix('.json').read_text())['sha256'])
+            for p in (tmp_path/'checkpoints').glob('boundary_event*.pt')]
+        assert snapshots and snapshots[0]['recovery_pending_fresh_reset'] is True
+        assert snapshots[0]['environment']['phase']=='A'
+        assert __import__('src.tasks.velocity.v08.continuation_v08',fromlist=['tree_digest']).tree_digest(snapshots[0]['environment'])==__import__('src.tasks.velocity.v08.continuation_v08',fromlist=['tree_digest']).tree_digest(original)
+        assert __import__('src.tasks.velocity.v08.continuation_v08',fromlist=['tree_digest']).tree_digest(snapshots[0]['rng'])==__import__('src.tasks.velocity.v08.continuation_v08',fromlist=['tree_digest']).tree_digest(original_rng)
+
+def test_partial_evaluation_has_durable_progress_and_cannot_restart_or_reset(tmp_path):
+    from src.tasks.velocity.v08 import recovery
+    r=boundary_fixture(tmp_path);path,sha=r.save_verified('before_eval')
+    class Cases:
+        supports_batch=True;control_samples=0;calls=0
+        def __call__(self,batch):
+            self.calls+=1
+            assert list((tmp_path/'evaluation_transactions').glob('*.intent.json'))
+            self.control_samples+=3*len(batch)
+            raise KeyboardInterrupt('simulated process loss after actual batch samples')
+    base=Cases();r.case_runner=base
+    with pytest.raises(KeyboardInterrupt):r._evaluate('h00')
+    assert base.calls==1
+    progress=list((tmp_path/'evaluation_transactions').glob('*.batches/*.commit.json'))
+    assert progress and __import__('json').loads(progress[0].read_text())['control_samples']==24
+    with pytest.raises(ValueError,match='evaluation'):r._evaluate('h00')
+    before=r.env.resets
+    with pytest.raises(ValueError,match='evaluation'):r.load(path,sha)
+    assert base.calls==1 and r.env.resets==before
+
+
+def test_completed_evaluation_journal_reuses_sidecar_and_rejects_cost_tamper(tmp_path):
+    from src.tasks.velocity.v08 import recovery
+    r=boundary_fixture(tmp_path)
+    class Cases:
+        supports_batch=True;control_samples=0;calls=0
+        def __call__(self,batch):
+            self.calls+=1;cost=3*len(batch);self.control_samples+=cost
+            key=recovery.digest([c['case_id'] for c in batch])
+            return [dict(case_id=c['case_id'],complete=True,raw_complete=True,finite=True,success=False,
+                reason='physical_failure',segment='walk',physical_failure=True,
+                collector_batch_id=key,collector_batch_control_samples=cost) for c in batch]
+    base=Cases();r.case_runner=base;r._evaluate('h00');assert base.calls==2
+    transactions=recovery.verify_evaluation_journal(tmp_path)
+    assert len(transactions)==1 and next(iter(transactions.values()))['control_samples']==45
+    wrong_ledger=r.checkpoint_state();wrong_ledger['ledger']['evaluation_control_samples']=0
+    with pytest.raises(ValueError,match='cost'):recovery.validate_checkpoint(wrong_ledger,mode='smoke')
+    # Simulate loss after the complete immutable sidecar and batch progress but
+    # before the transaction completion receipt. It must be completed by reuse.
+    commit=next((tmp_path/'evaluation_transactions').glob('*.commit.json'));commit.unlink()
+    r.evaluation={};r.ledger.state['evaluation_control_samples']=0;r._evaluate('h00')
+    assert base.calls==2 and r.ledger.state['evaluation_control_samples']==45 and commit.exists()
+    data=__import__('json').loads(commit.read_text());data['reference']['control_samples']+=1
+    recovery.write_json(commit,data)
+    with pytest.raises(ValueError):recovery.verify_evaluation_journal(tmp_path)
+
+def test_recovery_interruption_after_gate_checkpoint_resumes_without_double_reset(tmp_path):
+    from src.tasks.velocity.v08 import recovery
+    r=boundary_fixture(tmp_path)
+    r.ledger.state['pending_boundary']=dict(update=6600,phase='A',events=['gate'],index=0)
+    path,sha=r.save_verified('pending_gate_fault_fixture')
+    calls=[]
+    def gate(kind,phase=None):calls.append(kind);r.curriculum.record_gate(dict(gate_pass=True,phase=phase),update=6600)
+    r._evaluate=gate
+    original_save=r.save_verified;durable=[]
+    class LostAfterSave(RuntimeError):pass
+    def fail_after_save(reason):
+        result=original_save(reason)
+        if reason=='boundary_event':durable.append(result);raise LostAfterSave('simulated loss before fresh reset')
+        return result
+    r.save_verified=fail_after_save;before=r.env.resets
+    with pytest.raises(LostAfterSave):r.load(path,sha)
+    assert r.env.resets==before and not r._ready
+    state=recovery.load_verified(*durable[0]);assert state['recovery_pending_fresh_reset'] is True
+    assert state['curriculum']['state']['phase']=='B' and state['environment']['phase']=='A'
+    r.save_verified=original_save;r.load(*durable[0])
+    assert r.env.resets-before==1 and r.env.phase==r.curriculum.phase=='B'
+    assert calls==['gate'] and r.curriculum.state.spent_by_phase['B']==0

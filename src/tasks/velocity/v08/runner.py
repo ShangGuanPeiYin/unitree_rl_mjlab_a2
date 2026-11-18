@@ -48,8 +48,9 @@ class V08Runner:
         self.operator_control=ControlProtocol(self.directory/'control.json',self.directory/'control_evidence')
         self.case_runner=case_runner;self.source=None;self.freeze=None;self.case_tables=None
         self.evaluation={};self.initialization={};self.last_diagnostics=None;self.rng_receipt=None
-        self.saved_task_provenance=None;self.update_durations=[];self.recent_episodes=[];self._last_monitor_poll=0.
+        self.saved_task_provenance=None;self.update_durations=[];self.recent_episodes=[];self._last_monitor_poll=0.;self._ready=False;self._deferred_environment=None;self._deferred_rng=None
         self.ppo.control_step_callback=self._control_step
+        self.ppo.collection_guard=self._assert_ready
     @property
     def update(self):return 6400+self.ledger.updates
     @property
@@ -81,6 +82,7 @@ class V08Runner:
         if hasattr(self.env,'reset_task_sampler'):self.env.reset_task_sampler(seed=42)
         self.env.set_schedule(self.curriculum.schedule(),stage_iteration=0)
         self.ppo.reset()
+        self._ready=True
         self.start_telemetry()
     def start_telemetry(self):
         rng=recovery.capture_rng(self.env)
@@ -90,9 +92,10 @@ class V08Runner:
         return dict(schema=10,identity=dict(task=spec.TASK_ID,recipe=spec.RECIPE_VERSION),
             model=deepcopy(self.model.state_dict()),optimizer=deepcopy(self.ppo.optimizer.state_dict()),
             normalizer=recovery.normalizer_state(self.model),learning=self.learning,
-            rng=recovery.capture_rng(self.env),curriculum=self.curriculum.state_dict(),ledger=self.ledger.state_dict(),
+            rng=deepcopy(self._deferred_rng) if self._deferred_rng is not None else recovery.capture_rng(self.env),curriculum=self.curriculum.state_dict(),ledger=self.ledger.state_dict(),
             source=deepcopy(self.source),initialization=deepcopy(self.initialization),
-            environment=deepcopy(self.env.state_dict()),saved_task_provenance=deepcopy(self.saved_task_provenance),
+            environment=deepcopy(self._deferred_environment) if self._deferred_environment is not None else deepcopy(self.env.state_dict()),
+            recovery_pending_fresh_reset=self._deferred_environment is not None,saved_task_provenance=deepcopy(self.saved_task_provenance),
             freeze=deepcopy(self.freeze),case_tables=deepcopy(self.case_tables),mode=self.mode,recipe=spec.contract(),
             resume_mode='fresh_physical_episode',evaluation=deepcopy(self.evaluation),
             last_diagnostics=deepcopy(self.last_diagnostics),rng_receipt=deepcopy(self.rng_receipt),
@@ -110,8 +113,11 @@ class V08Runner:
             update=self.update,sequence=seq,mode=self.mode,freeze_sha256=self.freeze['sha256']))
         return path,sha
     def load(self,path,sha):
+        self._ready=False
         state=recovery.load_verified(path,sha);recovery.validate_checkpoint(state,mode=self.mode)
         recovery.verify_learning_journal(self.directory,state['learning']['update'])
+        transactions=recovery.verify_evaluation_journal(self.directory,state['freeze']['sha256'])
+        recovery.verify_evaluation_checkpoint_coverage(state,transactions)
         ledger=state['ledger']
         if ledger.get('pending_update') is not None:raise recovery.RecoveryBlocked('incomplete PPO cannot be replayed')
         if ledger.get('stop_state') is not None:raise recovery.RecoveryBlocked('terminal/operator/error checkpoint cannot auto-resume')
@@ -122,13 +128,46 @@ class V08Runner:
         self.evaluation=deepcopy(state['evaluation']);self.last_diagnostics=deepcopy(state['last_diagnostics'])
         self.saved_task_provenance=deepcopy(state['environment'])
         self.update_durations=list(state.get('update_durations',[]));self.recent_episodes=deepcopy(state.get('recent_episodes',[]))
-        self.rng_receipt=recovery.restore_rng(state['rng'],self.env,device=self.device,
+        # Pending zero-learning gates must settle before the one physical reset.
+        # Until then checkpoints retain the original full snapshot and restored
+        # RNG, explicitly flagged; constructor physics never masquerades as it.
+        self._deferred_environment=deepcopy(state['environment']);self._deferred_rng=deepcopy(state['rng'])
+        self.ppo.obs=None
+        self.rng_receipt=recovery.restore_rng(self._deferred_rng,self.env,device=self.device,
             allow_cpu_cuda_provenance=self.mode!='formal' and self.device=='cpu')
-        # Env owns one fresh physical reset; full logical snapshot is retained as provenance.
-        self.env.load_state_dict(state['environment'],restore_physics=False)
+        pending=self.ledger.state.get('pending_boundary')
+        if pending and 'save_reload' in pending['events'][pending['index']:]:
+            raise recovery.RecoveryBlocked('incomplete engineering probe recovery requires owner adjudication')
+        self._complete_boundary()
+        schedule=self.curriculum.schedule();fresh=deepcopy(self._deferred_environment)
+        fresh.update(phase=schedule.phase,generation=schedule.generation,stage_iteration=self.curriculum.state.generation_updates,
+            roles=list(schedule.roles),case_templates=deepcopy(list(schedule.cases)))
+        # Reapply saved streams after isolated evaluation, then reset exactly
+        # once directly into the final current schedule. No discarded A reset.
+        recovery.restore_rng(self._deferred_rng,self.env,device=self.device,
+            allow_cpu_cuda_provenance=self.mode!='formal' and self.device=='cpu')
+        self.env.load_state_dict(fresh,restore_physics=False)
+        self._deferred_environment=None;self._deferred_rng=None;self._ready=True
         self.ppo.obs=self.env.get_observations()
-        return dict(update=self.update,physical_trajectory_continuous=False,
-                    recovery_mode='fresh_physical_episode',rng=self.rng_receipt)
+        receipt=dict(update=self.update,physical_trajectory_continuous=False,recovery_mode='fresh_physical_episode',
+            physical_reset_batches=1,saved_phase=state['environment']['phase'],active_phase=schedule.phase,rng=self.rng_receipt)
+        self.ledger.state['events'].append(dict(event='native_fresh_reset',**receipt))
+        return receipt
+    def _assert_ready(self):
+        if not self._ready or self._deferred_environment is not None:
+            raise recovery.RecoveryBlocked('physical reset is pending; PPO and actions are forbidden')
+        if hasattr(self.env,'phase') and self.env.phase!=self.curriculum.phase:
+            raise recovery.RecoveryBlocked('task schedule is not synchronized with billed curriculum')
+    def _synchronize_schedule(self):
+        if not self._ready:raise recovery.RecoveryBlocked('cannot schedule PPO while recovery reset is pending')
+        previous=(getattr(self.env,'phase',None),getattr(self.env,'generation',None))
+        schedule=self.curriculum.schedule()
+        self.env.set_schedule(schedule,stage_iteration=self.curriculum.state.generation_updates)
+        self.ppo.obs=self.env.get_observations()
+        self._assert_ready()
+        if previous!=(schedule.phase,schedule.generation):
+            self.ledger.state['events'].append(dict(event='schedule_before_ppo',update=self.update,
+                before=list(previous),phase=schedule.phase,generation=schedule.generation,control_samples=0))
     def _control_step(self,payload):
         # Read the atomic request at every real control boundary; the environment
         # latches its requested speed for the *next* actor observation.
@@ -154,7 +193,6 @@ class V08Runner:
         return True
     def _evaluate(self,kind,phase=None):
         from .evaluation import table_from_json,evaluate_cases
-        from .evaluation_records import pack_result,write_sidecar,restore_result
         phase=self.curriculum.phase if phase is None else phase
         frozen=self.case_tables[f'{kind}:{phase}'];table=table_from_json(frozen['table'],frozen['sha256'])
         key=f'{kind}:{self.update}'
@@ -163,36 +201,29 @@ class V08Runner:
             freeze_sha256=self.freeze['sha256'],model_state_sha256=tree_digest(self.model.state_dict()),
             optimizer_state_sha256=tree_digest(self.ppo.optimizer.state_dict()))
         sidecar=self.directory/'evaluations'/f'{kind}_{table.phase}_{self.update:06d}.json'
+        transaction=recovery.EvaluationTransaction(self.directory,identity,table,sidecar,self.case_runner)
+        cached=transaction.recover()
         if key in self.evaluation:
             reference=self.evaluation[key]
-            if reference['identity']!=identity:raise RuntimeError('cached evaluation input identity differs')
+            if reference['identity']!=identity or cached is None or cached[1]!=reference:
+                raise RuntimeError('cached evaluation transaction identity/cost differs')
             result=recovery.load_evaluation_reference(reference)
+        elif cached is not None:
+            result,reference=cached
+            self.ledger.state['evaluation_control_samples']+=reference['control_samples']
+            self.evaluation[key]=reference
         else:
-            if sidecar.exists():
-                # Crash after durable evidence but before boundary commit: use
-                # actual evidence, never rerun this already billed evaluation.
-                payload=__import__('json').loads(sidecar.read_text())
-                result=restore_result(payload,identity)
-                cost=recovery.evaluation_control_samples(result)
-                self.ledger.state['evaluation_control_samples']+=cost
-            else:
-                if self.case_runner is None:raise RuntimeError('real policy/physics case runner missing')
-                self.case_runner.phase=table.phase
-                before=getattr(self.case_runner,'control_samples',0)
-                try:
-                    result=evaluate_cases(self.model,table,self.case_runner,optimizer=self.ppo.optimizer,
-                        counters=self.ppo.learning_state,device=self.device)
-                finally:
-                    cost=getattr(self.case_runner,'control_samples',0)-before
-                    self.ledger.state['evaluation_control_samples']+=cost
-                payload=pack_result(result,identity)
-                if not result.summary.get('engineering_error') and recovery.evaluation_control_samples(result)!=cost:
-                    raise RuntimeError('collector actual cost differs from raw batch evidence')
-            binding=write_sidecar(sidecar,payload)
-            # Full raw trajectories live exactly once in immutable sidecars.
-            # Native checkpoints retain SHA references, summary and transaction.
-            self.evaluation[key]=dict(binding=binding,identity=identity,summary=deepcopy(result.summary),
-                control_samples=cost,raw_bytes=sidecar.stat().st_size)
+            if self.case_runner is None:raise RuntimeError('real policy/physics case runner missing')
+            self.case_runner.phase=table.phase
+            transaction.start()  # durable before the first env factory/physics call
+            before=self.case_runner.control_samples
+            try:
+                result=evaluate_cases(self.model,table,transaction,optimizer=self.ppo.optimizer,
+                    counters=self.ppo.learning_state,device=self.device)
+            finally:
+                self.ledger.state['evaluation_control_samples']+=self.case_runner.control_samples-before
+            result,reference=transaction.finish(result)
+            self.evaluation[key]=reference
         self.telemetry.gate(result.summary)
         if result.summary.get('engineering_error'):raise RuntimeError('evaluation engineering error; full denominator retained')
         if kind=='gate':self.curriculum.record_gate(result.summary,update=self.update)
@@ -220,10 +251,12 @@ class V08Runner:
             self.save_verified('boundary_event')
         self.ledger.state['pending_boundary']=None
     def step(self):
+        if not self._ready:raise recovery.RecoveryBlocked('native recovery is not ready for PPO')
         if self.ledger.state['stop_state'] is not None:return False
         self._complete_boundary()
         if self.curriculum.finished:return False
         if self._poll_control():self.save_verified('operator');return False
+        self._synchronize_schedule()
         recovery.verify_freeze(self.freeze)
         next_update=self.update+1
         intent=self.directory/'transactions'/f'update_{next_update:06d}.intent.json'

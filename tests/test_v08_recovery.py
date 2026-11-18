@@ -50,15 +50,31 @@ def test_evaluation_reference_reloads_raw_sidecar_and_refuses_missing_or_tamper(
     from src.tasks.velocity.v08.continuation_v08 import SOURCE_SHA256
     table=make_cases('A',kind='gate')
     def failure(c):return dict(case_id=c['case_id'],complete=True,raw_complete=True,finite=True,
-        success=False,reason='physical_failure',segment='walk',physical_failure=True)
+        success=False,reason='physical_failure',segment='walk',physical_failure=True,
+        collector_batch_id=recovery.digest([c['case_id']]),collector_batch_control_samples=1)
     result=evaluate_cases(None,table,failure)
     identity=dict(update=6500,phase='A',kind='gate',case_table_sha256=table.sha256,
         source_sha256=SOURCE_SHA256,recipe_sha256=recovery.digest(recovery.jsonable(spec.contract())))
     payload=pack_result(result,identity);path=tmp_path/'raw.json';binding=write_sidecar(path,payload)
-    entry=dict(binding=binding,identity=identity,summary=result.summary,control_samples=0)
+    entry=dict(binding=binding,identity=identity,summary=result.summary,control_samples=len(table.cases))
     loaded=recovery.load_evaluation_reference(entry)
     assert loaded.summary==result.summary
     path.write_text('{}')
     with pytest.raises(ValueError):recovery.load_evaluation_reference(entry)
     path.unlink()
     with pytest.raises((ValueError,FileNotFoundError)):recovery.load_evaluation_reference(entry)
+
+def test_unfinished_evaluation_intent_blocks_recovery_before_any_fresh_reset(tmp_path):
+    from src.tasks.velocity.v08 import recovery
+    directory=tmp_path/'evaluation_transactions';directory.mkdir()
+    recovery.write_json(directory/'gate_A_006600.intent.json',dict(schema='v08-evaluation-intent-v1',
+        identity={'update':6600},sidecar_path=str(tmp_path/'missing.json'),batches=[['case0']]))
+    with pytest.raises(ValueError,match='evaluation'):
+        recovery.verify_evaluation_journal(tmp_path)
+
+def test_orphan_batch_progress_cannot_be_treated_as_no_evaluation(tmp_path):
+    from src.tasks.velocity.v08 import recovery
+    progress=tmp_path/'evaluation_transactions'/'h00_A_006600.batches';progress.mkdir(parents=True)
+    recovery.write_json(progress/'batch_0000.commit.json',{'control_samples':24})
+    with pytest.raises(ValueError,match='evaluation'):
+        recovery.verify_evaluation_journal(tmp_path)

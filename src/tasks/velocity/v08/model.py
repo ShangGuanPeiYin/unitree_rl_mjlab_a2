@@ -1,22 +1,10 @@
-"""v0.6 ActorCritic: ETH Actor migration plus zero-initialized heightmap/history/
-route bypasses and a fresh 211-wide Critic.
+"""v08 native ActorCritic; architecture and learned state continue source6400.
 
-Contract (SDS ``SDS_A2_IdealHeightMap_Stairs40_v0.6.md`` section 2.2/7.2):
-
-* only the ETH Actor MLP (``mlp.0/2/4/6``) and the frozen 45-dimensional input
-  normalizer are migrated; the ETH std, Critic and Adam are never inherited;
-* the heightmap/history fusion (``actor.fusion``) and the route fusion
-  (``actor.route_fusion``) are constructed, enter the single optimizer and are
-  then overwritten with zeros so the initial action mean equals ETH;
-* the fresh Critic consumes 211 features = 80 raw proprio+privileged,
-  64 map features, 64 history features and the 3 route features;
-* the initial action std is exactly ``initial_std`` (0.30) and is projected to
-  ``[std_min, std_max]`` = ``[0.05, 1.00]`` after every Adam step.
-
-All numbers are read from :mod:`src.tasks.velocity.v08.spec` (the single frozen
-number source, owned by agent A).  This module contains no independent tuning
-value; the only literal here is the SDS-published ETH checkpoint SHA, used as an
-identity contract when the spec module does not expose it.
+The v07 proprio/history/ideal-heightmap/route inputs and 211-wide Critic are
+unchanged. Runtime loads Actor, Critic, both normalizers and the complete Adam
+state from the uniquely attested6400 checkpoint. A bare constructor allocates
+modules before loading; it is never a fresh training initializer. Historical
+ETH audit helpers below do not authorize a new ETH initialization for v08.
 """
 from __future__ import annotations
 
@@ -228,7 +216,7 @@ class RouteFusedActor(FusedActor):
 
 
 class V08ActorCritic(IdealHeightmapActorCritic):
-    """v0.6 route-state ActorCritic (ETH Actor + zero bypass + fresh 211 Critic)."""
+    """v08 model allocation with unchanged v07 architecture for native resume."""
 
     architecture_version = ARCHITECTURE
     std_min = STD_MIN
@@ -365,55 +353,8 @@ class V08ActorCritic(IdealHeightmapActorCritic):
     # ------------------------------------------------------------- migration
     @classmethod
     def from_eth(cls, path=None, expected_sha=None, seed=42, device='cpu'):
-        """Construct the v0.6 network from the approved ETH checkpoint (new run)."""
+        """v08 has one source6400 continuation and no fresh ETH run."""
         raise EthMigrationError('v08 only permits the exact source6400 continuation; fresh ETH initialization is forbidden')
-        path = Path(path) if path is not None else Path(INIT_CHECKPOINT)
-        expected_sha = expected_sha if expected_sha is not None else INIT_SHA256
-        seed = check_seed(seed)
-        source, state, forbidden = load_validated_eth(path, expected_sha)
-        torch.manual_seed(seed)
-        model = cls()
-        model.actor.mlp.load_state_dict(
-            {key[len('mlp.'):]: value for key, value in state.items()
-             if key.startswith('mlp.')}, strict=True)
-        model.actor.normalizer.load_state_dict(
-            {key[len('obs_normalizer.'):]: value for key, value in state.items()
-             if key.startswith('obs_normalizer.')}, strict=True)
-        with torch.no_grad():
-            for key in FUSION_KEYS + ROUTE_FUSION_KEYS:
-                target = dict(model.named_parameters())[key]
-                target.zero_()
-            model.std.fill_(INITIAL_STD)
-        if any(float(dict(model.named_parameters())[key].detach().abs().sum()) != 0.0
-               for key in FUSION_KEYS + ROUTE_FUSION_KEYS):
-            raise EthMigrationError('heightmap/history/route bypass is not zero after migration')
-        if not torch.equal(model.std.detach(),
-                           torch.full_like(model.std.detach(), INITIAL_STD)):
-            raise EthMigrationError(f'action std is not exactly {INITIAL_STD} after migration')
-        if tuple(model.critic[0].weight.shape) != CRITIC_FIRST_SHAPE:
-            raise EthMigrationError('Critic first layer is not the 211-input v08 shape')
-        if list(model.actor.normalizer.parameters()):
-            raise EthMigrationError('ETH normalizer must stay parameter-free/frozen')
-        model.actor.normalizer.eval()
-        model.transfer_metadata = dict(
-            kind='eth_actor_mlp_and_frozen_normalizer_only',
-            source_path=str(Path(path).resolve()),
-            sha256=sha256_file(path),
-            source_iteration=int(source.get('iter', 0)) if isinstance(source, dict) else 0,
-            source_actor_keys=list(ETH_ACTOR_KEYS),
-            source_normalizer_keys=list(NORMALIZER_KEYS),
-            forbidden_source_blocks=sorted(forbidden),
-            forbidden_source_blocks_migrated=[],
-            architecture=ARCHITECTURE, code_version=CODE_VERSION, recipe=RECIPE_VERSION,
-            seed=seed, actor_statistics='copied_complete_and_frozen',
-            normalization='frozen_ETH_normalizer_buffers',
-            fusion='zeros_after_migration', route_fusion='zeros_after_migration',
-            critic=f'fresh_seeded_{CRITIC_INPUT_DIMS}', critic_statistics='fresh',
-            optimizer='fresh_adam', std_before=state['std'].detach().tolist(),
-            std_after=model.std.detach().tolist(),
-            std_source=f'overwritten_to_{INITIAL_STD}_not_inherited',
-            std_range=[STD_MIN, STD_MAX], resume=False, scope='initialization')
-        return model.to(device)
 
     @classmethod
     def migrate_eth_checkpoint(cls, path=None, expected_sha=None, *, seed=42, device='cpu'):

@@ -31,6 +31,10 @@ def verify_baseline(path,frozen,case_tables,acceptance):
         source_sha256=SOURCE_SHA256,recipe_sha256=recovery.digest(recovery.jsonable(spec.contract())),freeze_sha256=frozen['sha256'])
     result=restore_result(evidence['payload'],identity)
     verify_sidecar(evidence['binding'],evidence['payload'])
+    reference=value.get('evaluation_transaction')
+    if not isinstance(reference,dict) or reference.get('binding')!=evidence['binding'] or reference.get('identity')!=identity:
+        raise AdmissionError('baseline durable evaluation transaction missing or foreign')
+    recovery.load_evaluation_reference(reference)
     summary=result.summary
     if result.table.sha256!=case_tables['baseline:A']['sha256'] or summary['expected']!=60 or summary['valid']!=60 or summary['invalid'] or summary['error']:
         raise AdmissionError('baseline full valid60 denominator required (policy failures permitted)')

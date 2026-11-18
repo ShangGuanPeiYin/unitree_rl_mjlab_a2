@@ -435,6 +435,7 @@ class PPOTrainer:
         self.source_learning = None
         self.pending_control_samples = 0
         self.control_step_callback = None
+        self.collection_guard = None
         self.update_callback = None
 
     # ------------------------------------------------------------- accounting
@@ -480,6 +481,7 @@ class PPOTrainer:
         return self.obs
 
     def collect(self):
+        if self.collection_guard is not None:self.collection_guard()
         self.pending_control_samples = 0
         if self.obs is None:
             self.reset()

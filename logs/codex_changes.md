@@ -3030,3 +3030,18 @@ Task2第2轮独立复审关闭I2/R1，局部规范和质量blocking=0，完整�
 核心接线：48步PPO按原5epoch×4minibatch；512env/seed42/γ.99/GAE.95/clip.2/entropy.003/gradclip1与原KL自适应不变。旧sample回算改为来源157286400真实基数+新增样本；回调在前动作reward/value保存后更新下一Actor观测。durable intent/commit禁止重放已计费或部分更新；stop在控制边界锁存、未学习样本单列。checkpoint真实保存读回SHA/fullstate检查，完整任务/指令/驻留/contact/RNG逻辑且明确fresh物理回合；评估raw仅sidecar存一次，checkpoint保存binding与summary，load读取原件重算，不允许缺件默许。
 工程/正式：8×2 smoke与512×56 probe独立费用，probe5预热+50测量+1恢复，50真实诊断、55真实save/reload、56新学习；正式仍50诊断/100保存门禁/200H00，阶段cap先做当次门禁。正式唯一目录continue_seed42_from006400_trial01，独立blocking0→60零学习基线→正式。源/资产/配置/SDS/病例全闭包冻结，保持可选原可靠W&B传输；本轮延续原实际offline A2_V08_WANDB=0，不伪称远端ACK。8预设右侧视频CLI已实现但未渲染验证。
 验证：Task3九文件39通过、1第三方警告、29.58秒；真实来源迁移CLI退出0，模型/Adam严格等价。真实源CUDA RNG为16字节，CPU5056字节不兼容，CPU reset用显式兼容fixture，未冒称原CUDA恢复成功；实际CUDA恢复/工程50-55-56/真实视频/全nativeCPU与正式训练均待验证。Task1定向复审已blocking0，不替代整体准入。正式0。
+
+### 2026-11-18｜整体CPU回归与Task3独立审查阻断
+
+整体新v08 22文件正确预激活隔离namespace后121通过、1现有警告、44.36秒，sourceHEAD0ce1978，日志/JUnit/SHA已保存CPU_V08_FULL_02_RESULT.json。第一次直接pytest未预激活产生7个收集错误、无测试执行；仅纠正启动顺序，不放宽生产bootstrap保护。旧823已分别通过且旧源码不改。
+独立Task3仍有两项Important：晋级checkpoint环境仍旧阶段，恢复下一PPO可能错误计入新阶段；未完成评估在完整sidecar前缺持久intent/费用，可漏计重评。已交原owner第1轮修复，补真实可达故障窗口反例；当前121通过不代表这些新缺口已修复，更不代表整体正式准入。GPU/正式训练0。
+
+### 2026-11-18｜工程与正式作业执行回执控制器
+
+新增操作工件logs/a2_ideal_stairs_v08/implementation/coordination/job_controller_20261118.py（临时副本/tmp/a2_v08_job_controller_20261118.py），SHA c45f9c5dcb071f264ff6c0bf9295c8bd6449c35fe81415647bf2765f78fb0df2。目的：后续通过现有原生CLI启动单个worker，使用独立会话与串行锁抵御Codex服务重启，记录实际worker PID/退出码；每10秒采样GPU/RSS/可用RAM/磁盘，GPU查询5秒超时只记观测失败不更改训练。它不改policy/environment/PPO、source/config或参数，只执行已冻结显式argv并保存stdout与JSON回执。验证：py_compile语法检查通过；尚未用于GPU/正式运行，不声称资源或训练效果通过。
+
+### 2026-11-18｜Task3独立审查修复第1轮
+
+修改v08/{ledger,model,orchestration,ppo,recovery,runner,runtime}.py及model/recovery/runner测试。I1：native load先恢复学习/RNG、以显式flag暂缓fresh物理，PPO采样guard禁止待恢复状态动作；补完pending零学习边界并确定最终课程后一次对齐排程/新回合reset，原完整snapshot保留provenance。覆盖晋级已保存未排程、恢复pendinggate才晋级、恢复中再次中断，保证第一轮PPO任务/预算阶段一致。
+I2：gate/H00及baseline/coverage/final在首factory/physics前持久整表intent，逐batch fsync实际费用/进度；未完成/孤立费用/缺sidecar不自动重评，已知下界与未知余量分列交主控；完整raw/progress但缺finalcommit可纯校验修复引用不重跑。费用从batch、raw、commit、checkpointref到ledger总和一致，缺失或篡改硬拒。清除from_eth拒绝后的死代码并修旧说明，新增seed42非零输入等价测试；网络/参数数值不改。
+验证：定向及最终九组46通过、1第三方警告、47.50秒，原日志与精确文件SHA已归档TASK3_FIX_ROUND1_REPORT.md/TASK3_FIX1_HANDOFF.json。未改512/48/seed/原5×4与实际LR、奖励/课程预算/门槛或50/100/200和probe5+50+1。持久IO仅实现恢复协议，性能仍待GPU实测；独立定向复审与新完整CPU待完成，GPU/正式0。
