@@ -3002,3 +3002,10 @@ CPU只读实际curriculum_004900.pt：gen73、gu83、gate_streak0，gate_log pas
 
 审查发现两项Important：基线D20/L40倒退被混组；方向/平地进展仍相信汇总量，旧报告“完整raw重算”表述过强。修改evaluation.py和对应evaluation/gates/window_evidence测试：baseline改为task:terrain×speed共12组各5例，保留额外task汇总；gate/final原20/100分母不变。运动验收改为从boundary0及逐动作连续trace重算400步平地净进展和路径；换向核对真实请求r、100步线性动作、r+101首恒速及r+100起物理位置，独立寻找请求后400步内首个0.60m。缺步/非法/汇总矛盾归invalid工程数据，真实静止/反向/超时归策略失败，sidecar恢复也重算。
 设计：拒绝轨迹静止但虚报进展的假成功；没有放宽SDS阈值。验证：指定四测试文件28通过、1第三方警告、9.89秒；12病例SHA未变，已归档初审与修复报告。独立定向复审尚未完成，真实Env/GPU/训练效果未验证；正式0。
+
+### 2026-11-18｜Task1真实环境、指令、任务与奖励首版
+
+文件：新增v08/{__init__,spec,commands,standing,tasks,env,env_cfg,contacts,events,rewards,speed,map,terrain}.py及对应8个test_v08文件。实现：保留原MuJoCo/PD/0.005物理步×4、0.02控制步、观测形状与地图/腿顺序；三层指令严格100动作过渡、连续物理回合、端点20秒与中停6秒判稳、按真实接触/踏面高度核算窗口，带符号分段停滞只诊断。原登顶done改事件；真实E4同回合上下；逐路段时限按abs速度及实际事件只加一次。新namespace独立缓存，不改旧模块globals。
+奖励前后：原+.4dx改为恒速+.4sign(c_exec)dx，全部过渡/停车为0；原横滚-5gy²保留，水平停车新增dt*(-5)gx²，中段不强制pitch回正；角速度巡航-.05改为停车-.20；airtime+.2在停车为0且清timer；零请求且实际零并即时合格时每步+.02；原登顶+10终止改最终到达+2/站稳且完成全部动作+8，失败-10且优先。其他原奖励保留并有数值等价测试，未改学习率/探索/随机化配方。
+接口：默认恢复只在继承RNG后一次新physicalreset，保存旧逻辑provenance；evaluation=True导出真实boundary0及逐动作轨迹/接触驻留，训练不虚报raw_complete；视频pre-reset hook捕获真实终态。新v08 contacts仅加ScopedDevice修正CPU设备上下文，接触公式不变。
+验证：Task1最终29通过、1第三方弃用警告、17.35秒；含真实2env控制与D20顶部24真实动作满足原到顶事件仍不reset，不证明策略会下楼。独立代码审查/GPU工程/来源策略基线/正式训练及效果仍未验证；正式0。完整报告归档TASK1_IMPLEMENTATION_V1.md。
