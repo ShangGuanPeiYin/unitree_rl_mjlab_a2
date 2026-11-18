@@ -3187,3 +3187,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-18｜7100完整门禁及已审队列发布记录
 
 正式update7100门禁实际120/120 valid，invalid/error/engineering0，success0/failure120：三速flat各0/20（flat_progress60），三速up_L40各0/20（final_unstable60）。真实门禁181264控制样本/725056物理子步，结果索引gpu/FORMAL_GATE_007100_A_SUMMARY.json；站稳首项support60另有绑定raw SHA的分析。尚未晋级A，正式已提交700/4000个A阶段更新，继续原冻结配方，未追加学习预算或重评。已审终态helper/测试/复核/CPU原输出及共享日志已提交并push隔离分支codex/a2-v08-walk-stop-reverse，actual本地与远端跟踪HEAD均09dbedab3009fde8059e0f880c378a58318905a7；原始RED日志含unittest的4行尾空白故保留不改，.py/.md/.json的diff --check通过。未上传权重、未合并main。已启动队列2542300实际waiting_formal，当前formal2438417仍running；最终验收/8录像均未执行。协调状态同步至MAIN_OUTBOX.md，仅共享文件交接，不声称通过不可用的跨线程工具发送。
+
+### 2026-11-18｜7100阶段工作说明（未完成）
+
+新增logs/a2_ideal_stairs_v08/implementation/coordination/reports/FORMAL_PROGRESS_007100.md，汇总当前实现逻辑、关键训练/验收参数、批准奖励变化前后、基线与7次真实完整A门禁、历史证据校验耗时及当前限制。明确训练仍进行、尚未晋级、最终2100与8真实终态录像未发生，未用合计成功率替代分组门槛或声称改善；仅说明/文档，没有训练代码或数值修改。验证：逐项对照已有GPU真实summary/原配方/持久化回执，学习样本按700×512×48及4子步手算核对，未新增物理/学习/测试。
+
+### 2026-11-18｜7100说明参数校对
+
+对照冻结runner.boundary_plan实际代码，阶段说明草稿曾将50更新诊断频率误写为周期保存频率；已在FORMAL_PROGRESS_007100.md更正为每50更新诊断、每100更新周期checkpoint，边界事件另存。只纠正文档，训练源/既有日志/保存行为均未修改。验证为只读代码与实际interval checkpoint回执；未运行额外测试。
