@@ -2952,3 +2952,15 @@ CPU只读实际curriculum_004900.pt：gen73、gu83、gate_streak0，gate_log pas
 原独立reviewer /root/c1_reviewer实际只读复核终态stop/terminal/result、6200/6400 H00原始病例、L40/V关键门禁、1583连续提交和64评估费用、唯一stop6400 checkpoint/45Adam及遗留字段后，返回限定PASS、实质不一致0。coordination/FINAL_OUTCOME_REVIEW_RECEIPT.json为根忠实转录的回执，明确非reviewer自行落盘签名，不伪装成重新源码/旧211证据准入；输入WORK_REPORT SHA397361eb3772722521ce63e943743db1db3fc289169e6fab6ecc7d87bd699ebb、摘要SHAcdb88f6bd5cdfa91813124fe575e546c3991a98e1ac2081c3350e7163db62245、最终审计SHA6fbc8410ce22666465c123290fdfea32d95cbaf57cef947fc67c50713eef14c9。reviewer未写共享日志或GPU；根保留已审报告和摘要原字节，仅刷新本日志/PUBLISH_FILES。
 
 接下来coordination/PUBLISH_FINAL_STAGED_v2.json记录最终四文件/树哈希、重复凭据模式扫描和diffcheck；只向已授权专用分支普通追加报告提交/push，无权重/raw目录/源码变更。实际远端结果待推送后另记，当前不是已推送结论。
+
+## 2026-11-18｜v0.8隔离实施工作树、批准SDS与W0裁决
+
+目的：执行用户与主控已明确授权的v0.8楼顶停车/倒退/中停续训方案。
+涉及：新增doc/sds/SDS_A2_v0.8_Stairs_Walk_Stop_Reverse.md、doc/sds/SDS_A2_v0.8_W0_RULINGS.md、docs/superpowers/plans/2026-11-18-a2-v08.md及工程协调工件。
+实际：从be74615建立独立工作树/home/xxs/dog/unitree_rl_mjlab_a2_v08，分支codex/a2-v08-walk-stop-reverse；原生工具因cwd非Git仓库失败且无部分工作树，改用Git CLI。原项目已有文件和v07权重不改。SDS SHA8aca6444581f0fa4c3f62e82061c2a47b00d98c72df48add93b4168138189afe。主控Q1–4裁决记录平地初始+c、训练RNG继承、probe55保存56reload、H00分方向报告。阶段预算A4000/B2000/C2000/D4000/E6000，正式首更新6401；当前尚无正式学习。
+理由：保护旧配方与用户改动，按模块独立验收，工程成本和正式计费分离。
+验证：SDS与来源SHA核对通过；资源为3070Ti8GiB、16线程、可用磁盘450GiB；CPU基线已启动，结果待记录。新增代码功能/GPU/正式训练效果均尚未验证。
+
+### 2026-11-18｜W0隔离CPU基线测试工件补齐
+
+修改：仅将原stop004817 checkpoint按原相对路径复制到v08独立工作树被忽略logs目录，供旧CPU迁移测试只读使用；不改原权重和源码。原因：首轮236项中189通过、47失败均由该未纳入Git的fixture缺失引起。验证：副本SHA与原文件一致（旧批准SHA a41963a8bf5e6f1d4810b0a0c912ac65747d61bd481ea3432ef638a99e076e64）；补齐后完整旧v07 CPU重跑，结果待记录。正式训练仍0。
