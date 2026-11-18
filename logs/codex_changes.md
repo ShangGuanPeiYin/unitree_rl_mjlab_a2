@@ -3251,3 +3251,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-19｜7500完整门禁与1100次新增更新
 
 实际120/120 valid、invalid/error/engineering0，success0/failure120，六个任务×速度组均0/20，A gatefalse、连续通过0；当前A预算1100/4000/global7500。flat三速0.3为flat_progress20、0.5为flat_progress5/final_unstable15、0.6为final_unstable20；up三速分别final_unstable19/nonfoot1、final_unstable20、final_unstable20。全局失败final_unstable94/flat_progress25/nonfoot1，完整门禁实际221784控制样本/887136物理子步。gpu/FORMAL_GATE_007500_A_SUMMARY.json绑定原raw SHA；94个站稳失败窗口按原consumer重算，首项mean_speed35/support59，分窗口类别为{('flat', 'endpoint_stop_mean_speed'): 35, ('top', 'endpoint_stop_support'): 59}，详见gpu/FORMAL_GATE_007500_A_STAND_ANALYSIS.json。35个flat进入停车但最终未站稳，59个top未通过支撑首项；首个不合格项不等于唯一失败项。未获得走停站总体通过，不能声称改善。只CPU读取新raw与归档两份小型JSON，没有重评、加学习或改冻结源码/配方/阈值。正式worker继续本边界原生后续保存；7500非H00报告边界，无额外H00。
+
+### 2026-11-19｜7600站稳失败窗口只读复算
+
+原raw中64例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_max_speed': 1, 'endpoint_stop_omega': 3, 'endpoint_stop_support': 60}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007600_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜7600完整门禁与1200次新增正式更新
+
+正式累计新增1200更新，A1200/4000/global7600，新学习29491200控制样本/117964800物理子步、继承Adam128000后应到152000。真实门禁120/120 valid、invalid/error/engineering0，success56/failure64；平地三速0.3/0.5/0.6为19/20、19/20、18/20，完成原8秒行走、2秒制动、20秒停车及原站稳窗口判据，三组均达到本轮单次18/20门槛；L40上楼三速仍各0/20。全部64失败均final_unstable，A整体gatefalse且连续通过0，不能将本次平地分组通过宣称课程或总体通过。与7500相同冻结病例的平地0/60相比，本轮恢复为56/60，但上楼仍0/60，单次结果不足说明整体可靠性。实际门禁239848控制样本/959392物理子步；gpu/FORMAL_GATE_007600_A_SUMMARY.json绑定原raw SHA。64个失败站稳窗口只读按原consumer复算，首项max_speed1/omega3/support60，分窗口为{('flat', 'endpoint_stop_max_speed'): 1, ('flat', 'endpoint_stop_omega'): 3, ('top', 'endpoint_stop_support'): 60}，详见gpu/FORMAL_GATE_007600_A_STAND_ANALYSIS.json；首项不等于唯一失败项。仅CPU读取原raw与归档两份小型JSON，无重新评估、额外学习、修改源代码/配方/阈值。唯一正式worker继续执行本边界后续存档及H00报告；H00此时尚未完成。
