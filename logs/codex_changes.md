@@ -3122,3 +3122,21 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-18｜6700楼顶站稳失败窗口只读复算
 
 对原raw中46例final_unstable的最后500动作窗口按原consumer重算，首个未通过项为{'endpoint_stop_max_speed': 10, 'endpoint_stop_pitch': 9, 'endpoint_stop_surface': 1, 'endpoint_stop_mean_speed': 26}；逐例实际速度、角度、角速度、高度、足速、四足支撑比和XY漂移保存gpu/FORMAL_GATE_006700_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理、没有GPU学习或改代码/门槛，不能据失败分类推断原因或声称效果改进。
+
+### 2026-11-18｜正式边界历史校验耗时只读诊断启动
+
+观测多个门禁后snapshot读回验证耗时增长，按systematic-debugging先做证据计时，不改冻结训练源或配方。仅新增操作脚本coordination/CHECKPOINT_VALIDATION_TIMING_01.py及cpu job config/回执/结果，CPU单线程、CUDA_VISIBLE_DEVICES为空；对已有ready6400与interval6700快照只读调用原native validate_checkpoint，分别计文件freeze/病例/架构/历史evaluation_reference耗时并核验快照SHA前后不变。独立CPU诊断controller2447189，不获取GPU作业锁、不触碰正式worker2438417、不新增物理或学习。结果尚未完成/未验证，不据此声称加速或实施缓存。
+
+### 2026-11-18｜checkpoint校验耗时诊断完成（未改训练）
+
+单线程CPU诊断worker2447190实际退出0，两份已有snapshot均原native校验True、SHA前后不变、CUDA未初始化、学习0/物理0。ready6400无历史评估0.41153秒；interval6700含4历史评估93.19809秒，其中6500引用26.8018秒、6600引用24.7488秒、H00引用2.5549秒，其余主要为6700引用；freeze/病例表各约0.2秒。原生save_verified写前/读回均全校验，历史证据有多层语义复核，解释观测到的边界耗时增长；不据两个样本估计整体完成时间。
+只新增操作脚本/CPU job/result及coordination/SDS_Q5_CHECKPOINT_VALIDATION_COST.md共享观察项，原始证据完整保留。当前不实施缓存、不改冻结谱系或检查合同、不重启/回退run；若主控后续决定优化须另有书面谱系/预算/独立验收契约。正式worker2438417继续6800第四轮门禁。无速度/奖励/PPO/环境数/门槛/预算变更，不声称训练或软件已加速。
+
+### 2026-11-18｜6800第四轮阶段A门禁仍未通过
+
+正式新增400更新，A固定门禁valid120/invalid0/error0、success16/failure104、gate_pass=false。平地0.3为12/20（8例flat_progress），0.5/0.6均0/20（各20例flat_progress）；L40上楼停车0.3/0.6均0/20（各20例final_unstable），0.5为4/20（16例final_unstable）。全部原因final_unstable56/flat_progress48/success16。不能据4例楼顶完整成功声称可靠站稳，六组均未达到18/20，仍无连续完整门禁通过。
+15批真实评估207584控制样本/830336物理子步；完整raw/事务和gpu/FORMAL_GATE_006800_A_SUMMARY.json保留。与6700同表比较呈波动，不声称整体提升。继续原A4000上限内预算，不改速度/奖励/原自适应LR/门槛；H00只报告评估随后执行。
+
+### 2026-11-18｜6800 H00报告完成
+
+15例valid15/invalid0/error0，success0/failure15（timeout7/posture4/side2/nonfoot1/final_unstable1），三速各0/5。实际评估27994控制样本/111976物理子步，完整raw/事务及gpu/FORMAL_H00_006800_A_SUMMARY.json保留。仍按SDS只报告，不触发旧H00行为回归停训；阶段A400/4000，边界保存校验后继续原配方，整体门禁尚未通过。
