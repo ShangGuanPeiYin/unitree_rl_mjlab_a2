@@ -3235,3 +3235,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-19｜7400完整门禁与1000次新增正式更新
 
 正式累计新增1000更新（A1000/4000，global7400），新学习24576000控制样本/98304000物理子步、应继承Adam128000后到148000。7400真实完整门禁120/120 valid、invalid/error/engineering0，success4/failure116；flat三速各0/20（flat_progress60），L40上楼0.3/0.5/0.6为4/20、0/20、0/20。其他失败final_unstable55/nonfoot1，A gatefalse且连续通过0；相同冻结病例中上楼成功数从7200的58/60、7300的53/60回落至4/60，不能声称整体改善或据此推断未经对照的因果。实际门禁178616控制样本/714464物理子步，gpu/FORMAL_GATE_007400_A_SUMMARY.json绑定raw SHA；55个失败站稳窗口按原consumer重算，首项mean_speed17/max_speed1/support37，详见gpu/FORMAL_GATE_007400_A_STAND_ANALYSIS.json（首项不等于唯一失败项）。归档两份小型JSON供分支审阅；仅CPU读取原raw，无重评/新增学习/配置或冻结源码变更。正式worker2438417继续执行本边界后续存档与H00报告；H00此时尚未完成。
+
+### 2026-11-19｜1000更新主线共享协调
+
+将7300/7400完整真实门禁、A1000/4000未晋级、source/freeze仍v2、正式worker持续运行、W7队列仅等待、最新push9814482及原6800 CPU回放分工追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md。用于既定主线协调；没有可用跨线程发送工具，因此只共享文件交接、不声称已发送。无新GPU/物理/学习或源代码修改，当前H00结果仍待实际产生。
+
+### 2026-11-19｜7400完整H00报告15/15
+
+实际15/15 valid与15/15 success，三速0.3/0.5/0.6各5/5，failure/invalid/error/engineering均0。实际24986控制样本/99944物理子步，完整raw/事务及gpu/FORMAL_H00_007400_A_SUMMARY.json保留并归档分支小型summary。该固定H00病例表单次从7200的2/15到本次15/15，不能代替A门禁或推断总体可靠性；kind=h00按原consumer为report_only，gate_pass字段因此仍false，不是15个成功被改写。A整体依然4/120、未通过、连续通过0、预算1000/4000，正式worker继续本边界后续保存。仅读取已正式安装raw并核对完整分母，无重新评估、学习更新或训练参数修改。
