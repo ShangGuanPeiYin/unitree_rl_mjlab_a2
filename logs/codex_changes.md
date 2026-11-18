@@ -3153,3 +3153,16 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 
 正式新增500更新，A门禁valid120/invalid0/error0、success38/failure82、gate_pass=false。平地0.3为0/20（flat_progress20），0.5为20/20，0.6为18/20（flat_progress2）；L40上楼停车三速均0/20（final_unstable各20）。全部原因final_unstable60/flat_progress22/success38。15批实际评估220816控制样本/883264物理子步，完整raw/事务和gpu/FORMAL_GATE_006900_A_SUMMARY.json保留。
 原末窗口只读复算60例：首个不合格项四足同时有效支撑占比不足90%为58例、最大水平速度超标2例；不把外观看似静止等同满足全部联合站稳判据，也不改>5N有效支撑及90%阈值。逐例实测指标见FORMAL_GATE_006900_A_STAND_ANALYSIS.json。继续A500/4000内原预算，仍无连续完整通过；当前边界持久校验进行中。
+
+### 2026-11-18｜7000站稳失败窗口只读复算
+
+原raw中59例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_support': 59}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007000_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-18｜7000第六轮阶段A门禁未通过
+
+正式新增600更新，A固定门禁valid120/invalid0/error0、success0/failure120、gate_pass=false。平地三速各0/20（flat_progress60）；L40上楼停车三速各0/20，final_unstable59/nonfoot1。15批实际评估176496控制样本/705984物理子步，完整raw/事务及gpu/FORMAL_GATE_007000_A_SUMMARY.json保存。59个最终未站稳窗口按原consumer只读复算，首个不合格项均为有效四足支撑占比不足90%，逐例指标在FORMAL_GATE_007000_A_STAND_ANALYSIS.json；不把该首项当作唯一失败项，也不放宽>5N和90%阈值。
+阶段A600/4000，仍无连续完整门禁通过，继续原配方与预算。当前门禁后持久保存校验进行中，随后H00仅报告评估，不因普通策略失败自动调奖励/速度/学习率规则或切换来源权重。
+
+### 2026-11-18｜7000 H00报告完成
+
+15例valid15/invalid0/error0，success1/failure14：0.3为0/5、0.5为0/5、0.6为1/5；失败side7/timeout5/final_unstable2。实际评估20565控制样本/82260物理子步，完整raw/事务和gpu/FORMAL_H00_007000_A_SUMMARY.json保留。单个成功不等于可靠提升，H00仍只报告；A整体门禁尚未通过，阶段预算600/4000，继续原配方及判据。
