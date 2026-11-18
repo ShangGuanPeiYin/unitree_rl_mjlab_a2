@@ -3104,3 +3104,12 @@ baseline单worker2437758真实退出0，complete=true，valid60/invalid0/error0�
 ### 2026-11-18｜正式6500首轮阶段A门禁结果
 
 已完成新增100正式更新（控制2457600/物理9830400、Adam新增2000），6500诊断与boundary checkpoint已真实保存。冻结A门禁120例/15批，实际评估160784控制样本/643136物理子步，valid120/invalid0/error0，success40/failure80、gate_pass=false。分组：flat0.3为0/20（flat_progress20），flat0.5与0.6各20/20；up_L40三速各0/20（body60）。不据训练指标宣称能力改善，不放宽门槛或改速度/奖励。该轮不足晋级，继续原阶段A预算；整表与事务/SHA保存canonical formal evaluation目录及gpu/FORMAL_GATE_006500_A_SUMMARY.json。首轮结果仍非合同终态。
+
+### 2026-11-18｜正式6600第二轮门禁下降，保持原配方继续
+
+新增正式200更新、阶段A仍未通过。冻结同一A病例表的6500→6600实际门禁成功40/120→0/120；6600 valid120/invalid0/error0，failure120：flat_progress60、side29、timeout18、nonfoot7、posture3、final_unstable2、body1。平地三速各0/20（均前进位移不足），L40上楼停车三速各0/20；不能将body失败减少误称改进，整体门禁实际下降。15批真实评估259024控制样本/1036096物理子步，完整raw/事务及FORMAL_GATE_006600_A_SUMMARY.json保留。
+遵照已批准SDS不因普通策略失败擅自早停/改速/改奖励/改LR规则/放宽门槛，继续阶段A4000上限内预算；H00报告性评估随后执行。工程错误仍单列阻断；当前无工程错误。后续结果未验证，未声称停车/爬楼能力提高。
+
+### 2026-11-18｜6600 H00只报告评估完成
+
+H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（timeout8、side4、nonfoot2、posture1），实际评估21227控制样本/84908物理子步。完整raw/事务与gpu/FORMAL_H00_006600_A_SUMMARY.json已保留。不沿用v07的H00回归早停，不因普通策略失败加预算或改配方；工程异常仍阻断。正式阶段A仍新增200/4000，6600边界持久保存/验证进行中，随后继续学习；整体能力未通过。
