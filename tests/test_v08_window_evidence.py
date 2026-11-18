@@ -43,3 +43,24 @@ def test_failed_partial_is_preserved_and_final_conflict_never_overwritten(tmp_pa
     r.write_sidecar(path,payload)
     assert (tmp_path/'result.json.partial.failed.0000').read_text()=='{bad'
     assert not partial.exists()
+
+
+def test_sidecar_restore_recomputes_raw_trace_even_when_cached_hashes_are_rebound():
+    from src.tasks.velocity.v08 import evaluation as e, evaluation_records as r
+    from test_v08_evaluation import direction_raw
+    table=e.make_cases(phase='E')
+    selected=next(c for c in table.cases if c['task']=='E1')
+    def runner(case):
+        if case['case_id']==selected['case_id']:return direction_raw(case)
+        return dict(case_id=case['case_id'],complete=True,raw_complete=True,finite=True,success=False,reason='fall',segment='cruise',failure_kind='physical')
+    result=e.evaluate_cases(None,table,runner)
+    assert result.summary['success']==1
+    payload=r.pack_result(result,identity(table))
+    row=next(row for row in payload['records'] if row['case_id']==selected['case_id'])
+    for frame in row['raw']['trace']:frame['local_x']=4.
+    # Rehash the edited payload while preserving its false cached success.
+    payload['evidence_sha256']['records_sha256']=e._digest(payload['records'])
+    payload['summary']=e.summarize(payload['records'],table);payload['summary'].update(payload['isolation'])
+    payload['evidence_sha256']['summary_sha256']=e._digest(payload['summary'])
+    with pytest.raises(e.EvaluationError,match='raw evidence'):
+        r.restore_result(payload,identity(table))

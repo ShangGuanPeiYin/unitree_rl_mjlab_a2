@@ -2997,3 +2997,8 @@ CPU只读实际curriculum_004900.pt：gen73、gu83、gate_streak0，gate_log pas
 文件：新增src/tasks/velocity/v08/{curriculum,evaluation,evaluation_records,window_evidence}.py及test_v08_{cases,curriculum,evaluation,gates,window_evidence}.py。目的：按SDS替换旧F0/H/D/L/V/R为A/B/C/D/E任务课程；固定512槽、阶段预算4000/2000/2000/4000/6000，原V依赖删除，H00改为每200三速各5例只报告；预算总18000新增、来源6400、最高24400。B前400更新出生线性扩张，B评估及后续阶段用全范围；前阶段未用预算不转移。
 实际：冻结baseline60、门禁A/B各120/C/D各180/E420、final2100，E3每速四组合各25且子门禁23/25；各阶段两次连续100边界完整18/20晋级，最终每任务每速95/100。结果从原始站稳/方向窗口重算并保留完整分母；异常/缺失/非有限与物理失败分开；不可覆盖sidecar保存证据及哈希，隔离评估RNG/model/optimizer。理由：不让只到达/只静止/缓存success冒充完整任务，通过真实原始证据追溯门禁。
 验证：纯CPU21通过、1第三方警告、11.37秒；报告和12表SHA已归档coordination/reports/TASK2_IMPLEMENTATION_V1.md。尚未独立审查、尚未完成真实Env集成或GPU与正式训练，不声称物理能力改善；后续整体freeze必须重新计算当前配方病例SHA。
+
+### 2026-11-18｜Task2独立审查修复第1轮
+
+审查发现两项Important：基线D20/L40倒退被混组；方向/平地进展仍相信汇总量，旧报告“完整raw重算”表述过强。修改evaluation.py和对应evaluation/gates/window_evidence测试：baseline改为task:terrain×speed共12组各5例，保留额外task汇总；gate/final原20/100分母不变。运动验收改为从boundary0及逐动作连续trace重算400步平地净进展和路径；换向核对真实请求r、100步线性动作、r+101首恒速及r+100起物理位置，独立寻找请求后400步内首个0.60m。缺步/非法/汇总矛盾归invalid工程数据，真实静止/反向/超时归策略失败，sidecar恢复也重算。
+设计：拒绝轨迹静止但虚报进展的假成功；没有放宽SDS阈值。验证：指定四测试文件28通过、1第三方警告、9.89秒；12病例SHA未变，已归档初审与修复报告。独立定向复审尚未完成，真实Env/GPU/训练效果未验证；正式0。

@@ -139,6 +139,78 @@ def _required_windows(case):
 def needs_direction_check(case):
     return case['task'] in ('E1','E2','E4') or (case['task']=='E3' and case['resume_direction']!=case['initial_direction'])
 
+def _trace(raw):
+    frames=raw['trace']
+    if not isinstance(frames,list) or not frames: raise EvaluationError('missing control-action trace')
+    keys={'control_step','local_x','local_y','yaw','executed_c','requested_c','transition','segment','request_event','next_requested_c'}
+    for step,f in enumerate(frames):
+        if not isinstance(f,dict) or not keys<=set(f): raise EvaluationError('incomplete control-action sample')
+        if type(f['control_step']) is not int or f['control_step']!=step: raise EvaluationError('control-action steps are not continuous from boundary0')
+        for key in ('local_x','local_y','yaw','executed_c','requested_c','next_requested_c'):
+            if isinstance(f[key],bool) or not isinstance(f[key],(int,float)) or not math.isfinite(f[key]): raise EvaluationError('invalid control-action numeric sample')
+        if type(f['transition']) is not bool or not isinstance(f['segment'],str): raise EvaluationError('invalid control-action segment')
+        if step and not math.isclose(f['requested_c'],frames[step-1]['next_requested_c'],rel_tol=0.,abs_tol=1e-6): raise EvaluationError('action-latched request contradicts previous boundary')
+        event=f['request_event']
+        if event is None and not math.isclose(f['next_requested_c'],f['requested_c'],rel_tol=0.,abs_tol=1e-6): raise EvaluationError('upper request changed without a request event')
+        if event is not None:
+            if isinstance(event,bool) or not isinstance(event,(int,float)) or not math.isfinite(event) or abs(event)>.6+1e-6: raise EvaluationError('invalid request event')
+            if not math.isclose(f['next_requested_c'],event,rel_tol=0.,abs_tol=1e-6): raise EvaluationError('request event contradicts next request')
+    return frames
+
+def _matches_metrics(advertised,actual):
+    if not isinstance(advertised,dict): raise EvaluationError('missing producer movement summary')
+    for key,value in actual.items():
+        candidate=advertised[key]
+        if isinstance(value,int):
+            if type(candidate) is not int or candidate!=value: raise EvaluationError('movement summary differs from raw '+key)
+        elif isinstance(candidate,bool) or not isinstance(candidate,(int,float)) or not math.isclose(candidate,value,rel_tol=0.,abs_tol=1e-5):
+            raise EvaluationError('movement summary differs from raw '+key)
+
+def _walk_sample(frame,command):
+    if frame['transition'] or not (frame['segment']=='walk' or frame['segment'].endswith('_walk')): raise EvaluationError('sample is not effective constant cruise')
+    if not math.isclose(frame['executed_c'],command,rel_tol=0.,abs_tol=1e-6) or not math.isclose(frame['requested_c'],command,rel_tol=0.,abs_tol=1e-6): raise EvaluationError('actual action command contradicts task cruise')
+
+def _flat_motion(raw,case,frames):
+    if len(frames)<=spec.FLAT_WALK_STEPS: raise EvaluationError('missing flat action boundaries')
+    samples=frames[1:spec.FLAT_WALK_STEPS+1]
+    for f in samples:_walk_sample(f,case['speed'])
+    actual=dict(net_dx=frames[spec.FLAT_WALK_STEPS]['local_x']-frames[0]['local_x'],
+                max_abs_y=max(abs(f['local_y']) for f in samples),max_abs_yaw=max(abs(f['yaw']) for f in samples),walk_steps=spec.FLAT_WALK_STEPS)
+    _matches_metrics(raw['flat_progress'],actual)
+    if actual['net_dx']<spec.FLAT_PROGRESS_FACTOR*case['speed']*spec.FLAT_WALK_SECONDS:return actual,'insufficient_flat_progress'
+    if actual['max_abs_y']>.20 or actual['max_abs_yaw']>math.radians(10):return actual,'flat_walk_route'
+    return actual,None
+
+def _direction_motion(raw,case,frames):
+    direction=-1 if case['task'] in ('E1','E4') else 1 if case['task']=='E2' else case['resume_direction']
+    target=direction*case['speed']
+    events=[f for f in frames if f['request_event'] is not None and math.isclose(f['request_event'],target,rel_tol=0.,abs_tol=1e-6)]
+    if len(events)!=1: raise EvaluationError('missing or ambiguous direction request event')
+    request=events[0]['control_step'];start=request+spec.TRANSITION_STEPS+1;deadline=request+spec.REVERSE_PROGRESS_STEPS
+    if len(frames)<=start: raise EvaluationError('missing first effective cruise sample')
+    old=frames[request]['executed_c']
+    for step in range(request+1,start):
+        f=frames[step];expected=old+(target-old)*(step-request)/spec.TRANSITION_STEPS
+        if not f['transition'] or not math.isclose(f['executed_c'],expected,rel_tol=0.,abs_tol=1e-6) or not math.isclose(f['requested_c'],target,rel_tol=0.,abs_tol=1e-6): raise EvaluationError('actual transition commands contradict request')
+    base=frames[start-1]['local_x'];completion=None
+    for step in range(start,min(deadline,len(frames)-1)+1):
+        f=frames[step];_walk_sample(f,target)
+        if f['request_event'] is not None and not math.isclose(f['request_event'],target,rel_tol=0.,abs_tol=1e-6): raise EvaluationError('first cruise interrupted before direction proof')
+        if direction*(f['local_x']-base)>=spec.REVERSE_PROGRESS:
+            completion=step;break
+    if completion is None:
+        if len(frames)<=deadline: raise EvaluationError('missing direction deadline sample')
+        completion=deadline
+    actual=dict(direction=direction,net_progress=direction*(frames[completion]['local_x']-base),elapsed_steps=completion-request,
+                request_step=request,cruise_start_step=start,completion_step=completion)
+    checks=raw['direction_checks']
+    if not isinstance(checks,list) or len(checks)!=1: raise EvaluationError('direction evidence incomplete')
+    _matches_metrics(checks[0],actual)
+    if 'success' in checks[0] and checks[0]['success'] is not (actual['net_progress']>=spec.REVERSE_PROGRESS): raise EvaluationError('direction success summary differs from raw')
+    if actual['net_progress']<0:return actual,'wrong_direction'
+    if actual['net_progress']<spec.REVERSE_PROGRESS:return actual,'direction_timeout'
+    return actual,None
+
 def normalize_record(raw,case):
     row=dict(case_id=case['case_id'],task=case['task'],script=case['script'],speed=case['speed'],
              status='invalid',success=False,reason='missing_raw',segment='unknown')
@@ -166,28 +238,19 @@ def normalize_record(raw,case):
         for window in windows:
             passed,reason=_stop_window(window)
             if not passed: row.update(status='failure',reason=reason);return row
+        frames=_trace(raw) if case['task']=='flat_stop' or case['task'] in ('down_stop','E1','E2','E3','E4') else None
         if case['task']=='flat_stop':
-            p=raw['flat_progress']
-            if int(p['walk_steps'])!=spec.FLAT_WALK_STEPS: raise EvaluationError('flat walk evidence incomplete')
-            if p['net_dx']<spec.FLAT_PROGRESS_FACTOR*case['speed']*spec.FLAT_WALK_SECONDS:
-                row.update(status='failure',reason='insufficient_flat_progress');return row
-            if p['max_abs_y']>.20 or p['max_abs_yaw']>math.radians(10):
-                row.update(status='failure',reason='flat_walk_route');return row
+            metric,reason=_flat_motion(raw,case,frames);row['motion_metrics']=metric
+            if reason:row.update(status='failure',reason=reason);return row
         if case['task'] in ('down_stop','E1','E2','E3','E4'):
-            if raw['max_stair_abs_yaw']>spec.REVERSE_YAW:
+            terrain=spec.terrain_spec(case['tile_id']);length=terrain.N*terrain.step_depth
+            yaw=max((abs(f['yaw']) for f in frames if 0<=f['local_x']<=length),default=0.)
+            _matches_metrics({'yaw':raw['max_stair_abs_yaw']},{'yaw':yaw})
+            if yaw>spec.REVERSE_YAW:
                 row.update(status='failure',reason='stair_yaw');return row
         if needs_direction_check(case):
-            checks=raw['direction_checks']
-            if not isinstance(checks,list) or len(checks)!=1: raise EvaluationError('direction evidence incomplete')
-            d=checks[0];direction= -1 if case['task'] in ('E1','E4') else 1 if case['task']=='E2' else case['resume_direction']
-            if d['direction']!=direction or d['net_progress']<spec.REVERSE_PROGRESS:
-                row.update(status='failure',reason='wrong_direction');return row
-            clocks=[d[k] for k in ('request_step','cruise_start_step','completion_step','elapsed_steps')]
-            if any(type(v) is not int or v<0 for v in clocks): raise EvaluationError('direction clocks must be integer control boundaries')
-            if d['cruise_start_step']!=d['request_step']+spec.TRANSITION_STEPS+1 or d['completion_step']<d['cruise_start_step'] or d['elapsed_steps']!=d['completion_step']-d['request_step']:
-                raise EvaluationError('direction evidence is not first cruise after this request')
-            if not 0<=d['elapsed_steps']<=spec.REVERSE_PROGRESS_STEPS:
-                row.update(status='failure',reason='direction_timeout');return row
+            metric,reason=_direction_motion(raw,case,frames);row['motion_metrics']=metric
+            if reason:row.update(status='failure',reason=reason);return row
         row.update(status='success',success=True,reason='success')
     except (KeyError,TypeError,ValueError,IndexError) as error:
         row.update(status='invalid',success=False,reason='invalid_success_evidence',detail=str(error))
@@ -227,11 +290,19 @@ def summarize(records,table):
             if cases:
                 rows=[by_id[c['case_id']] for c in cases if c['case_id'] in by_id]
                 scripts[f'{script}@{speed:.1f}']=_group(rows,len(cases),23 if table.kind=='final' else 0)
+    task_groups=deepcopy(groups)
+    if table.kind=='baseline':
+        groups={}
+        for task,terrain in dict.fromkeys((c['task'],c['terrain_name']) for c in table.cases):
+            for speed in table.speeds:
+                cases=[c for c in table.cases if c['task']==task and c['terrain_name']==terrain and c['speed']==speed]
+                rows=[by_id[c['case_id']] for c in cases if c['case_id'] in by_id]
+                groups[f'{task}:{terrain}@{speed:.1f}']=_group(rows,len(cases),len(cases))
     allrows=list(by_id.values());summary=_group(allrows,len(expected),0)
     engineering=bool(duplicates or unknown or summary['invalid'] or summary['error'])
     passed=all(g['passed'] for g in groups.values()) and not engineering
     if table.kind=='final':passed=passed and all(g['passed'] for g in scripts.values())
-    summary.update(kind=table.kind,phase=table.phase,case_table_sha256=table.sha256,groups=groups,e3_subgates=scripts,
+    summary.update(kind=table.kind,phase=table.phase,case_table_sha256=table.sha256,groups=groups,task_groups=task_groups,e3_subgates=scripts,
                    physical_failure=sum(r.get('physical_failure',False) for r in allrows),
                    gate_pass=passed if table.kind in ('gate','final') else False,
                    report_only=table.kind=='h00',engineering_error=engineering,

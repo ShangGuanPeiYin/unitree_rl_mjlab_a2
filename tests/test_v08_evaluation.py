@@ -24,12 +24,11 @@ def test_success_claim_cannot_hide_stationary_or_wrong_direction():
     from src.tasks.velocity.v08 import evaluation as e
     table=e.make_cases(phase='E')
     flat=next(x for x in table.cases if x['task']=='flat_stop')
-    raw=dict(case_id=flat['case_id'],complete=True,raw_complete=True,finite=True,success=True,reason='success',segment='hold',stop_windows=[window('flat')],flat_progress=dict(net_dx=0.,max_abs_y=0.,max_abs_yaw=0.,walk_steps=400))
+    raw=flat_raw(flat,stationary=True)
     row=e.normalize_record(raw,flat)
     assert row['status']=='failure' and row['reason']=='insufficient_flat_progress'
     case=next(x for x in table.cases if x['task']=='E1')
-    raw.update(case_id=case['case_id'],stop_windows=[window('bottom')],direction_checks=[dict(direction=-1,net_progress=-1.,elapsed_steps=200)],max_stair_abs_yaw=0.)
-    row=e.normalize_record(raw,case)
+    row=e.normalize_record(direction_raw(case,mode='reverse'),case)
     assert row['status']=='failure' and row['reason']=='wrong_direction'
 
 def window(kind):
@@ -52,7 +51,7 @@ def test_rng_and_model_mode_isolated_even_on_exception():
 def test_direction_evidence_binds_request_and_first_cruise_clock():
     from src.tasks.velocity.v08 import evaluation as e
     case=next(c for c in e.make_cases(phase='E').cases if c['task']=='E1')
-    raw=dict(case_id=case['case_id'],complete=True,raw_complete=True,finite=True,success=True,reason='success',segment='hold',stop_windows=[window('bottom')],max_stair_abs_yaw=0.,direction_checks=[dict(direction=-1,net_progress=.61,elapsed_steps=200,request_step=50,cruise_start_step=151,completion_step=250)])
+    raw=direction_raw(case)
     assert e.normalize_record(raw,case)['status']=='success'
     raw['direction_checks'][0]['cruise_start_step']=0
     assert e.normalize_record(raw,case)['status']=='invalid'
@@ -94,8 +93,89 @@ def test_direction_contract_only_reverse_e3_but_full_roundtrip_counts():
         expected=c['task'] in ('E1','E2','E4') or (c['task']=='E3' and c['script'].endswith('reverse'))
         assert e.needs_direction_check(c)==expected
     case=next(c for c in table.cases if c['task']=='E3' and c['script']=='up_same')
-    raw=dict(case_id=case['case_id'],complete=True,raw_complete=True,finite=True,success=True,reason='success',segment='hold',stop_windows=[window('mid'),window('top')],max_stair_abs_yaw=0.)
+    raw=dict(case_id=case['case_id'],complete=True,raw_complete=True,finite=True,success=True,reason='success',segment='hold',stop_windows=[window('mid'),window('top')],max_stair_abs_yaw=0.,trace=[motion_frame(0,1.,.3),motion_frame(1,1.,.3)])
     assert e.normalize_record(raw,case)['status']=='success'
     case=next(c for c in table.cases if c['task']=='E4')
     raw.update(case_id=case['case_id'],stop_windows=[window('top'),window('bottom')])
+    assert e.normalize_record(raw,case)['status']=='invalid'
+
+def motion_frame(step,x,command,*,request=None,transition=False,requested=None,y=0.,yaw=0.):
+    return dict(control_step=step,local_x=x,local_y=y,yaw=yaw,executed_c=command,requested_c=command if requested is None else requested,transition=transition,segment='walk',request_event=request,next_requested_c=(command if requested is None else requested) if request is None else request)
+
+def direction_raw(case,*,mode='correct',lying=False):
+    direction=-1 if case['task'] in ('E1','E4') else 1 if case['task']=='E2' else case['resume_direction']
+    r=50;start=r+101;deadline=r+400;target=direction*case['speed'];old=-target
+    trace=[];x=4.
+    # First move .61m over 100 effective cruise actions, or remain/move wrong.
+    for step in range(deadline+1):
+        transition=r<step<=r+100
+        command=old if step<=r else old+(target-old)*(step-r)/100 if transition else target
+        if mode=='old_command' and step>r:command=old
+        if step>=start:
+            if mode in ('correct','old_command'):x+=direction*.006000001
+            elif mode=='reverse':x-=direction*.006000001
+            elif mode=='late' and step>=deadline:x+=direction*.006000001
+        trace.append(motion_frame(step,x,command,request=target if step==r else None,transition=transition,requested=old if step<=r else target))
+    end=start+99 if mode in ('correct','old_command') else deadline
+    progress=direction*(trace[end]['local_x']-trace[start-1]['local_x'])
+    reported=.61 if lying else progress
+    check=dict(direction=direction,net_progress=reported,elapsed_steps=end-r,request_step=r,cruise_start_step=start,completion_step=end)
+    return dict(case_id=case['case_id'],complete=True,raw_complete=True,finite=True,success=True,reason='success',segment='hold',stop_windows=[window('bottom')],max_stair_abs_yaw=0.,direction_checks=[check],trace=trace)
+
+def flat_raw(case,*,stationary=False,lying=False):
+    dx=0. if stationary else .8*case['speed']*8/400
+    trace=[motion_frame(i,i*dx,case['speed'],request=0. if i==400 else None) for i in range(401)]
+    return dict(case_id=case['case_id'],complete=True,raw_complete=True,finite=True,success=True,reason='success',segment='hold',stop_windows=[window('flat')],flat_progress=dict(net_dx=.8*case['speed']*8 if lying else 400*dx,max_abs_y=0.,max_abs_yaw=0.,walk_steps=400),trace=trace)
+
+@pytest.mark.parametrize('mode',['stationary','reverse','late','old_command'])
+def test_direction_claim_cannot_override_continuous_raw_movement(mode):
+    from src.tasks.velocity.v08 import evaluation as e
+    case=next(c for c in e.make_cases(phase='E').cases if c['task']=='E1')
+    raw=direction_raw(case,mode=mode,lying=True)
+    assert e.normalize_record(raw,case)['status']=='invalid'
+
+@pytest.mark.parametrize('mode',['stationary','reverse','late'])
+def test_actual_failed_movement_is_policy_failure_when_raw_summary_agrees(mode):
+    from src.tasks.velocity.v08 import evaluation as e
+    case=next(c for c in e.make_cases(phase='E').cases if c['task']=='E1')
+    assert e.normalize_record(direction_raw(case,mode=mode),case)['status']=='failure'
+
+def test_complete_movement_raw_recomputed_with_command_trace_and_missing_data_rejected():
+    from src.tasks.velocity.v08 import evaluation as e
+    case=next(c for c in e.make_cases(phase='E').cases if c['task']=='E1')
+    raw=direction_raw(case)
+    assert e.normalize_record(raw,case)['status']=='success'
+    del raw['trace'][60]
+    assert e.normalize_record(raw,case)['status']=='invalid'
+    raw=direction_raw(case);raw['trace'][151]['local_x']=float('nan')
+    assert e.normalize_record(raw,case)['status']=='invalid'
+    raw=direction_raw(case);del raw['trace']
+    assert e.normalize_record(raw,case)['status']=='invalid'
+
+def test_flat_claim_and_route_recomputed_from_400_action_boundaries():
+    from src.tasks.velocity.v08 import evaluation as e
+    case=next(c for c in e.make_cases().cases if c['task']=='flat_stop')
+    assert e.normalize_record(flat_raw(case),case)['status']=='success'
+    assert e.normalize_record(flat_raw(case,stationary=True),case)['status']=='failure'
+    assert e.normalize_record(flat_raw(case,stationary=True,lying=True),case)['status']=='invalid'
+    raw=flat_raw(case);raw['trace'][100]['executed_c']=-case['speed']
+    assert e.normalize_record(raw,case)['status']=='invalid'
+    raw=flat_raw(case);raw['trace'][100]['local_y']=.3
+    assert e.normalize_record(raw,case)['status']=='invalid'
+    raw['flat_progress']['max_abs_y']=.3
+    assert e.normalize_record(raw,case)['status']=='failure'
+
+
+def test_request_events_and_action_latched_targets_must_be_causal():
+    from src.tasks.velocity.v08 import evaluation as e
+    case=next(c for c in e.make_cases(phase='E').cases if c['task']=='E1')
+    raw=direction_raw(case);raw['trace'][50]['next_requested_c']=case['speed']
+    assert e.normalize_record(raw,case)['status']=='invalid'
+    raw=direction_raw(case);raw['trace'][49]['next_requested_c']=0.
+    assert e.normalize_record(raw,case)['status']=='invalid'
+
+def test_flat_first_action_window_cannot_hide_midwalk_request_interruptions():
+    from src.tasks.velocity.v08 import evaluation as e
+    case=next(c for c in e.make_cases().cases if c['task']=='flat_stop')
+    raw=flat_raw(case);raw['trace'][100]['request_event']=0.;raw['trace'][100]['next_requested_c']=0.
     assert e.normalize_record(raw,case)['status']=='invalid'
