@@ -3086,3 +3086,21 @@ Task3定向复审关闭I1/I2、blocking0；三个实施模块局部审查均通�
 单worker2399956于16:18:35至17:08:11真实运行并退出0，固定gate:E 420例/53批、8并行、原6400确定性策略，学习0；实际654964控制样本/2619856物理子步，完整raw immutable evaluation.json及coverage_result.json、53批intent/commit已落盘。valid420、invalid0、error0、success45（均flat：0.3为16/20、0.5为18/20、0.6为11/20）、failure375，gate_pass=false。其余up/down/E1/E2/E3/E4各0/60；失败body116/nonfoot137/side61/posture15/timeout9/cannot_reverse1/mid_stop_unstable21/final_unstable15。不能声称新任务能力通过。
 真实分支：顶部任务停车请求116、直接换向请求60、中停请求30（满300零保持动作21但不稳）、E4实际中间登顶58；楼底任务停车0、中停通过后重启0、E4顶部停车通过与负速重启0，明确尚未由原policy物理达到。对应成功逻辑分支用生产CommandState/TaskMachine/StandWindow/exporter/consumer确定性CPUfixture单列，不能代替策略物理成功。gpu/COVERAGE_01_BRANCH_AUDIT_V2.json纠正v1将出生支撑flag泛称arrival的歧义：支撑条件top161/bottom232并不等于任务到达，v2以实际停车请求绑定另计；v1保留历史。
 来源6400SHA和179受保护canonical旧文件再核对未变。独立W5最终验收进行中，baseline60/formal尚未启动，正式目录不存在/新增正式学习0。新代码已push fafdd34，当前日志待下一次文档提交。
+
+### 2026-11-18｜W5独立工程正式准入与baseline60启动
+
+独立reviewer完整重算420 raw/summary/各实际分支病例ID/53批费用，并CPU加载6份真实GPUcheckpoint核验迁移、Adam及50/55/56恢复；Critical0/Important0/blocking0。持久ENGINEERING_ACCEPTANCE_REPORT.md SHA95217e5ff754998fed4628f0ad1d41e5788ce9ca5ced81de25f4fc13a73042ac，准入JSON SHA101703fdf29eebef2fe6395071c6a53bb76257e235aaae5c8845f67aace12eef，root native admit按actualv2再验通过。工程准入不等于policy能力通过；缺的实际成功分支仍如前记录。
+已启动原6400 baseline60，seed42/cuda:0/最多8并行/updates0，四任务×三速×5，输出logs/a2_ideal_stairs_v08/baseline_seed42_trial01；须完整valid60/工程invalid0/error0才准formal。正式0，仍未使用工程权重作为来源。
+
+### 2026-11-18｜baseline60完整通过有效性准入并启动唯一正式训练
+
+baseline单worker2437758真实退出0，complete=true，valid60/invalid0/error0，学习0，实际控制59368/物理237472；策略success14/failure46，明细与完整12任务-地形-速度分组在baseline_result.json。该通过仅指基线数据完整，不是所有任务能力通过。root native admit(formal=True)验证真实source/v2freeze/独立准入/病例/sidecar/全部事务费用及60分母均通过。
+自动启动唯一正式目录logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01，controller2438416独立会话/单GPU锁，source原stop006400 SHA30ed23ba…a8b2，cuda:0/seed42/512环境/rollout48/5epoch×4minibatch/updates18000上限/原自适应LR，A→B→C→D→E上限4000/2000/2000/4000/6000，50诊断/100保存门禁/200H00；严格连续两次门禁才晋级，剩余额度不转移，cap不通过按具体任务终止，不加预算。正式首次实际6401与正式费用尚待worker提交确认；不把启动等同训练完成。
+
+### 2026-11-18｜正式首更新6401实际确认
+
+唯一formal worker2438417/controller2438416实际提交update_006401：formal_updates1/engineering_updates0、新控制24576/物理98304、Adam128000→128020。ready6400真实来源LR1.5000000000000005e-05、CUDArestored，ready checkpoint SHA71d402d2be206e5beda483d04ea3f99a37f24ff2b8c9dffc5776a7139b533ad6。首个正式回执已保存FIRST_FORMAL_UPDATE_VERIFIED.json。最近读到6420/新增20正式更新，训练继续阶段A；不得将启动或中间更新说为达标终态。
+
+### 2026-11-18｜正式6500首轮阶段A门禁结果
+
+已完成新增100正式更新（控制2457600/物理9830400、Adam新增2000），6500诊断与boundary checkpoint已真实保存。冻结A门禁120例/15批，实际评估160784控制样本/643136物理子步，valid120/invalid0/error0，success40/failure80、gate_pass=false。分组：flat0.3为0/20（flat_progress20），flat0.5与0.6各20/20；up_L40三速各0/20（body60）。不据训练指标宣称能力改善，不放宽门槛或改速度/奖励。该轮不足晋级，继续原阶段A预算；整表与事务/SHA保存canonical formal evaluation目录及gpu/FORMAL_GATE_006500_A_SUMMARY.json。首轮结果仍非合同终态。
