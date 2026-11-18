@@ -3283,3 +3283,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-19｜7800完整门禁与1400次新增正式更新
 
 实际120/120 valid、invalid/error/engineering0，success43/failure77；平地0.3/0.5/0.6分别3/20、20/20、20/20，0.3另17例flat_progress；L40上楼三速均0/20（0.3为final_unstable19/timeout1，0.5/0.6各final_unstable20）。A gatefalse、整体连续通过0，预算1400/4000/global7800。上一轮7700平地三速20/20不代表本轮低速也达标；本轮仍无总体可靠性通过结论。实际门禁256616控制样本/1026464物理子步，完整raw/事务及gpu/FORMAL_GATE_007800_A_SUMMARY.json保留。59个上楼站稳失败窗口按原consumer只读复算，首项mean_speed15/max_speed44，分窗口为{('top', 'endpoint_stop_mean_speed'): 15, ('top', 'endpoint_stop_max_speed'): 44}，详见gpu/FORMAL_GATE_007800_A_STAND_ANALYSIS.json（首项不等于唯一失败项）。归档两份小型JSON供分支审阅，无重新评估、额外学习、源码/配方/阈值修改；正式worker继续本边界后续保存及H00报告，此时H00尚未完成。
+
+### 2026-11-19｜1400更新与7800主线共享协调
+
+将7700/7800完整A门禁、H007600的1/15报告、A1400/4000未晋级、正式worker仍running及最新push325f887追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md，供既定主线读取。说明冻结v2源码/配方未改、没有重启或缓存迁移，已审终态队列身份于06:32确认且仍只等待；7800 H00此时尚未产生结果。仅共享文件协调和日志，没有可用跨线程发送工具，不声称工具消息已发送；无新GPU/物理/学习、源码或数值改动。
+
+### 2026-11-19｜7800完整H00报告3/15
+
+真实15/15 valid、invalid/error/engineering0，success3/failure12；0.3/0.5/0.6为0/5、2/5、1/5，12失败均final_unstable。实际23320控制样本/93280物理子步，完整raw/事务及gpu/FORMAL_H00_007800_A_SUMMARY.json保留并归档小型summary。H00仅报告，单次3/15不构成总体可靠性改善或A晋级；当前A门禁43/120（flat3/20、20/20、20/20，上楼各0/20），整体未通过、连续0、预算1400/4000。正式worker已完成第75号门禁边界存档并继续本边界后续保存。仅读取已安装完整结果、核对真实分母及追加记录，没有重新评估、额外学习、源码/配方/阈值修改。
