@@ -3113,3 +3113,12 @@ baseline单worker2437758真实退出0，complete=true，valid60/invalid0/error0�
 ### 2026-11-18｜6600 H00只报告评估完成
 
 H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（timeout8、side4、nonfoot2、posture1），实际评估21227控制样本/84908物理子步。完整raw/事务与gpu/FORMAL_H00_006600_A_SUMMARY.json已保留。不沿用v07的H00回归早停，不因普通策略失败加预算或改配方；工程异常仍阻断。正式阶段A仍新增200/4000，6600边界持久保存/验证进行中，随后继续学习；整体能力未通过。
+
+### 2026-11-18｜6700第三轮阶段A门禁：平地三速通过，楼顶仍未站稳
+
+正式新增300更新，冻结同一A门禁120例全部valid、invalid0/error0，success60/failure60、gate_pass=false。平地0.3/0.5/0.6各20/20（前轮6600三速均0/20），本轮固定病例的平地指标已通过；L40上楼停车三速仍各0/20，final_unstable46/nonfoot5/side9。不能把到达并执行停车等同最终站稳，也不能据平地通过宣称整体最终能力通过。
+15批实际评估255616控制样本/1022464物理子步；完整raw/事务及gpu/FORMAL_GATE_006700_A_SUMMARY.json保存。继续阶段A4000上限内学习，源/config/SDS/速度/奖励/原LR规则/门槛均未改变，当前没有连续完整通过门禁。6700边界保存校验进行中，新增正式预算仍300。
+
+### 2026-11-18｜6700楼顶站稳失败窗口只读复算
+
+对原raw中46例final_unstable的最后500动作窗口按原consumer重算，首个未通过项为{'endpoint_stop_max_speed': 10, 'endpoint_stop_pitch': 9, 'endpoint_stop_surface': 1, 'endpoint_stop_mean_speed': 26}；逐例实际速度、角度、角速度、高度、足速、四足支撑比和XY漂移保存gpu/FORMAL_GATE_006700_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理、没有GPU学习或改代码/门槛，不能据失败分类推断原因或声称效果改进。
