@@ -3068,3 +3068,21 @@ Task3定向复审关闭I1/I2、blocking0；三个实施模块局部审查均通�
 
 修改v08 contacts/env/evaluation/runner四源文件及7测试。原先失败终态可缺连续raw、部分成功可只凭孤立窗口；现在全部正常终态先逐动作核验boundary0至实际terminal_step及指令/时钟，成功按原SDS核验完整脚本并绑定真实驻留窗口、坐标与首次端点事件，失败只需实际失败前完整证据。E3同向不新增0.60m/8秒门槛。接触overflow改为控制步跨子步锁存并在奖励/任务消费前工程failfast，保留实际已知费用；不再当有效策略失败。未调buffer、physics、课程、奖励、PPO或原门槛。
 验证：最终静止源码全22文件177通过、1既有Torch警告、73.03秒；原输出SHA2274776a09e643eba9a0623db5e388fc10e254a5bc57dac64e702349531f3f69，11文件逐项SHA及git diff --check核对通过。RED及中间失败完整保留，真实CPU故障注入证明overflow阻止Adam更新及重复计费。报告FINAL_FIX_WAVE_REPORT.md已归档。尚待同整体reviewer定向复审与新冻结v2；native GPU、baseline60、正式训练及策略能力未验证。
+
+### 2026-11-18｜整体定向复审闭合与W5启动
+
+同一独立整体reviewer定向复审fafdd34统一修复，I1/I2均关闭，Critical0/Important0/source blocking0；报告FINAL_SOURCE_REVIEW_FIX1.md已归档。新freeze/v2实际SHA ba85e965723050fd335c492a15385f79a41f6d42d439d9d16a1cc6d3617cc783，485文件，配置67c7afb9…4b9与12病例表0c70ddb7…3ad相对v1完全不变。开始串行W5：8环境2更新smoke；之后512环境56更新probe、零学习覆盖。工程与正式分账，来源仍原6400，seed42、rollout48、原5×4；GPU结果未验证，不构成正式准入。
+
+### 2026-11-18｜GPU8×2通过与实施分支首次发布
+
+真实GPU smoke_trial01单worker2398320退出0，更新6400→6402，工程更新2、正式0、控制768/物理3072、Adam128000→128040；来源实际LR1.5000000000000005e-05、CUDA RNG restored，末权重SHA72f0eac17ab08a06ac3dc3ebb7add42bd4c2c66d22f83f7c9db885068e01df5f核对一致。512×56 probe单worker2398708运行中；以上仅工程验证不证明策略改进。代码62文件白名单/凭据模式扫描0/无权重及raw runtime，fafdd341已push codex/a2-v08-walk-stop-reverse，不合并main。首次直连等待，后用既有127.0.0.1:7897代理成功，未改持久网络设置。
+
+### 2026-11-18｜512×56 GPU probe通过
+
+单worker2398708真实退出0，56次工程更新、正式0，控制1376256/物理5505024，Adam128000→129120；6450真实诊断，6455保存SHA9443020f…f0ae并实际load且CUDA恢复后一次fresh物理回合，6456完成，末checkpointSHA86acdb61568db6c7752b41f106070b854a9d68bd761172aeb919a7f5fe7af343。5预热19.1700秒、50测量204.7435秒/1228800控制样本（6001.65样本/秒）、恢复后1更新3.7678秒；25次资源采样峰值GPU3206MiB、RSS3252MiB、最低可用RAM16.07GiB，采样值不宣称捕获所有瞬时峰值。保存/恢复按fresh physical episode合同，不宣称物理轨迹连续。配置/源码freezev2不变；零学习420覆盖现运行中，独立W5验收/baseline60/formal尚未完成。
+
+### 2026-11-18｜零学习420例实际覆盖完成
+
+单worker2399956于16:18:35至17:08:11真实运行并退出0，固定gate:E 420例/53批、8并行、原6400确定性策略，学习0；实际654964控制样本/2619856物理子步，完整raw immutable evaluation.json及coverage_result.json、53批intent/commit已落盘。valid420、invalid0、error0、success45（均flat：0.3为16/20、0.5为18/20、0.6为11/20）、failure375，gate_pass=false。其余up/down/E1/E2/E3/E4各0/60；失败body116/nonfoot137/side61/posture15/timeout9/cannot_reverse1/mid_stop_unstable21/final_unstable15。不能声称新任务能力通过。
+真实分支：顶部任务停车请求116、直接换向请求60、中停请求30（满300零保持动作21但不稳）、E4实际中间登顶58；楼底任务停车0、中停通过后重启0、E4顶部停车通过与负速重启0，明确尚未由原policy物理达到。对应成功逻辑分支用生产CommandState/TaskMachine/StandWindow/exporter/consumer确定性CPUfixture单列，不能代替策略物理成功。gpu/COVERAGE_01_BRANCH_AUDIT_V2.json纠正v1将出生支撑flag泛称arrival的歧义：支撑条件top161/bottom232并不等于任务到达，v2以实际停车请求绑定另计；v1保留历史。
+来源6400SHA和179受保护canonical旧文件再核对未变。独立W5最终验收进行中，baseline60/formal尚未启动，正式目录不存在/新增正式学习0。新代码已push fafdd34，当前日志待下一次文档提交。
