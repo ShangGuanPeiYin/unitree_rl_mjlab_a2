@@ -3215,3 +3215,15 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-18｜7200完整H00报告
 
 实际15/15 valid、invalid/error/engineering0，success2/failure13；三速0.3/0.5/0.6分别0/5、1/5、1/5。失败nonfoot5/posture4/side1/timeout3；真实25992控制样本/103968物理子步，完整raw/事务及gpu/FORMAL_H00_007200_A_SUMMARY.json保留，并复制小型summary到隔离分支供审阅。H00仅报告、不单独停训；2/15不代表可靠性改善，A整体门禁仍未通过，预算800/4000。仅读取真实完整sidecar并绑定其SHA，未重评、未改源代码/配方/预算；当前正式worker继续执行本边界后续保存。
+
+### 2026-11-18｜7200主线共享协调更新
+
+将7200完整A门禁、平地真实位移/路径约束及H00结果、正式worker仍running、已审W7队列waiting_formal和最新push9d7bbff追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md，供主线读取；当前线程没有可用thread-message工具，因此仅共享文件交接，不声称已工具发送。没有新录6800或争用正式GPU，原6800权重/CLI交接文件继续有效。只更新协调说明和日志；无额外测试、物理或学习。
+
+### 2026-11-19｜7300站稳失败窗口只读复算
+
+原raw中61例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_mean_speed': 55, 'endpoint_stop_support': 6}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007300_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜7300完整门禁与站稳窗口
+
+实际120/120 valid、invalid/error/engineering0，success53/failure67；L40上楼0.3/0.5/0.6分别14/20、19/20、20/20，flat三速仍各0/20。失败final_unstable61/flat_progress5/body1，A整体gatefalse且连续通过数0；当前A预算900/4000。实际物理门禁240016控制样本/960064物理子步，gpu/FORMAL_GATE_007300_A_SUMMARY.json绑定原sidecar SHA；失败站稳窗口按原consumer只读重算，首个不合格项endpoint_stop_mean_speed55、endpoint_stop_support6，分窗口类别为{('flat', 'endpoint_stop_mean_speed'): 55, ('top', 'endpoint_stop_support'): 6}，详见gpu/FORMAL_GATE_007300_A_STAND_ANALYSIS.json。与7200相比，本次55个flat已通过行走条件并进入停车流程，但最终未站稳，另外5例行走进度失败；不能将行走阶段通过宣称为平地走停站整体通过。楼梯由上一轮58/60变为本轮53/60，不能声称整体改善。仅CPU读取新raw与重算原窗口并归档两份小型JSON，没有重评、增加学习、调奖励/学习率/课程/阈值或改冻结源码。正式worker2438417继续原生本边界后续保存；本轮非200边界，无额外H00报告。
