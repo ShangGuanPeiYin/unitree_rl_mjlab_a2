@@ -103,24 +103,43 @@ def motion_frame(step,x,command,*,request=None,transition=False,requested=None,y
     return dict(control_step=step,local_x=x,local_y=y,yaw=yaw,executed_c=command,requested_c=command if requested is None else requested,transition=transition,segment='walk',request_event=request,next_requested_c=(command if requested is None else requested) if request is None else request)
 
 def direction_raw(case,*,mode='correct',lying=False):
+    from src.tasks.velocity.v08 import spec
     direction=-1 if case['task'] in ('E1','E4') else 1 if case['task']=='E2' else case['resume_direction']
-    r=50;start=r+101;deadline=r+400;target=direction*case['speed'];old=-target
-    trace=[];x=4.
-    # First move .61m over 100 effective cruise actions, or remain/move wrong.
+    old_direction=case['initial_direction'];old=old_direction*case['speed'];target=direction*case['speed']
+    top=case['spawn_mode']=='top';stop=150 if top else 50
+    parked=case['task'] in ('E3','E4');hold=spec.MID_HOLD_STEPS if case['task']=='E3' else spec.ENDPOINT_HOLD_STEPS
+    r=stop+100+hold if parked else stop;start=r+101;deadline=r+400
+    point=case['trigger_p']*8 if case['task'] in ('E1','E2','E3') else 9.
+    initial_x=9. if top else -1.;trace=[];x=initial_x
     for step in range(deadline+1):
-        transition=r<step<=r+100
-        command=old if step<=r else old+(target-old)*(step-r)/100 if transition else target
-        if mode=='old_command' and step>r:command=old
+        event=None;transition=False;segment='walk'
+        if step<=stop:
+            x=point if step==stop else initial_x+(point-initial_x)*step/stop
+            command=old*step/100 if top and step<=100 else old
+            requested=old;transition=top and 1<=step<=100
+            if step==0 and top:event=old
+            if step==stop:event=0. if parked else target
+        elif parked and step<=r:
+            command=old*(1-(step-stop)/100) if step<=stop+100 else 0.
+            requested=0.;transition=step<=stop+100;segment='deceleration' if transition else 'hold'
+            if step==r:event=target
+        else:
+            v0=0. if parked else old;transition=step<=r+100
+            command=v0+(target-v0)*(step-r)/100 if transition else target
+            requested=target
+            if mode=='old_command':command=v0
         if step>=start:
             if mode in ('correct','old_command'):x+=direction*.006000001
             elif mode=='reverse':x-=direction*.006000001
             elif mode=='late' and step>=deadline:x+=direction*.006000001
-        trace.append(motion_frame(step,x,command,request=target if step==r else None,transition=transition,requested=old if step<=r else target))
+        frame=motion_frame(step,x,command,request=event,transition=transition,requested=requested)
+        frame['segment']='initial' if step==0 else segment;trace.append(frame)
     end=start+99 if mode in ('correct','old_command') else deadline
     progress=direction*(trace[end]['local_x']-trace[start-1]['local_x'])
     reported=.61 if lying else progress
     check=dict(direction=direction,net_progress=reported,elapsed_steps=end-r,request_step=r,cruise_start_step=start,completion_step=end)
-    return dict(case_id=case['case_id'],complete=True,raw_complete=True,finite=True,success=True,reason='success',segment='hold',stop_windows=[window('bottom')],max_stair_abs_yaw=0.,direction_checks=[check],trace=trace)
+    kinds=['mid','top' if direction>0 else 'bottom'] if case['task']=='E3' else ['top','bottom'] if case['task']=='E4' else ['top' if direction>0 else 'bottom']
+    return dict(case_id=case['case_id'],complete=True,raw_complete=True,finite=True,success=True,reason='success',segment='hold',stop_windows=[window(k) for k in kinds],max_stair_abs_yaw=0.,direction_checks=[check],trace=trace)
 
 def flat_raw(case,*,stationary=False,lying=False):
     dx=0. if stationary else .8*case['speed']*8/400
@@ -178,4 +197,46 @@ def test_flat_first_action_window_cannot_hide_midwalk_request_interruptions():
     from src.tasks.velocity.v08 import evaluation as e
     case=next(c for c in e.make_cases().cases if c['task']=='flat_stop')
     raw=flat_raw(case);raw['trace'][100]['request_event']=0.;raw['trace'][100]['next_requested_c']=0.
+    assert e.normalize_record(raw,case)['status']=='invalid'
+
+
+@pytest.mark.parametrize('task',['E1','E2'])
+def test_same_target_repeat_cannot_impersonate_direct_reversal(task):
+    from src.tasks.velocity.v08 import evaluation as e
+    case=next(c for c in e.make_cases(phase='E').cases if c['task']==task)
+    raw=direction_raw(case);target=(-1 if task=='E1' else 1)*case['speed']
+    for f in raw['trace']:
+        f['executed_c']=target;f['requested_c']=target;f['next_requested_c']=target
+        if f['request_event'] is not None:f['request_event']=target
+        if f['control_step']==0:f['request_event']=None
+    assert e.normalize_record(raw,case)['status']=='invalid'
+
+@pytest.mark.parametrize('task',['E1','E2'])
+def test_wrong_initial_cruise_is_invalid_even_if_request_frame_has_correct_old_speed(task):
+    from src.tasks.velocity.v08 import evaluation as e
+    case=next(c for c in e.make_cases(phase='E').cases if c['task']==task)
+    raw=direction_raw(case)
+    raw['trace'][1]['executed_c']*=-1
+    assert e.normalize_record(raw,case)['status']=='invalid'
+
+@pytest.mark.parametrize('task,script',[('E1',None),('E2',None),('E3','up_reverse'),('E3','down_reverse'),('E4',None)])
+def test_case_specific_direct_or_parked_reversal_has_valid_old_command(task,script):
+    from src.tasks.velocity.v08 import evaluation as e
+    case=next(c for c in e.make_cases(phase='E').cases if c['task']==task and (script is None or c['script']==script))
+    assert e.normalize_record(direction_raw(case),case)['status']=='success'
+
+@pytest.mark.parametrize('task,script',[('E3','up_reverse'),('E3','down_reverse'),('E4',None)])
+def test_parked_reversal_requires_real_zero_hold_before_restart(task,script):
+    from src.tasks.velocity.v08 import evaluation as e
+    case=next(c for c in e.make_cases(phase='E').cases if c['task']==task and (script is None or c['script']==script))
+    raw=direction_raw(case);r=raw['direction_checks'][0]['request_step']
+    raw['trace'][r]['executed_c']=case['speed']
+    assert e.normalize_record(raw,case)['status']=='invalid'
+
+@pytest.mark.parametrize('task,script',[('E1',None),('E2',None),('E3','up_reverse')])
+def test_trigger_request_must_match_first_directional_crossing(task,script):
+    from src.tasks.velocity.v08 import evaluation as e
+    case=next(c for c in e.make_cases(phase='E').cases if c['task']==task and (script is None or c['script']==script))
+    raw=direction_raw(case)
+    for f in raw['trace']:f['local_x']+=.2
     assert e.normalize_record(raw,case)['status']=='invalid'

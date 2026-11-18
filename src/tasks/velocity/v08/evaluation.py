@@ -181,6 +181,53 @@ def _flat_motion(raw,case,frames):
     if actual['max_abs_y']>.20 or actual['max_abs_yaw']>math.radians(10):return actual,'flat_walk_route'
     return actual,None
 
+def _initial_cruise(case,frames,end):
+    expected=case['initial_direction']*case['speed']
+    top=case['spawn_mode']=='top'
+    if end<1: raise EvaluationError('direction request has no initial travel')
+    boundary=frames[0]
+    if not math.isclose(boundary['executed_c'],0. if top else expected,rel_tol=0.,abs_tol=1e-6) or not math.isclose(boundary['requested_c'],expected,rel_tol=0.,abs_tol=1e-6): raise EvaluationError('initial command does not match case birth')
+    first=1
+    if top:
+        if end<=spec.TRANSITION_STEPS: raise EvaluationError('top-born case reversed before initial cruise')
+        if boundary['request_event'] is None or not math.isclose(boundary['request_event'],expected,rel_tol=0.,abs_tol=1e-6): raise EvaluationError('top-born initial startup request missing')
+        for step in range(1,spec.TRANSITION_STEPS+1):
+            f=frames[step]
+            if not f['transition'] or not math.isclose(f['executed_c'],expected*step/spec.TRANSITION_STEPS,rel_tol=0.,abs_tol=1e-6) or not math.isclose(f['requested_c'],expected,rel_tol=0.,abs_tol=1e-6): raise EvaluationError('initial top startup contradicts case direction')
+        first=spec.TRANSITION_STEPS+1
+    for f in frames[first:end+1]:_walk_sample(f,expected)
+    return expected
+
+def _first_trigger_crossing(case,frames,step):
+    terrain=spec.terrain_spec(case['tile_id']);point=case['trigger_p']*terrain.N*terrain.step_depth
+    direction=case['initial_direction']
+    for index in range(1,step+1):
+        previous,current=frames[index-1]['local_x'],frames[index]['local_x']
+        crossed=previous<point<=current if direction>0 else previous>point>=current
+        if crossed:
+            if index!=step: raise EvaluationError('request did not occur at first directional trigger crossing')
+            return
+    raise EvaluationError('request is not a directional trigger crossing')
+
+def _pre_direction_request(case,frames,request):
+    if case['task'] in ('E1','E2'):
+        expected=_initial_cruise(case,frames,request)
+        _first_trigger_crossing(case,frames,request)
+        return expected
+    # E3 reverse and E4 restart after a completed real zero-speed dwell.
+    stops=[f['control_step'] for f in frames[:request] if f['request_event'] is not None and abs(f['request_event'])<=spec.COMMAND_TOLERANCE]
+    if len(stops)!=1: raise EvaluationError('missing or ambiguous preceding parking request')
+    stop=stops[0];old=_initial_cruise(case,frames,stop)
+    if case['task']=='E3':_first_trigger_crossing(case,frames,stop)
+    hold=spec.MID_HOLD_STEPS if case['task']=='E3' else spec.ENDPOINT_HOLD_STEPS
+    if request!=stop+spec.TRANSITION_STEPS+hold: raise EvaluationError('restart does not follow prescribed parking dwell')
+    for step in range(stop+1,stop+spec.TRANSITION_STEPS+1):
+        f=frames[step];expected=old*(1-(step-stop)/spec.TRANSITION_STEPS)
+        if not f['transition'] or not math.isclose(f['executed_c'],expected,rel_tol=0.,abs_tol=1e-6) or abs(f['requested_c'])>spec.COMMAND_TOLERANCE: raise EvaluationError('parking deceleration contradicts prior cruise')
+    for f in frames[stop+spec.TRANSITION_STEPS+1:request+1]:
+        if f['transition'] or abs(f['executed_c'])>spec.COMMAND_TOLERANCE or abs(f['requested_c'])>spec.COMMAND_TOLERANCE or not (f['segment']=='hold' or f['segment'].endswith('_hold')): raise EvaluationError('restart was not preceded by actual zero-command hold')
+    return 0.
+
 def _direction_motion(raw,case,frames):
     direction=-1 if case['task'] in ('E1','E4') else 1 if case['task']=='E2' else case['resume_direction']
     target=direction*case['speed']
@@ -188,7 +235,9 @@ def _direction_motion(raw,case,frames):
     if len(events)!=1: raise EvaluationError('missing or ambiguous direction request event')
     request=events[0]['control_step'];start=request+spec.TRANSITION_STEPS+1;deadline=request+spec.REVERSE_PROGRESS_STEPS
     if len(frames)<=start: raise EvaluationError('missing first effective cruise sample')
-    old=frames[request]['executed_c']
+    old=_pre_direction_request(case,frames,request)
+    if math.isclose(old,target,rel_tol=0.,abs_tol=1e-6): raise EvaluationError('same target cannot start a direction transition')
+    if not math.isclose(frames[request]['executed_c'],old,rel_tol=0.,abs_tol=1e-6) or not math.isclose(frames[request]['requested_c'],old,rel_tol=0.,abs_tol=1e-6): raise EvaluationError('old actual command does not match case reversal')
     for step in range(request+1,start):
         f=frames[step];expected=old+(target-old)*(step-request)/spec.TRANSITION_STEPS
         if not f['transition'] or not math.isclose(f['executed_c'],expected,rel_tol=0.,abs_tol=1e-6) or not math.isclose(f['requested_c'],target,rel_tol=0.,abs_tol=1e-6): raise EvaluationError('actual transition commands contradict request')

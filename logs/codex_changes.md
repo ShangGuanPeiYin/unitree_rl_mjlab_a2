@@ -3009,3 +3009,8 @@ CPU只读实际curriculum_004900.pt：gen73、gu83、gate_streak0，gate_log pas
 奖励前后：原+.4dx改为恒速+.4sign(c_exec)dx，全部过渡/停车为0；原横滚-5gy²保留，水平停车新增dt*(-5)gx²，中段不强制pitch回正；角速度巡航-.05改为停车-.20；airtime+.2在停车为0且清timer；零请求且实际零并即时合格时每步+.02；原登顶+10终止改最终到达+2/站稳且完成全部动作+8，失败-10且优先。其他原奖励保留并有数值等价测试，未改学习率/探索/随机化配方。
 接口：默认恢复只在继承RNG后一次新physicalreset，保存旧逻辑provenance；evaluation=True导出真实boundary0及逐动作轨迹/接触驻留，训练不虚报raw_complete；视频pre-reset hook捕获真实终态。新v08 contacts仅加ScopedDevice修正CPU设备上下文，接触公式不变。
 验证：Task1最终29通过、1第三方弃用警告、17.35秒；含真实2env控制与D20顶部24真实动作满足原到顶事件仍不reset，不证明策略会下楼。独立代码审查/GPU工程/来源策略基线/正式训练及效果仍未验证；正式0。完整报告归档TASK1_IMPLEMENTATION_V1.md。
+
+### 2026-11-18｜Task2独立审查修复第2轮
+
+第1轮复审I1已关闭；I2剩余R1：重复当前同向目标可冒充E1/E2换向。修改evaluation.py与test_v08_evaluation.py，绑定Case的初始/旧巡航方向和幅值，排除重复目标重启插值；E3反向/E4分别验证真实100减速、300/1000零驻留、从0重新100步起动。受改helper还校验E1/E2负/正请求及E3零请求恰为trigger_p首次方向crossing，数值/病例不变。
+验证：三个相关测试文件41通过、1第三方警告、10.04秒；baseline/final SHA复算未变。E3同向的触发仍由真实Env FSM执行（未人为加反向门槛），E4触觉登顶仍Env/窗口核验，整体集成待审。已归档FIX_ROUND2_REPORT；原审查者复审待完成；正式0。
