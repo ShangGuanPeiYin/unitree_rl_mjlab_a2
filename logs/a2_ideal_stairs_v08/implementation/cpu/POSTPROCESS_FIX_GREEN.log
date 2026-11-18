@@ -1,0 +1,14 @@
+test_complete_actual_E_summaries_allow_final (__main__.GateProofTests.test_complete_actual_E_summaries_allow_final) ... ok
+test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) ... ok
+test_clean_short_wrong_fps_or_size_clips_are_rejected (__main__.MediaProofTests.test_clean_short_wrong_fps_or_size_clips_are_rejected) ... ok
+test_foreign_case_video_name_is_rejected (__main__.MediaProofTests.test_foreign_case_video_name_is_rejected) ... ok
+test_nonzero_decode_exit_is_rejected (__main__.MediaProofTests.test_nonzero_decode_exit_is_rejected) ... ok
+test_real_complete_even_and_odd_terminal_clips_decode (__main__.MediaProofTests.test_real_complete_even_and_odd_terminal_clips_decode) ... ok
+test_zero_exit_with_error_log_is_rejected (__main__.MediaProofTests.test_zero_exit_with_error_log_is_rejected) ... ok
+test_duplicate_running_or_complete_state_is_unchanged (__main__.OwnershipTests.test_duplicate_running_or_complete_state_is_unchanged) ... ok
+test_lock_contention_does_not_create_attempt (__main__.OwnershipTests.test_lock_contention_does_not_create_attempt) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 1.018s
+
+OK

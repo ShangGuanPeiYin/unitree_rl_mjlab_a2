@@ -1,0 +1,10 @@
+test_cap_with_only_one_passing_gate_skips_final_but_keeps_videos (__main__.self_test.<locals>.ContractTerminalTests.test_cap_with_only_one_passing_gate_skips_final_but_keeps_videos) ... ok
+test_only_complete_E_two_consecutive_gates_runs_final (__main__.self_test.<locals>.ContractTerminalTests.test_only_complete_E_two_consecutive_gates_runs_final) ... ok
+test_operator_error_running_and_engineering_containers_never_trigger (__main__.self_test.<locals>.ContractTerminalTests.test_operator_error_running_and_engineering_containers_never_trigger) ... ok
+test_partial_and_foreign_budget_never_trigger (__main__.self_test.<locals>.ContractTerminalTests.test_partial_and_foreign_budget_never_trigger) ... ok
+test_unsettled_cap_and_nonE_success_never_trigger (__main__.self_test.<locals>.ContractTerminalTests.test_unsettled_cap_and_nonE_success_never_trigger) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.000s
+
+OK

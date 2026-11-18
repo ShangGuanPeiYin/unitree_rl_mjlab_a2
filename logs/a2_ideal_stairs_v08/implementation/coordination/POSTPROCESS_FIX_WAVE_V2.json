@@ -1,0 +1,19 @@
+{
+  "time": "2026-11-18T21:55:11.437778+08:00",
+  "queue_started": false,
+  "formal_untouched": true,
+  "freeze_v2_verified": true,
+  "cuda_initialized": false,
+  "cpu_regression_tests": 9,
+  "existing_self_tests": 5,
+  "red_observed_failures": 21,
+  "files": {
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/post_formal_pipeline_20261118.py": "6b28826aa14b54a494b6c0b26c9acfce2be1fead1d19daa2754e3a837f190c41",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py": "d70238be759e65dafc5e93ce1873bf3f4f9536b22019e151284456ab1c9f8ec4",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/cpu/POSTPROCESS_FIX_RED.log": "efd2c61b3c312ce5ab69fd2e7c2261d01715e1f03999b34ea6d385884650ad0e",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/cpu/POSTPROCESS_FIX_GREEN.log": "cc3895f7846408345ce16d53c8ac7af3165c258f8aaaaf0fe05523f2691c735d",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/cpu/POSTPROCESS_FIX_SELF_TEST.log": "af8c18656a71385bd617f3d8656e666db03b565ae236900037745e5437595187"
+  },
+  "scope": "O1/O2/O3 operational helper only; no frozen training changes",
+  "review_status": "awaiting scoped independent re-review"
+}

@@ -1,0 +1,204 @@
+test_complete_actual_E_summaries_allow_final (__main__.GateProofTests.test_complete_actual_E_summaries_allow_final) ... ok
+test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) ... 
+  test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='missing') ... FAIL
+  test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='false') ... FAIL
+  test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='kind') ... FAIL
+  test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='phase') ... FAIL
+  test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='update') ... FAIL
+  test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='case_sha') ... FAIL
+  test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='source') ... FAIL
+  test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='freeze') ... FAIL
+  test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='partial') ... FAIL
+  test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='error') ... FAIL
+  test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='engineering') ... FAIL
+test_clean_short_wrong_fps_or_size_clips_are_rejected (__main__.MediaProofTests.test_clean_short_wrong_fps_or_size_clips_are_rejected) ... 
+  test_clean_short_wrong_fps_or_size_clips_are_rejected (__main__.MediaProofTests.test_clean_short_wrong_fps_or_size_clips_are_rejected) (clip='short') ... FAIL
+  test_clean_short_wrong_fps_or_size_clips_are_rejected (__main__.MediaProofTests.test_clean_short_wrong_fps_or_size_clips_are_rejected) (clip='fps') ... FAIL
+  test_clean_short_wrong_fps_or_size_clips_are_rejected (__main__.MediaProofTests.test_clean_short_wrong_fps_or_size_clips_are_rejected) (clip='size') ... FAIL
+test_foreign_case_video_name_is_rejected (__main__.MediaProofTests.test_foreign_case_video_name_is_rejected) ... FAIL
+test_real_complete_even_and_odd_terminal_clips_decode (__main__.MediaProofTests.test_real_complete_even_and_odd_terminal_clips_decode) ... 
+  test_real_complete_even_and_odd_terminal_clips_decode (__main__.MediaProofTests.test_real_complete_even_and_odd_terminal_clips_decode) (steps=5) ... FAIL
+  test_real_complete_even_and_odd_terminal_clips_decode (__main__.MediaProofTests.test_real_complete_even_and_odd_terminal_clips_decode) (steps=6) ... FAIL
+test_zero_exit_with_error_log_is_rejected (__main__.MediaProofTests.test_zero_exit_with_error_log_is_rejected) ... FAIL
+test_duplicate_running_or_complete_state_is_unchanged (__main__.OwnershipTests.test_duplicate_running_or_complete_state_is_unchanged) ... 
+  test_duplicate_running_or_complete_state_is_unchanged (__main__.OwnershipTests.test_duplicate_running_or_complete_state_is_unchanged) (kind='waiting_formal') ... FAIL
+  test_duplicate_running_or_complete_state_is_unchanged (__main__.OwnershipTests.test_duplicate_running_or_complete_state_is_unchanged) (kind='postprocess_complete') ... FAIL
+test_lock_contention_does_not_create_attempt (__main__.OwnershipTests.test_lock_contention_does_not_create_attempt) ... /home/xxs/anaconda3/envs/a2/lib/python3.11/traceback.py:237: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpx2gc6ijr/POSTPROCESS_DRIVER.lock' mode='a+' encoding='UTF-8'>
+  tb.tb_frame.clear()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+FAIL
+
+======================================================================
+FAIL: test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='missing')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 79, in test_missing_false_foreign_or_partial_actual_E_gate_refuses_final
+    with self.assertRaises(ValueError):m.terminal_plan(p,r,s)
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='false')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 79, in test_missing_false_foreign_or_partial_actual_E_gate_refuses_final
+    with self.assertRaises(ValueError):m.terminal_plan(p,r,s)
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='kind')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 79, in test_missing_false_foreign_or_partial_actual_E_gate_refuses_final
+    with self.assertRaises(ValueError):m.terminal_plan(p,r,s)
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='phase')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 79, in test_missing_false_foreign_or_partial_actual_E_gate_refuses_final
+    with self.assertRaises(ValueError):m.terminal_plan(p,r,s)
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='update')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 79, in test_missing_false_foreign_or_partial_actual_E_gate_refuses_final
+    with self.assertRaises(ValueError):m.terminal_plan(p,r,s)
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='case_sha')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 79, in test_missing_false_foreign_or_partial_actual_E_gate_refuses_final
+    with self.assertRaises(ValueError):m.terminal_plan(p,r,s)
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='source')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 79, in test_missing_false_foreign_or_partial_actual_E_gate_refuses_final
+    with self.assertRaises(ValueError):m.terminal_plan(p,r,s)
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='freeze')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 79, in test_missing_false_foreign_or_partial_actual_E_gate_refuses_final
+    with self.assertRaises(ValueError):m.terminal_plan(p,r,s)
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='partial')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 79, in test_missing_false_foreign_or_partial_actual_E_gate_refuses_final
+    with self.assertRaises(ValueError):m.terminal_plan(p,r,s)
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='error')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 79, in test_missing_false_foreign_or_partial_actual_E_gate_refuses_final
+    with self.assertRaises(ValueError):m.terminal_plan(p,r,s)
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_missing_false_foreign_or_partial_actual_E_gate_refuses_final (__main__.GateProofTests.test_missing_false_foreign_or_partial_actual_E_gate_refuses_final) (change='engineering')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 79, in test_missing_false_foreign_or_partial_actual_E_gate_refuses_final
+    with self.assertRaises(ValueError):m.terminal_plan(p,r,s)
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_clean_short_wrong_fps_or_size_clips_are_rejected (__main__.MediaProofTests.test_clean_short_wrong_fps_or_size_clips_are_rejected) (clip='short')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 129, in test_clean_short_wrong_fps_or_size_clips_are_rejected
+    with self.assertRaises(ValueError):m.decode_videos(report,out,ids,'policy')
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_clean_short_wrong_fps_or_size_clips_are_rejected (__main__.MediaProofTests.test_clean_short_wrong_fps_or_size_clips_are_rejected) (clip='fps')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 129, in test_clean_short_wrong_fps_or_size_clips_are_rejected
+    with self.assertRaises(ValueError):m.decode_videos(report,out,ids,'policy')
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_clean_short_wrong_fps_or_size_clips_are_rejected (__main__.MediaProofTests.test_clean_short_wrong_fps_or_size_clips_are_rejected) (clip='size')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 129, in test_clean_short_wrong_fps_or_size_clips_are_rejected
+    with self.assertRaises(ValueError):m.decode_videos(report,out,ids,'policy')
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_foreign_case_video_name_is_rejected (__main__.MediaProofTests.test_foreign_case_video_name_is_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 147, in test_foreign_case_video_name_is_rejected
+    with self.assertRaises(ValueError):m.decode_videos(report,out,ids,'policy')
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_real_complete_even_and_odd_terminal_clips_decode (__main__.MediaProofTests.test_real_complete_even_and_odd_terminal_clips_decode) (steps=5)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 122, in test_real_complete_even_and_odd_terminal_clips_decode
+    self.assertTrue(all(row.get('decoded_frames')==4 for row in media))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_real_complete_even_and_odd_terminal_clips_decode (__main__.MediaProofTests.test_real_complete_even_and_odd_terminal_clips_decode) (steps=6)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 122, in test_real_complete_even_and_odd_terminal_clips_decode
+    self.assertTrue(all(row.get('decoded_frames')==4 for row in media))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_zero_exit_with_error_log_is_rejected (__main__.MediaProofTests.test_zero_exit_with_error_log_is_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 139, in test_zero_exit_with_error_log_is_rejected
+    with self.assertRaises(ValueError):m.decode_videos(report,out,ids,'policy')
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_duplicate_running_or_complete_state_is_unchanged (__main__.OwnershipTests.test_duplicate_running_or_complete_state_is_unchanged) (kind='waiting_formal')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 50, in test_duplicate_running_or_complete_state_is_unchanged
+    self.assertEqual(before,{p.name:p.read_bytes() for p in pipeline.iterdir()})
+AssertionError: {'eve[19 chars]nal\n', 'status.json': b'{"kind": "waiting_for[20 chars]ue}'} != {'eve[19 chars]nal\n{"time": "2026-11-18T21:53:14.083593+08:0[394 chars]}\n'}
+Diff is 711 characters long. Set self.maxDiff to None to see it.
+
+======================================================================
+FAIL: test_duplicate_running_or_complete_state_is_unchanged (__main__.OwnershipTests.test_duplicate_running_or_complete_state_is_unchanged) (kind='postprocess_complete')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 50, in test_duplicate_running_or_complete_state_is_unchanged
+    self.assertEqual(before,{p.name:p.read_bytes() for p in pipeline.iterdir()})
+AssertionError: {'eve[19 chars]nal\n', 'status.json': b'{"kind": "postprocess[26 chars]ue}'} != {'eve[19 chars]nal\n{"time": "2026-11-18T21:53:14.156648+08:0[394 chars]}\n'}
+Diff is 717 characters long. Set self.maxDiff to None to see it.
+
+======================================================================
+FAIL: test_lock_contention_does_not_create_attempt (__main__.OwnershipTests.test_lock_contention_does_not_create_attempt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/test_post_formal_pipeline.py", line 59, in test_lock_contention_does_not_create_attempt
+    self.assertFalse(pipeline.exists())
+AssertionError: True is not false
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.972s
+
+FAILED (failures=21)

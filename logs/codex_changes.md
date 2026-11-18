@@ -3166,3 +3166,16 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-18｜7000 H00报告完成
 
 15例valid15/invalid0/error0，success1/failure14：0.3为0/5、0.5为0/5、0.6为1/5；失败side7/timeout5/final_unstable2。实际评估20565控制样本/82260物理子步，完整raw/事务和gpu/FORMAL_H00_007000_A_SUMMARY.json保留。单个成功不等于可靠提升，H00仍只报告；A整体门禁尚未通过，阶段预算600/4000，继续原配方及判据。
+
+### 2026-11-18｜SDS W7终态后队列待审准备
+
+新增操作脚本coordination/post_formal_pipeline_20261118.py（SHA a85df561e89941aeb71410d7f5de872ffd23c2456c3cd7fac234e02b3d0d9166）和POSTPROCESS_STAGING_V1.json，位置在冻结训练闭包之外。它仅拟衔接已批准W7：唯一正式run实际合同终态后，E连续门禁通过才跑final2100；阶段预算耗尽保留失败报告并录制8预指定终态策略视频，调用现有原生CLI/单GPU锁/零更新，失败视频保留并完整解码。用户停止/工程异常/未完成状态不自动触发；已有输出不自动重评。当前脚本尚未启动，不增加GPU或正式学习，也不修改run/模型/配方/SDS/freeze。
+验证：实际--self-test 5组全部通过exit0，--inspect-only实际显示formal仍running、postprocess_v1不存在。当前仅为初版操作决策检查，尚未独立复核或执行真实post GPU；交同独立reviewer只读核验后才考虑排队，不能声称后处理已完成。
+
+### 2026-11-18｜v08终态辅助队列定向修正 O1/O2/O3
+
+目的：按独立操作复核修正冻结闭包外的终态后处理队列，当前正式worker继续运行。文件：implementation/coordination/post_formal_pipeline_20261118.py、test_post_formal_pipeline.py及POSTPROCESS_FIX_WAVE_V2.json。原先重复启动可能写旧status，现先取得进程锁、创建新目录，只有持有本次目录的实例能写事件；原先仅信课程E通过布尔值，现将末两次E门禁绑定已原始重算的真实引用、kind/phase/update/source/freeze/病例SHA、420完整valid分母/0invalid/error/engineering与gate_pass；原先只检查ffmpeg exit0，现启用-xerror并拒绝错误日志，核对每例文件名、1280×720、25fps、正常速度、右侧视角协议、完整解码帧数ceil(control_steps/2)+1及时间长度。未改src/scripts、奖励/课程/预算/正式恢复行为。验证：修复前CPU新用例实际21个子断言失败（RED），修复后9组回归通过，原有5组终态触发检查通过；包含真实CPU合成黑色视频的偶/奇终帧、短但可解码/fps/尺寸错配，合成片仅验证媒体检查，不是机器人效果证据。v2全部冻结文件与病例SHA重验通过，CUDA未初始化，0物理/0学习；队列尚未启动，等待同一独立reviewer定向复审。详见/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/POSTPROCESS_FIX_WAVE_V2.json。
+
+### 2026-11-18｜v08已审终态队列实际排队
+
+同一独立reviewer定向复审O1/O2/O3全部关闭、blocking0，报告/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/reports/POSTPROCESS_OPERATIONAL_REVIEW_FIX1.md；实际helper SHA 6b28826aa14b54a494b6c0b26c9acfce2be1fead1d19daa2754e3a837f190c41。现在已启动CPU等待driver PID 2542300，真实status=waiting_formal；唯一正式worker2438417继续运行，没有运行额外GPU/物理/学习。后续严格等待formal finished/exit0和native完整终态校验：仅E两次连续完整门禁通过后final2100；阶段cap失败明确不跑final2100但仍录固定8预设失败保留视频；operator/工程错误不触发、不自动重评。此次只是排队，不表示最终验收或视频已完成。启动argv及review SHA在/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/POSTPROCESS_DRIVER_01_LAUNCH.json，当前状态/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/postprocess_v1/status.json。
