@@ -3179,3 +3179,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-18｜v08已审终态队列实际排队
 
 同一独立reviewer定向复审O1/O2/O3全部关闭、blocking0，报告/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/reports/POSTPROCESS_OPERATIONAL_REVIEW_FIX1.md；实际helper SHA 6b28826aa14b54a494b6c0b26c9acfce2be1fead1d19daa2754e3a837f190c41。现在已启动CPU等待driver PID 2542300，真实status=waiting_formal；唯一正式worker2438417继续运行，没有运行额外GPU/物理/学习。后续严格等待formal finished/exit0和native完整终态校验：仅E两次连续完整门禁通过后final2100；阶段cap失败明确不跑final2100但仍录固定8预设失败保留视频；operator/工程错误不触发、不自动重评。此次只是排队，不表示最终验收或视频已完成。启动argv及review SHA在/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/POSTPROCESS_DRIVER_01_LAUNCH.json，当前状态/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/postprocess_v1/status.json。
+
+### 2026-11-18｜7100站稳失败窗口只读复算
+
+原raw中60例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_support': 60}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007100_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-18｜7100完整门禁及已审队列发布记录
+
+正式update7100门禁实际120/120 valid，invalid/error/engineering0，success0/failure120：三速flat各0/20（flat_progress60），三速up_L40各0/20（final_unstable60）。真实门禁181264控制样本/725056物理子步，结果索引gpu/FORMAL_GATE_007100_A_SUMMARY.json；站稳首项support60另有绑定raw SHA的分析。尚未晋级A，正式已提交700/4000个A阶段更新，继续原冻结配方，未追加学习预算或重评。已审终态helper/测试/复核/CPU原输出及共享日志已提交并push隔离分支codex/a2-v08-walk-stop-reverse，actual本地与远端跟踪HEAD均09dbedab3009fde8059e0f880c378a58318905a7；原始RED日志含unittest的4行尾空白故保留不改，.py/.md/.json的diff --check通过。未上传权重、未合并main。已启动队列2542300实际waiting_formal，当前formal2438417仍running；最终验收/8录像均未执行。协调状态同步至MAIN_OUTBOX.md，仅共享文件交接，不声称通过不可用的跨线程工具发送。
