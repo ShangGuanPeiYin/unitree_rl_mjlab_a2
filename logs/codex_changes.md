@@ -3045,3 +3045,26 @@ Task2第2轮独立复审关闭I2/R1，局部规范和质量blocking=0，完整�
 修改v08/{ledger,model,orchestration,ppo,recovery,runner,runtime}.py及model/recovery/runner测试。I1：native load先恢复学习/RNG、以显式flag暂缓fresh物理，PPO采样guard禁止待恢复状态动作；补完pending零学习边界并确定最终课程后一次对齐排程/新回合reset，原完整snapshot保留provenance。覆盖晋级已保存未排程、恢复pendinggate才晋级、恢复中再次中断，保证第一轮PPO任务/预算阶段一致。
 I2：gate/H00及baseline/coverage/final在首factory/physics前持久整表intent，逐batch fsync实际费用/进度；未完成/孤立费用/缺sidecar不自动重评，已知下界与未知余量分列交主控；完整raw/progress但缺finalcommit可纯校验修复引用不重跑。费用从batch、raw、commit、checkpointref到ledger总和一致，缺失或篡改硬拒。清除from_eth拒绝后的死代码并修旧说明，新增seed42非零输入等价测试；网络/参数数值不改。
 验证：定向及最终九组46通过、1第三方警告、47.50秒，原日志与精确文件SHA已归档TASK3_FIX_ROUND1_REPORT.md/TASK3_FIX1_HANDOFF.json。未改512/48/seed/原5×4与实际LR、奖励/课程预算/门槛或50/100/200和probe5+50+1。持久IO仅实现恢复协议，性能仍待GPU实测；独立定向复审与新完整CPU待完成，GPU/正式0。
+
+### 2026-11-18｜全部局部审查闭合与候选冻结v1
+
+Task3定向复审关闭I1/I2、blocking0；三个实施模块局部审查均通过，报告已归档。最后整体新v08 CPU在实际HEAD5123b8a为128通过、1第三方警告、64.32秒、0跳过/失败；旧823已完整复验且旧源码不改。候选冻结v1已绑定485文件（237149644字节）、356配置项、12病例表：freezeSHA1342f6519a1ba2b8e1c08a4a0f336627535748bb924b2c98e45057be67818181；配置67c7afb9e6f4572ca70fb219ab649947988686063dfe99c376a84c777c73b4b9；病例集0c70ddb72a24b217c79803326e617b26d5a46b783d757110aeaedc171e61a3ad。
+状态：新独立agent正在完整分支源码审查；候选冻结不等于工程验收。GPU smoke/probe/零学习覆盖、60基线和正式训练均尚未启动，新增正式学习0。下阶段须按SDS顺序完成，不凭CPU通过宣称策略能力或正式准入。
+
+### 2026-11-18｜整体源码V1审查与唯一统一修复波
+
+完整分支独立审查已核对485候选文件及128 CPU证据，但发现2项Important：所有终态未统一校验连续raw，up/down/E3同向等可只凭短trace/孤立窗口通过，失败缺raw仍算valid；接触buffer overflow被计策略失败且可能被后续物理sample清除。已归档FINAL_SOURCE_REVIEW_V1.md并将候选v1标为不可准入，原快照不覆盖。
+处理：唯一新fixer统一修完整证据合同/窗口绑定和overflow工程异常latch/failfast；原模块owner保持只读供接口说明。不得增E3同向.6/8门槛、调buffer/减少env或改physics/预算/奖励。改后须新冻结v2、完整CPU、同整体reviewer定向复审，再进入GPU。GPU/正式学习均0，未声称新行为达标。
+
+### 2026-11-18｜CUDA来源随机状态硬件预检
+
+仅新增gpu/RNG_HARDWARE_PREFLIGHT_01.py、job config/执行回执/资源采样/result工件，不改native源码或配方。单worker在RTX3070Ti（Torch2.15.0+cu132）实际加载原6400保存的全局CUDA16字节与环境Generator16字节，set/get逐字节相等，分别重复恢复后64个未来随机数完全一致；实际worker2379486退出0，来源SHA前后仍30ed23ba…a8b2。学习0、Adam0、物理步0。此仅证明硬件API兼容，不能代替真实native环境/8×2/512×56恢复或策略能力。结果和真实退出码已保存，整体源码统一修复仍在进行。
+
+### 2026-11-18｜来源6400字节相同本地备份
+
+仅新增logs/a2_ideal_stairs_v08/source_snapshot/stop_006400.pt及SOURCE.json，保护长训练期间的父权重来源。副本SHA与原canonical均为30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2；runtime仍只读原路径，不替换来源模型、不改原权重、不计学习。验证：两份实文件SHA一致；该备份为本地运行工件，不在本次代码白名单中。
+
+### 2026-11-18｜整体审查唯一统一修复完成与CPU验证
+
+修改v08 contacts/env/evaluation/runner四源文件及7测试。原先失败终态可缺连续raw、部分成功可只凭孤立窗口；现在全部正常终态先逐动作核验boundary0至实际terminal_step及指令/时钟，成功按原SDS核验完整脚本并绑定真实驻留窗口、坐标与首次端点事件，失败只需实际失败前完整证据。E3同向不新增0.60m/8秒门槛。接触overflow改为控制步跨子步锁存并在奖励/任务消费前工程failfast，保留实际已知费用；不再当有效策略失败。未调buffer、physics、课程、奖励、PPO或原门槛。
+验证：最终静止源码全22文件177通过、1既有Torch警告、73.03秒；原输出SHA2274776a09e643eba9a0623db5e388fc10e254a5bc57dac64e702349531f3f69，11文件逐项SHA及git diff --check核对通过。RED及中间失败完整保留，真实CPU故障注入证明overflow阻止Adam更新及重复计费。报告FINAL_FIX_WAVE_REPORT.md已归档。尚待同整体reviewer定向复审与新冻结v2；native GPU、baseline60、正式训练及策略能力未验证。

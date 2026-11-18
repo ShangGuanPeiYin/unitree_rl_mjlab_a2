@@ -160,18 +160,19 @@ def test_fix1_e3_reverse_and_e4_producer_raw_are_accepted_by_unchanged_consumer(
                 e.command_state.latch()
                 if e.tasks.mode[0]!=TaskMachine.DONE:x=x+e.executed_c*spec.CONTROL_DT
                 mid=e.tasks.stop_kind==1
-                stable=e.standing.update(torch.stack((x,y),-1),e.executed_c.abs(),zero,zero,yaw,zero,torch.ones(1)*.4,e.executed_c.abs(),yes,yes,mid)
+                stable=e.standing.update(torch.stack((x,y),-1)+e.origins[e.tile_ids,:2],e.executed_c.abs(),zero,zero,yaw,zero,torch.ones(1)*.4,e.executed_c.abs(),yes,yes,mid)
                 old_mode=e.tasks.mode.clone();old_hold=e.tasks.hold_steps.clone();old_kind=e.tasks.stop_kind.clone()
                 result=e.tasks.advance(x,x>=8.8,x<=-.8,stable,no,e.executed_c,no,transition=e.command_state.executed_transition,requested=e.command_state.executed_requested)
                 e._record_segments=list(e.tasks.action_segments);e.episode_length_buf.copy_(e.tasks.steps)
                 restarting=(old_mode!=TaskMachine.WALK)&(e.tasks.mode==TaskMachine.WALK)
                 if restarting[0]:
-                    window=e._export_window(0);window['count']=int(old_hold[0])+1;window['kind']='mid' if old_kind[0]==1 else 'top';e.stop_windows[0].append(window)
+                    window=e._export_window(0,hold_count=int(old_hold[0])+1);window['kind']='mid' if old_kind[0]==1 else 'top';e.stop_windows[0].append(window)
                 request=result['request'];ids=torch.isfinite(request).nonzero().flatten();e.command_state.request(ids,request[ids])
                 if bool((request==0).any() or restarting.any()):e.standing.reset(torch.tensor([0]))
                 e.command[:,0]=e.command_state.advance()
                 state=SimpleNamespace(local=torch.stack((x,y,torch.ones(1)*.4),-1),yaw=yaw,failure_masks={name:no.clone() for name in ('side','bounds','body','nonfoot','posture','fall','contact_overflow','nonfinite')})
                 e.max_stair_abs_yaw=torch.maximum(e.max_stair_abs_yaw,torch.where((x>=0)&(x<=8.),yaw.abs(),zero))
+                e.climb.consecutive_steps[:]=torch.where(x>=8.8,5,0);e.bottom_count[:]=torch.where(x<=-.8,5,0)
                 e._record_action_trace(state,request)
                 done=result['success']|result['failure']
                 if done[0]:
@@ -185,3 +186,19 @@ def test_fix1_e3_reverse_and_e4_producer_raw_are_accepted_by_unchanged_consumer(
                     break
             assert accepted is not None
         finally:e.close()
+
+def test_final_review_actual_substep_overflow_is_failfast_with_known_cost(monkeypatch):
+    import pytest
+    from src.tasks.velocity.v08.env import ContactOverflow
+    case=dict(task='up_stop',tile_id=21,speed=.3,x=-1.,y=0.,yaw=0.)
+    e=V08Env(num_envs=1,device='cpu',seed=42,evaluation=True,initial_cases=[case])
+    try:
+        checks=iter([True,False,False,False,False])
+        monkeypatch.setattr(e.contacts,'check_overflow',lambda:next(checks))
+        with pytest.raises(ContactOverflow) as caught:e.step(torch.zeros(1,12))
+        assert e.contacts.overflow.all() and e.episode_length_buf.item()==1
+        assert e.tasks.steps.item()==0 and e.tasks.failure_paid.item() is False
+        assert caught.value.diagnostics['known_control_samples']==1
+        assert caught.value.diagnostics['known_physics_substeps']==4
+        assert caught.value.diagnostics['reason']=='contact_overflow'
+    finally:e.close()

@@ -300,7 +300,12 @@ class V08Runner:
             self.save_verified('operator')
             return False
         except BaseException as error:
-            self.ledger.state['partial_physics_cost_unknown']=True
+            diagnostics=getattr(error,'diagnostics',{})
+            known=diagnostics.get('known_control_samples',0)
+            if known:
+                self.ledger.state['discarded_rollout_control_samples']=self.ledger.state.get('discarded_rollout_control_samples',0)+self.ppo.pending_control_samples+known
+                self.ledger.state['engineering_failure_diagnostics']=recovery.jsonable(diagnostics)
+            self.ledger.state['partial_physics_cost_unknown']=not bool(known)
             self.ledger.state.update(stop_state='monitoring_blocked' if type(error).__name__=='MonitoringBlocked' else 'engineering_error',error_type=type(error).__name__)
             self.ledger.state['error']=str(error)
             # Preserve partial state honestly; invalid partial Adam cannot pass
@@ -359,7 +364,20 @@ def environment_case_runner(model,env_factory,device='cpu',max_steps=50000):
             with torch.no_grad():
                 for _ in range(max_steps):
                     actions=model.act(observations,deterministic=True)
-                    observations,reward,terminated,truncated,info=env.step(actions)
+                    try:
+                        observations,reward,terminated,truncated,info=env.step(actions)
+                    except Exception as error:
+                        diagnostics=getattr(error,'diagnostics',{})
+                        if diagnostics.get('reason')!='contact_overflow':raise
+                        known=diagnostics.get('known_control_samples',0)
+                        if type(known) is not int or known!=len(batch):raise ValueError('invalid engineering failure cost') from error
+                        run.control_samples+=known
+                        # Preserve actual diagnostic/cost evidence in the same
+                        # immutable transaction; every batch member is invalidated.
+                        rows={i:dict(case_id=c['case_id'],status='error',exception=f'{type(error).__name__}: {error}',
+                            reason=diagnostics.get('reason','engineering_exception'),segment='engineering',
+                            complete=False,raw_complete=False,finite=True,diagnostics=recovery.jsonable(diagnostics)) for i,c in enumerate(batch)}
+                        break
                     run.control_samples+=len(batch)
                     for row in info.get('episodes',[]):
                         i=row.get('env_id')

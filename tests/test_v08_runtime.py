@@ -1,3 +1,4 @@
+from test_v08_evaluation import failure_raw
 from pathlib import Path
 import sys
 import pytest
@@ -44,8 +45,7 @@ def test_baseline_identity_cannot_claim_another_source(tmp_path):
     from src.tasks.velocity.v08.evaluation_records import pack_result,write_sidecar
     from src.tasks.velocity.v08.continuation_v08 import SOURCE_SHA256
     table=make_cases('A',kind='baseline')
-    def physical_failure(c):return dict(case_id=c['case_id'],complete=True,raw_complete=True,finite=True,
-        success=False,reason='physical_failure',segment='walk',physical_failure=True)
+    def physical_failure(c):return dict(failure_raw(c),reason='physical_failure')
     result=evaluate_cases(None,table,physical_failure)
     frozen=recovery.build_freeze();cases=recovery.freeze_case_tables()
     identity=dict(update=6400,phase='A',kind='baseline',case_table_sha256=table.sha256,

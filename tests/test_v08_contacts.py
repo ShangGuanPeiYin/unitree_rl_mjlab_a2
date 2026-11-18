@@ -20,3 +20,17 @@ def test_bottom_arrival_requires_recent_four_actual_supports_current_two_and_fiv
     local[0,0]=-.79
     for k in range(5):last,count,success=bottom_arrival_update(last,count,torch.tensor([54+k]),local,feet,torch.ones(1,4,dtype=torch.bool))
     assert not success.any()
+
+def test_final_review_overflow_latches_across_later_samples_until_next_control():
+    from types import SimpleNamespace
+    from src.tasks.velocity.v08.contacts import ContactState
+    contacts=object.__new__(ContactState);contacts.overflow=torch.zeros(1,dtype=torch.bool)
+    contacts.raw=torch.zeros(1,4,dtype=torch.bool);contacts.device='cpu'
+    contacts.inner=SimpleNamespace(sample=lambda *args,**kwargs:None,found=contacts.raw,foot_force=torch.zeros(1,4,3))
+    checks=iter([True,False,False]);contacts.check_overflow=lambda:next(checks)
+    contacts.sample(torch.tensor([21]),physics_dt=.005)
+    contacts.sample(torch.tensor([21]),physics_dt=.005)
+    contacts.sample(torch.tensor([21]),control=True)
+    assert contacts.overflow.all()
+    contacts.begin_control_step()
+    assert not contacts.overflow.any()

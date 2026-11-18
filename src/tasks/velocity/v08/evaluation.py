@@ -155,6 +155,26 @@ def _trace(raw):
         if event is not None:
             if isinstance(event,bool) or not isinstance(event,(int,float)) or not math.isfinite(event) or abs(event)>.6+1e-6: raise EvaluationError('invalid request event')
             if not math.isclose(f['next_requested_c'],event,rel_tol=0.,abs_tol=1e-6): raise EvaluationError('request event contradicts next request')
+    terminal=raw['terminal_step']
+    if type(terminal) is not int or terminal<1 or len(frames)!=terminal+1:
+        raise EvaluationError('trace does not end at actual terminal_step')
+    if type(raw['control_samples']) is not int or raw['control_samples']!=terminal or not math.isclose(raw['duration'],terminal*spec.CONTROL_DT,rel_tol=0.,abs_tol=1e-6):
+        raise EvaluationError('terminal control clocks disagree')
+    # Recompute every action command, including failed/aborted scripts. A
+    # request is issued after action r and starts interpolation at r+1.
+    target=frames[0]['next_requested_c'];start=frames[0]['executed_c']
+    active=frames[0]['request_event'] is not None and not math.isclose(start,target,rel_tol=0.,abs_tol=1e-6)
+    k=0 if active else spec.TRANSITION_STEPS
+    for f in frames[1:]:
+        k=min(k+1,spec.TRANSITION_STEPS)
+        expected=start+(target-start)*k/spec.TRANSITION_STEPS
+        transitioning=k<=spec.TRANSITION_STEPS and k>0 and active
+        if not math.isclose(f['executed_c'],expected,rel_tol=0.,abs_tol=1e-6) or f['transition'] is not transitioning:
+            raise EvaluationError('action command does not follow request interpolation')
+        if k==spec.TRANSITION_STEPS:active=False
+        event=f['request_event']
+        if event is not None and not math.isclose(event,target,rel_tol=0.,abs_tol=1e-6):
+            start=f['executed_c'];target=event;k=0;active=True
     return frames
 
 def _matches_metrics(advertised,actual):
@@ -260,6 +280,105 @@ def _direction_motion(raw,case,frames):
     if actual['net_progress']<spec.REVERSE_PROGRESS:return actual,'direction_timeout'
     return actual,None
 
+def _endpoint(case,frames,step,kind,first):
+    terrain=spec.terrain_spec(case['tile_id']);length=terrain.N*terrain.step_depth
+    key=kind+'_arrived'
+    for f in frames[first:step+1]:
+        if type(f[key]) is not bool:raise EvaluationError('missing physical endpoint event')
+    if not frames[step][key] or any(f[key] for f in frames[first:step]):
+        raise EvaluationError('parking request does not follow first physical endpoint arrival')
+    f=frames[step]
+    if kind=='top':
+        inside=length+spec.SUCCESS_BODY_PLATFORM_MARGIN<=f['local_x']<=length+terrain.platform_length and abs(f['local_y'])<=spec.SUCCESS_LATERAL_MAX
+    else:inside=f['local_x']<=spec.BOTTOM_BODY_X and abs(f['local_y'])<=spec.BOTTOM_LATERAL_MAX
+    if not inside:raise EvaluationError('endpoint event contradicts actual body position')
+
+def _park_evidence(window,frames,stop,old,*,restart=None,length=None,platform_length=None,expected_origin=None):
+    mid=window['kind']=='mid';hold=spec.MID_HOLD_STEPS if mid else spec.ENDPOINT_HOLD_STEPS
+    needed=spec.MID_WINDOW_STEPS if mid else spec.ENDPOINT_WINDOW_STEPS
+    end=stop+spec.TRANSITION_STEPS+hold
+    if end>=len(frames):raise EvaluationError('parking evidence extends beyond terminal trace')
+    for step in range(stop+1,stop+spec.TRANSITION_STEPS+1):
+        f=frames[step];expected=old*(1-(step-stop)/spec.TRANSITION_STEPS)
+        if not f['transition'] or not math.isclose(f['executed_c'],expected,rel_tol=0.,abs_tol=1e-6) or abs(f['requested_c'])>spec.COMMAND_TOLERANCE or not f['segment'].endswith('deceleration'):
+            raise EvaluationError('parking deceleration is not the prescribed 100 actions')
+    for f in frames[stop+spec.TRANSITION_STEPS+1:end+1]:
+        if f['transition'] or abs(f['executed_c'])>spec.COMMAND_TOLERANCE or abs(f['requested_c'])>spec.COMMAND_TOLERANCE or not f['segment'].endswith('hold'):
+            raise EvaluationError('parking hold is not actual zero-command dwell')
+    clocks=dict(count=hold,stop_request_step=stop,hold_start_step=stop+spec.TRANSITION_STEPS+1,start_step=end-needed+1,end_step=end)
+    for key,value in clocks.items():
+        if type(window[key]) is not int or window[key]!=value:raise EvaluationError('stop-window clock is detached from actual hold: '+key)
+    origin=np.asarray(window['origin_xy'],dtype=float)
+    if origin.shape!=(2,) or not np.allclose(origin,expected_origin,rtol=0.,atol=1e-5):raise EvaluationError('stop-window origin differs from frozen terrain frame')
+    positions=np.asarray([[f['local_x'],f['local_y']] for f in frames[end-needed+1:end+1]])+origin
+    if not np.allclose(np.asarray(window['xy']),positions,rtol=0.,atol=1e-5):raise EvaluationError('stop-window positions do not match hold action trace')
+    # The actual sampled yaw must agree too; all other kinematic thresholds
+    # remain exactly those of _stop_window/SDS (no new motion limits).
+    yaw=np.abs([f['yaw'] for f in frames[end-needed+1:end+1]])
+    if not np.allclose(np.abs(np.asarray(window['values'])[:,3]),yaw,rtol=0.,atol=1e-5):raise EvaluationError('stop-window yaw differs from hold trace')
+    if mid:
+        if any(not 0<f['local_x']<length for f in frames[stop+spec.TRANSITION_STEPS+1:end+1]):raise EvaluationError('mid hold departed staircase')
+    elif window['kind']=='top':
+        if any(f['local_x']<length or f['local_x']>length+platform_length or abs(f['local_y'])>spec.BODY_HALF_WIDTH for f in frames[stop+1:end+1]):raise EvaluationError('top parking departed physical platform boundary')
+    events=[f['request_event'] for f in frames[stop+1:end+1]]
+    if any(v is not None for v in events[:-1]) or (restart is None and events[-1] is not None) or (restart is not None and (events[-1] is None or not math.isclose(events[-1],restart,rel_tol=0.,abs_tol=1e-6))):
+        raise EvaluationError('parking dwell interrupted or restart request missing')
+    return end
+
+def _complete_script(raw,case,frames,windows):
+    boundary=frames[0]
+    for key,trace_key in (('x','local_x'),('y','local_y'),('yaw','yaw')):
+        if not math.isclose(boundary[trace_key],case[key],rel_tol=0.,abs_tol=1e-5):raise EvaluationError('physical birth differs from frozen case')
+    initial=np.asarray(raw['initial_pose'])
+    if initial.shape!=(3,) or not np.allclose(initial,[boundary['local_x'],boundary['local_y'],boundary['yaw']],rtol=0.,atol=1e-5):raise EvaluationError('birth summary contradicts boundary0')
+    terrain=spec.terrain_spec(case['tile_id']);length=terrain.N*terrain.step_depth
+    # All script requests must be accounted for. Same-target diagnostic repeats
+    # cannot impersonate a task event.
+    events=[f for f in frames[1:] if f['request_event'] is not None]
+    stops=[f['control_step'] for f in events if abs(f['request_event'])<=spec.COMMAND_TOLERANCE]
+    if len(stops)!=len(windows):raise EvaluationError('missing or extra script parking request')
+    task=case['task'];old=case['initial_direction']*case['speed'];first=stops[0]
+    expected_events=len(stops)+(1 if task in ('E1','E2','E3','E4') else 0)
+    if len(events)!=expected_events:raise EvaluationError('unaccounted script request')
+    if task in ('flat_stop','up_stop','down_stop'):
+        _initial_cruise(case,frames,first)
+        if task=='flat_stop':
+            if first!=spec.FLAT_WALK_STEPS:raise EvaluationError('flat parking clock differs from 8 seconds')
+        else:_endpoint(case,frames,first,windows[0]['kind'],1)
+    elif task in ('E3','E4'):
+        _initial_cruise(case,frames,first)
+        if task=='E3':_first_trigger_crossing(case,frames,first)
+        else:_endpoint(case,frames,first,'top',1)
+        target=(case['resume_direction'] if task=='E3' else -1)*case['speed']
+        restart=_park_evidence(windows[0],frames,first,old,restart=target,length=length,platform_length=terrain.platform_length,expected_origin=terrain.frame_origin_world[:2])
+        final=stops[-1]
+        if final<=restart+spec.TRANSITION_STEPS:raise EvaluationError('endpoint reached without restarted cruise')
+        for f in frames[restart+spec.TRANSITION_STEPS+1:final+1]:_walk_sample(f,target)
+        _endpoint(case,frames,final,windows[-1]['kind'],restart+1)
+        first=final;old=target
+    else:
+        target=(-1 if task=='E1' else 1)*case['speed']
+        requests=[f['control_step'] for f in events if math.isclose(f['request_event'],target,rel_tol=0.,abs_tol=1e-6)]
+        if len(requests)!=1:raise EvaluationError('missing or ambiguous script direction request')
+        request=requests[0]
+        _pre_direction_request(case,frames,request)
+        if first<=request+spec.TRANSITION_STEPS:raise EvaluationError('endpoint reached without new-direction cruise')
+        for f in frames[request+spec.TRANSITION_STEPS+1:first+1]:_walk_sample(f,target)
+        _endpoint(case,frames,first,windows[-1]['kind'],request+1)
+        old=target
+    end=_park_evidence(windows[-1],frames,first,old,length=length,platform_length=terrain.platform_length,expected_origin=terrain.frame_origin_world[:2])
+    if end!=raw['terminal_step']:raise EvaluationError('terminal is not prescribed final hold boundary')
+    # Each nonzero leg retains its original full-terrain timeout allocation.
+    from .terrain import timeout_steps
+    limit=spec.FLAT_WALK_STEPS if task=='flat_stop' else int(timeout_steps(case['tile_id'],torch.tensor(case['speed'])).item())
+    leg_start=0;extra=spec.TRANSITION_STEPS if case['spawn_mode']=='top' else 0
+    for f in events:
+        step=f['control_step'];target=f['request_event']
+        if leg_start is not None:
+            if task!='flat_stop' and step-leg_start>=limit+extra:raise EvaluationError('travel exceeds original leg timeout')
+        if abs(target)<=spec.COMMAND_TOLERANCE:leg_start=None
+        else:leg_start=step;extra=spec.TRANSITION_STEPS
+
 def normalize_record(raw,case):
     row=dict(case_id=case['case_id'],task=case['task'],script=case['script'],speed=case['speed'],
              status='invalid',success=False,reason='missing_raw',segment='unknown')
@@ -267,27 +386,30 @@ def normalize_record(raw,case):
     # Store complete raw data for audit; nonfinite payloads become JSON-safe errors.
     if not _finite(raw): row['reason']='nonfinite_raw';return row
     row['raw']=deepcopy(raw);row['segment']=str(raw.get('segment','unknown'))
-    if raw.get('exception') is not None or raw.get('status')=='error':
-        row.update(status='error',reason='engineering_exception');return row
+    overflow=raw.get('reason')=='contact_overflow' or (isinstance(raw.get('failure_masks'),dict) and raw['failure_masks'].get('contact_overflow') is True)
+    if raw.get('exception') is not None or raw.get('status')=='error' or overflow:
+        row.update(status='error',reason='contact_overflow' if overflow else 'engineering_exception');return row
     if raw.get('case_id')!=case['case_id']: row['reason']='case_id_mismatch';return row
     if raw.get('complete') is not True: row['reason']='incomplete_episode';return row
     if raw.get('raw_complete') is not True: row['reason']='missing_raw';return row
     if raw.get('finite') is not True: row['reason']='nonfinite_raw';return row
     if not isinstance(raw.get('success'),bool) or not raw.get('reason') or not raw.get('segment'):
         row['reason']='missing_terminal_fields';return row
-    # A true physical failure always wins, including an erroneous simultaneous success.
-    if raw.get('physical_failure') is True or raw.get('failure_kind')=='physical':
-        row.update(status='failure',reason=raw['reason'],physical_failure=True);return row
-    if not raw['success']:
-        row.update(status='failure',reason=raw['reason'],physical_failure=False);return row
     try:
+        frames=_trace(raw)
+        # Genuine policy failures require the complete evidence through the
+        # actual failure action, but do not require future success windows.
+        if raw.get('physical_failure') is True or raw.get('failure_kind')=='physical':
+            row.update(status='failure',reason=raw['reason'],physical_failure=True);return row
+        if not raw['success']:
+            row.update(status='failure',reason=raw['reason'],physical_failure=False);return row
         windows=raw['stop_windows']
         if not isinstance(windows,list) or [x['kind'] for x in windows]!=_required_windows(case):
             raise EvaluationError('missing or reordered required stop windows')
+        _complete_script(raw,case,frames,windows)
         for window in windows:
             passed,reason=_stop_window(window)
             if not passed: row.update(status='failure',reason=reason);return row
-        frames=_trace(raw) if case['task']=='flat_stop' or case['task'] in ('down_stop','E1','E2','E3','E4') else None
         if case['task']=='flat_stop':
             metric,reason=_flat_motion(raw,case,frames);row['motion_metrics']=metric
             if reason:row.update(status='failure',reason=reason);return row
@@ -302,7 +424,7 @@ def normalize_record(raw,case):
             if reason:row.update(status='failure',reason=reason);return row
         row.update(status='success',success=True,reason='success')
     except (KeyError,TypeError,ValueError,IndexError) as error:
-        row.update(status='invalid',success=False,reason='invalid_success_evidence',detail=str(error))
+        row.update(status='invalid',success=False,reason='invalid_success_evidence' if raw['success'] else 'invalid_terminal_evidence',detail=str(error))
     return row
 
 def _group(rows,expected,threshold):

@@ -25,6 +25,9 @@ class NumericalFailure(FloatingPointError):
     def __init__(self,message,diagnostics):
         super().__init__(message);self.diagnostics=diagnostics
 
+class ContactOverflow(NumericalFailure):
+    """Incomplete contacts invalidate the whole batch; never a policy failure."""
+
 class V08Env(ManagerBasedRlEnv):
     def __init__(self,num_envs=512,device='cuda:0',seed=42,initial_cases=None,
                  phase='A',stage_iteration=0,evaluation=False,fixed_vx=None,
@@ -214,11 +217,13 @@ class V08Env(ManagerBasedRlEnv):
     def _reward_frame(self,state,previous):
         d=self.robot.data;base,valid=terrain.query_surface(d.root_link_pos_w[:,:2],self.tile_ids);feet,fvalid=self._foot_surface();false=torch.zeros(self.num_envs,dtype=torch.bool,device=self.device)
         return rewards.RewardFrame(executed_command=self.executed_c,local_x=state.local[:,0],local_x_prev=self._local_x_prev.clone(),body_lin_vel_b=d.root_link_lin_vel_b,body_ang_vel_b=d.root_link_ang_vel_b,gravity_b=d.projected_gravity_b,base_height_above_surface=d.root_link_pos_w[:,2]-torch.where(valid,base,0.),q=d.joint_pos[:,self.joint_ids],qdot=d.joint_vel[:,self.joint_ids],q_target_executed=self.action_term._processed_actions,action=self.action_manager.action,previous_action=previous,foot_position_world=d.site_pos_w[:,self.foot_ids],foot_velocity_world=d.site_lin_vel_w[:,self.foot_ids],foot_force_world=self.contacts.foot_force,contact_raw=self.contacts.raw,contact_filtered=self.contacts.filtered,tile_ids=self.tile_ids,local_y=state.local[:,1],yaw_world=state.yaw,resets=false,success=false,failure=false,foot_surface_height=torch.where(fvalid,feet,0.))
-    def _export_window(self,i):
+    def _export_window(self,i,hold_count=None):
         mid=bool(self.tasks.stop_kind[i]==1);w=spec.MID_WINDOW_STEPS if mid else spec.ENDPOINT_WINDOW_STEPS
         n=min(int(self.standing.count[i]),w)
         c=self.tasks.cases[i];kind='mid' if mid else ('flat' if c['task']=='flat_stop' else 'top' if self.tasks.goal[i]>0 else 'bottom')
-        return dict(kind=kind,count=int(self.tasks.hold_steps[i]),xy=self.standing.xy[i,-n:].detach().cpu().tolist(),values=self.standing.values[i,-n:].detach().cpu().tolist())
+        count=int(self.tasks.hold_steps[i]) if hold_count is None else int(hold_count)
+        end=int(self.episode_length_buf[i]);origin=self.origins[self.tile_ids[i],:2].detach().cpu().tolist()
+        return dict(kind=kind,count=count,stop_request_step=end-count-spec.TRANSITION_STEPS,hold_start_step=end-count+1,start_step=end-n+1,end_step=end,origin_xy=origin,xy=self.standing.xy[i,-n:].detach().cpu().tolist(),values=self.standing.values[i,-n:].detach().cpu().tolist())
     def _records(self,state,result,done):
         records=[]
         terminal_ids=done.nonzero().flatten().detach().cpu().tolist()
@@ -235,9 +240,11 @@ class V08Env(ManagerBasedRlEnv):
     def _record_action_trace(self,state,request):
         raw=torch.stack((state.local[:,0],state.local[:,1],state.yaw,self.executed_c,self.command_state.executed_requested,self.command_state.executed_transition.float(),self.requested_c,self.command[:,0],request),-1).detach().cpu().tolist()
         steps=self.episode_length_buf.detach().cpu().tolist()
+        top=(self.climb.consecutive_steps>=spec.SUCCESS_CONSECUTIVE_FRAMES).detach().cpu().tolist()
+        bottom=(self.bottom_count>=spec.BOTTOM_ARRIVAL_FRAMES).detach().cpu().tolist()
         for i,(step,row) in enumerate(zip(steps,raw)):
             event=row[8] if math.isfinite(row[8]) else None
-            self.trace[i].append(dict(control_step=int(step),boundary=False,local_x=row[0],local_y=row[1],yaw=row[2],executed_c=row[3],requested_c=row[4],transition=bool(row[5]),next_requested_c=row[6],next_actor_c=row[7],request_event=event,segment=self._record_segments[i],position_semantics='after_action_boundary'))
+            self.trace[i].append(dict(control_step=int(step),boundary=False,top_arrived=bool(top[i]),bottom_arrived=bool(bottom[i]),local_x=row[0],local_y=row[1],yaw=row[2],executed_c=row[3],requested_c=row[4],transition=bool(row[5]),next_requested_c=row[6],next_actor_c=row[7],request_event=event,segment=self._record_segments[i],position_semantics='after_action_boundary'))
             if event is not None:self.tasks.events[i].append(dict(event='request',step=int(step),target=event))
     def segment(self,i):
         mode=int(self.tasks.mode[i]);return ('walk','deceleration','hold','done')[mode]
@@ -245,11 +252,17 @@ class V08Env(ManagerBasedRlEnv):
         if not torch.isfinite(action).all():raise NumericalFailure('Nonfinite action',{'action':action.detach().cpu()})
         self.command_state.latch();self.sample_command=self.command.clone();self.sample_command[:,0]=self.executed_c
         previous=self.action_manager.action.clone();self.action_manager.process_action(action)
-        self.control_body_hit.zero_();self.control_long_hit.zero_()
+        self.control_body_hit.zero_();self.control_long_hit.zero_();self.contacts.begin_control_step()
         for _ in range(self.cfg.decimation):
             self._sim_step_counter+=1;self.action_manager.apply_action();self.scene.write_data_to_sim();self.sim.step();self.sim.forward();self.scene.update(dt=self.physics_dt);self.contacts.sample(self.tile_ids,physics_dt=self.physics_dt)
             self.control_body_hit|=(self.contacts.link_force[:,self.contacts.body_link_mask].norm(dim=-1)>0).any(-1);self.control_long_hit|=(self.contacts.nonfoot_duration>=spec.NONFOOT_LIMIT_S-1e-6).any(-1)
         self.contacts.sample(self.tile_ids,control=True);self.sim.sense();self.episode_length_buf+=1;self.common_step_counter+=1
+        if self.contacts.overflow.any():
+            diagnostics=dict(reason='contact_overflow',overflow=self.contacts.overflow.detach().cpu().tolist(),
+                control_step=self.episode_length_buf.detach().cpu().tolist(),contact_capacity=int(self.contacts.inner.ids.size),
+                known_control_samples=self.num_envs,known_physics_substeps=self.num_envs*self.cfg.decimation,
+                qpos=self.sim.data.qpos.detach().cpu().tolist())
+            raise ContactOverflow('contact_overflow: actual contact buffer incomplete',diagnostics)
         state=self._task_state()
         if state.failure_masks['nonfinite'].any():raise NumericalFailure('Nonfinite physical state',{'qpos':self.sim.data.qpos.detach().cpu()})
         stable,instant,mid,surface=self._standing_frame(state)
@@ -289,7 +302,7 @@ class V08Env(ManagerBasedRlEnv):
         for i in restarting.nonzero().flatten().tolist():
             # The machine has already reset its hold counter; export the actual
             # completed dwell from the pre-advance snapshot.
-            window=self._export_window(i);window['count']=int(old_hold[i])+1;window['kind']='mid' if old_kind[i]==1 else 'top';self.stop_windows[i].append(window)
+            window=self._export_window(i,hold_count=int(old_hold[i])+1);window['kind']='mid' if old_kind[i]==1 else 'top';self.stop_windows[i].append(window)
         request=result['request'];ids=torch.isfinite(request).nonzero().flatten()
         self.command_state.request(ids,request[ids])
         new_stop=(request==0)&torch.isfinite(request)

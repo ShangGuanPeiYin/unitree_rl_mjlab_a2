@@ -1,3 +1,4 @@
+from test_v08_evaluation import failure_raw
 from pathlib import Path
 import sys
 import copy
@@ -145,8 +146,7 @@ def test_durable_evaluation_sidecar_is_reused_without_running_cases_again(tmp_pa
         supports_batch=True;control_samples=0
         def __call__(self,batch):
             cost=3*len(batch);self.control_samples+=cost;key=recovery.digest([c['case_id'] for c in batch])
-            return [dict(case_id=c['case_id'],complete=True,raw_complete=True,finite=True,success=False,
-                reason='physical_failure',segment='walk',physical_failure=True,
+            return [dict(failure_raw(c),reason='physical_failure',
                 collector_batch_id=key,collector_batch_control_samples=cost) for c in batch]
     r.case_runner=Cases();first=r._evaluate('h00')
     assert r.ledger.state['evaluation_control_samples']==45
@@ -267,8 +267,7 @@ def test_completed_evaluation_journal_reuses_sidecar_and_rejects_cost_tamper(tmp
         def __call__(self,batch):
             self.calls+=1;cost=3*len(batch);self.control_samples+=cost
             key=recovery.digest([c['case_id'] for c in batch])
-            return [dict(case_id=c['case_id'],complete=True,raw_complete=True,finite=True,success=False,
-                reason='physical_failure',segment='walk',physical_failure=True,
+            return [dict(failure_raw(c),reason='physical_failure',
                 collector_batch_id=key,collector_batch_control_samples=cost) for c in batch]
     base=Cases();r.case_runner=base;r._evaluate('h00');assert base.calls==2
     transactions=recovery.verify_evaluation_journal(tmp_path)
@@ -306,3 +305,51 @@ def test_recovery_interruption_after_gate_checkpoint_resumes_without_double_rese
     r.save_verified=original_save;r.load(*durable[0])
     assert r.env.resets-before==1 and r.env.phase==r.curriculum.phase=='B'
     assert calls==['gate'] and r.curriculum.state.spent_by_phase['B']==0
+
+def test_final_review_real_overflow_producer_collector_normalize_runner_blocks_without_adam(tmp_path,monkeypatch):
+    from src.tasks.velocity.v08 import runner,evaluation,continuation_v08 as migration
+    from src.tasks.velocity.v08.env import V08Env
+    r=boundary_fixture(tmp_path)
+    before=migration.tree_digest(r.ppo.optimizer.state_dict());learning=copy.deepcopy(r.ppo.learning_state)
+    def factory(batch):
+        env=V08Env(num_envs=len(batch),device='cpu',seed=42,evaluation=True,initial_cases=batch)
+        checks=iter([True,False,False,False,False]);monkeypatch.setattr(env.contacts,'check_overflow',lambda:next(checks))
+        return env
+    r.case_runner=runner.environment_case_runner(r.model,factory,device='cpu',max_steps=5)
+    from src.tasks.velocity.v08 import recovery
+    with pytest.raises(recovery.RecoveryBlocked,match='engineering errors'):r._evaluate('h00')
+    assert r.case_runner.control_samples==15 and r.ledger.state['evaluation_control_samples']==15
+    assert r.curriculum.state.gate_streak==1
+    assert migration.tree_digest(r.ppo.optimizer.state_dict())==before and r.ppo.learning_state==learning
+    import json
+    from src.tasks.velocity.v08.evaluation_records import restore_result
+    payload=json.loads((tmp_path/'evaluations/h00_A_006600.json').read_text());result=restore_result(payload,payload['identity'])
+    before_cost=r.case_runner.control_samples
+    with pytest.raises(recovery.RecoveryBlocked):r._evaluate('h00')
+    assert r.case_runner.control_samples==before_cost
+    assert result.summary['engineering_error'] and result.summary['error']==15 and result.summary['valid']==0
+    assert not result.summary['gate_pass']
+    assert all(row['raw']['diagnostics']['reason']=='contact_overflow' for row in result.records)
+
+def test_final_review_real_training_overflow_closes_before_adam_and_keeps_only_known_physics(tmp_path,monkeypatch):
+    from src.tasks.velocity.v08 import runner,model,ppo,continuation_v08 as migration
+    from src.tasks.velocity.v08.curriculum import CurriculumManager
+    from src.tasks.velocity.v08.env import V08Env,ContactOverflow
+    env=V08Env(num_envs=8,device='cpu',seed=42)
+    try:
+        net=model.V08ActorCritic();trainer=ppo.PPOTrainer(net,env)
+        r=runner.V08Runner(net,trainer,CurriculumManager(num_envs=8),env,tmp_path,mode='smoke')
+        state,_=migration.migrate_stop_6400(migration.load_designated_source(),source_sha256=migration.SOURCE_SHA256)
+        # Explicit CPU-compatible RNG fixture only; source CUDA RNG restoration
+        # remains unverified here. The inherited real learning/Adam state is intact.
+        from src.tasks.velocity.v08 import recovery
+        state['rng']=recovery.capture_rng(env);r.initialize(state)
+        before=migration.tree_digest(trainer.optimizer.state_dict());learning=copy.deepcopy(trainer.learning_state)
+        checks=iter([True,False,False,False,False]);monkeypatch.setattr(env.contacts,'check_overflow',lambda:next(checks))
+        with pytest.raises(ContactOverflow):r.step()
+        assert migration.tree_digest(trainer.optimizer.state_dict())==before and trainer.learning_state==learning
+        assert r.update==6400 and r.ledger.state['engineering_updates']==0 and r.ledger.state['control_samples']==0
+        assert r.ledger.state['discarded_rollout_control_samples']==8
+        assert r.ledger.state['engineering_failure_diagnostics']['known_physics_substeps']==32
+        assert r.ledger.state['stop_state']=='engineering_error' and not r.step()
+    finally:env.close()

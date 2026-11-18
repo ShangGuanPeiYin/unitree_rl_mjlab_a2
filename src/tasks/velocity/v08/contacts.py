@@ -244,13 +244,18 @@ class ContactState:
             return False
         return count > int(self.inner.ids.size)
 
+    def begin_control_step(self):
+        """Only the next control boundary may release the overflow latch."""
+        self.overflow.zero_()
+
     def sample(self, assigned_tiles, physics_dt=None, control=False):
         if self.check_overflow():
-            # Never index past the buffer: latch the failure and keep the last
-            # (pre-overflow) contact snapshots for the terminal evidence.
+            # Never index past the buffer. Retain the latch through all later
+            # samples; Env fails closed before it can consume stale contacts.
             self.overflow[:] = True
             return self
-        self.overflow[:] = False
+        if self.overflow.any():
+            return self
         self.inner.sample(assigned_tiles, physics_dt=physics_dt, control=control)
         raw = self.inner.found & (self.inner.foot_force[..., 2] > SUPPORT_FORCE_GT)
         self.previous_raw = self.raw.clone()

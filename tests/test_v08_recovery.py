@@ -1,3 +1,4 @@
+from test_v08_evaluation import failure_raw
 from pathlib import Path
 import sys
 import copy
@@ -49,8 +50,7 @@ def test_evaluation_reference_reloads_raw_sidecar_and_refuses_missing_or_tamper(
     from src.tasks.velocity.v08.evaluation_records import pack_result,write_sidecar
     from src.tasks.velocity.v08.continuation_v08 import SOURCE_SHA256
     table=make_cases('A',kind='gate')
-    def failure(c):return dict(case_id=c['case_id'],complete=True,raw_complete=True,finite=True,
-        success=False,reason='physical_failure',segment='walk',physical_failure=True,
+    def failure(c):return dict(failure_raw(c),reason='physical_failure',
         collector_batch_id=recovery.digest([c['case_id']]),collector_batch_control_samples=1)
     result=evaluate_cases(None,table,failure)
     identity=dict(update=6500,phase='A',kind='gate',case_table_sha256=table.sha256,

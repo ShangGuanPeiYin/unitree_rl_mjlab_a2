@@ -1,3 +1,4 @@
+from test_v08_evaluation import failure_raw
 from copy import deepcopy
 import json
 import pytest
@@ -9,7 +10,7 @@ def identity(table):
 def test_actual_eval_result_roundtrip_atomic_sidecar_and_tampering(tmp_path):
     from src.tasks.velocity.v08 import evaluation as e, evaluation_records as r
     table=e.make_cases(kind='baseline')
-    result=e.evaluate_cases(None,table,lambda c:dict(case_id=c['case_id'],complete=True,raw_complete=True,finite=True,success=False,reason='fall',segment='cruise',failure_kind='physical'))
+    result=e.evaluate_cases(None,table,lambda c:failure_raw(c))
     frozen=r.pack_result(result,identity(table))
     loaded=r.restore_result(frozen,identity(table))
     assert loaded.records==result.records and loaded.summary==result.summary
@@ -52,7 +53,7 @@ def test_sidecar_restore_recomputes_raw_trace_even_when_cached_hashes_are_reboun
     selected=next(c for c in table.cases if c['task']=='E1')
     def runner(case):
         if case['case_id']==selected['case_id']:return direction_raw(case)
-        return dict(case_id=case['case_id'],complete=True,raw_complete=True,finite=True,success=False,reason='fall',segment='cruise',failure_kind='physical')
+        return failure_raw(case)
     result=e.evaluate_cases(None,table,runner)
     assert result.summary['success']==1
     payload=r.pack_result(result,identity(table))
@@ -64,3 +65,17 @@ def test_sidecar_restore_recomputes_raw_trace_even_when_cached_hashes_are_reboun
     payload['evidence_sha256']['summary_sha256']=e._digest(payload['summary'])
     with pytest.raises(e.EvaluationError,match='raw evidence'):
         r.restore_result(payload,identity(table))
+
+@pytest.mark.parametrize('task,script,success',[('up_stop',None,True),('down_stop',None,True),('E3','up_same',True),('up_stop',None,False)])
+def test_final_review_rehashed_sidecar_cannot_remove_complete_terminal_trace(task,script,success):
+    from src.tasks.velocity.v08 import evaluation as e,evaluation_records as r
+    from test_v08_evaluation import direction_raw
+    table=e.make_cases(phase='E')
+    selected=next(c for c in table.cases if c['task']==task and (script is None or c['script']==script))
+    result=e.evaluate_cases(None,table,lambda c:direction_raw(c) if success and c['case_id']==selected['case_id'] else failure_raw(c))
+    payload=r.pack_result(result,identity(table));row=next(row for row in payload['records'] if row['case_id']==selected['case_id'])
+    del row['raw']['trace']
+    payload['evidence_sha256']['records_sha256']=e._digest(payload['records'])
+    payload['summary']=e.summarize(payload['records'],table);payload['summary'].update(payload['isolation'])
+    payload['evidence_sha256']['summary_sha256']=e._digest(payload['summary'])
+    with pytest.raises(e.EvaluationError,match='raw evidence'):r.restore_result(payload,identity(table))
