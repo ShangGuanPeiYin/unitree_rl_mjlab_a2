@@ -3023,3 +3023,10 @@ Task2第2轮独立复审关闭I2/R1，局部规范和质量blocking=0，完整�
 
 修改env.py/tasks.py/spec.py与test_v08_env.py：按已锁存动作的executed/requested/transition标记首零速驻留，保留k100减速、k101驻留；终态导出真实physical_failure/failure_kind/failure_masks，区分body/fall与任务timeout/cannot_reverse。真实冻结make_cases接入发现trigger_p=None构造失败，按批准schema将未提供触发点使用内部fallback，非E不触发，真实训练E仍U区间采样、eval指定点不变。删除重复contract死定义前后canonical JSON逐字相同，SHA cf1edf4d8509ae135a87af874a7049ca0da3a376b47f245b00e2a5e222fca59f。
 验证：必要Task1组33通过、1现有警告、29.43秒；真实CPU首hold/物理分类/frozen baseline-gate-E4构造，以及合成运动学producer→独立consumer E3/E4均覆盖，合成fixture不证明策略物理成功。未改evaluator/旧依赖/训练数值/门槛，独立复审待完成，GPU和正式训练仍0。
+
+### 2026-11-18｜Task3迁移、恢复、运行与入口首版
+
+文件：新增v08/{model,ppo,continuation_v08,recovery,ledger,runner,runtime,orchestration,operator_control,telemetry,connection}.py、8个v08入口及9个测试文件。唯一原6400SHA30ed23ba…a8b2，完整state digest390170c2a41c329994db3094ad561b9c5e28d20a519d6de6fa2d201a6f70ea23；继承Actor/Critic/归一化/45Adam各128000及实际LR1.5000000000000005e-05，新课程首计费6401。原stop/pending只provenance。
+核心接线：48步PPO按原5epoch×4minibatch；512env/seed42/γ.99/GAE.95/clip.2/entropy.003/gradclip1与原KL自适应不变。旧sample回算改为来源157286400真实基数+新增样本；回调在前动作reward/value保存后更新下一Actor观测。durable intent/commit禁止重放已计费或部分更新；stop在控制边界锁存、未学习样本单列。checkpoint真实保存读回SHA/fullstate检查，完整任务/指令/驻留/contact/RNG逻辑且明确fresh物理回合；评估raw仅sidecar存一次，checkpoint保存binding与summary，load读取原件重算，不允许缺件默许。
+工程/正式：8×2 smoke与512×56 probe独立费用，probe5预热+50测量+1恢复，50真实诊断、55真实save/reload、56新学习；正式仍50诊断/100保存门禁/200H00，阶段cap先做当次门禁。正式唯一目录continue_seed42_from006400_trial01，独立blocking0→60零学习基线→正式。源/资产/配置/SDS/病例全闭包冻结，保持可选原可靠W&B传输；本轮延续原实际offline A2_V08_WANDB=0，不伪称远端ACK。8预设右侧视频CLI已实现但未渲染验证。
+验证：Task3九文件39通过、1第三方警告、29.58秒；真实来源迁移CLI退出0，模型/Adam严格等价。真实源CUDA RNG为16字节，CPU5056字节不兼容，CPU reset用显式兼容fixture，未冒称原CUDA恢复成功；实际CUDA恢复/工程50-55-56/真实视频/全nativeCPU与正式训练均待验证。Task1定向复审已blocking0，不替代整体准入。正式0。
