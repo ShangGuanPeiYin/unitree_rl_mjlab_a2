@@ -3303,3 +3303,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-19｜1500更新与7900主线共享协调
 
 将7900完整A门禁89/120、平地18/20/20及上楼2/20/9、A1500/4000未晋级、H007800报告3/15、原生81号持久化回执与最新pushbf2e4c0追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md。核对后处理脚本SHA与真实启动回执一致，等待驱动09:26仍存活。仅共享文件协调，无可用跨线程消息工具，不声称已直接发送；没有新GPU仿真、学习、源码或配方更改。关键含义仍是A整体未通过、正式训练继续，单次成功率不代替最终验收。
+
+### 2026-11-19｜8000站稳失败窗口只读复算
+
+原raw中10例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_drift': 5, 'endpoint_stop_max_speed': 3, 'endpoint_stop_omega': 1, 'endpoint_stop_mean_speed': 1}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_008000_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜8000完整门禁与1600次新增正式更新
+
+实际120/120 valid、invalid/error/engineering0，success90/failure30；平地0.3/0.5/0.6均20/20，完成原8秒行走、2秒制动、20秒停车及站稳窗口；与7900的18/20、20/20、20/20一起，固定A平地三速分组连续两轮均达18/20，但不代表A六组整体通过或最终可靠性验收。L40上楼三速为8/20、4/20、18/20；0.3失败final_unstable9/timeout3，0.5失败final_unstable1/nonfoot1/posture14，0.6失败bounds1/nonfoot1。A gatefalse、整体连续通过0，预算1600/4000/global8000；本轮0.6上楼单组达标不代替整体晋级。完成批次账本280616控制样本/1122464物理子步，真实raw、事务和gpu/FORMAL_GATE_008000_A_SUMMARY.json保留且SHA核对一致；实际8000学习commit的继承Adam总计160000。十个站稳失败窗口按原consumer只读复算，首个失败项drift5/max_speed3/omega1/mean_speed1，详见gpu/FORMAL_GATE_008000_A_STAND_ANALYSIS.json，首项不等于唯一失败项；14例姿态失败未被算成站立窗口失败。归档两份小型JSON及本日志，不重评、不新增学习、不修改冻结源码/配方/阈值。正式worker继续8000门禁后原生保存，随后原计划H00报告尚未完成。最终2100与固定八视频尚未执行。
