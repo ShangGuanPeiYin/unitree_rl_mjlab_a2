@@ -3367,3 +3367,80 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-19T18:17:16.634432+08:00｜接收视频与环境数迁移授权回执
 
 新增coordination/ENV_SCALE_HANDOFF_RECEIPT_20261119.json并复制工作树，追加既定MAIN_OUTBOX共享回执。视频记录数{'8000': 6, '8100': 6, '8200': 4}，核验6/18，合集3；正式8300/A1900of4000仍运行。确认先完成18段并完整解码，再停止旧正式worker、2048真实工程测试，OOM才逐档1536/1024/512；rollout48/epochs5/minibatches4、奖励课程门槛不变，继承实际模型Adam归一化器LR和更新预算，新增样本分段记账。工程模型不作正式来源，新配方冻结谱系和独立验收后续训。原生stop风险、零学习边界退出、独立工作树和后处理转交均为执行安排，当前未改冻结源、未停正式训练、未做大N GPU测试。授权来源如实记录为主控codex_delegation及本线程既有直接全部授权，不伪作本线程新原话；无直接发送工具，供共享读取。上一工具调用为JS语法解析错误、未执行任何文件操作；本次成功写入后记录日志。
+
+### 2026-11-19 18:18:04｜8000/8100/8200三速CPU预览视频分批解码核验
+
+按主控转交的明确用户授权接管现有串行18段录制，不重复启动、不打断正式训练。新建或追加外部视频目录/home/xxs/Videos/A2_8000_8100_8200/verification的逐段validation.json、decode.log与decode_progress.txt，完成10段全片ffmpeg -xerror解码，核对768×432/25fps、实际解码帧数=(控制步+1)//2+1、时长、对应checkpoint实际SHA及冻结gate-A首例字段一致。核验段：8100/flat_vx0.3 reason=final_unstable frames=751 seconds=30.04；8100/flat_vx0.5 reason=final_unstable frames=751 seconds=30.04；8100/flat_vx0.6 reason=final_unstable frames=751 seconds=30.04；8100/L40_vx0.3 reason=success frames=1214 seconds=48.56；8100/L40_vx0.5 reason=success frames=1120 seconds=44.80；8100/L40_vx0.6 reason=success frames=1082 seconds=43.28；8200/flat_vx0.3 reason=final_unstable frames=751 seconds=30.04；8200/flat_vx0.5 reason=flat_progress frames=201 seconds=8.04；8200/flat_vx0.6 reason=flat_progress frames=201 seconds=8.04；8200/L40_vx0.3 reason=final_unstable frames=1271 seconds=50.84。它们为CPU单环境零学习预览，不能代替正式GPU完整门禁；保留原视频和成功/失败结果，不裁剪，不修改正在运行的record.py或冻结源码/配方。其余2段仍未完成本次核验，合集与总索引尚未生成，不声称18段已全部完成。
+
+### 2026-11-19 18:22:35｜8000/8100/8200三速CPU预览视频分批解码核验
+
+按主控转交的明确用户授权接管现有串行18段录制，不重复启动、不打断正式训练。新建或追加外部视频目录/home/xxs/Videos/A2_8000_8100_8200/verification的逐段validation.json、decode.log与decode_progress.txt，完成2段全片ffmpeg -xerror解码，核对768×432/25fps、实际解码帧数=(控制步+1)//2+1、时长、对应checkpoint实际SHA及冻结gate-A首例字段一致。核验段：8200/L40_vx0.5 reason=final_unstable frames=1148 seconds=45.92；8200/L40_vx0.6 reason=final_unstable frames=1115 seconds=44.60。它们为CPU单环境零学习预览，不能代替正式GPU完整门禁；保留原视频和成功/失败结果，不裁剪，不修改正在运行的record.py或冻结源码/配方。其余0段仍未完成本次核验，合集与总索引尚未生成，不声称18段已全部完成。
+
+### 2026-11-19 18:26:28｜三速CPU预览合集生成与完整解码核验
+
+按18段视频任务授权，在/home/xxs/Videos/A2_8000_8100_8200对应更新目录生成已具备六段完整核验源片的三种合集：flat三速、L40三速及先平地后L40六段总合集。实际新建：8100_flat_three_speeds: 2253frames/90.12s；8100_L40_three_speeds: 3416frames/136.64s；8100_flat_and_L40_three_speeds: 5669frames/226.76s；8200_flat_three_speeds: 1153frames/46.12s；8200_L40_three_speeds: 3534frames/141.36s；8200_flat_and_L40_three_speeds: 4687frames/187.48s。采用ffmpeg流复制，按0.3→0.5→0.6顺序完整拼接，不裁剪、不新增画面、不调速，失败片段照常纳入；每份合集全片-xerror解码、帧数等于源片之和、25fps/768×432及时间核对通过，拼接前后源片SHA未变，JSON/ffconcat/解码日志保存在verification。它们仅是CPU单环境预览合集，不替代正式GPU门禁，不新增策略推理/物理或学习；其余尚未录完更新和18段总索引仍待完成。冻结源码、活动录制脚本及正式训练均未修改。
+
+### 2026-11-19T18:29:21.757725+08:00｜18段历史权重预览完整交付索引与画面证据
+
+在/home/xxs/Videos/A2_8000_8100_8200新增index.html、INDEX.md、INDEX.csv、VIDEO_INDEX.json、PREVIEW_REPORT.md及verification/visual三张真实抽帧、VISUAL_CHECK_8000.json。18原片+9合集均全片-xerror解码通过，原片15773帧/630.92秒，来源checkpoint/固定首例/768×432/25fps/实际帧数时长及原片SHA一致；CPU单例结果{'success': 8, 'posture': 1, 'final_unstable': 7, 'flat_progress': 2}，失败均完整保留，不将单例当正式GPU门禁。索引按权重、地形、三速组织，合集按三速排序且总合集先平地后L40，不新增策略推理/物理/学习。真实8000行走/停车三帧用vision.js检查侧面主体清楚、楼梯不挡躯干，停车标注0命令；不据单帧判断站稳。报告完整说明时序、参数、来源、验证和CPU/GPU差异。仅改媒体交付产物和日志，原片、活动录制脚本、模型及当前冻结训练源码未改。目录打开与环境数迁移另记实际结果，不提前声称完成。
+
+### 2026-11-19T18:39:08.915157+08:00｜18视频完成后于完整零学习边界提交环境数迁移停止
+
+18原片+9合集均已完整解码并核对SHA，现有串行录制/原始编码进程已退出。源worker2438417仍处于完整更新8300的原生待办边界，刚持久化序号104回执（年龄13.29秒），pending index=2/3、pending_update为空、下一PPO intent不存在。核对原生checkpoint SHA/正式模式/512环境/完整Adam计数后，仅通过旧版原生write_control原子写入FORMAL/control.json的stop，理由绑定用户授权回执SHA；没有发送进程信号、改源码或丢弃采样。它是停止请求，worker还需按原生顺序完成待办和operator/exit保存，尚未声称已退出。退出后必须核对update/Adam、pending均空及discarded_rollout不增加。
+同时将原waiting_formal后处理伴随任务通过其原生POSTPROCESS_CONTROL.json显式取消，保存变更前状态及intent/APPLIED证据，理由为环境数谱系转交，不是训练目标完成；后继需绑定新正式运行和独立验收。新增coordination/ENV_SCALE_STOP_REQUEST_01.intent.json、ENV_SCALE_STOP_REQUEST_01.json、ENV_SCALE_OLD_POSTPROCESS_CONTROL_BEFORE.json，原请求/原媒体完整保留。此时尚未开展2048测试或迁移正式来源，原更新预算、奖励和课程未变。
+
+### 2026-11-19T18:45:05.299441+08:00｜用户18:41撤销扩容与续训，持久化暂停等待意图
+
+按主控连续两条最新明确用户指令，停止环境数迁移实现/测试及所有自动续训安排。先保留原FORMAL/control.json（envscale_after_all18 stop）与POSTPROCESS_CONTROL的完整字节/SHA至coordination/pause_20261119_1841，再通过旧原生write_control原子改为action=pause、本次暂停等待理由。新增TRAINING_HOLD.json禁用training、engineering learning、envscale probe和auto resume，须新明确授权；旧后处理cancel保持true并更新理由，旧记录未删。新增PAUSE_INTENT.json和最新checkpoint元数据快照，追加共享MAIN_OUTBOX以告知主控正在使用的唯一控制路径，避免重复操作。当前8300完整更新/新增1900，序号104checkpoint存在且SHA核对一致，worker仍running、尚未声称退出；没有发进程信号，没有新学习、GPU扩容测试或新正式来源。环境扩容工作树未创建，活动冻结源码/奖励/课程均未改。后续只做停止收尾核验和回报，等待用户指示；旧授权回执如实保留并由本次新意图明确覆盖。
+
+### 2026-11-19T19:03:06.974996+08:00｜用户要求停止后中断冗余收尾，保留完整8300存档
+
+针对用户“暂停收尾差多少、为什么不能直接Ctrl+C”的询问，在既有明确停止授权下，先验证最新完整元数据序号105、checkpoint实际SHA、8300/Adam166000/512环境/累计1900更新、pending_update为空、剩余仅save且评估已完成、无8301事务，再仅对身份核对过的worker2438417发送['SIGINT']。保存CTRL_C_REQUEST.json、CTRL_C_RESULT.json和完整checkpoint元数据副本，原checkpoint文件保留，中断后SHA再次一致；未校验的新partial/异常文件不当作正式来源。worker_active_after=False，控制器回执running/exit=None以实际刷新为准。此为用户主动停止，不是策略或工程通过/失败结论，不声称完成原生exit保存。TRAINING_HOLD和pause控制持续生效，未开始任何扩容、测试学习或续训，不修改冻结源码/奖励/课程。此前等待原生多次重复存档过于保守；本次使用已校验完整存档结束等待，后续只确认进程退出并回报。
+
+### 2026-11-19T19:07:10.495487+08:00｜暂停收尾完成，停止任何后续工作
+
+新增coordination/pause_20261119_1841/PAUSE_COMPLETE.json和PAUSE_REPORT.md，记录控制器finished/exit=-2、19:03:06.974129实际结束，worker/controller/旧后处理PID均已消失，GPU计算进程已释放。最新完整已校验8300/0105 checkpoint实际SHA再次一致，无8301PPO事务，Adam166000、N512、实际LR7.593750000000002e-05；未完成校验文件只保留证据，不作为正式来源。报告同时汇总已完成18原片+9合集、文件夹已打开及5分支/5worktree/main旧提交+未提交v0.7/v0.8隔离目录的实际状态。追加共享MAIN_OUTBOX回报主控实际保存路径与退出状态，不声称已直接工具发信。TRAINING_HOLD和原生pause均保留，不启动任何工程/正式学习，不继续迁移或整理分支，等待用户新指示。
+
+
+### 2026-11-19T19:46:42.534513+08:00｜6800/8000/8100/8200平地走停走真实录像
+
+- 目的：按用户要求在已有A2_6800_rsnaVG和A2_8000_8100_8200对应编号子目录录制平地行走—停车—再行走，未新建文件夹。后续用户明确选择“保留全部终止规则，保存实际片段”。
+- 文件：四个已有视频目录新增record_flat_walk_stop_walk.py、同名运行日志、A2_<update>_flat_walk_stop_walk.mp4及_result.json、_trajectory.npz、_verification.json；8000/8100/8200父目录新增verify_flat_walk_stop_walk.py。项目内仅追加本日志（main与v08两个根目录），未修改项目源码、既有录像或训练权重。
+- 权重与加载：逐一从原有record.py指定的原生boundary sidecar核对path/SHA，6800/0018、8000/0084、8100/0090、8200/0095；strict加载相应V08ActorCritic的model状态，仅eval确定性均值推理，无Adam恢复、训练、normalizer更新或checkpoint保存。每个权重SHA前后相同，四个模型state_dict推理前后逐张量一致。
+- 实现与关键设置：v08原生环境A阶段、flat_stop平地tile0，沿用固定gate-A-flat-0.6-000案例（seed42生成），单环境cuda:0，控制50Hz/物理200Hz。目标0—8秒vx0.6、8—16秒vx0、16—24秒vx0.6 m/s，vy/wz均0；用原生request_speed外部接口，保留100控制步/2秒命令渐变。第8秒原任务自动请求停车，第16秒仅在仍存活时请求恢复行走；无机器人/策略历史/地图重置。1280×720、25fps、每2控制步1帧，侧面跟随及阶段/目标/时间叠字。奖励、损失、学习率、任务终止、课程、物理保护均未改变。
+- 实际结果：6800与8200均在8秒/400控制步触发原生flat_progress任务失败，非physical_failure；未进入停车及再行走，不跳过判据，不伪装24秒完成。8000/8100各完成24秒/1200控制步，terminal=null，无提前终止或自动重置；停车末2秒平均前向速度分别0.002311与0.029413 m/s，8100仍有小幅运动，不称完全静止。第二段含原生2秒减速，第三段含原生2秒加速，不与6100瞬时命令流程混为相同执行指令。
+- 验证：全部四片ffmpeg -xerror全片解码退出0；6800/8200各200帧/8秒，8000/8100各600帧/24秒，H264/1280×720/25fps元数据一致。轨迹、完整原生terminal及case证据均保留。终止步env.step已自动reset，轨迹最后一行的运动状态为reset后值；判定失败时姿态/进度只认原生terminal记录，视频采帧在动作前，不包含reset后的画面。
+- 未验证：本次仅单一固定案例预览，不是完整30秒停车门禁、多seed可靠性、训练效果对比或实机验证，不声称模型效果改善。
+
+
+### 2026-11-19T19:57:27.289216+08:00｜按新授权失败后不重置，四模型全程24秒录像
+
+- 用户新指令明确要求观察训练实际效果，失败也全程录制；此指令取代此前“保留失败即终止片段”的交付要求。目的：连续保留失败后的现场，不重启或扶起机器人。
+- 文件：已有6800目录及8000/8100/8200各编号目录新增record_flat_walk_stop_walk_full.py、运行日志、A2_<update>_flat_walk_stop_walk_full.mp4、_result.json、_trajectory.npz、_verification.json；父目录新增verify_flat_walk_stop_walk_full.py。旧录像全部保留、无新建目录；项目内仅追加main及v08修改日志，源码和权重不改。
+- 前后差异：此前env.step在原生任务失败后自动reset并结束录像。现在仅在外部预览脚本实例上将_reset_ids替换为记录被抑制reset请求，保留原任务失败结果并继续物理/策略运行；录像循环不因done退出。原任务机可能在失败后处于DONE，因此后续任务验收不再推进，不能将失败后的24秒当正式门禁；为避免漏报后续物理失败，包装原_task_state返回值，仅旁观各failure_mask首次出现，不重复调用或更改判据。模型、PD、物理、动作/观测历史、地图、奖励、损失、训练配置不变。
+- 流程：相同原生boundary权重6800/0018、8000/0084、8100/0090、8200/0095，逐一SHA校验；同一固定flat_stop案例，seed42、cuda:0、1环境、50Hz控制/200Hz物理。计划vx0.6持续8秒→目标0持续8秒→目标0.6持续8秒，vy/wz0，保持原100控制步/2秒速度渐变，外部request_speed在8和16秒切换目标。1200控制步、1280×720/25fps，每2步采帧，共600帧；失败提示叠加画面。无学习、Adam或normalizer更新、无checkpoint保存。
+- 实测：四个模型全部完整24秒/600帧；6800与8200均第400步flat_progress失败、原生自动reset调用被抑制一次，继续停车和再行走，现场连续。8000/8100无终止及reset调用。所有模型未观察到原物理failure_mask触发。
+- 6800: failure_reasons=['flat_progress'], physical_first_events=[], suppressed_reset_calls=[{'step': 400, 'ids': [0]}], stop_last2s_mean_vx=0.003387790 m/s
+- 8000: failure_reasons=[], physical_first_events=[], suppressed_reset_calls=[], stop_last2s_mean_vx=0.002305675 m/s
+- 8100: failure_reasons=[], physical_first_events=[], suppressed_reset_calls=[], stop_last2s_mean_vx=0.017244512 m/s
+- 8200: failure_reasons=['flat_progress'], physical_first_events=[], suppressed_reset_calls=[{'step': 400, 'ids': [0]}], stop_last2s_mean_vx=0.027515721 m/s
+- 验证：四片ffmpeg -xerror全片解码退出0，解码帧数600、时长24秒、H264/720p/25fps均一致；模型state_dict前后逐张量相等，原checkpoint SHA前后一致。断言完成录像不代表策略通过。原任务失败后不重置，终止步轨迹现为真实连续状态，不再包含前版reset后末行限制。
+- 未验证：仅本次固定案例预览，不代表正式完整停车验收、多seed统计、训练改进、跨引擎或实机效果。
+
+
+### 2026-11-19T20:17:42.596126+08:00｜四模型平地走停走改为正后方视角重录
+
+- 目的：按用户“视角在后面，重新录制视频”要求，为6800/8000/8100/8200重新录制后方跟随版本，保存原有对应视频文件夹，保留旧视频，未新建目录。
+- 涉及文件：四个已有模型视频目录新增record_flat_walk_stop_walk_full_rear.py、运行日志、A2_<update>_flat_walk_stop_walk_full_rear.mp4及_result.json、_trajectory.npz、_verification.json；8000/8100/8200父目录新增verify_flat_walk_stop_walk_full_rear.py；项目仅追加main与v08日志，未修改项目源码。
+- 实际修改与理由：相机由侧面azimuth=90°+body_yaw改为正后方180°+body_yaw；沿机身朝向跟随，distance3.8m/elevation-28°保持，俯视便于观察足部。任务失败画面提示由FAILURE OBSERVED改为TASK CRITERION FLAGGED，避免将任务判据标记与实际摔倒混淆；失败证据继续完整保存。
+- 核心行为未变：相同boundary权重及SHA、固定flat0案例、seed42、cuda:0、1环境，50Hz控制/200Hz物理，0.6→0→0.6 m/s目标各8秒、vy/wz0、原2秒速度渐变。失败后继续运行不reset，24秒/1200控制步；1280×720/25fps/每2步采帧。模型、奖励、损失、学习率、课程、物理控制及训练配方未改，无训练/Adam/normalizer更新或checkpoint保存。重新仿真而非复用轨迹转视角，GPU轨迹不承诺逐位相同。
+- 验证结果：四片均24秒600帧，ffmpeg -xerror全片解码退出0，H264/720p/25fps一致；模型state_dict前后逐张量相等、checkpoint SHA前后一致。6800/8200仍第8秒原任务flat_progress标记后连续完成，未观察物理failure_mask；8000/8100无任务终止。失败后不重置和24秒预览不等于正式门禁通过。
+- 未验证：未执行多seed/实机/训练效果对比；仅交付本次完整后视角预览，不宣称效果改善。
+
+
+### 2026-11-19T21:30:13.618056+08:00｜新增代码修改后必须提交并推送的项目规则
+
+- 目的：用户明确要求main与v0.8分支的agent规则写明每次代码修改完成后需要push，并授权本次规则变更提交推送。
+- 文件：项目根AGENTS.md（此前不存在，新建标准自动读取文件名）；logs/codex_changes.md仅追加。
+- 实际修改与理由：将此前没有项目级提交推送规则改为每次代码修改及验证后必须提交当前分支并push到origin同名分支，无需重复确认，用户后续明确暂缓指令优先；明确仅提交任务范围文件、不上传权重/凭据/无关产物、不擅自force-push，推送后核验远端SHA且失败如实报告。保留修改日志要求。当前目标分支codex/a2-v08-walk-stop-reverse。
+- 验证：规则文本及两个工作树目标分支只读核对，本次仅stage AGENTS.md与本修改日志（保留并归档此前录像日志追加内容），不夹带其他入口或协调文件改动。仅文档规则变化，未执行代码功能测试、仿真或训练，不声称训练效果改善；提交及推送结果以最终汇报实际核对为准。
