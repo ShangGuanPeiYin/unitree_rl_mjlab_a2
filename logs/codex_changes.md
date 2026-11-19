@@ -3523,3 +3523,90 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 实测保留结果：logs/ 下除本修改日志外全部 24452 文件、76671812849 字节及路径/大小/纳秒修改时间摘要均与操作前完全相同；6400 和 8300 checkpoint SHA256 逐一复核与操作前一致。没有删除、移动或上传训练权重，没有创建备份。
 - 代码与范围核验：main 的代码树与原 v0.7 提交完全相同；仅将原目录已有较新的修改日志补充提交到 main，不把额外历史文件或两个早期入口的本地修改混入本次提交。0.8 及 pointcloud 远端 SHA 与操作前一致；两条临时发布 worktree 保留目录，HEAD 分离。本次未运行学习、评估或 CPU/GPU 功能测试，训练仍暂停。
 - 后续交付：本日志作为唯一附加文件提交并推送至 main；最终 main 的代码仍为 v0.7，额外提交仅保存已有日志与本次整合记录。
+
+
+### 2026-11-19T19:30:32.471112+08:00｜原始ETH平地行走—停车—再行走录像
+
+- 目的：按用户要求使用原始本体感知ETH model_2000.pt录制连续平地走停走，输出至/home/xxs/Videos/ETH_A2_walk_stop_walk_20261119/。
+- 涉及文件：外部视频目录record.py、run.log、recording/summary.json及walk_stop_walk下preview.mp4、trajectory.npz、result.json、verification.json；项目内仅追加本日志。
+- 实际内容与设计：复用scripts/evaluate_eth_a2.py的环境、ETH严格SHA加载及轨迹记录逻辑，在外部record.py只执行单个连续案例；命令vx按0—8秒0.6、8—16秒0.0、16—24秒0.6 m/s切换，vy=0.0、wz=0.0；seed42、cuda:0、1环境、控制dt0.02秒、物理dt0.005秒，总1200控制步，阶段间不重置。分辨率由原参考脚本640×480改为1280×720，采帧从每5控制步/10fps改为每2控制步/25fps，以提高输出清晰度。项目源码、模型、奖励、损失、学习率、课程、终止规则均未更改；不执行训练/学习，无checkpoint保存周期。
+- 权重：/home/xxs/dog/eth_a2_locomotion_controller/models/model_2000.pt，严格校验SHA256=8ee1ee1d3513e57c4348eb3b23977d21f380701fd17ac08c073f8a311a4d6722。
+- 验证结果：24.0秒完成，finite=true、falls=0、terminated=false、timeout=false、automatic_resets=0；三个8秒阶段实际平均前向速度依次0.531565、0.010705、0.535395 m/s；停车末2秒均速0.000007914 m/s。MP4为H264、1280×720、25fps、24秒，共600帧，ffmpeg -xerror全片解码退出0。完整结果保留于verification.json与trajectory.npz。
+- 验证边界：仅此次seed42单环境连续录像，不构成多seed可靠性、实机或跨引擎验证；未执行训练效果对比，不声称效果改善。
+
+
+### 2026-11-19T19:39:53.830855+08:00｜6100模型平地连续走停走录像
+
+- 目的：按用户要求使用6100模型在平地行走、停车、再行走，直接输出至已有/home/xxs/Videos/A2_L40_end_6100_20261119/，未新建文件夹，保留原有视频。
+- 文件：外部已有目录新增record_flat_walk_stop_walk.py、verify_flat_walk_stop_walk.py、对应运行日志、A2_6100_flat_walk_stop_walk.mp4及_result.json、_trajectory.npz、_verification.json；首次失败片段与日志另标为failed_incomplete.mp4、failed.log保留。项目内仅追加本修改日志，未修改项目源码。
+- 权重：与该文件夹原楼梯录像一致的curriculum_006100.pt，SHA256=4c89f0b77045eb68e8e6bd371ee4bbc9f2211fcc6663d8a1c4e547c11b065dd7，schema9/update6100，加载模型参数作确定性均值推理，不恢复训练或Adam，不更新normalizer。
+- 实现思想：复用原V07Env，选择F0平地tile0而非原L40楼梯tile21，固定初始local x=-1m/y=0/yaw=0；单环境seed42/cuda:0，控制50Hz/物理200Hz。0—8秒vx=0.6、8—16秒vx=0、16—24秒vx=0.6 m/s，vy=0、wz=0，共1200控制步，无阶段间机器人reset。相机跟随机身右侧，视频叠加阶段/速度/时间，1280×720、25fps、每2控制步一帧。
+- 诊断适配与原因：第一次运行在8秒速度切换时被StallDiagnostics固定单回合指令保护拒绝。只在外部录像脚本的两个切换点调用原生stall.reset重置纯诊断位置窗口/计数，适配显式授权的动态指令；不清机器人、策略历史或高程图缓存，不修改奖励、损失、学习率、课程或终止规则。原30秒平地时限保留，24秒为预览长度；结果不充当正式门禁。
+- 验证：重新录像完整24秒/600帧，terminal=null，即无原生失败、超时、成功终止或自动重置；模型state_dict前后逐张量相等，权重SHA前后相同。行走/停车/再行走各8秒实际平均前向速度0.606122/0.026056/0.595502 m/s，停车末2秒均速0.000556 m/s。ffmpeg -xerror全片解码退出0，H264/720p/25fps/24秒元数据一致，逐帧解码600帧。
+- 边界：仅seed42单环境预览，未执行多seed正式评估、训练或实机测试，无训练改进对比结论。
+
+
+### 2026-11-19T19:46:42.534513+08:00｜6800/8000/8100/8200平地走停走真实录像
+
+- 目的：按用户要求在已有A2_6800_rsnaVG和A2_8000_8100_8200对应编号子目录录制平地行走—停车—再行走，未新建文件夹。后续用户明确选择“保留全部终止规则，保存实际片段”。
+- 文件：四个已有视频目录新增record_flat_walk_stop_walk.py、同名运行日志、A2_<update>_flat_walk_stop_walk.mp4及_result.json、_trajectory.npz、_verification.json；8000/8100/8200父目录新增verify_flat_walk_stop_walk.py。项目内仅追加本日志（main与v08两个根目录），未修改项目源码、既有录像或训练权重。
+- 权重与加载：逐一从原有record.py指定的原生boundary sidecar核对path/SHA，6800/0018、8000/0084、8100/0090、8200/0095；strict加载相应V08ActorCritic的model状态，仅eval确定性均值推理，无Adam恢复、训练、normalizer更新或checkpoint保存。每个权重SHA前后相同，四个模型state_dict推理前后逐张量一致。
+- 实现与关键设置：v08原生环境A阶段、flat_stop平地tile0，沿用固定gate-A-flat-0.6-000案例（seed42生成），单环境cuda:0，控制50Hz/物理200Hz。目标0—8秒vx0.6、8—16秒vx0、16—24秒vx0.6 m/s，vy/wz均0；用原生request_speed外部接口，保留100控制步/2秒命令渐变。第8秒原任务自动请求停车，第16秒仅在仍存活时请求恢复行走；无机器人/策略历史/地图重置。1280×720、25fps、每2控制步1帧，侧面跟随及阶段/目标/时间叠字。奖励、损失、学习率、任务终止、课程、物理保护均未改变。
+- 实际结果：6800与8200均在8秒/400控制步触发原生flat_progress任务失败，非physical_failure；未进入停车及再行走，不跳过判据，不伪装24秒完成。8000/8100各完成24秒/1200控制步，terminal=null，无提前终止或自动重置；停车末2秒平均前向速度分别0.002311与0.029413 m/s，8100仍有小幅运动，不称完全静止。第二段含原生2秒减速，第三段含原生2秒加速，不与6100瞬时命令流程混为相同执行指令。
+- 验证：全部四片ffmpeg -xerror全片解码退出0；6800/8200各200帧/8秒，8000/8100各600帧/24秒，H264/1280×720/25fps元数据一致。轨迹、完整原生terminal及case证据均保留。终止步env.step已自动reset，轨迹最后一行的运动状态为reset后值；判定失败时姿态/进度只认原生terminal记录，视频采帧在动作前，不包含reset后的画面。
+- 未验证：本次仅单一固定案例预览，不是完整30秒停车门禁、多seed可靠性、训练效果对比或实机验证，不声称模型效果改善。
+
+
+### 2026-11-19T19:57:27.289216+08:00｜按新授权失败后不重置，四模型全程24秒录像
+
+- 用户新指令明确要求观察训练实际效果，失败也全程录制；此指令取代此前“保留失败即终止片段”的交付要求。目的：连续保留失败后的现场，不重启或扶起机器人。
+- 文件：已有6800目录及8000/8100/8200各编号目录新增record_flat_walk_stop_walk_full.py、运行日志、A2_<update>_flat_walk_stop_walk_full.mp4、_result.json、_trajectory.npz、_verification.json；父目录新增verify_flat_walk_stop_walk_full.py。旧录像全部保留、无新建目录；项目内仅追加main及v08修改日志，源码和权重不改。
+- 前后差异：此前env.step在原生任务失败后自动reset并结束录像。现在仅在外部预览脚本实例上将_reset_ids替换为记录被抑制reset请求，保留原任务失败结果并继续物理/策略运行；录像循环不因done退出。原任务机可能在失败后处于DONE，因此后续任务验收不再推进，不能将失败后的24秒当正式门禁；为避免漏报后续物理失败，包装原_task_state返回值，仅旁观各failure_mask首次出现，不重复调用或更改判据。模型、PD、物理、动作/观测历史、地图、奖励、损失、训练配置不变。
+- 流程：相同原生boundary权重6800/0018、8000/0084、8100/0090、8200/0095，逐一SHA校验；同一固定flat_stop案例，seed42、cuda:0、1环境、50Hz控制/200Hz物理。计划vx0.6持续8秒→目标0持续8秒→目标0.6持续8秒，vy/wz0，保持原100控制步/2秒速度渐变，外部request_speed在8和16秒切换目标。1200控制步、1280×720/25fps，每2步采帧，共600帧；失败提示叠加画面。无学习、Adam或normalizer更新、无checkpoint保存。
+- 实测：四个模型全部完整24秒/600帧；6800与8200均第400步flat_progress失败、原生自动reset调用被抑制一次，继续停车和再行走，现场连续。8000/8100无终止及reset调用。所有模型未观察到原物理failure_mask触发。
+- 6800: failure_reasons=['flat_progress'], physical_first_events=[], suppressed_reset_calls=[{'step': 400, 'ids': [0]}], stop_last2s_mean_vx=0.003387790 m/s
+- 8000: failure_reasons=[], physical_first_events=[], suppressed_reset_calls=[], stop_last2s_mean_vx=0.002305675 m/s
+- 8100: failure_reasons=[], physical_first_events=[], suppressed_reset_calls=[], stop_last2s_mean_vx=0.017244512 m/s
+- 8200: failure_reasons=['flat_progress'], physical_first_events=[], suppressed_reset_calls=[{'step': 400, 'ids': [0]}], stop_last2s_mean_vx=0.027515721 m/s
+- 验证：四片ffmpeg -xerror全片解码退出0，解码帧数600、时长24秒、H264/720p/25fps均一致；模型state_dict前后逐张量相等，原checkpoint SHA前后一致。断言完成录像不代表策略通过。原任务失败后不重置，终止步轨迹现为真实连续状态，不再包含前版reset后末行限制。
+- 未验证：仅本次固定案例预览，不代表正式完整停车验收、多seed统计、训练改进、跨引擎或实机效果。
+
+
+### 2026-11-19T20:17:42.596126+08:00｜四模型平地走停走改为正后方视角重录
+
+- 目的：按用户“视角在后面，重新录制视频”要求，为6800/8000/8100/8200重新录制后方跟随版本，保存原有对应视频文件夹，保留旧视频，未新建目录。
+- 涉及文件：四个已有模型视频目录新增record_flat_walk_stop_walk_full_rear.py、运行日志、A2_<update>_flat_walk_stop_walk_full_rear.mp4及_result.json、_trajectory.npz、_verification.json；8000/8100/8200父目录新增verify_flat_walk_stop_walk_full_rear.py；项目仅追加main与v08日志，未修改项目源码。
+- 实际修改与理由：相机由侧面azimuth=90°+body_yaw改为正后方180°+body_yaw；沿机身朝向跟随，distance3.8m/elevation-28°保持，俯视便于观察足部。任务失败画面提示由FAILURE OBSERVED改为TASK CRITERION FLAGGED，避免将任务判据标记与实际摔倒混淆；失败证据继续完整保存。
+- 核心行为未变：相同boundary权重及SHA、固定flat0案例、seed42、cuda:0、1环境，50Hz控制/200Hz物理，0.6→0→0.6 m/s目标各8秒、vy/wz0、原2秒速度渐变。失败后继续运行不reset，24秒/1200控制步；1280×720/25fps/每2步采帧。模型、奖励、损失、学习率、课程、物理控制及训练配方未改，无训练/Adam/normalizer更新或checkpoint保存。重新仿真而非复用轨迹转视角，GPU轨迹不承诺逐位相同。
+- 验证结果：四片均24秒600帧，ffmpeg -xerror全片解码退出0，H264/720p/25fps一致；模型state_dict前后逐张量相等、checkpoint SHA前后一致。6800/8200仍第8秒原任务flat_progress标记后连续完成，未观察物理failure_mask；8000/8100无任务终止。失败后不重置和24秒预览不等于正式门禁通过。
+- 未验证：未执行多seed/实机/训练效果对比；仅交付本次完整后视角预览，不宣称效果改善。
+
+
+### 2026-11-19T21:19:08.819977+08:00｜v0.7最终6400模型后视角平地走停走录像
+
+- 目的：按用户要求查看6400最终模型的实际效果，沿用平地24秒走停走、正后方跟随、失败后不重置继续拍摄，直接存已有/home/xxs/Videos/A2_L40_end_6100_20261119/，无新建目录，旧视频保留。
+- 文件：上述外部目录新增record_6400_flat_full_rear.py、verify_6400_flat_full_rear.py、运行日志、A2_6400_flat_walk_stop_walk_full_rear.mp4及_result.json、_trajectory.npz、_verification.json。项目内仅追加本日志，源码及训练配置未修改。
+- 来源：stop_006400.pt，严格SHA256=30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2，schema9/update6400，仅严格加载V07ActorCritic.model做eval确定性均值推理；不恢复停止的训练，不加载Adam，不清训练终态。
+- 流程：沿用6100外部预览逻辑，F0平地tile0、初始local x=-1/y=0/yaw=0、seed42、cuda:0、1环境；0—8秒vx0.6、8—16秒vx0、16—24秒vx0.6 m/s，vy/wz0，v0.7指令瞬时切换，无v0.8的2秒渐变。切换时只重置原生stall诊断窗口，机器人/策略历史/地图连续。相机180°+body_yaw、distance3.8/elevation-28，1280×720/25fps、每2控制步一帧。50Hz控制/200Hz物理、1200控制步。外部实例_reset_ids只记录并抑制潜在自动reset，循环不因done退出，首次不同reason原生失败证据保留；本次实际无失败/无被抑制reset请求。模型、奖励、损失、学习率、课程及物理配置不变，无训练更新或checkpoint保存。
+- 实测：完整24秒600帧；无原生终止、无reset。三阶段平均前向速度0.612427/0.024881/0.602978 m/s；停车末2秒均速0.003555 m/s，不声称精确静止。state_dict前后逐张量相等，权重SHA前后相同。ffmpeg -xerror全片解码退出0，H264/1280×720/25fps/24秒、逐帧600一致。
+- 验证边界：仅seed42单环境预览，未验证多seed可靠性、正式楼梯验收或实机；未执行训练效果对比，不据此声称性能改善。
+
+
+### 2026-11-19T21:24:20.154163+08:00｜6400平地与40级楼梯右侧录像
+
+- 目的与范围：用户明确确认“6400：平地和上楼梯都录右侧”。仅补录6400，不扩展其他模型；沿用失败后全程记录、不reset。视频直接存已有/home/xxs/Videos/A2_L40_end_6100_20261119/，无新建目录，旧文件保留。
+- 文件：外部目录新增record_6400_L40_full_right.py、record_6400_flat_full_right.py、verify_6400_right.py、两份运行日志、A2_6400_L40_full_right_vx0.6.mp4与A2_6400_flat_walk_stop_walk_full_right.mp4，以及各自_result.json/_trajectory.npz/_verification.json；项目内仅追加本日志。
+- 实现：相同stop_006400.pt/SHA30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2，strict加载model、eval确定性均值，不恢复训练。相机从前次后方180°+yaw改为右侧90°+yaw，distance3.8/elevation-28保持。单环境seed42/cuda:0、50Hz控制/200Hz物理，1280×720/25fps，每2控制步采帧。外部预览实例继续抑制自动reset，终止不退出，首次各reason保存，不改项目源码、模型、奖励、损失、学习率或训练课程。
+- 平地：tile0/F0，初态local(-1,0,0)，vx0.6→0→0.6 m/s各8秒，vy/wz0，切换只重置stall纯诊断，v07瞬时指令，不引入v08渐变；24秒/1200控制步/600帧，实际无原生终止或reset。
+- 上楼梯：tile21/L40，40级、h=d=0.20m，初态local(-1,0,0)，固定vx0.6/vy0/wz0，连续40秒/2000控制步/1000帧；不是24秒中途停车流程。1048步/20.96秒原生success，因按用户授权继续拍且持续vx0.6，1078步/21.56秒出现body、1090步/21.8秒nonfoot；这些为登顶后仍持续前进的后续表现，不解释为原始登顶未成功，也不删除失败现场。无自动reset；不代表楼顶停车验证。
+- 录像命名修正：初版Path.with_suffix把速度小数.6误识为后缀，生成vx0.mp4；完成后仅改名为vx0.6.mp4并同步result.video，视频字节未改，外部脚本改为字符串追加.mp4避免复现。
+- 验证：两片ffmpeg -xerror全片解码退出0，H264/720p/25fps，实际时长40/24秒、解码1000/600帧；camera元数据为right_follow/90°+yaw。state_dict前后逐张量一致、权重SHA前后相同，无学习/Adam或normalizer更新，无checkpoint保存。
+- 未验证：本次单环境单seed预览，无多seed正式验收、训练效果对照或实机测试，不声称性能改善。
+
+
+### 2026-11-19T21:30:13.617960+08:00｜新增代码修改后必须提交并推送的项目规则
+
+- 目的：用户明确要求main与v0.8分支的agent规则写明每次代码修改完成后需要push，并授权本次规则变更提交推送。
+- 文件：项目根AGENTS.md（此前不存在，新建标准自动读取文件名）；logs/codex_changes.md仅追加。
+- 实际修改与理由：将此前没有项目级提交推送规则改为每次代码修改及验证后必须提交当前分支并push到origin同名分支，无需重复确认，用户后续明确暂缓指令优先；明确仅提交任务范围文件、不上传权重/凭据/无关产物、不擅自force-push，推送后核验远端SHA且失败如实报告。保留修改日志要求。当前目标分支main。
+- 验证：规则文本及两个工作树目标分支只读核对，本次仅stage AGENTS.md与本修改日志（保留并归档此前录像日志追加内容），不夹带其他入口或协调文件改动。仅文档规则变化，未执行代码功能测试、仿真或训练，不声称训练效果改善；提交及推送结果以最终汇报实际核对为准。
