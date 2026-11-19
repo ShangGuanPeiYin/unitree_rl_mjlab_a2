@@ -65,3 +65,11 @@ Unique worker2438417 stillrunning, same frozenv2/sourcefafdd34/recipe, no stop/r
 ## 2026-11-19T11:27:59.704399+08:00 — 8000 完整门禁和 H00，正式新增 1600 次
 
 原正式 worker 2438417 仍在运行，A 1600/4000，整体 gate false、连续通过 0。8000 门禁 120 valid、success 90：平地三速各 20/20；L40 上楼 8/20、4/20、18/20，失败 final_unstable 10、posture 14、timeout 3、nonfoot 2、bounds 1。与 7900 的平地 18/20、20/20、20/20 相比，固定平地分组连续两轮达门槛，但 A 六组整体仍未通过，不能据此宣称最终可靠性或整体改善。十个失败站立窗口首项 drift 5、max_speed 3、omega 1、mean_speed 1，首项不等于唯一失败项。H00 8000 完整 15 valid、success 6：三速 3/5、0/5、3/5，姿态失败 8、站稳失败 1，仅报告。所有 invalid/error/engineering 均 0。第 86 号原生门禁后存档已完成；H00 后保存仍在进行。8000 门禁证据已推送 040fe39，H00 小型证据即将归档。冻结 v2 源码、配方及恢复流程未变，7950 仅写原生诊断，无 checkpoint；root 已更正此前进度表述。等待驱动 2542300 于 10:28 核对身份且存活，仅等待真实正式终态。root 未录 6800、未启额外 GPU，准确 CPU 回放 handoff 保持可用。此为共享文件协调，不声称跨线程消息已直接发送。
+
+## 2026-11-19T15:29:14.439805+08:00 — 正式新增 1800 次，8200 完整门禁及 Q5 被动耗时
+
+唯一正式 worker 2438417 仍在运行，A 1800/4000、整体 gate false、连续通过 0。8100 门禁120 valid/success66：平地2/20、0/20、4/20，上楼三速各20/20，54失败均平地final_unstable；8200门禁120 valid/success0：六组各0/20，final_unstable88（flat28/top60）、flat_progress32。8200首个站稳失败项按kind：flat mean-speed27/max-speed1，top support54/max-speed6；首项不等于唯一失败项。invalid/error/engineering 均0，普通策略失败不触发人工停训。8200 H00尚未完成，当前继续门禁后原生存档，最近持久化回执96。实际完整证据与日志已推送884548a。
+
+Q5新增被动观察已推送0b9c1c5，路径implementation/cpu/FORMAL_BOUNDARY_WALL_OBSERVATIONS_008000.json，绑定原回执SHA/mtime并按sequence数值排序。7900连续81→82=985.267秒、82→83=986.328秒；8000连续87→88=1077.238秒，冻结runner顺序中无间隔物理/学习。这是文件写入之间的墙钟，不是validate_checkpoint独立函数基准，不据此外推ETA。当前运行仍冻结v2/source fafdd34，未做缓存、恢复迁移、配方或预算变更；未收到主控书面迁移裁决，默认继续原正式任务。
+
+后处理等待驱动2542300于15:00复核身份/存活，只等真实合同终态，独立review0未变。root没有录6800或增加GPU worker，准确CPU回放handoff仍可用。此为共享文件协调，root无可用跨线程消息工具，不声称已直接发送。

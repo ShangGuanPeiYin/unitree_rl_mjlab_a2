@@ -3335,3 +3335,7 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-19｜8200完整门禁0/120与1800次新增正式更新
 
 实际120/120 valid、invalid/error/engineering0，success0/failure120，六组均0/20。平地0.3为final_unstable20，0.5为flat_progress20，0.6为final_unstable8/flat_progress12；L40上楼三速各final_unstable20。总计final_unstable88/flat_progress32，A gatefalse、整体连续通过0、预算1800/4000/global8200。8100上楼三速20/20未在本轮保持；此前8000平地60/60亦不能代表当前模型。结果波动真实保留，不按最好历史边界替换当前模型，不据个别分组宣称总体可靠性改善。完成批次账本218688控制样本/874752物理子步，完整raw、事务及gpu/FORMAL_GATE_008200_A_SUMMARY.json保留，核对原sidecar SHA一致，实际8200学习commit继承Adam总计164000。88个站稳失败窗口按原consumer只读复算，首项mean_speed27/max_speed7/support54，详见gpu/FORMAL_GATE_008200_A_STAND_ANALYSIS.json，首项不等于唯一失败项；另外32例是在平地行走条件阶段失败，未写成完整停车验收。归档两份小型JSON及追加本日志，无重评、额外物理/学习或冻结源码/配方/阈值更改。普通策略失败按原合同继续，正式worker仍运行本边界后续存档，随后原计划H00报告尚未完成；最终2100和固定八视频仍未执行。
+
+### 2026-11-19｜1800更新、8200门禁与Q5耗时共享协调
+
+追加.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md，记录8100上楼60/60而平地6/60、8200整体0/120及全有效无工程错误、A1800/4000未晋级、H00待完成、最新push884548a。向既定主控提供已核对并推送的被动耗时证据路径与约985/986/1077秒连续保存墙钟间隔及其边界：非独立函数基准、不外推完成时间；未收到迁移裁决即继续原冻结v2运行，无缓存、恢复、配方或预算调整。复述15:00等待驱动身份/存活和无额外GPU、6800 CPU handoff，供主线读取。仅共享文件与追加日志，无可用跨线程工具，不声称直接消息已发；无新测试、物理/学习或核心源码更改。
