@@ -3311,3 +3311,7 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-19｜8000完整门禁与1600次新增正式更新
 
 实际120/120 valid、invalid/error/engineering0，success90/failure30；平地0.3/0.5/0.6均20/20，完成原8秒行走、2秒制动、20秒停车及站稳窗口；与7900的18/20、20/20、20/20一起，固定A平地三速分组连续两轮均达18/20，但不代表A六组整体通过或最终可靠性验收。L40上楼三速为8/20、4/20、18/20；0.3失败final_unstable9/timeout3，0.5失败final_unstable1/nonfoot1/posture14，0.6失败bounds1/nonfoot1。A gatefalse、整体连续通过0，预算1600/4000/global8000；本轮0.6上楼单组达标不代替整体晋级。完成批次账本280616控制样本/1122464物理子步，真实raw、事务和gpu/FORMAL_GATE_008000_A_SUMMARY.json保留且SHA核对一致；实际8000学习commit的继承Adam总计160000。十个站稳失败窗口按原consumer只读复算，首个失败项drift5/max_speed3/omega1/mean_speed1，详见gpu/FORMAL_GATE_008000_A_STAND_ANALYSIS.json，首项不等于唯一失败项；14例姿态失败未被算成站立窗口失败。归档两份小型JSON及本日志，不重评、不新增学习、不修改冻结源码/配方/阈值。正式worker继续8000门禁后原生保存，随后原计划H00报告尚未完成。最终2100与固定八视频尚未执行。
+
+### 2026-11-19｜8000完整H00报告6/15与主线共享协调
+
+实际15/15 valid、invalid/error/engineering0，success6/failure9；0.3/0.5/0.6为3/5、0/5、3/5，失败posture8/final_unstable1。完成批次账本23574控制样本/94296物理子步，完整raw/事务与gpu/FORMAL_H00_008000_A_SUMMARY.json保留，归档小型summary并核对原sidecar SHA。H00仅报告，不改变A门禁90/120及整体未通过、连续0、预算1600/4000的结论，不据单轮6/15宣称可靠性改善。将8000六组真实结果、固定平地分组7900/8000连续达门槛的有限结论、H00结果与等待队列身份追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md供既定主线读取；无可用跨线程工具，不声称直接消息已发送。7950确为仅写诊断、无checkpoint，已核对原runner并在进度说明中更正此前保存边界表述；训练实现始终未改。只读分析已安装结果、追加共享文档和修改日志，没有重评、新物理/学习、源码或配方/阈值修改；正式worker继续H00后原生存档，最终2100/八视频仍未执行。

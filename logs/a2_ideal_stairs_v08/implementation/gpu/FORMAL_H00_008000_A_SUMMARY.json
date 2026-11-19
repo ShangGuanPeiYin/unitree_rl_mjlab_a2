@@ -1,0 +1,160 @@
+{
+  "identity": {
+    "case_table_sha256": "3b51435beac17ddb5f098e45f08148602c007e0ad32790c5ca6ad9883c19c219",
+    "freeze_sha256": "ba85e965723050fd335c492a15385f79a41f6d42d439d9d16a1cc6d3617cc783",
+    "kind": "h00",
+    "model_state_sha256": "b281efab7dfb7ec8fb0d60573cde6643e67a260b851ddb76c2bdf362a978b6f7",
+    "optimizer_state_sha256": "bf569a61c82f6cd440c8619ed2c375a212faf2f85c140e38df3b7df2dcd41f5b",
+    "phase": "A",
+    "recipe_sha256": "cf1edf4d8509ae135a87af874a7049ca0da3a376b47f245b00e2a5e222fca59f",
+    "source_sha256": "30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2",
+    "update": 8000
+  },
+  "sidecar_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/evaluations/h00_A_008000.json",
+  "sidecar_sha256": "7b4a7244a85239b8deaa3457e7176d8f4d1fcb9ab30c64d9f5bc52ef6a651986",
+  "summary": {
+    "case_table_sha256": "3b51435beac17ddb5f098e45f08148602c007e0ad32790c5ca6ad9883c19c219",
+    "duplicate_ids": [],
+    "e3_subgates": {},
+    "engineering_error": false,
+    "error": 0,
+    "expected": 15,
+    "failure": 9,
+    "full_denominator": 15,
+    "gate_pass": false,
+    "groups": {
+      "up_stop@0.3": {
+        "error": 0,
+        "expected": 5,
+        "failure": 2,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 1,
+          "posture": 1,
+          "success": 3
+        },
+        "received": 5,
+        "segments": {
+          "top_hold": 5
+        },
+        "success": 3,
+        "threshold": 5,
+        "valid": 5
+      },
+      "up_stop@0.5": {
+        "error": 0,
+        "expected": 5,
+        "failure": 5,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "posture": 5
+        },
+        "received": 5,
+        "segments": {
+          "top_hold": 5
+        },
+        "success": 0,
+        "threshold": 5,
+        "valid": 5
+      },
+      "up_stop@0.6": {
+        "error": 0,
+        "expected": 5,
+        "failure": 2,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "posture": 2,
+          "success": 3
+        },
+        "received": 5,
+        "segments": {
+          "top_hold": 5
+        },
+        "success": 3,
+        "threshold": 5,
+        "valid": 5
+      }
+    },
+    "invalid": 0,
+    "kind": "h00",
+    "passed": true,
+    "phase": "A",
+    "physical_failure": 8,
+    "reasons": {
+      "final_unstable": 1,
+      "posture": 8,
+      "success": 6
+    },
+    "received": 15,
+    "report_only": true,
+    "segments": {
+      "top_hold": 15
+    },
+    "snapshot_sha": "3bbd09e92bc218b6fc4dd275f4da8f56b3415ebc866ebabf8e39108e6ed80679",
+    "statistics_changed": [],
+    "statistics_unchanged": true,
+    "success": 6,
+    "task_groups": {
+      "up_stop@0.3": {
+        "error": 0,
+        "expected": 5,
+        "failure": 2,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 1,
+          "posture": 1,
+          "success": 3
+        },
+        "received": 5,
+        "segments": {
+          "top_hold": 5
+        },
+        "success": 3,
+        "threshold": 5,
+        "valid": 5
+      },
+      "up_stop@0.5": {
+        "error": 0,
+        "expected": 5,
+        "failure": 5,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "posture": 5
+        },
+        "received": 5,
+        "segments": {
+          "top_hold": 5
+        },
+        "success": 0,
+        "threshold": 5,
+        "valid": 5
+      },
+      "up_stop@0.6": {
+        "error": 0,
+        "expected": 5,
+        "failure": 2,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "posture": 2,
+          "success": 3
+        },
+        "received": 5,
+        "segments": {
+          "top_hold": 5
+        },
+        "success": 3,
+        "threshold": 5,
+        "valid": 5
+      }
+    },
+    "threshold": 0,
+    "unknown_ids": [],
+    "valid": 15
+  }
+}
