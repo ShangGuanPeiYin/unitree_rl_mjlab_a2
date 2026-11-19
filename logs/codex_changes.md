@@ -3327,3 +3327,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-19｜8100完整门禁与1700次新增正式更新
 
 实际120/120 valid、invalid/error/engineering0，success66/failure54；平地0.3/0.5/0.6为2/20、0/20、4/20，失败均final_unstable；L40上楼三速均20/20，完成真实上楼、制动、20秒零速度保持及原站稳窗口。A gatefalse、整体连续通过0，预算1700/4000/global8100；上楼本轮三组单轮达标不替代六组整体连续两轮，8000平地60/60也未在本轮保持，不能据某一分组宣称整体可靠性改善。完成批次账本231320控制样本/925280物理子步，真实raw、事务及gpu/FORMAL_GATE_008100_A_SUMMARY.json保留且SHA核对一致，原生8100学习commit的继承Adam总计162000。54个平地停车站稳失败窗口按原consumer只读复算，首项mean_speed36/max_speed18，详见gpu/FORMAL_GATE_008100_A_STAND_ANALYSIS.json，首项不等于唯一失败项；没有将它们混写成上楼站稳失败。归档两份小型JSON及本日志，不重评、不新增学习、不修改冻结源码/配方/阈值；正式worker继续本边界原生存档。8100不是200更新边界，不额外运行H00。最终2100及固定八视频尚未执行。
+
+### 2026-11-19｜8200站稳失败窗口只读复算
+
+原raw中88例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_mean_speed': 27, 'endpoint_stop_max_speed': 7, 'endpoint_stop_support': 54}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_008200_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜8200完整门禁0/120与1800次新增正式更新
+
+实际120/120 valid、invalid/error/engineering0，success0/failure120，六组均0/20。平地0.3为final_unstable20，0.5为flat_progress20，0.6为final_unstable8/flat_progress12；L40上楼三速各final_unstable20。总计final_unstable88/flat_progress32，A gatefalse、整体连续通过0、预算1800/4000/global8200。8100上楼三速20/20未在本轮保持；此前8000平地60/60亦不能代表当前模型。结果波动真实保留，不按最好历史边界替换当前模型，不据个别分组宣称总体可靠性改善。完成批次账本218688控制样本/874752物理子步，完整raw、事务及gpu/FORMAL_GATE_008200_A_SUMMARY.json保留，核对原sidecar SHA一致，实际8200学习commit继承Adam总计164000。88个站稳失败窗口按原consumer只读复算，首项mean_speed27/max_speed7/support54，详见gpu/FORMAL_GATE_008200_A_STAND_ANALYSIS.json，首项不等于唯一失败项；另外32例是在平地行走条件阶段失败，未写成完整停车验收。归档两份小型JSON及追加本日志，无重评、额外物理/学习或冻结源码/配方/阈值更改。普通策略失败按原合同继续，正式worker仍运行本边界后续存档，随后原计划H00报告尚未完成；最终2100和固定八视频仍未执行。

@@ -1,0 +1,260 @@
+{
+  "identity": {
+    "case_table_sha256": "70610bb96356d278ba195bc3b1c30c3b96fd2f7ba11cf79cce9d9ecda61994c6",
+    "freeze_sha256": "ba85e965723050fd335c492a15385f79a41f6d42d439d9d16a1cc6d3617cc783",
+    "kind": "gate",
+    "model_state_sha256": "abe5c578999d07fbc9f118e42e56f11ce8c78a2d7ca4a2e10076e09a059110ed",
+    "optimizer_state_sha256": "9948a3e216da624d29001cfcfed932a6488c9bea586711476bf3dfc7b2a23eb1",
+    "phase": "A",
+    "recipe_sha256": "cf1edf4d8509ae135a87af874a7049ca0da3a376b47f245b00e2a5e222fca59f",
+    "source_sha256": "30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2",
+    "update": 8200
+  },
+  "sidecar_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/evaluations/gate_A_008200.json",
+  "sidecar_sha256": "229b22e013c7d184a5e112ca2f05f6c6033d635df0ce4d1aeb7b95d63c1ff8f0",
+  "summary": {
+    "case_table_sha256": "70610bb96356d278ba195bc3b1c30c3b96fd2f7ba11cf79cce9d9ecda61994c6",
+    "duplicate_ids": [],
+    "e3_subgates": {},
+    "engineering_error": false,
+    "error": 0,
+    "expected": 120,
+    "failure": 120,
+    "full_denominator": 120,
+    "gate_pass": false,
+    "groups": {
+      "flat_stop@0.3": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 20
+        },
+        "received": 20,
+        "segments": {
+          "top_hold": 20
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      },
+      "flat_stop@0.5": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "flat_progress": 20
+        },
+        "received": 20,
+        "segments": {
+          "top_walk": 20
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      },
+      "flat_stop@0.6": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 8,
+          "flat_progress": 12
+        },
+        "received": 20,
+        "segments": {
+          "top_hold": 8,
+          "top_walk": 12
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      },
+      "up_stop@0.3": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 20
+        },
+        "received": 20,
+        "segments": {
+          "top_hold": 20
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      },
+      "up_stop@0.5": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 20
+        },
+        "received": 20,
+        "segments": {
+          "top_hold": 20
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      },
+      "up_stop@0.6": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 20
+        },
+        "received": 20,
+        "segments": {
+          "top_hold": 20
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      }
+    },
+    "invalid": 0,
+    "kind": "gate",
+    "passed": true,
+    "phase": "A",
+    "physical_failure": 0,
+    "reasons": {
+      "final_unstable": 88,
+      "flat_progress": 32
+    },
+    "received": 120,
+    "report_only": false,
+    "segments": {
+      "top_hold": 88,
+      "top_walk": 32
+    },
+    "snapshot_sha": "0e8c494f6df55bfe2c8099b41c1a327df84ae600797058e26e3c7682f863c431",
+    "statistics_changed": [],
+    "statistics_unchanged": true,
+    "success": 0,
+    "task_groups": {
+      "flat_stop@0.3": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 20
+        },
+        "received": 20,
+        "segments": {
+          "top_hold": 20
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      },
+      "flat_stop@0.5": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "flat_progress": 20
+        },
+        "received": 20,
+        "segments": {
+          "top_walk": 20
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      },
+      "flat_stop@0.6": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 8,
+          "flat_progress": 12
+        },
+        "received": 20,
+        "segments": {
+          "top_hold": 8,
+          "top_walk": 12
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      },
+      "up_stop@0.3": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 20
+        },
+        "received": 20,
+        "segments": {
+          "top_hold": 20
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      },
+      "up_stop@0.5": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 20
+        },
+        "received": 20,
+        "segments": {
+          "top_hold": 20
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      },
+      "up_stop@0.6": {
+        "error": 0,
+        "expected": 20,
+        "failure": 20,
+        "invalid": 0,
+        "passed": false,
+        "reasons": {
+          "final_unstable": 20
+        },
+        "received": 20,
+        "segments": {
+          "top_hold": 20
+        },
+        "success": 0,
+        "threshold": 18,
+        "valid": 20
+      }
+    },
+    "threshold": 0,
+    "unknown_ids": [],
+    "valid": 120
+  }
+}
