@@ -9,7 +9,7 @@ success criteria, timeout) consumes the same table through this module.
 Geometry (per tile, tile-local coordinates with ``x = 0`` at the front edge of
 the first tread, i.e. ``frame_origin_world``):
 
-* approach ground box: ``x in [-2, N*d + 2]``, ``|y| <= 2``, top ``z = 0``
+* approach ground box: ``x in [-2, N*d + platform_length]``, ``|y| <= 2``, top ``z = 0``
   (flat tiles use the full 24 x 8 tile, ``x in [-2, 22]``, ``|y| <= 4``);
 * tread ``i = 1..N``: half size ``(d/2, width/2, tread_thickness/2)``, centre
   ``x = (i - 1/2) d``, top ``z = i*h`` -- open riser, no stringer, no rail;
@@ -24,7 +24,7 @@ never quantised to a height-field resolution.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import mujoco
 import numpy as np
@@ -54,11 +54,32 @@ def _fail(message):
     raise RuntimeError("v07 terrain: " + message)
 
 
+# Playback-only override, configured before constructing an environment.
+_PLAYBACK_PLATFORM: tuple[int, float] | None = None
+
+
+def configure_playback_platform(*, tile_id: int, length: float):
+    """Extend one platform in this process; never edits the frozen training spec.
+
+    Call once, before any geometry/map cache or environment is constructed.
+    """
+    global _PLAYBACK_PLATFORM
+    if _PLAYBACK_PLATFORM is not None or _TABLE_CACHE or _LAST_BUILD is not None:
+        raise RuntimeError("Configure playback platform once before building terrain")
+    table = build_terrain_specs()
+    if not 0 <= tile_id < len(table) or table[tile_id].N == 0:
+        raise ValueError("Playback platform requires a stair tile")
+    if not math.isfinite(length) or length < 2.0:
+        raise ValueError("Playback platform length must be finite and >= 2 metres")
+    _PLAYBACK_PLATFORM = (tile_id, float(length))
+
+
 # --------------------------------------------------------------- spec binding
 def build_terrain_specs() -> tuple:
     """Return the 23-tile v0.7 table and assert its SDS consistency.
 
-    The returned tuple is exactly :data:`spec.TERRAIN_TABLE` (same objects), so
+    By default the returned tuple is :data:`spec.TERRAIN_TABLE` (same objects).
+    An explicit playback override replaces only the selected platform row, so
     geometry, map, contacts, reward height lookup, success and timeout all read
     one ``TerrainSpec`` per tile.
     """
@@ -105,6 +126,13 @@ def build_terrain_specs() -> tuple:
         origin = tuple(float(v) for v in s.frame_origin_world)
         if len(origin) != 3 or not all(math.isfinite(v) for v in origin):
             _fail(f"tile {tid}: frame_origin_world must be a finite 3-tuple")
+    if _PLAYBACK_PLATFORM is not None:
+        tid, length = _PLAYBACK_PLATFORM
+        tile = table[tid]
+        lo, _, ylo, yhi = tile.valid_bounds_local
+        extended = replace(tile, platform_length=length,
+                           valid_bounds_local=(lo, tile.N * tile.step_depth + length, ylo, yhi))
+        table = table[:tid] + (extended,) + table[tid + 1:]
     return table
 
 
@@ -141,7 +169,7 @@ def tile_boxes(tile: "object") -> tuple[Box, ...]:
     if n == 0:
         boxes.append(Box("flat", 0, (ox + 10.0, oy, oz - 0.05), (12.0, 4.0, 0.05), oz))
         return tuple(boxes)
-    length = n * d + 4.0
+    length = n * d + float(tile.platform_length) + 2.0
     boxes.append(Box("ground", 0, (ox - 2.0 + length / 2.0, oy, oz - 0.05),
                      (length / 2.0, _STAIR_GROUND_HALF_WIDTH, 0.05), oz))
     for i in range(1, n + 1):

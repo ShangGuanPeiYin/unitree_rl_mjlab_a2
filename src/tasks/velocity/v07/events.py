@@ -269,10 +269,10 @@ def platform_candidate(top_forces, geom_tile, geom_step, geom_bounds, tile_ids,
 
 def feet_safe_platform(feet, tile_ids):
     """Current foot positions inside the platform's real 0.042 m inset."""
-    n, h, d, _ = tile_parameters(tile_ids)
+    n, h, d, bounds = tile_parameters(tile_ids)
     half = feet.new_tensor(BODY_HALF_WIDTH)
     x0 = n * d + SAFE_INSET
-    x1 = n * d + feet.new_tensor(2.0) - SAFE_INSET
+    x1 = torch.where(n > 0, bounds[:, 1], n * d + 2.0) - SAFE_INSET
     y = half - SAFE_INSET
     in_platform = ((feet[..., 0] >= x0[:, None]) & (feet[..., 0] <= x1[:, None])
                    & (feet[..., 1].abs() <= y))
