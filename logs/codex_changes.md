@@ -3291,3 +3291,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-19｜7800完整H00报告3/15
 
 真实15/15 valid、invalid/error/engineering0，success3/failure12；0.3/0.5/0.6为0/5、2/5、1/5，12失败均final_unstable。实际23320控制样本/93280物理子步，完整raw/事务及gpu/FORMAL_H00_007800_A_SUMMARY.json保留并归档小型summary。H00仅报告，单次3/15不构成总体可靠性改善或A晋级；当前A门禁43/120（flat3/20、20/20、20/20，上楼各0/20），整体未通过、连续0、预算1400/4000。正式worker已完成第75号门禁边界存档并继续本边界后续保存。仅读取已安装完整结果、核对真实分母及追加记录，没有重新评估、额外学习、源码/配方/阈值修改。
+
+### 2026-11-19｜7900站稳失败窗口只读复算
+
+原raw中11例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_max_speed': 10, 'endpoint_stop_support': 1}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007900_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜7900完整门禁与1500次新增正式更新
+
+实际120/120 valid、invalid/error/engineering0，success89/failure31；平地0.3/0.5/0.6分别18/20、20/20、20/20，另2例低速flat_progress；L40上楼分别2/20、20/20、9/20，失败为低速timeout18和高速final_unstable11。A gatefalse，整体连续通过0，预算1500/4000/global7900；本轮三个平地分组及上楼0.5分组单轮达标，不能代替六组整体连续两轮达标，不能据单次89/120声称最终可靠性改善。完成批次账本控制样本293280/物理子步1173120，真实raw、事务与gpu/FORMAL_GATE_007900_A_SUMMARY.json保留且SHA绑定核对一致。11个高速上楼站稳失败窗口按原consumer只读复算，首项max_speed10/support1，见gpu/FORMAL_GATE_007900_A_STAND_ANALYSIS.json，首项不等于唯一失败项。归档两份小型JSON及本日志，不重评、不新增学习、不修改冻结源码/配方/阈值；正式worker继续该边界原生保存。7900非200边界，不额外运行H00；最终2100与固定八视频尚未执行，不能声称完成。
