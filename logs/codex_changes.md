@@ -2952,3 +2952,574 @@ CPU只读实际curriculum_004900.pt：gen73、gu83、gate_streak0，gate_log pas
 原独立reviewer /root/c1_reviewer实际只读复核终态stop/terminal/result、6200/6400 H00原始病例、L40/V关键门禁、1583连续提交和64评估费用、唯一stop6400 checkpoint/45Adam及遗留字段后，返回限定PASS、实质不一致0。coordination/FINAL_OUTCOME_REVIEW_RECEIPT.json为根忠实转录的回执，明确非reviewer自行落盘签名，不伪装成重新源码/旧211证据准入；输入WORK_REPORT SHA397361eb3772722521ce63e943743db1db3fc289169e6fab6ecc7d87bd699ebb、摘要SHAcdb88f6bd5cdfa91813124fe575e546c3991a98e1ac2081c3350e7163db62245、最终审计SHA6fbc8410ce22666465c123290fdfea32d95cbaf57cef947fc67c50713eef14c9。reviewer未写共享日志或GPU；根保留已审报告和摘要原字节，仅刷新本日志/PUBLISH_FILES。
 
 接下来coordination/PUBLISH_FINAL_STAGED_v2.json记录最终四文件/树哈希、重复凭据模式扫描和diffcheck；只向已授权专用分支普通追加报告提交/push，无权重/raw目录/源码变更。实际远端结果待推送后另记，当前不是已推送结论。
+
+
+## 2026-11-18T03:54:10+08:00 — 最终结果报告已实际推送并核对远端
+
+新增coordination/PUBLISH_FINAL_RESULT.json并追加协调台账。专用分支codex/a2-v07-d22-curriculum最终报告commit be74615fa7aa9c70729a2aaf9adcef9ddce230f0，tree 1c34d37bdbb34b7ada8beb01c4aac1570daf3600，普通追加push成功，ls-remote返回同一完整SHA，提交绑定远端tree，发布工作树clean，175项公开清单逐项SHA匹配；仅4报告相关文件变更，源码代码提交仍19aa48db5831c176bf81a177fbfe1d5a53fe7746，已审报告/摘要原字节未变。未上传权重/raw运行目录/凭据，未force/merge main/新建PR。活动main和HEAD42d4a1152e54af5584cf709bf5f679b06da808a1未变，训练与observer进程再次确认已退出，未恢复训练。
+
+独立终态事实复核限定PASS，真实正式结论为6400/V300的H00连续两轮保持回归停止，最终300例未执行、最终目标未完成。所有报告和验证均如实保留失败边界及Q008/资源采样/legacy metadata限制。此条为推送后本机回执，故公开提交中的修改日志和PUBLISH_FILES哈希是提交时快照；不为纳入自身提交哈希而反复新建发布提交。最终完整活动修改记录保留此条，公开Git历史可直接核实提交身份。
+
+
+## 2026-11-18T10:21:59+08:00 — 按用户要求录制最终模型L40视频（开始）
+
+新增独立产物目录logs/a2_ideal_stairs_v07/videos/final6400_L40_20261118_102159，将保存record_l40.py、三速MP4及逐段结果/总清单、执行日志；最终6400停止模型SHA30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2只读加载模型权重作确定性单环境播放，不恢复优化器或训练。L40物理tile21/40级/高深各0.20m，vx0.3/0.5/0.6、vy/wz0、seed42，预先固定采用正式6400 validation各速度episode_index0病例，不按结果挑选；完整录到原终止/超时。录制参数1280×720/25fps，控制dt0.02、每2控制步取帧、正常1倍速；相机只用于跟随展示。训练源码/配方/原停止证据不改，视频不替代正式300例验收。当前尚未验证录制成功，完成后记录实际结果及打开文件夹状态。
+
+
+## 2026-11-18T10:25:19+08:00 — 修正独立录制脚本的结果收尾字段
+
+首尝试录至0.3m/s回合终止后，结束字幕读取terminal.steps触发KeyError，进程exit1；原v07环境明确输出control_samples/terminal_step，无steps。失败目录及已编码视频/日志保留，不作为完成交付。仅在新目录logs/a2_ideal_stairs_v07/videos/final6400_L40_20261118_102159_retry01复制录制脚本，把两处terminal.steps改为terminal.control_samples，其他参数/相机/预定病例/模型均不变；不改冻结生产源码。采用systematic-debugging先读取真实_episode_records与完整异常定位，单一根因修正，接下来真实三速录制复验，当前未声称成功。vision.js对首尝试0.3中段抽帧描述机器人/楼梯/字幕清楚、无黑屏/遮挡。
+
+
+## 2026-11-18T10:30:53+08:00 — 按用户明确要求改为机器人右侧视角重录
+
+前一retry01三速均完整success，MP4完整解码exit0，合集1977帧/79.08s/1280×720/25fps，模型及149冻结输入原hash一致；ShowItems已成功打开该旧目录，OpenLocations实际核对匹配。但用户指出旧135°视角被楼梯挡住，故不将其作为最终满意交付。保留所有旧产物/失败日志。新增logs/a2_ideal_stairs_v07/videos/final6400_L40_right_side_20261118_103053，仅复制独立record_l40.py并改相机：135°→90°+实时机身yaw、俯角−22°→−28°、距离仍3.8m，右侧跟随并抬高视点。通过本地MuJoCo真实mjv_updateScene验证90°相机位于机器人负y（右侧），不是凭角度猜测。三速、seed42、最终6400模型/SHA、预先固定各速度episode_index0、原环境/终止/物理均保持。将生成同样MP4/JPG/逐段JSON/合集/验证与打开回执，录好后打开新目录。旧抽帧vision.js曾返回可见描述，但后一次拒绝描述，不能据此推翻用户遮挡反馈；以新右侧录制交付。当前右侧视频尚未验证完成。
+
+
+## 2026-11-18T10:34:56+08:00 — 按主控明确转交的用户要求追加最终H00失败回放
+
+主控线程01a1d49c-5f5d-7890-ac95-9234b307139a明确转交用户“录制最终失败的训练效果的视频，play一下”，根已确认串行接手。此前L40右侧录制进程exit0，三速预定case均success（31.92/23.12/20.84s），不重复更多L40版本。新增logs/a2_ideal_stairs_v07/videos/final6400_H00_failure_right_side_20261118_103456，独立record_h00.py/MP4/病例对照JSON/抽帧/合集/验证/桌面播放回执和日志；最终6400模型/SHA不变，原6400 stair_retention各速index0，原终态依次side546步/nonfoot411步/side355步，物理H/level_tick0/tile1由原case路由适配器确定。仅单环境确定性均值，右侧90°+yaw、俯角−28°/距离3.8，720p25fps正常1倍。完整录至原终止，原case终态与新回放终态同时保存，不保证位精确复现，不因新结果重录挑选。
+
+为获得真实失败姿态，仅在该回放实例包装_reset_ids：render当前终止步后立即调用原重置，不改生产类/物理/终止/控制。终止同帧和last_preterminal分开留证，END定格1秒明确标注非策略停滞。无训练/优化器恢复，不并发GPU，不上传远程；当前H00尚未录制完成，后续全解码检查后播放。
+
+
+## 2026-11-18T10:41:10.001702+08:00 — 主协调核验最终6400视频交付
+
+- 产物：videos/final6400_H00_failure_right_side_20261118_103456与final6400_L40_right_side_20261118_103053三速MP4/合辑/verification.json，共8段全解码exit0，720p25fps。
+- H00回放三速均side失败（545/434/356步）；原0.5案例nonfoot而新回放side，差异保留、不声称位精确复现；L40三速均success。149冻结输入及源模型SHA保持不变，无训练/生产配方修改。
+- 播放：读取playback_check.json，实际MPRIS org.mpris.MediaPlayer2.totem已记录Playing、Position7027000us、Length29840000us，证明H00合辑曾实际播放。主协调稍后检查该PID已退出，不宣称当前仍在播放，不重复打开用户可能已关闭的播放器。
+- 视频仅预定单案例演示，不替代正式评估。片尾注明1秒定格。
+
+
+## 2026-11-18T10:41:10+08:00 — L40右侧与H00失败视频全部生成、解码并桌面打开/播放
+
+最终交付目录：logs/a2_ideal_stairs_v07/videos/final6400_L40_right_side_20261118_103053与logs/a2_ideal_stairs_v07/videos/final6400_H00_failure_right_side_20261118_103456。各目录保存独立录制脚本、三速A2_final6400_*_vx*.mp4、三速合集、vx*_start/during/last_preterminal图片、逐段vx*_result.json、videos.json、recording.log、concat.txt、verification.json及folder_opened.json；H00另有terminal_before_reset图片、playback_launch/check/verified.json和player.log。旧视角、首失败与retry产物原样保留，不覆盖历史。
+
+L40右侧三速回放全部success，时长31.92/23.12/20.84s，合集1972帧/78.88s；用户要求立即打开该目录后，ShowFolders完成exit0，OpenLocations实际包含新L40目录，先打开再开始H00。H00按主控转交且随后用户直接明确“然后再录制H00的”顺序串行完成，三速回放均side失败：545/434/356控制步，即10.90/8.68/7.12s；原预定病例分别side546、nonfoot411、side355步，差异完整保存在JSON，不冒称位精确复现，不据新结果重录挑成功。H00合集746帧/29.84s，每段末尾1秒明确FREEZE FRAME字幕，非策略停滞。
+
+H00仅回放实例包装_reset_ids读取并render终止同帧，再原顺序调用原reset，终止帧步数与真实episode.control_samples逐段严格相等；last_preterminal另保留，比终止早0.02/0.04/0.04s。未使用自动reset后画面充当失败姿态。所有视频720p/25fps/1倍，L40及H00各三段+合辑全文件完整解码exit0，合辑帧数等于三段之和；视频与仿真时长（扣末尾定格及单独终止帧）误差≤0.041s。149冻结源码/测试/文档/observer输入及最终停止模型SHA30ed23…均复核未变。无训练/PPO、无原控制改动、无远程上传；这三个展示病例不替代最终300例验收。
+
+H00目录ShowItems完成exit0，OpenLocations同时包含H00及L40右侧目录。桌面:1启动/usr/bin/totem --play H00合辑，PID2187259命令行实际匹配该文件；MPRIS org.mpris.MediaPlayer2.totem实读PlaybackStatus=Playing、Rate1.0、媒体长29840000微秒、观测进度7027000微秒，player.log空。真实播放回执保存在H00/playback_verified.json；片长29.84秒，之后可自然播完，不声称无限持续播放。
+
+
+## 2026-11-18T10:50:19+08:00 — 按用户要求登顶后继续30秒真实录制（开始）
+
+用户明确要求6400_L40_vx0.5登顶后不要结束录制，继续观察机器人站立/后续行为。新增logs/a2_ideal_stairs_v07/videos/final6400_L40_vx0.5_post_top30s_right_20261118_105019，独立record_l40_post_top.py、MP4、首成功记录/逐步trace/result/抽帧/verification及桌面播放回执。仅最终6400停止模型确定性单环境回放，vx始终0.5m/s（vy/wz0），不擅自改为0指令或人工摆成站立；右侧90°+yaw跟随、俯角−28°/距3.8m、720p25fps、正常1倍。与此前相同的正式6400 validation:0.5:000初始病例、seed42、L40物理tile21。
+
+与旧录制到首终态即break/片尾定格不同：本回放实例在首次reset之后禁用自动_reset_ids，首success仍原样记录，从该成功步起继续实际物理仿真/策略输出1500控制步即30秒；不冻结/重置机器人，也不以假画面替代静止。此行为只用于登顶后的额外观察，不是正式训练或验收；不改生产env源码/终止定义/训练配方/原停止证据，不恢复优化器。保留所有真实后续事件，包括若移动/摔倒则如实录制；若工程异常不能录满则明确记录，不冒称完成。当前尚未录制验证，后续核实30秒步差、无reset与完整解码。
+
+
+## 2026-11-18T10:58:45+08:00 — 延长视频完成回执及用户明确停止
+
+本目录logs/a2_ideal_stairs_v07/videos/final6400_L40_vx0.5_post_top30s_right_20261118_105019保存独立录制脚本、MP4、first_success.json、trace.jsonl、result.json、抽帧、verification.json、录制/播放器日志、playback_launch.json及playback_retry_verified.json、user_stop.json。实际首success1156步/23.12s后连续1500步/30秒，视频1329帧/53.16s/720p25fps，完整解码0，2657时点连续，0合成定格/0自动reset，vx始终0.5，149冻结输入/停止模型未改。延长观察出现翻倒：+5秒roll约−160°，末roll−143.66°/pitch−48.32°，低平移0.01629m/s不能当稳定站立；未修改正式成功判据或训练。
+
+首播放器启动后核实时服务消失，原因未确定，不能声称该次Playing；已向主控勘误。之后再次启动PID2193920，playback_retry_verified.json实际捕获MPRIS Playing/Rate1.0/媒体长度53160000微秒，命令匹配新视频，保留两次历史不覆盖。用户随后明确“可以了，停止，我看完了都”，现只停止本目标视频播放，Stop回执{'state': 'our_target_video_not_current_or_player_closed', 'probe_exit_code': 1}；录制此前已exit0，不再继续录制/验证/训练或修改。
+
+
+## 2026-11-18T11:01:36+08:00 — 按用户要求用6400权重观察普通平地行走（开始）
+
+用户要求同一L40路线6400权重在普通平地行走、不上楼梯。新增logs/a2_ideal_stairs_v07/videos/final6400_flat_vx0.5_right_20261118_110136，独立record_flat.py、MP4、原始逐步轨迹/结果/抽帧/验证与桌面播放回执。只加载stop_006400.pt模型，SHA30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2，确定性单环境，采用既有6400平地保持病例flat_retention:0.5:000，原路由F0/FLAT/tile0/N0/h0，0.5m/s（vy/wz0）、seed42。30秒对应1500控制步，沿x平地范围[-2,22]、y[-4,4]行走，不切入任何楼梯tile；保留原平地物理、模型观测和终止逻辑。右侧跟随90°+yaw/−28°/距3.8m，720p25fps正常1倍，终止画面在原reset之前只读捕获，不用复位后的起点冒充最后画面。无再训练/优化器恢复，不改生产源码/奖励/课程或原终止条件，不上传远程；当前尚未验证录制完成，完成后打开播放并记录实际行走效果。
+
+
+## 2026-11-18T11:05:40+08:00 — 6400权重平地行走视频已完成并打开
+
+目录logs/a2_ideal_stairs_v07/videos/final6400_flat_vx0.5_right_20261118_110136新增record_flat.py、A2_final6400_FLAT_vx0.5_right_30s.mp4、result.json、trajectory.json、抽帧、verification.json、recording.log、player.log及playback_verified.json。与先前L40楼梯回放的区别仅为按用户要求切换原FLAT/tile0/F0，模型stop6400/SHA不变，vx0.5、单env/seed42、右侧跟随、720p25fps正常1倍。1501个轨迹时点均tile0，位置全在平地区域[-2,22]×[-4,4]，N0/h0，未走上任何楼梯；保留原平地30秒/1500步timeout及终止前真实帧，无定格。
+
+实际30秒failure=false，正常timeout结束；平均body vx0.514625m/s、净前进15.447071m、最大横向偏移0.034780m。MP4共751帧/30.04s（含起止采样时点），完整解码exit0，模型与149冻结输入hash未变，训练更新0。只代表该预定单病例回放，不冒称新批量验收或效果提升。文件夹ShowItems exit0、目录实际打开=True；播放器启动PID2197569，观察到目标片长30.04s的MPRIS Playing=True，全部实际响应留回执。无生产源码/控制/训练变更、无远程上传。
+
+
+## 2026-11-18T11:08:43+08:00 — 按用户要求加入真实减速停止/站稳回放功能（开始）
+
+用户明确要求“加上停止功能，不要光会走，还要停下站稳”。新增独立可复用scripts/play_a2_ideal_flat_v07_walk_stop.py及logs/a2_ideal_stairs_v07/videos/final6400_flat_walk_stop_20261118_110843下视频、命令/物理逐步trace、结果/阈值判定、抽帧、验证和桌面回执。默认本次显式参数为6400模型同SHA、FLAT/tile0、单env/seed42、右侧720p25fps；0.5m/s行走8秒，2秒线性减速至0，零指令保持20秒，总30秒。现有回放全程命令固定0.5，无法展示停车；本次仅在回放控制层切换真正送入actor当前proprio的command，历史连续、不冻结仿真/速度/姿态、不强制关节站立，不改原权重/奖励/PPO/课程/训练速度范围。零指令是用户明确要求的停车测试，不冒称原0.3–0.6训练已经验证0速。
+
+停稳判断预先固定为最后10秒：水平平均速度≤0.05m/s、最大≤0.10m/s、机身roll/pitch绝对值各≤10°、XY净漂移≤0.10m、最大角速度≤0.25rad/s、最低机身高度≥0.25m、平均四足端速度≤0.05m/s且四足同时>5N接触比例≥0.90。实际不达标必须如实报告，不用低平移速度单独声称站稳（前一翻倒回放已说明风险）。这是一次仿真演示判据，不是正式批量验收/实机安全证明。当前功能及物理停稳效果尚未验证；后续实际录制检查，不为低影响录制脚本额外建立镜像单测。
+
+
+## 2026-11-18T11:13:47+08:00 — 用户澄清只看原权重，撤回新增项目入口
+
+用户明确“不要修改项目，只是看原训练6400权重在平地行走/停止/站立”。已将本轮新建scripts/play_a2_ideal_flat_v07_walk_stop.py（SHA1791159870a9a622cfdc729ea6c3c37b4443893cd467b31fa90432d68dab326d）和本轮失败录制目录迁至/tmp/a2_6400_original_walk_stop_20261118_111347的preview.py/attempt01，不删除证据、不动既有用户视频或修改历史；该新增项目入口现已不存在。此前未修改任何冻结训练源码/权重。第一尝试在减速时被原StallDiagnostics的回合恒速约束拦截，exit1，不能作为策略停稳结论。后续只在/tmp运行临时回放和保存视频，仍加载原stop6400模型，只改变播放指令，绝不训练或修改项目功能；必要的诊断窗口刷新仅在临时回放实例中执行，不改变原文件。此追加是按全局规则保留撤回记录，之后不再向项目写新产物。
+
+
+## 2026-11-18T11:56:28+08:00 — v0.8 续训 SDS 定稿
+
+新增 doc/sds/SDS_A2_v0.8_Stairs_Walk_Stop_Reverse.md，从获批对话方案提取全文，移除规划模式的临时交付状态说明。文档 SHA256 8aca6444581f0fa4c3f62e82061c2a47b00d98c72df48add93b4168138189afe。分两部分验收楼顶停车和有符号指令下的倒退下楼、中停、换向；取消 V，6400 权重迁移后分 A–E 五阶段，最多新增 18000 更新。冻结各阶段奖励、预算、物理终止、2100 例验收和独立执行审核分工，以区分登顶与最终站稳。已回读逐字校验正文和关键参数，并复算来源权重 SHA 与 SDS 相符。本次仅文档交付，未运行训练或代码测试，v0.8 效果未验证。
+
+
+## 2026-11-18T12:06:26+08:00 — v0.8新授权接单与W0冻结开始
+
+已全文核SDS_A2_v0.8_Stairs_Walk_Stop_Reverse.md，SHA8aca6444581f0fa4c3f62e82061c2a47b00d98c72df48add93b4168138189afe；主控原session真实role=user5597/5638/5656/5678明确授权奖励/课程、倒退、由A2upstairs执行和Implement the plan，最新批准2026-11-18T03:55:26Z，晚于仅原6400回放限制。当前执行线程配置实读gpt-6.1-sol/high。新增logs/a2_ideal_stairs_v08/implementation/w0及coordination/cpu/gpu，保存BEFORE_MANIFEST、原Git状态、既有修改日志副本、批准SDS副本；原6400 SHA30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2已实核，保护旧v0.7/测试/文档/observer和已有用户改动共179项SHA。原main/42d未动。
+
+将按用户SDS显式3模块执行+独立验收，使用隔离工作树/专用分支而不改动旧v07功能；工程测试、独立blocking0及零学习基线后，才从6401启动唯一正式seed42。新预算18000，上限global24400，阶段A/B/C/D/E为4000/2000/2000/4000/6000；不自改数值或放宽门禁，未定义事项交主控裁定。当前仅W0资料冻结，新v08实现/正式学习均未开始。
+
+## 2026-11-18｜v0.8隔离实施工作树、批准SDS与W0裁决
+
+目的：执行用户与主控已明确授权的v0.8楼顶停车/倒退/中停续训方案。
+涉及：新增doc/sds/SDS_A2_v0.8_Stairs_Walk_Stop_Reverse.md、doc/sds/SDS_A2_v0.8_W0_RULINGS.md、docs/superpowers/plans/2026-11-18-a2-v08.md及工程协调工件。
+实际：从be74615建立独立工作树/home/xxs/dog/unitree_rl_mjlab_a2_v08，分支codex/a2-v08-walk-stop-reverse；原生工具因cwd非Git仓库失败且无部分工作树，改用Git CLI。原项目已有文件和v07权重不改。SDS SHA8aca6444581f0fa4c3f62e82061c2a47b00d98c72df48add93b4168138189afe。主控Q1–4裁决记录平地初始+c、训练RNG继承、probe55保存56reload、H00分方向报告。阶段预算A4000/B2000/C2000/D4000/E6000，正式首更新6401；当前尚无正式学习。
+理由：保护旧配方与用户改动，按模块独立验收，工程成本和正式计费分离。
+验证：SDS与来源SHA核对通过；资源为3070Ti8GiB、16线程、可用磁盘450GiB；CPU基线已启动，结果待记录。新增代码功能/GPU/正式训练效果均尚未验证。
+
+### 2026-11-18｜W0隔离CPU基线测试工件补齐
+
+修改：仅将原stop004817 checkpoint按原相对路径复制到v08独立工作树被忽略logs目录，供旧CPU迁移测试只读使用；不改原权重和源码。原因：首轮236项中189通过、47失败均由该未纳入Git的fixture缺失引起。验证：副本SHA与原文件一致（旧批准SHA a41963a8bf5e6f1d4810b0a0c912ac65747d61bd481ea3432ef638a99e076e64）；补齐后完整旧v07 CPU重跑，结果待记录。正式训练仍0。
+
+### 2026-11-18｜服务重启后的实施恢复
+
+实际状态：v08命令/状态机/课程/迁移代码与测试已部分写入，三个实施子agent和未完成CPU测试被服务重启中断，无完成报告；正式训练未启动。处理：只读核对保存账本、Git与进程后，按原文件所有权继续既有文件，不删除重写已完成内容。验证：原项目179保护文件与来源6400 SHA未变；旧v07 CPU补fixture后部分通过但无最终摘要，明确未完成验证。
+
+### 2026-11-18｜完整旧CPU回归历史工件
+
+修改：仅向v08隔离工作树被忽略的logs原路径复制真实stop004224及boundary000100（原文件保持不变），供既有v06迁移/恢复CPU测试；副本逐一SHA一致，清单位于W0/LEGACY_CPU_FIXTURES.json。设计：复验真实历史输入而非跳过旧测试或伪造checkpoint；ETH初始化继续只读既有绝对路径。验证：副本哈希一致；完整v06测试尚未执行，不声称通过。正式训练0。
+
+### 2026-11-18｜v0.8部分实现与自动审批阻断的真实状态
+
+涉及：隔离工作树新增v08/spec、commands、standing、tasks、rewards、model、ppo、continuation_v08及bootstrap和相应测试（完整SHA清单在implementation/coordination/PARTIAL_IMPLEMENTATION_STATUS_AFTER_REJECTION.json）。功能：指令/停车纯逻辑与奖励反例已部分实现，模型/PPO仅保留架构；真实v08环境、迁移恢复、完整课程和入口均未完成。验证：Task1纯CPU5通过；奖励测试1失败（float精确比较），env因未实现RED；Task3读取真实6400验证actor/critic/optimizer/normalizer严格一致、45Adam128000及LR1.5000000000000005e-05，迁移测试2过3失败（API缺失）。没有GPU、正式学习或效果改进结论。
+
+审批：Task3源码写入被自动审批拒绝，理由是本线程先前只允许播放且跨线程后续授权不被视为可信覆盖。已停止所有新的源码/测试写入，保留工件；已向本线程用户请求直接授权，禁止换工具/换agent绕过拒绝。原只读CPU回归继续，当前未完成；待用户可信授权后从当前文件继续而非重做。
+
+### 2026-11-18｜只读CPU复验及部分课程验证结果
+
+验证更新：原v07完整236/236通过、0失败/跳过、退出0，366.908秒；第一次47项缺fixture失败已全部复验通过，未修改旧源码。存在1条第三方torch.jit弃用警告。Task2已存纯CPU课程/病例/评估/门禁11通过（12.37秒，1警告），尚无证据持久化或真实环境集成验收；v06完整587项仍在运行，结果未验证。已刷新部分实现SHA清单和审计账本，不修改源码或配置。正式新学习0，等待本线程直接授权。
+
+### 2026-11-18｜本线程直接全授权后恢复v0.8实施
+
+用户明确回复“授权”，并补充“全部授权，包括修改项目，测试环境，启动正式训练，psuh上传等”，覆盖此前仅播放限制。按原批准SDS恢复同三个模块owner，保护既有文件，未重复创建任务或训练。v0.8预算/奖励/门槛未扩大；正式仍0。旧v06完整587中581通过、6项跳过、0失败，1036.821秒；跳过项均因隔离目录缺Q007真实exception000400，现仅向忽略logs目录补相同SHA exception/boundary原工件，六项复验待执行，不声称已通过。顶部起步遵循已执行0→下一Actor输入k1插值，保持100步，不增101步。
+
+### 2026-11-18｜完整旧CPU回归闭合与v0.8接口对齐
+
+验证：六项Q007历史输入跳过已用相同SHA真实exception/boundary复验，6/6通过、0跳过、182.353秒。结合旧v07 236通过及旧v06先行581通过，共823个唯一旧测试全部复验通过；这为多批结果汇总，不伪称单次823运行。证据cpu/LEGACY_CPU_REGRESSION_COMPLETE.json绑定每份日志SHA。旧源码不改，新v08尚不在该通过结论内。
+设计对齐：换向0.60m/8秒只用于改变上一非零方向的E1/E2/E3反向/E4；E3同向重启仍需中停后完整到端点，但不擅自附加换向门槛。100个插值动作后首恒速动作位于请求r+101，截止仍从r计400步。正式0；真实新环境/工程GPU/整体效果尚未验收。
+
+### 2026-11-18｜Task2课程、病例、评估与证据模块初版
+
+文件：新增src/tasks/velocity/v08/{curriculum,evaluation,evaluation_records,window_evidence}.py及test_v08_{cases,curriculum,evaluation,gates,window_evidence}.py。目的：按SDS替换旧F0/H/D/L/V/R为A/B/C/D/E任务课程；固定512槽、阶段预算4000/2000/2000/4000/6000，原V依赖删除，H00改为每200三速各5例只报告；预算总18000新增、来源6400、最高24400。B前400更新出生线性扩张，B评估及后续阶段用全范围；前阶段未用预算不转移。
+实际：冻结baseline60、门禁A/B各120/C/D各180/E420、final2100，E3每速四组合各25且子门禁23/25；各阶段两次连续100边界完整18/20晋级，最终每任务每速95/100。结果从原始站稳/方向窗口重算并保留完整分母；异常/缺失/非有限与物理失败分开；不可覆盖sidecar保存证据及哈希，隔离评估RNG/model/optimizer。理由：不让只到达/只静止/缓存success冒充完整任务，通过真实原始证据追溯门禁。
+验证：纯CPU21通过、1第三方警告、11.37秒；报告和12表SHA已归档coordination/reports/TASK2_IMPLEMENTATION_V1.md。尚未独立审查、尚未完成真实Env集成或GPU与正式训练，不声称物理能力改善；后续整体freeze必须重新计算当前配方病例SHA。
+
+### 2026-11-18｜Task2独立审查修复第1轮
+
+审查发现两项Important：基线D20/L40倒退被混组；方向/平地进展仍相信汇总量，旧报告“完整raw重算”表述过强。修改evaluation.py和对应evaluation/gates/window_evidence测试：baseline改为task:terrain×speed共12组各5例，保留额外task汇总；gate/final原20/100分母不变。运动验收改为从boundary0及逐动作连续trace重算400步平地净进展和路径；换向核对真实请求r、100步线性动作、r+101首恒速及r+100起物理位置，独立寻找请求后400步内首个0.60m。缺步/非法/汇总矛盾归invalid工程数据，真实静止/反向/超时归策略失败，sidecar恢复也重算。
+设计：拒绝轨迹静止但虚报进展的假成功；没有放宽SDS阈值。验证：指定四测试文件28通过、1第三方警告、9.89秒；12病例SHA未变，已归档初审与修复报告。独立定向复审尚未完成，真实Env/GPU/训练效果未验证；正式0。
+
+### 2026-11-18｜Task1真实环境、指令、任务与奖励首版
+
+文件：新增v08/{__init__,spec,commands,standing,tasks,env,env_cfg,contacts,events,rewards,speed,map,terrain}.py及对应8个test_v08文件。实现：保留原MuJoCo/PD/0.005物理步×4、0.02控制步、观测形状与地图/腿顺序；三层指令严格100动作过渡、连续物理回合、端点20秒与中停6秒判稳、按真实接触/踏面高度核算窗口，带符号分段停滞只诊断。原登顶done改事件；真实E4同回合上下；逐路段时限按abs速度及实际事件只加一次。新namespace独立缓存，不改旧模块globals。
+奖励前后：原+.4dx改为恒速+.4sign(c_exec)dx，全部过渡/停车为0；原横滚-5gy²保留，水平停车新增dt*(-5)gx²，中段不强制pitch回正；角速度巡航-.05改为停车-.20；airtime+.2在停车为0且清timer；零请求且实际零并即时合格时每步+.02；原登顶+10终止改最终到达+2/站稳且完成全部动作+8，失败-10且优先。其他原奖励保留并有数值等价测试，未改学习率/探索/随机化配方。
+接口：默认恢复只在继承RNG后一次新physicalreset，保存旧逻辑provenance；evaluation=True导出真实boundary0及逐动作轨迹/接触驻留，训练不虚报raw_complete；视频pre-reset hook捕获真实终态。新v08 contacts仅加ScopedDevice修正CPU设备上下文，接触公式不变。
+验证：Task1最终29通过、1第三方弃用警告、17.35秒；含真实2env控制与D20顶部24真实动作满足原到顶事件仍不reset，不证明策略会下楼。独立代码审查/GPU工程/来源策略基线/正式训练及效果仍未验证；正式0。完整报告归档TASK1_IMPLEMENTATION_V1.md。
+
+### 2026-11-18｜Task2独立审查修复第2轮
+
+第1轮复审I1已关闭；I2剩余R1：重复当前同向目标可冒充E1/E2换向。修改evaluation.py与test_v08_evaluation.py，绑定Case的初始/旧巡航方向和幅值，排除重复目标重启插值；E3反向/E4分别验证真实100减速、300/1000零驻留、从0重新100步起动。受改helper还校验E1/E2负/正请求及E3零请求恰为trigger_p首次方向crossing，数值/病例不变。
+验证：三个相关测试文件41通过、1第三方警告、10.04秒；baseline/final SHA复算未变。E3同向的触发仍由真实Env FSM执行（未人为加反向门槛），E4触觉登顶仍Env/窗口核验，整体集成待审。已归档FIX_ROUND2_REPORT；原审查者复审待完成；正式0。
+
+### 2026-11-18｜Task2独立审查通过与Task1实际接口阻断
+
+Task2第2轮独立复审关闭I2/R1，局部规范和质量blocking=0，完整报告已归档TASK2_REVIEW_FIX2_ACCEPTED.md；这不替代真实Env/GPU整体准入。Task1初审发现首hold标签滞后一帧会使E3/E4成功raw被拒、物理失败标识缺失导致错误分类，已交原owner定向修复；不放宽验收、不将全部failure贴物理。当前未启动GPU工程或正式学习。
+
+### 2026-11-18｜Task1独立审查修复第1轮
+
+修改env.py/tasks.py/spec.py与test_v08_env.py：按已锁存动作的executed/requested/transition标记首零速驻留，保留k100减速、k101驻留；终态导出真实physical_failure/failure_kind/failure_masks，区分body/fall与任务timeout/cannot_reverse。真实冻结make_cases接入发现trigger_p=None构造失败，按批准schema将未提供触发点使用内部fallback，非E不触发，真实训练E仍U区间采样、eval指定点不变。删除重复contract死定义前后canonical JSON逐字相同，SHA cf1edf4d8509ae135a87af874a7049ca0da3a376b47f245b00e2a5e222fca59f。
+验证：必要Task1组33通过、1现有警告、29.43秒；真实CPU首hold/物理分类/frozen baseline-gate-E4构造，以及合成运动学producer→独立consumer E3/E4均覆盖，合成fixture不证明策略物理成功。未改evaluator/旧依赖/训练数值/门槛，独立复审待完成，GPU和正式训练仍0。
+
+### 2026-11-18｜Task3迁移、恢复、运行与入口首版
+
+文件：新增v08/{model,ppo,continuation_v08,recovery,ledger,runner,runtime,orchestration,operator_control,telemetry,connection}.py、8个v08入口及9个测试文件。唯一原6400SHA30ed23ba…a8b2，完整state digest390170c2a41c329994db3094ad561b9c5e28d20a519d6de6fa2d201a6f70ea23；继承Actor/Critic/归一化/45Adam各128000及实际LR1.5000000000000005e-05，新课程首计费6401。原stop/pending只provenance。
+核心接线：48步PPO按原5epoch×4minibatch；512env/seed42/γ.99/GAE.95/clip.2/entropy.003/gradclip1与原KL自适应不变。旧sample回算改为来源157286400真实基数+新增样本；回调在前动作reward/value保存后更新下一Actor观测。durable intent/commit禁止重放已计费或部分更新；stop在控制边界锁存、未学习样本单列。checkpoint真实保存读回SHA/fullstate检查，完整任务/指令/驻留/contact/RNG逻辑且明确fresh物理回合；评估raw仅sidecar存一次，checkpoint保存binding与summary，load读取原件重算，不允许缺件默许。
+工程/正式：8×2 smoke与512×56 probe独立费用，probe5预热+50测量+1恢复，50真实诊断、55真实save/reload、56新学习；正式仍50诊断/100保存门禁/200H00，阶段cap先做当次门禁。正式唯一目录continue_seed42_from006400_trial01，独立blocking0→60零学习基线→正式。源/资产/配置/SDS/病例全闭包冻结，保持可选原可靠W&B传输；本轮延续原实际offline A2_V08_WANDB=0，不伪称远端ACK。8预设右侧视频CLI已实现但未渲染验证。
+验证：Task3九文件39通过、1第三方警告、29.58秒；真实来源迁移CLI退出0，模型/Adam严格等价。真实源CUDA RNG为16字节，CPU5056字节不兼容，CPU reset用显式兼容fixture，未冒称原CUDA恢复成功；实际CUDA恢复/工程50-55-56/真实视频/全nativeCPU与正式训练均待验证。Task1定向复审已blocking0，不替代整体准入。正式0。
+
+### 2026-11-18｜整体CPU回归与Task3独立审查阻断
+
+整体新v08 22文件正确预激活隔离namespace后121通过、1现有警告、44.36秒，sourceHEAD0ce1978，日志/JUnit/SHA已保存CPU_V08_FULL_02_RESULT.json。第一次直接pytest未预激活产生7个收集错误、无测试执行；仅纠正启动顺序，不放宽生产bootstrap保护。旧823已分别通过且旧源码不改。
+独立Task3仍有两项Important：晋级checkpoint环境仍旧阶段，恢复下一PPO可能错误计入新阶段；未完成评估在完整sidecar前缺持久intent/费用，可漏计重评。已交原owner第1轮修复，补真实可达故障窗口反例；当前121通过不代表这些新缺口已修复，更不代表整体正式准入。GPU/正式训练0。
+
+### 2026-11-18｜工程与正式作业执行回执控制器
+
+新增操作工件logs/a2_ideal_stairs_v08/implementation/coordination/job_controller_20261118.py（临时副本/tmp/a2_v08_job_controller_20261118.py），SHA c45f9c5dcb071f264ff6c0bf9295c8bd6449c35fe81415647bf2765f78fb0df2。目的：后续通过现有原生CLI启动单个worker，使用独立会话与串行锁抵御Codex服务重启，记录实际worker PID/退出码；每10秒采样GPU/RSS/可用RAM/磁盘，GPU查询5秒超时只记观测失败不更改训练。它不改policy/environment/PPO、source/config或参数，只执行已冻结显式argv并保存stdout与JSON回执。验证：py_compile语法检查通过；尚未用于GPU/正式运行，不声称资源或训练效果通过。
+
+### 2026-11-18｜Task3独立审查修复第1轮
+
+修改v08/{ledger,model,orchestration,ppo,recovery,runner,runtime}.py及model/recovery/runner测试。I1：native load先恢复学习/RNG、以显式flag暂缓fresh物理，PPO采样guard禁止待恢复状态动作；补完pending零学习边界并确定最终课程后一次对齐排程/新回合reset，原完整snapshot保留provenance。覆盖晋级已保存未排程、恢复pendinggate才晋级、恢复中再次中断，保证第一轮PPO任务/预算阶段一致。
+I2：gate/H00及baseline/coverage/final在首factory/physics前持久整表intent，逐batch fsync实际费用/进度；未完成/孤立费用/缺sidecar不自动重评，已知下界与未知余量分列交主控；完整raw/progress但缺finalcommit可纯校验修复引用不重跑。费用从batch、raw、commit、checkpointref到ledger总和一致，缺失或篡改硬拒。清除from_eth拒绝后的死代码并修旧说明，新增seed42非零输入等价测试；网络/参数数值不改。
+验证：定向及最终九组46通过、1第三方警告、47.50秒，原日志与精确文件SHA已归档TASK3_FIX_ROUND1_REPORT.md/TASK3_FIX1_HANDOFF.json。未改512/48/seed/原5×4与实际LR、奖励/课程预算/门槛或50/100/200和probe5+50+1。持久IO仅实现恢复协议，性能仍待GPU实测；独立定向复审与新完整CPU待完成，GPU/正式0。
+
+### 2026-11-18｜全部局部审查闭合与候选冻结v1
+
+Task3定向复审关闭I1/I2、blocking0；三个实施模块局部审查均通过，报告已归档。最后整体新v08 CPU在实际HEAD5123b8a为128通过、1第三方警告、64.32秒、0跳过/失败；旧823已完整复验且旧源码不改。候选冻结v1已绑定485文件（237149644字节）、356配置项、12病例表：freezeSHA1342f6519a1ba2b8e1c08a4a0f336627535748bb924b2c98e45057be67818181；配置67c7afb9e6f4572ca70fb219ab649947988686063dfe99c376a84c777c73b4b9；病例集0c70ddb72a24b217c79803326e617b26d5a46b783d757110aeaedc171e61a3ad。
+状态：新独立agent正在完整分支源码审查；候选冻结不等于工程验收。GPU smoke/probe/零学习覆盖、60基线和正式训练均尚未启动，新增正式学习0。下阶段须按SDS顺序完成，不凭CPU通过宣称策略能力或正式准入。
+
+### 2026-11-18｜整体源码V1审查与唯一统一修复波
+
+完整分支独立审查已核对485候选文件及128 CPU证据，但发现2项Important：所有终态未统一校验连续raw，up/down/E3同向等可只凭短trace/孤立窗口通过，失败缺raw仍算valid；接触buffer overflow被计策略失败且可能被后续物理sample清除。已归档FINAL_SOURCE_REVIEW_V1.md并将候选v1标为不可准入，原快照不覆盖。
+处理：唯一新fixer统一修完整证据合同/窗口绑定和overflow工程异常latch/failfast；原模块owner保持只读供接口说明。不得增E3同向.6/8门槛、调buffer/减少env或改physics/预算/奖励。改后须新冻结v2、完整CPU、同整体reviewer定向复审，再进入GPU。GPU/正式学习均0，未声称新行为达标。
+
+### 2026-11-18｜CUDA来源随机状态硬件预检
+
+仅新增gpu/RNG_HARDWARE_PREFLIGHT_01.py、job config/执行回执/资源采样/result工件，不改native源码或配方。单worker在RTX3070Ti（Torch2.15.0+cu132）实际加载原6400保存的全局CUDA16字节与环境Generator16字节，set/get逐字节相等，分别重复恢复后64个未来随机数完全一致；实际worker2379486退出0，来源SHA前后仍30ed23ba…a8b2。学习0、Adam0、物理步0。此仅证明硬件API兼容，不能代替真实native环境/8×2/512×56恢复或策略能力。结果和真实退出码已保存，整体源码统一修复仍在进行。
+
+### 2026-11-18｜来源6400字节相同本地备份
+
+仅新增logs/a2_ideal_stairs_v08/source_snapshot/stop_006400.pt及SOURCE.json，保护长训练期间的父权重来源。副本SHA与原canonical均为30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2；runtime仍只读原路径，不替换来源模型、不改原权重、不计学习。验证：两份实文件SHA一致；该备份为本地运行工件，不在本次代码白名单中。
+
+### 2026-11-18｜整体审查唯一统一修复完成与CPU验证
+
+修改v08 contacts/env/evaluation/runner四源文件及7测试。原先失败终态可缺连续raw、部分成功可只凭孤立窗口；现在全部正常终态先逐动作核验boundary0至实际terminal_step及指令/时钟，成功按原SDS核验完整脚本并绑定真实驻留窗口、坐标与首次端点事件，失败只需实际失败前完整证据。E3同向不新增0.60m/8秒门槛。接触overflow改为控制步跨子步锁存并在奖励/任务消费前工程failfast，保留实际已知费用；不再当有效策略失败。未调buffer、physics、课程、奖励、PPO或原门槛。
+验证：最终静止源码全22文件177通过、1既有Torch警告、73.03秒；原输出SHA2274776a09e643eba9a0623db5e388fc10e254a5bc57dac64e702349531f3f69，11文件逐项SHA及git diff --check核对通过。RED及中间失败完整保留，真实CPU故障注入证明overflow阻止Adam更新及重复计费。报告FINAL_FIX_WAVE_REPORT.md已归档。尚待同整体reviewer定向复审与新冻结v2；native GPU、baseline60、正式训练及策略能力未验证。
+
+### 2026-11-18｜整体定向复审闭合与W5启动
+
+同一独立整体reviewer定向复审fafdd34统一修复，I1/I2均关闭，Critical0/Important0/source blocking0；报告FINAL_SOURCE_REVIEW_FIX1.md已归档。新freeze/v2实际SHA ba85e965723050fd335c492a15385f79a41f6d42d439d9d16a1cc6d3617cc783，485文件，配置67c7afb9…4b9与12病例表0c70ddb7…3ad相对v1完全不变。开始串行W5：8环境2更新smoke；之后512环境56更新probe、零学习覆盖。工程与正式分账，来源仍原6400，seed42、rollout48、原5×4；GPU结果未验证，不构成正式准入。
+
+### 2026-11-18｜GPU8×2通过与实施分支首次发布
+
+真实GPU smoke_trial01单worker2398320退出0，更新6400→6402，工程更新2、正式0、控制768/物理3072、Adam128000→128040；来源实际LR1.5000000000000005e-05、CUDA RNG restored，末权重SHA72f0eac17ab08a06ac3dc3ebb7add42bd4c2c66d22f83f7c9db885068e01df5f核对一致。512×56 probe单worker2398708运行中；以上仅工程验证不证明策略改进。代码62文件白名单/凭据模式扫描0/无权重及raw runtime，fafdd341已push codex/a2-v08-walk-stop-reverse，不合并main。首次直连等待，后用既有127.0.0.1:7897代理成功，未改持久网络设置。
+
+### 2026-11-18｜512×56 GPU probe通过
+
+单worker2398708真实退出0，56次工程更新、正式0，控制1376256/物理5505024，Adam128000→129120；6450真实诊断，6455保存SHA9443020f…f0ae并实际load且CUDA恢复后一次fresh物理回合，6456完成，末checkpointSHA86acdb61568db6c7752b41f106070b854a9d68bd761172aeb919a7f5fe7af343。5预热19.1700秒、50测量204.7435秒/1228800控制样本（6001.65样本/秒）、恢复后1更新3.7678秒；25次资源采样峰值GPU3206MiB、RSS3252MiB、最低可用RAM16.07GiB，采样值不宣称捕获所有瞬时峰值。保存/恢复按fresh physical episode合同，不宣称物理轨迹连续。配置/源码freezev2不变；零学习420覆盖现运行中，独立W5验收/baseline60/formal尚未完成。
+
+### 2026-11-18｜零学习420例实际覆盖完成
+
+单worker2399956于16:18:35至17:08:11真实运行并退出0，固定gate:E 420例/53批、8并行、原6400确定性策略，学习0；实际654964控制样本/2619856物理子步，完整raw immutable evaluation.json及coverage_result.json、53批intent/commit已落盘。valid420、invalid0、error0、success45（均flat：0.3为16/20、0.5为18/20、0.6为11/20）、failure375，gate_pass=false。其余up/down/E1/E2/E3/E4各0/60；失败body116/nonfoot137/side61/posture15/timeout9/cannot_reverse1/mid_stop_unstable21/final_unstable15。不能声称新任务能力通过。
+真实分支：顶部任务停车请求116、直接换向请求60、中停请求30（满300零保持动作21但不稳）、E4实际中间登顶58；楼底任务停车0、中停通过后重启0、E4顶部停车通过与负速重启0，明确尚未由原policy物理达到。对应成功逻辑分支用生产CommandState/TaskMachine/StandWindow/exporter/consumer确定性CPUfixture单列，不能代替策略物理成功。gpu/COVERAGE_01_BRANCH_AUDIT_V2.json纠正v1将出生支撑flag泛称arrival的歧义：支撑条件top161/bottom232并不等于任务到达，v2以实际停车请求绑定另计；v1保留历史。
+来源6400SHA和179受保护canonical旧文件再核对未变。独立W5最终验收进行中，baseline60/formal尚未启动，正式目录不存在/新增正式学习0。新代码已push fafdd34，当前日志待下一次文档提交。
+
+### 2026-11-18｜W5独立工程正式准入与baseline60启动
+
+独立reviewer完整重算420 raw/summary/各实际分支病例ID/53批费用，并CPU加载6份真实GPUcheckpoint核验迁移、Adam及50/55/56恢复；Critical0/Important0/blocking0。持久ENGINEERING_ACCEPTANCE_REPORT.md SHA95217e5ff754998fed4628f0ad1d41e5788ce9ca5ced81de25f4fc13a73042ac，准入JSON SHA101703fdf29eebef2fe6395071c6a53bb76257e235aaae5c8845f67aace12eef，root native admit按actualv2再验通过。工程准入不等于policy能力通过；缺的实际成功分支仍如前记录。
+已启动原6400 baseline60，seed42/cuda:0/最多8并行/updates0，四任务×三速×5，输出logs/a2_ideal_stairs_v08/baseline_seed42_trial01；须完整valid60/工程invalid0/error0才准formal。正式0，仍未使用工程权重作为来源。
+
+### 2026-11-18｜baseline60完整通过有效性准入并启动唯一正式训练
+
+baseline单worker2437758真实退出0，complete=true，valid60/invalid0/error0，学习0，实际控制59368/物理237472；策略success14/failure46，明细与完整12任务-地形-速度分组在baseline_result.json。该通过仅指基线数据完整，不是所有任务能力通过。root native admit(formal=True)验证真实source/v2freeze/独立准入/病例/sidecar/全部事务费用及60分母均通过。
+自动启动唯一正式目录logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01，controller2438416独立会话/单GPU锁，source原stop006400 SHA30ed23ba…a8b2，cuda:0/seed42/512环境/rollout48/5epoch×4minibatch/updates18000上限/原自适应LR，A→B→C→D→E上限4000/2000/2000/4000/6000，50诊断/100保存门禁/200H00；严格连续两次门禁才晋级，剩余额度不转移，cap不通过按具体任务终止，不加预算。正式首次实际6401与正式费用尚待worker提交确认；不把启动等同训练完成。
+
+### 2026-11-18｜正式首更新6401实际确认
+
+唯一formal worker2438417/controller2438416实际提交update_006401：formal_updates1/engineering_updates0、新控制24576/物理98304、Adam128000→128020。ready6400真实来源LR1.5000000000000005e-05、CUDArestored，ready checkpoint SHA71d402d2be206e5beda483d04ea3f99a37f24ff2b8c9dffc5776a7139b533ad6。首个正式回执已保存FIRST_FORMAL_UPDATE_VERIFIED.json。最近读到6420/新增20正式更新，训练继续阶段A；不得将启动或中间更新说为达标终态。
+
+### 2026-11-18｜正式6500首轮阶段A门禁结果
+
+已完成新增100正式更新（控制2457600/物理9830400、Adam新增2000），6500诊断与boundary checkpoint已真实保存。冻结A门禁120例/15批，实际评估160784控制样本/643136物理子步，valid120/invalid0/error0，success40/failure80、gate_pass=false。分组：flat0.3为0/20（flat_progress20），flat0.5与0.6各20/20；up_L40三速各0/20（body60）。不据训练指标宣称能力改善，不放宽门槛或改速度/奖励。该轮不足晋级，继续原阶段A预算；整表与事务/SHA保存canonical formal evaluation目录及gpu/FORMAL_GATE_006500_A_SUMMARY.json。首轮结果仍非合同终态。
+
+### 2026-11-18｜正式6600第二轮门禁下降，保持原配方继续
+
+新增正式200更新、阶段A仍未通过。冻结同一A病例表的6500→6600实际门禁成功40/120→0/120；6600 valid120/invalid0/error0，failure120：flat_progress60、side29、timeout18、nonfoot7、posture3、final_unstable2、body1。平地三速各0/20（均前进位移不足），L40上楼停车三速各0/20；不能将body失败减少误称改进，整体门禁实际下降。15批真实评估259024控制样本/1036096物理子步，完整raw/事务及FORMAL_GATE_006600_A_SUMMARY.json保留。
+遵照已批准SDS不因普通策略失败擅自早停/改速/改奖励/改LR规则/放宽门槛，继续阶段A4000上限内预算；H00报告性评估随后执行。工程错误仍单列阻断；当前无工程错误。后续结果未验证，未声称停车/爬楼能力提高。
+
+### 2026-11-18｜6600 H00只报告评估完成
+
+H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（timeout8、side4、nonfoot2、posture1），实际评估21227控制样本/84908物理子步。完整raw/事务与gpu/FORMAL_H00_006600_A_SUMMARY.json已保留。不沿用v07的H00回归早停，不因普通策略失败加预算或改配方；工程异常仍阻断。正式阶段A仍新增200/4000，6600边界持久保存/验证进行中，随后继续学习；整体能力未通过。
+
+### 2026-11-18｜6700第三轮阶段A门禁：平地三速通过，楼顶仍未站稳
+
+正式新增300更新，冻结同一A门禁120例全部valid、invalid0/error0，success60/failure60、gate_pass=false。平地0.3/0.5/0.6各20/20（前轮6600三速均0/20），本轮固定病例的平地指标已通过；L40上楼停车三速仍各0/20，final_unstable46/nonfoot5/side9。不能把到达并执行停车等同最终站稳，也不能据平地通过宣称整体最终能力通过。
+15批实际评估255616控制样本/1022464物理子步；完整raw/事务及gpu/FORMAL_GATE_006700_A_SUMMARY.json保存。继续阶段A4000上限内学习，源/config/SDS/速度/奖励/原LR规则/门槛均未改变，当前没有连续完整通过门禁。6700边界保存校验进行中，新增正式预算仍300。
+
+### 2026-11-18｜6700楼顶站稳失败窗口只读复算
+
+对原raw中46例final_unstable的最后500动作窗口按原consumer重算，首个未通过项为{'endpoint_stop_max_speed': 10, 'endpoint_stop_pitch': 9, 'endpoint_stop_surface': 1, 'endpoint_stop_mean_speed': 26}；逐例实际速度、角度、角速度、高度、足速、四足支撑比和XY漂移保存gpu/FORMAL_GATE_006700_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理、没有GPU学习或改代码/门槛，不能据失败分类推断原因或声称效果改进。
+
+### 2026-11-18｜正式边界历史校验耗时只读诊断启动
+
+观测多个门禁后snapshot读回验证耗时增长，按systematic-debugging先做证据计时，不改冻结训练源或配方。仅新增操作脚本coordination/CHECKPOINT_VALIDATION_TIMING_01.py及cpu job config/回执/结果，CPU单线程、CUDA_VISIBLE_DEVICES为空；对已有ready6400与interval6700快照只读调用原native validate_checkpoint，分别计文件freeze/病例/架构/历史evaluation_reference耗时并核验快照SHA前后不变。独立CPU诊断controller2447189，不获取GPU作业锁、不触碰正式worker2438417、不新增物理或学习。结果尚未完成/未验证，不据此声称加速或实施缓存。
+
+### 2026-11-18｜checkpoint校验耗时诊断完成（未改训练）
+
+单线程CPU诊断worker2447190实际退出0，两份已有snapshot均原native校验True、SHA前后不变、CUDA未初始化、学习0/物理0。ready6400无历史评估0.41153秒；interval6700含4历史评估93.19809秒，其中6500引用26.8018秒、6600引用24.7488秒、H00引用2.5549秒，其余主要为6700引用；freeze/病例表各约0.2秒。原生save_verified写前/读回均全校验，历史证据有多层语义复核，解释观测到的边界耗时增长；不据两个样本估计整体完成时间。
+只新增操作脚本/CPU job/result及coordination/SDS_Q5_CHECKPOINT_VALIDATION_COST.md共享观察项，原始证据完整保留。当前不实施缓存、不改冻结谱系或检查合同、不重启/回退run；若主控后续决定优化须另有书面谱系/预算/独立验收契约。正式worker2438417继续6800第四轮门禁。无速度/奖励/PPO/环境数/门槛/预算变更，不声称训练或软件已加速。
+
+### 2026-11-18｜6800第四轮阶段A门禁仍未通过
+
+正式新增400更新，A固定门禁valid120/invalid0/error0、success16/failure104、gate_pass=false。平地0.3为12/20（8例flat_progress），0.5/0.6均0/20（各20例flat_progress）；L40上楼停车0.3/0.6均0/20（各20例final_unstable），0.5为4/20（16例final_unstable）。全部原因final_unstable56/flat_progress48/success16。不能据4例楼顶完整成功声称可靠站稳，六组均未达到18/20，仍无连续完整门禁通过。
+15批真实评估207584控制样本/830336物理子步；完整raw/事务和gpu/FORMAL_GATE_006800_A_SUMMARY.json保留。与6700同表比较呈波动，不声称整体提升。继续原A4000上限内预算，不改速度/奖励/原自适应LR/门槛；H00只报告评估随后执行。
+
+### 2026-11-18｜6800 H00报告完成
+
+15例valid15/invalid0/error0，success0/failure15（timeout7/posture4/side2/nonfoot1/final_unstable1），三速各0/5。实际评估27994控制样本/111976物理子步，完整raw/事务及gpu/FORMAL_H00_006800_A_SUMMARY.json保留。仍按SDS只报告，不触发旧H00行为回归停训；阶段A400/4000，边界保存校验后继续原配方，整体门禁尚未通过。
+
+### 2026-11-18｜协调主控独立CPU预览6800
+
+主控消息称用户想看6800效果，由主控尝试独立CPU回放，要求正式worker继续。root仅新增coordination/REPLAY_6800_HANDOFF.json/md及共享outbox，未录制或启动GPU回放。实际核验6800 durable boundary18 SHA22a671084485099a06cfa45b6b2b53b901181f1e0a793e8f7364008ac2f69fe7与later21 SHA3ae4504a684d5f3a8d3625aa1c57db43f96c8396341172349e17b9c15ef3b3d9的model/optimizer/normalizer/learning完整digest相同；给出原生CPU入口与固定final:E .5L40病例、右侧相机/2秒减速20秒驻留、完整命令及纯CPU渲染尚未实测说明。明确不能往冻结WT src/scripts新增文件，不把只读策略回放当正式恢复或GPU定量复现。正式worker2438417不受中断，训练配方不改。
+
+### 2026-11-18｜6900站稳失败窗口只读复算
+
+原raw中60例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_support': 58, 'endpoint_stop_max_speed': 2}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_006900_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-18｜6900第五轮阶段A门禁未通过
+
+正式新增500更新，A门禁valid120/invalid0/error0、success38/failure82、gate_pass=false。平地0.3为0/20（flat_progress20），0.5为20/20，0.6为18/20（flat_progress2）；L40上楼停车三速均0/20（final_unstable各20）。全部原因final_unstable60/flat_progress22/success38。15批实际评估220816控制样本/883264物理子步，完整raw/事务和gpu/FORMAL_GATE_006900_A_SUMMARY.json保留。
+原末窗口只读复算60例：首个不合格项四足同时有效支撑占比不足90%为58例、最大水平速度超标2例；不把外观看似静止等同满足全部联合站稳判据，也不改>5N有效支撑及90%阈值。逐例实测指标见FORMAL_GATE_006900_A_STAND_ANALYSIS.json。继续A500/4000内原预算，仍无连续完整通过；当前边界持久校验进行中。
+
+### 2026-11-18｜7000站稳失败窗口只读复算
+
+原raw中59例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_support': 59}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007000_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-18｜7000第六轮阶段A门禁未通过
+
+正式新增600更新，A固定门禁valid120/invalid0/error0、success0/failure120、gate_pass=false。平地三速各0/20（flat_progress60）；L40上楼停车三速各0/20，final_unstable59/nonfoot1。15批实际评估176496控制样本/705984物理子步，完整raw/事务及gpu/FORMAL_GATE_007000_A_SUMMARY.json保存。59个最终未站稳窗口按原consumer只读复算，首个不合格项均为有效四足支撑占比不足90%，逐例指标在FORMAL_GATE_007000_A_STAND_ANALYSIS.json；不把该首项当作唯一失败项，也不放宽>5N和90%阈值。
+阶段A600/4000，仍无连续完整门禁通过，继续原配方与预算。当前门禁后持久保存校验进行中，随后H00仅报告评估，不因普通策略失败自动调奖励/速度/学习率规则或切换来源权重。
+
+### 2026-11-18｜7000 H00报告完成
+
+15例valid15/invalid0/error0，success1/failure14：0.3为0/5、0.5为0/5、0.6为1/5；失败side7/timeout5/final_unstable2。实际评估20565控制样本/82260物理子步，完整raw/事务和gpu/FORMAL_H00_007000_A_SUMMARY.json保留。单个成功不等于可靠提升，H00仍只报告；A整体门禁尚未通过，阶段预算600/4000，继续原配方及判据。
+
+### 2026-11-18｜SDS W7终态后队列待审准备
+
+新增操作脚本coordination/post_formal_pipeline_20261118.py（SHA a85df561e89941aeb71410d7f5de872ffd23c2456c3cd7fac234e02b3d0d9166）和POSTPROCESS_STAGING_V1.json，位置在冻结训练闭包之外。它仅拟衔接已批准W7：唯一正式run实际合同终态后，E连续门禁通过才跑final2100；阶段预算耗尽保留失败报告并录制8预指定终态策略视频，调用现有原生CLI/单GPU锁/零更新，失败视频保留并完整解码。用户停止/工程异常/未完成状态不自动触发；已有输出不自动重评。当前脚本尚未启动，不增加GPU或正式学习，也不修改run/模型/配方/SDS/freeze。
+验证：实际--self-test 5组全部通过exit0，--inspect-only实际显示formal仍running、postprocess_v1不存在。当前仅为初版操作决策检查，尚未独立复核或执行真实post GPU；交同独立reviewer只读核验后才考虑排队，不能声称后处理已完成。
+
+### 2026-11-18｜v08终态辅助队列定向修正 O1/O2/O3
+
+目的：按独立操作复核修正冻结闭包外的终态后处理队列，当前正式worker继续运行。文件：implementation/coordination/post_formal_pipeline_20261118.py、test_post_formal_pipeline.py及POSTPROCESS_FIX_WAVE_V2.json。原先重复启动可能写旧status，现先取得进程锁、创建新目录，只有持有本次目录的实例能写事件；原先仅信课程E通过布尔值，现将末两次E门禁绑定已原始重算的真实引用、kind/phase/update/source/freeze/病例SHA、420完整valid分母/0invalid/error/engineering与gate_pass；原先只检查ffmpeg exit0，现启用-xerror并拒绝错误日志，核对每例文件名、1280×720、25fps、正常速度、右侧视角协议、完整解码帧数ceil(control_steps/2)+1及时间长度。未改src/scripts、奖励/课程/预算/正式恢复行为。验证：修复前CPU新用例实际21个子断言失败（RED），修复后9组回归通过，原有5组终态触发检查通过；包含真实CPU合成黑色视频的偶/奇终帧、短但可解码/fps/尺寸错配，合成片仅验证媒体检查，不是机器人效果证据。v2全部冻结文件与病例SHA重验通过，CUDA未初始化，0物理/0学习；队列尚未启动，等待同一独立reviewer定向复审。详见/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/POSTPROCESS_FIX_WAVE_V2.json。
+
+### 2026-11-18｜v08已审终态队列实际排队
+
+同一独立reviewer定向复审O1/O2/O3全部关闭、blocking0，报告/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/reports/POSTPROCESS_OPERATIONAL_REVIEW_FIX1.md；实际helper SHA 6b28826aa14b54a494b6c0b26c9acfce2be1fead1d19daa2754e3a837f190c41。现在已启动CPU等待driver PID 2542300，真实status=waiting_formal；唯一正式worker2438417继续运行，没有运行额外GPU/物理/学习。后续严格等待formal finished/exit0和native完整终态校验：仅E两次连续完整门禁通过后final2100；阶段cap失败明确不跑final2100但仍录固定8预设失败保留视频；operator/工程错误不触发、不自动重评。此次只是排队，不表示最终验收或视频已完成。启动argv及review SHA在/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/coordination/POSTPROCESS_DRIVER_01_LAUNCH.json，当前状态/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/implementation/postprocess_v1/status.json。
+
+### 2026-11-18｜7100站稳失败窗口只读复算
+
+原raw中60例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_support': 60}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007100_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-18｜7100完整门禁及已审队列发布记录
+
+正式update7100门禁实际120/120 valid，invalid/error/engineering0，success0/failure120：三速flat各0/20（flat_progress60），三速up_L40各0/20（final_unstable60）。真实门禁181264控制样本/725056物理子步，结果索引gpu/FORMAL_GATE_007100_A_SUMMARY.json；站稳首项support60另有绑定raw SHA的分析。尚未晋级A，正式已提交700/4000个A阶段更新，继续原冻结配方，未追加学习预算或重评。已审终态helper/测试/复核/CPU原输出及共享日志已提交并push隔离分支codex/a2-v08-walk-stop-reverse，actual本地与远端跟踪HEAD均09dbedab3009fde8059e0f880c378a58318905a7；原始RED日志含unittest的4行尾空白故保留不改，.py/.md/.json的diff --check通过。未上传权重、未合并main。已启动队列2542300实际waiting_formal，当前formal2438417仍running；最终验收/8录像均未执行。协调状态同步至MAIN_OUTBOX.md，仅共享文件交接，不声称通过不可用的跨线程工具发送。
+
+### 2026-11-18｜7100阶段工作说明（未完成）
+
+新增logs/a2_ideal_stairs_v08/implementation/coordination/reports/FORMAL_PROGRESS_007100.md，汇总当前实现逻辑、关键训练/验收参数、批准奖励变化前后、基线与7次真实完整A门禁、历史证据校验耗时及当前限制。明确训练仍进行、尚未晋级、最终2100与8真实终态录像未发生，未用合计成功率替代分组门槛或声称改善；仅说明/文档，没有训练代码或数值修改。验证：逐项对照已有GPU真实summary/原配方/持久化回执，学习样本按700×512×48及4子步手算核对，未新增物理/学习/测试。
+
+### 2026-11-18｜7100说明参数校对
+
+对照冻结runner.boundary_plan实际代码，阶段说明草稿曾将50更新诊断频率误写为周期保存频率；已在FORMAL_PROGRESS_007100.md更正为每50更新诊断、每100更新周期checkpoint，边界事件另存。只纠正文档，训练源/既有日志/保存行为均未修改。验证为只读代码与实际interval checkpoint回执；未运行额外测试。
+
+### 2026-11-18｜7200边界回执耗时只读观察
+
+新增cpu/FORMAL_BOUNDARY_WALL_OBSERVATIONS_007200.json，绑定实际7100序号35–39及7200序号40六份metadata SHA/mtime；37→38为416.132秒、38→39为416.028秒，按冻结runner顺序这两段是连续保存，无新增物理。其他间隔可能含门禁/正式学习，不能当作纯save/validation benchmark；回执间隔也不是单独CPU函数基准。正式worker2438417保持running，已新增800更新到7200、A800/4000；未暂停、重启、缓存、回滚或更改src/scripts/freeze/配方。将该事实追加Q5协调说明和MAIN_OUTBOX，供主线后续裁定；当前仍继续原正式run。仅只读/stat小文件观察并记录，无额外测试/物理/学习。
+
+### 2026-11-18｜7200站稳失败窗口只读复算
+
+原raw中2例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_support': 2}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007200_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-18｜7200完整门禁与平地原轨迹分析
+
+真实120/120 valid、invalid/error/engineering0，success58/failure62；up_L40三速0.3/0.5/0.6分别18/20、20/20、20/20，三组首次单次达标，较7100的楼梯0/60在同一冻结病例上增加为58/60；flat三速仍各0/20，A整体门禁false且streak0，不代表课程或策略整体通过。失败flat_progress60/final_unstable2；两例站稳首先失败仍为endpoint_stop_support。实际门禁176512控制样本/706048物理子步，完整raw/事务及gpu/FORMAL_GATE_007200_A_SUMMARY.json保留。新增gpu/FORMAL_GATE_007200_A_FLAT_MOTION_ANALYSIS.json按原0..400真实边界重算60个平地8秒轨迹：三速平均净前进1.0206/2.5151/3.1180米，原要求1.92/3.20/3.84米，60例均距离不足，部分另有横移/偏航超限。不是完全没有走动，也不能把该60个提前在行走阶段失败写成完成平地停车测试。全部计算仅CPU读取原raw，无新物理/学习/阈值改动；早于不可变sidecar安装时诊断guard曾拒绝（summary索引不存在），确认安装后才正式记录本结果，无重复评估。当前A正式800/4000，唯一worker2438417继续；H00本边界结果仍待实际完成。
+
+### 2026-11-18｜7200小型结果证据归档
+
+为隔离分支审阅归档7200门禁summary、两例失败站稳指标、60例平地轨迹统计及6份回执时间观察共4份小型JSON；仅复制结果索引/统计，不含权重或大体积逐步raw。精确路径失败计数：三组各20/20即合计60/60偏航超过10度；横移超过0.2米分别0/20、10/20、12/20，合计22/60；前一项“部分另有横移/偏航”现以此精确计数为准。上楼58/60仅是7200一次固定病例的结果，A整体门禁仍false；所有训练数值和冻结代码保持原样。验证：记录来源raw SHA已重算绑定，JSON来自已实际完成的120valid门禁；无新增训练/评估。
+
+### 2026-11-18｜7200完整H00报告
+
+实际15/15 valid、invalid/error/engineering0，success2/failure13；三速0.3/0.5/0.6分别0/5、1/5、1/5。失败nonfoot5/posture4/side1/timeout3；真实25992控制样本/103968物理子步，完整raw/事务及gpu/FORMAL_H00_007200_A_SUMMARY.json保留，并复制小型summary到隔离分支供审阅。H00仅报告、不单独停训；2/15不代表可靠性改善，A整体门禁仍未通过，预算800/4000。仅读取真实完整sidecar并绑定其SHA，未重评、未改源代码/配方/预算；当前正式worker继续执行本边界后续保存。
+
+### 2026-11-18｜7200主线共享协调更新
+
+将7200完整A门禁、平地真实位移/路径约束及H00结果、正式worker仍running、已审W7队列waiting_formal和最新push9d7bbff追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md，供主线读取；当前线程没有可用thread-message工具，因此仅共享文件交接，不声称已工具发送。没有新录6800或争用正式GPU，原6800权重/CLI交接文件继续有效。只更新协调说明和日志；无额外测试、物理或学习。
+
+### 2026-11-19｜7300站稳失败窗口只读复算
+
+原raw中61例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_mean_speed': 55, 'endpoint_stop_support': 6}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007300_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜7300完整门禁与站稳窗口
+
+实际120/120 valid、invalid/error/engineering0，success53/failure67；L40上楼0.3/0.5/0.6分别14/20、19/20、20/20，flat三速仍各0/20。失败final_unstable61/flat_progress5/body1，A整体gatefalse且连续通过数0；当前A预算900/4000。实际物理门禁240016控制样本/960064物理子步，gpu/FORMAL_GATE_007300_A_SUMMARY.json绑定原sidecar SHA；失败站稳窗口按原consumer只读重算，首个不合格项endpoint_stop_mean_speed55、endpoint_stop_support6，分窗口类别为{('flat', 'endpoint_stop_mean_speed'): 55, ('top', 'endpoint_stop_support'): 6}，详见gpu/FORMAL_GATE_007300_A_STAND_ANALYSIS.json。与7200相比，本次55个flat已通过行走条件并进入停车流程，但最终未站稳，另外5例行走进度失败；不能将行走阶段通过宣称为平地走停站整体通过。楼梯由上一轮58/60变为本轮53/60，不能声称整体改善。仅CPU读取新raw与重算原窗口并归档两份小型JSON，没有重评、增加学习、调奖励/学习率/课程/阈值或改冻结源码。正式worker2438417继续原生本边界后续保存；本轮非200边界，无额外H00报告。
+
+### 2026-11-19｜7400站稳失败窗口只读复算
+
+原raw中55例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_mean_speed': 17, 'endpoint_stop_max_speed': 1, 'endpoint_stop_support': 37}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007400_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜7400完整门禁与1000次新增正式更新
+
+正式累计新增1000更新（A1000/4000，global7400），新学习24576000控制样本/98304000物理子步、应继承Adam128000后到148000。7400真实完整门禁120/120 valid、invalid/error/engineering0，success4/failure116；flat三速各0/20（flat_progress60），L40上楼0.3/0.5/0.6为4/20、0/20、0/20。其他失败final_unstable55/nonfoot1，A gatefalse且连续通过0；相同冻结病例中上楼成功数从7200的58/60、7300的53/60回落至4/60，不能声称整体改善或据此推断未经对照的因果。实际门禁178616控制样本/714464物理子步，gpu/FORMAL_GATE_007400_A_SUMMARY.json绑定raw SHA；55个失败站稳窗口按原consumer重算，首项mean_speed17/max_speed1/support37，详见gpu/FORMAL_GATE_007400_A_STAND_ANALYSIS.json（首项不等于唯一失败项）。归档两份小型JSON供分支审阅；仅CPU读取原raw，无重评/新增学习/配置或冻结源码变更。正式worker2438417继续执行本边界后续存档与H00报告；H00此时尚未完成。
+
+### 2026-11-19｜1000更新主线共享协调
+
+将7300/7400完整真实门禁、A1000/4000未晋级、source/freeze仍v2、正式worker持续运行、W7队列仅等待、最新push9814482及原6800 CPU回放分工追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md。用于既定主线协调；没有可用跨线程发送工具，因此只共享文件交接、不声称已发送。无新GPU/物理/学习或源代码修改，当前H00结果仍待实际产生。
+
+### 2026-11-19｜7400完整H00报告15/15
+
+实际15/15 valid与15/15 success，三速0.3/0.5/0.6各5/5，failure/invalid/error/engineering均0。实际24986控制样本/99944物理子步，完整raw/事务及gpu/FORMAL_H00_007400_A_SUMMARY.json保留并归档分支小型summary。该固定H00病例表单次从7200的2/15到本次15/15，不能代替A门禁或推断总体可靠性；kind=h00按原consumer为report_only，gate_pass字段因此仍false，不是15个成功被改写。A整体依然4/120、未通过、连续通过0、预算1000/4000，正式worker继续本边界后续保存。仅读取已正式安装raw并核对完整分母，无重新评估、学习更新或训练参数修改。
+
+### 2026-11-19｜7500站稳失败窗口只读复算
+
+原raw中94例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_mean_speed': 35, 'endpoint_stop_support': 59}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007500_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜7500完整门禁与1100次新增更新
+
+实际120/120 valid、invalid/error/engineering0，success0/failure120，六个任务×速度组均0/20，A gatefalse、连续通过0；当前A预算1100/4000/global7500。flat三速0.3为flat_progress20、0.5为flat_progress5/final_unstable15、0.6为final_unstable20；up三速分别final_unstable19/nonfoot1、final_unstable20、final_unstable20。全局失败final_unstable94/flat_progress25/nonfoot1，完整门禁实际221784控制样本/887136物理子步。gpu/FORMAL_GATE_007500_A_SUMMARY.json绑定原raw SHA；94个站稳失败窗口按原consumer重算，首项mean_speed35/support59，分窗口类别为{('flat', 'endpoint_stop_mean_speed'): 35, ('top', 'endpoint_stop_support'): 59}，详见gpu/FORMAL_GATE_007500_A_STAND_ANALYSIS.json。35个flat进入停车但最终未站稳，59个top未通过支撑首项；首个不合格项不等于唯一失败项。未获得走停站总体通过，不能声称改善。只CPU读取新raw与归档两份小型JSON，没有重评、加学习或改冻结源码/配方/阈值。正式worker继续本边界原生后续保存；7500非H00报告边界，无额外H00。
+
+### 2026-11-19｜7600站稳失败窗口只读复算
+
+原raw中64例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_max_speed': 1, 'endpoint_stop_omega': 3, 'endpoint_stop_support': 60}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007600_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜7600完整门禁与1200次新增正式更新
+
+正式累计新增1200更新，A1200/4000/global7600，新学习29491200控制样本/117964800物理子步、继承Adam128000后应到152000。真实门禁120/120 valid、invalid/error/engineering0，success56/failure64；平地三速0.3/0.5/0.6为19/20、19/20、18/20，完成原8秒行走、2秒制动、20秒停车及原站稳窗口判据，三组均达到本轮单次18/20门槛；L40上楼三速仍各0/20。全部64失败均final_unstable，A整体gatefalse且连续通过0，不能将本次平地分组通过宣称课程或总体通过。与7500相同冻结病例的平地0/60相比，本轮恢复为56/60，但上楼仍0/60，单次结果不足说明整体可靠性。实际门禁239848控制样本/959392物理子步；gpu/FORMAL_GATE_007600_A_SUMMARY.json绑定原raw SHA。64个失败站稳窗口只读按原consumer复算，首项max_speed1/omega3/support60，分窗口为{('flat', 'endpoint_stop_max_speed'): 1, ('flat', 'endpoint_stop_omega'): 3, ('top', 'endpoint_stop_support'): 60}，详见gpu/FORMAL_GATE_007600_A_STAND_ANALYSIS.json；首项不等于唯一失败项。仅CPU读取原raw与归档两份小型JSON，无重新评估、额外学习、修改源代码/配方/阈值。唯一正式worker继续执行本边界后续存档及H00报告；H00此时尚未完成。
+
+### 2026-11-19｜1200更新与7600主线共享协调
+
+将7500/7600完整A门禁、H007400的15/15报告、A1200/4000尚未晋级、冻结源未变、正式worker持续运行及最新push0d39a75追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md，供既定主线读取。7600平地分组单次达标不等于整体课程通过；H007600尚未发生结果。仅共享文件协调及日志，没有可用跨线程发送工具，不声称已工具发送；无新GPU/物理/学习、源码或训练配置修改。
+
+### 2026-11-19｜7600完整H00报告1/15
+
+真实15/15 valid、invalid/error/engineering0，success1/failure14；0.3/0.5/0.6分别0/5、0/5、1/5，14例均final_unstable。实际23535控制样本/94140物理子步，完整raw/事务及gpu/FORMAL_H00_007600_A_SUMMARY.json保留并归档小型summary。相同固定H00病例由7400的15/15到7600的1/15，显示单轮表现波动，不能以之前单轮成功宣称可靠性改善；H00始终仅报告，不用于晋级或普通失败单独停训。当前A完整门禁56/120（flat19/19/18，上楼0/0/0）、未通过、连续0、A1200/4000；正式worker继续原生本边界后续保存。仅读取已安装完整结果、核对分母并记录，无重新评估/额外学习/源码或参数改动。
+
+### 2026-11-19｜7700站稳失败窗口只读复算
+
+原raw中56例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_support': 55, 'endpoint_stop_max_speed': 1}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007700_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜7700完整门禁与平地三速60/60
+
+真实120/120 valid、invalid/error/engineering0，success60/failure60；flat三速0.3/0.5/0.6均20/20，完成原8秒行走、2秒制动、20秒停车及原站稳窗口；与7600的19/19/18一起，平地三速分组在两个连续边界均达到18/20。该说法只涉及固定A平地分组，不是A整体连续门禁通过，不是最终2100或实机可靠性结论。L40上楼三速仍各0/20，失败final_unstable56/nonfoot4（0.3为17/3、0.5为19/1、0.6为20/0），A gatefalse且整体连续通过数0，预算1300/4000/global7700。实际门禁237840控制样本/951360物理子步，gpu/FORMAL_GATE_007700_A_SUMMARY.json绑定原raw SHA。56个失败站稳窗口按原consumer只读重算，首项support55/max_speed1，分窗口为{('top', 'endpoint_stop_support'): 55, ('top', 'endpoint_stop_max_speed'): 1}，详见gpu/FORMAL_GATE_007700_A_STAND_ANALYSIS.json，首项不等于唯一失败项。归档两份小型JSON，不重评、不新增学习、不改源码/配方/阈值；正式worker继续原生本边界后续保存。7700非200边界，无额外H00报告。
+
+### 2026-11-19｜7800站稳失败窗口只读复算
+
+原raw中59例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_mean_speed': 15, 'endpoint_stop_max_speed': 44}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007800_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜7800完整门禁与1400次新增正式更新
+
+实际120/120 valid、invalid/error/engineering0，success43/failure77；平地0.3/0.5/0.6分别3/20、20/20、20/20，0.3另17例flat_progress；L40上楼三速均0/20（0.3为final_unstable19/timeout1，0.5/0.6各final_unstable20）。A gatefalse、整体连续通过0，预算1400/4000/global7800。上一轮7700平地三速20/20不代表本轮低速也达标；本轮仍无总体可靠性通过结论。实际门禁256616控制样本/1026464物理子步，完整raw/事务及gpu/FORMAL_GATE_007800_A_SUMMARY.json保留。59个上楼站稳失败窗口按原consumer只读复算，首项mean_speed15/max_speed44，分窗口为{('top', 'endpoint_stop_mean_speed'): 15, ('top', 'endpoint_stop_max_speed'): 44}，详见gpu/FORMAL_GATE_007800_A_STAND_ANALYSIS.json（首项不等于唯一失败项）。归档两份小型JSON供分支审阅，无重新评估、额外学习、源码/配方/阈值修改；正式worker继续本边界后续保存及H00报告，此时H00尚未完成。
+
+### 2026-11-19｜1400更新与7800主线共享协调
+
+将7700/7800完整A门禁、H007600的1/15报告、A1400/4000未晋级、正式worker仍running及最新push325f887追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md，供既定主线读取。说明冻结v2源码/配方未改、没有重启或缓存迁移，已审终态队列身份于06:32确认且仍只等待；7800 H00此时尚未产生结果。仅共享文件协调和日志，没有可用跨线程发送工具，不声称工具消息已发送；无新GPU/物理/学习、源码或数值改动。
+
+### 2026-11-19｜7800完整H00报告3/15
+
+真实15/15 valid、invalid/error/engineering0，success3/failure12；0.3/0.5/0.6为0/5、2/5、1/5，12失败均final_unstable。实际23320控制样本/93280物理子步，完整raw/事务及gpu/FORMAL_H00_007800_A_SUMMARY.json保留并归档小型summary。H00仅报告，单次3/15不构成总体可靠性改善或A晋级；当前A门禁43/120（flat3/20、20/20、20/20，上楼各0/20），整体未通过、连续0、预算1400/4000。正式worker已完成第75号门禁边界存档并继续本边界后续保存。仅读取已安装完整结果、核对真实分母及追加记录，没有重新评估、额外学习、源码/配方/阈值修改。
+
+### 2026-11-19｜7900站稳失败窗口只读复算
+
+原raw中11例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_max_speed': 10, 'endpoint_stop_support': 1}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_007900_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜7900完整门禁与1500次新增正式更新
+
+实际120/120 valid、invalid/error/engineering0，success89/failure31；平地0.3/0.5/0.6分别18/20、20/20、20/20，另2例低速flat_progress；L40上楼分别2/20、20/20、9/20，失败为低速timeout18和高速final_unstable11。A gatefalse，整体连续通过0，预算1500/4000/global7900；本轮三个平地分组及上楼0.5分组单轮达标，不能代替六组整体连续两轮达标，不能据单次89/120声称最终可靠性改善。完成批次账本控制样本293280/物理子步1173120，真实raw、事务与gpu/FORMAL_GATE_007900_A_SUMMARY.json保留且SHA绑定核对一致。11个高速上楼站稳失败窗口按原consumer只读复算，首项max_speed10/support1，见gpu/FORMAL_GATE_007900_A_STAND_ANALYSIS.json，首项不等于唯一失败项。归档两份小型JSON及本日志，不重评、不新增学习、不修改冻结源码/配方/阈值；正式worker继续该边界原生保存。7900非200边界，不额外运行H00；最终2100与固定八视频尚未执行，不能声称完成。
+
+### 2026-11-19｜1500更新与7900主线共享协调
+
+将7900完整A门禁89/120、平地18/20/20及上楼2/20/9、A1500/4000未晋级、H007800报告3/15、原生81号持久化回执与最新pushbf2e4c0追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md。核对后处理脚本SHA与真实启动回执一致，等待驱动09:26仍存活。仅共享文件协调，无可用跨线程消息工具，不声称已直接发送；没有新GPU仿真、学习、源码或配方更改。关键含义仍是A整体未通过、正式训练继续，单次成功率不代替最终验收。
+
+### 2026-11-19｜8000站稳失败窗口只读复算
+
+原raw中10例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_drift': 5, 'endpoint_stop_max_speed': 3, 'endpoint_stop_omega': 1, 'endpoint_stop_mean_speed': 1}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_008000_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜8000完整门禁与1600次新增正式更新
+
+实际120/120 valid、invalid/error/engineering0，success90/failure30；平地0.3/0.5/0.6均20/20，完成原8秒行走、2秒制动、20秒停车及站稳窗口；与7900的18/20、20/20、20/20一起，固定A平地三速分组连续两轮均达18/20，但不代表A六组整体通过或最终可靠性验收。L40上楼三速为8/20、4/20、18/20；0.3失败final_unstable9/timeout3，0.5失败final_unstable1/nonfoot1/posture14，0.6失败bounds1/nonfoot1。A gatefalse、整体连续通过0，预算1600/4000/global8000；本轮0.6上楼单组达标不代替整体晋级。完成批次账本280616控制样本/1122464物理子步，真实raw、事务和gpu/FORMAL_GATE_008000_A_SUMMARY.json保留且SHA核对一致；实际8000学习commit的继承Adam总计160000。十个站稳失败窗口按原consumer只读复算，首个失败项drift5/max_speed3/omega1/mean_speed1，详见gpu/FORMAL_GATE_008000_A_STAND_ANALYSIS.json，首项不等于唯一失败项；14例姿态失败未被算成站立窗口失败。归档两份小型JSON及本日志，不重评、不新增学习、不修改冻结源码/配方/阈值。正式worker继续8000门禁后原生保存，随后原计划H00报告尚未完成。最终2100与固定八视频尚未执行。
+
+### 2026-11-19｜8000完整H00报告6/15与主线共享协调
+
+实际15/15 valid、invalid/error/engineering0，success6/failure9；0.3/0.5/0.6为3/5、0/5、3/5，失败posture8/final_unstable1。完成批次账本23574控制样本/94296物理子步，完整raw/事务与gpu/FORMAL_H00_008000_A_SUMMARY.json保留，归档小型summary并核对原sidecar SHA。H00仅报告，不改变A门禁90/120及整体未通过、连续0、预算1600/4000的结论，不据单轮6/15宣称可靠性改善。将8000六组真实结果、固定平地分组7900/8000连续达门槛的有限结论、H00结果与等待队列身份追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md供既定主线读取；无可用跨线程工具，不声称直接消息已发送。7950确为仅写诊断、无checkpoint，已核对原runner并在进度说明中更正此前保存边界表述；训练实现始终未改。只读分析已安装结果、追加共享文档和修改日志，没有重评、新物理/学习、源码或配方/阈值修改；正式worker继续H00后原生存档，最终2100/八视频仍未执行。
+
+### 2026-11-19｜8000被动存档耗时观察与归档日志补齐
+
+新增implementation/cpu/FORMAL_BOUNDARY_WALL_OBSERVATIONS_008000.json，工作树同路径已归档至本地b21884e，按sequence数值排序绑定79—88号原生回执SHA与文件mtime。连续保存实测墙钟间隔：81→82为985.267秒、82→83为986.328秒、87→88为1077.238秒。冻结runner顺序表明这些选择间隔内无中间物理/学习；它们是两个回执写入之间的文件墙钟间隔，不是独立validate_checkpoint函数耗时或单调时钟基准；其他间隔含学习/门禁/H00，不能都归因于校验。仅读取原文件并追加观察证据和日志，未重跑测试、校验、策略/物理/学习，未改变冻结源码、恢复缓存、配方或预算，也不据此外推完成时间。先前终端只读查看按文件名排序曾临时出现负差值，未持久化该临时输出；结果文件采用sequence数值排序并断言严格递增。归档数据后，手写微秒期望值与浮点舍入差1微秒的保护断言拒绝了日志追加；Python失败时外层set -e位置不当仍产生仅含观察JSON的本地提交。本条补齐两根目录追加日志，核对十个原回执SHA、两个JSON字节一致及三间隔均由记录mtime重算一致，未更改观察JSON，未删除历史记录；后续shell将set -e置于首行。正式worker继续8000末次原生保存。
+
+### 2026-11-19｜8100站稳失败窗口只读复算
+
+原raw中54例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_mean_speed': 36, 'endpoint_stop_max_speed': 18}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_008100_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜8100完整门禁与1700次新增正式更新
+
+实际120/120 valid、invalid/error/engineering0，success66/failure54；平地0.3/0.5/0.6为2/20、0/20、4/20，失败均final_unstable；L40上楼三速均20/20，完成真实上楼、制动、20秒零速度保持及原站稳窗口。A gatefalse、整体连续通过0，预算1700/4000/global8100；上楼本轮三组单轮达标不替代六组整体连续两轮，8000平地60/60也未在本轮保持，不能据某一分组宣称整体可靠性改善。完成批次账本231320控制样本/925280物理子步，真实raw、事务及gpu/FORMAL_GATE_008100_A_SUMMARY.json保留且SHA核对一致，原生8100学习commit的继承Adam总计162000。54个平地停车站稳失败窗口按原consumer只读复算，首项mean_speed36/max_speed18，详见gpu/FORMAL_GATE_008100_A_STAND_ANALYSIS.json，首项不等于唯一失败项；没有将它们混写成上楼站稳失败。归档两份小型JSON及本日志，不重评、不新增学习、不修改冻结源码/配方/阈值；正式worker继续本边界原生存档。8100不是200更新边界，不额外运行H00。最终2100及固定八视频尚未执行。
+
+### 2026-11-19｜8200站稳失败窗口只读复算
+
+原raw中88例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_mean_speed': 27, 'endpoint_stop_max_speed': 7, 'endpoint_stop_support': 54}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_008200_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜8200完整门禁0/120与1800次新增正式更新
+
+实际120/120 valid、invalid/error/engineering0，success0/failure120，六组均0/20。平地0.3为final_unstable20，0.5为flat_progress20，0.6为final_unstable8/flat_progress12；L40上楼三速各final_unstable20。总计final_unstable88/flat_progress32，A gatefalse、整体连续通过0、预算1800/4000/global8200。8100上楼三速20/20未在本轮保持；此前8000平地60/60亦不能代表当前模型。结果波动真实保留，不按最好历史边界替换当前模型，不据个别分组宣称总体可靠性改善。完成批次账本218688控制样本/874752物理子步，完整raw、事务及gpu/FORMAL_GATE_008200_A_SUMMARY.json保留，核对原sidecar SHA一致，实际8200学习commit继承Adam总计164000。88个站稳失败窗口按原consumer只读复算，首项mean_speed27/max_speed7/support54，详见gpu/FORMAL_GATE_008200_A_STAND_ANALYSIS.json，首项不等于唯一失败项；另外32例是在平地行走条件阶段失败，未写成完整停车验收。归档两份小型JSON及追加本日志，无重评、额外物理/学习或冻结源码/配方/阈值更改。普通策略失败按原合同继续，正式worker仍运行本边界后续存档，随后原计划H00报告尚未完成；最终2100和固定八视频仍未执行。
+
+### 2026-11-19｜1800更新、8200门禁与Q5耗时共享协调
+
+追加.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md，记录8100上楼60/60而平地6/60、8200整体0/120及全有效无工程错误、A1800/4000未晋级、H00待完成、最新push884548a。向既定主控提供已核对并推送的被动耗时证据路径与约985/986/1077秒连续保存墙钟间隔及其边界：非独立函数基准、不外推完成时间；未收到迁移裁决即继续原冻结v2运行，无缓存、恢复、配方或预算调整。复述15:00等待驱动身份/存活和无额外GPU、6800 CPU handoff，供主线读取。仅共享文件与追加日志，无可用跨线程工具，不声称直接消息已发；无新测试、物理/学习或核心源码更改。
+
+### 2026-11-19｜8200完整H00报告0/15
+
+实际15/15 valid、invalid/error/engineering0，success0/failure15，三速各0/5，全部final_unstable。完成批次账本24403控制样本/97612物理子步，真实raw/事务与gpu/FORMAL_H00_008200_A_SUMMARY.json保留，核对sidecar SHA并归档小型JSON。H00仅报告，不改变A门禁0/120、整体连续0、预算1800/4000的实际状态，也不单独触发停止。将完整H00结果及正式worker继续原生保存的事实追加至.superpowers/sdd/2026-11-18-a2-v08/coordination/MAIN_OUTBOX.md供主控读取；无可用跨线程工具，不声称已直接发送。仅分析原始完整结果、复制小型证据及追加文档和日志，无重新评估、新仿真/学习、冻结源码/配方/阈值、恢复缓存或预算变更。正式任务继续，最终2100和固定八视频尚未执行。
+
+### 2026-11-19｜8300站稳失败窗口只读复算
+
+原raw中40例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_support': 40}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_008300_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜8300完整门禁与1900次新增正式更新
+
+实际120/120 valid、invalid/error/engineering0，success60/failure60。平地0.3/0.5/0.6均20/20，按原协议完成8秒行走、2秒制动和20秒零速度保持及最后10秒站稳窗口；L40上楼三速均0/20，0.3为timeout20，0.5/0.6各final_unstable20。A gatefalse、整体连续通过0、预算1900/4000/global8300；平地本轮60/60只涉及固定A分组，不能代表A六组整体通过或最终可靠性，8200的0/120与此前各轮波动均保留。完成批次账本295984控制样本/1183936物理子步，完整raw、事务及gpu/FORMAL_GATE_008300_A_SUMMARY.json保留且原sidecar SHA核对一致，实际8300学习commit继承Adam总计166000。40个上楼停车站稳失败窗口按原consumer只读复算，首项均endpoint_stop_support，详见gpu/FORMAL_GATE_008300_A_STAND_ANALYSIS.json，首项不等于唯一失败项；20例低速超时不算完成停车站稳验收。归档两份小型JSON及追加本日志，不重评、不新增物理/学习、不改变冻结源码、配方、阈值、恢复缓存或预算。普通策略失败继续原合同，正式worker继续本边界后续存档；8300非200边界，不额外运行H00。17:00只读复核原6400权重与备份仍同SHA30ed23ba…f9a8b2；最终2100和固定八视频尚未执行。
+
+### 2026-11-19 18:00:57｜8000/8100/8200三速CPU预览视频分批解码核验
+
+按主控转交的明确用户授权接管现有串行18段录制，不重复启动、不打断正式训练。新建或追加外部视频目录/home/xxs/Videos/A2_8000_8100_8200/verification的逐段validation.json、decode.log与decode_progress.txt，完成4段全片ffmpeg -xerror解码，核对768×432/25fps、实际解码帧数=(控制步+1)//2+1、时长、对应checkpoint实际SHA及冻结gate-A首例字段一致。核验段：8000/flat_vx0.3 reason=success frames=751 seconds=30.04；8000/flat_vx0.5 reason=success frames=751 seconds=30.04；8000/flat_vx0.6 reason=success frames=751 seconds=30.04；8000/L40_vx0.3 reason=success frames=1240 seconds=49.60。它们为CPU单环境零学习预览，不能代替正式GPU完整门禁；保留原视频和成功/失败结果，不裁剪，不修改正在运行的record.py或冻结源码/配方。其余14段仍未完成本次核验，合集与总索引尚未生成，不声称18段已全部完成。
+
+### 2026-11-19 18:03:16｜8000/8100/8200三速CPU预览视频分批解码核验
+
+按主控转交的明确用户授权接管现有串行18段录制，不重复启动、不打断正式训练。新建或追加外部视频目录/home/xxs/Videos/A2_8000_8100_8200/verification的逐段validation.json、decode.log与decode_progress.txt，完成2段全片ffmpeg -xerror解码，核对768×432/25fps、实际解码帧数=(控制步+1)//2+1、时长、对应checkpoint实际SHA及冻结gate-A首例字段一致。核验段：8000/L40_vx0.5 reason=posture frames=815 seconds=32.60；8000/L40_vx0.6 reason=success frames=1109 seconds=44.36。它们为CPU单环境零学习预览，不能代替正式GPU完整门禁；保留原视频和成功/失败结果，不裁剪，不修改正在运行的record.py或冻结源码/配方。其余12段仍未完成本次核验，合集与总索引尚未生成，不声称18段已全部完成。
+
+### 2026-11-19 18:04:32｜三速CPU预览合集生成与完整解码核验
+
+按18段视频任务授权，在/home/xxs/Videos/A2_8000_8100_8200对应更新目录生成已具备六段完整核验源片的三种合集：flat三速、L40三速及先平地后L40六段总合集。实际新建：8000_flat_three_speeds: 2253frames/90.12s；8000_L40_three_speeds: 3164frames/126.56s；8000_flat_and_L40_three_speeds: 5417frames/216.68s。采用ffmpeg流复制，按0.3→0.5→0.6顺序完整拼接，不裁剪、不新增画面、不调速，失败片段照常纳入；每份合集全片-xerror解码、帧数等于源片之和、25fps/768×432及时间核对通过，拼接前后源片SHA未变，JSON/ffconcat/解码日志保存在verification。它们仅是CPU单环境预览合集，不替代正式GPU门禁，不新增策略推理/物理或学习；其余尚未录完更新和18段总索引仍待完成。冻结源码、活动录制脚本及正式训练均未修改。
+
+### 2026-11-19T18:17:16.634432+08:00｜接收视频与环境数迁移授权回执
+
+新增coordination/ENV_SCALE_HANDOFF_RECEIPT_20261119.json并复制工作树，追加既定MAIN_OUTBOX共享回执。视频记录数{'8000': 6, '8100': 6, '8200': 4}，核验6/18，合集3；正式8300/A1900of4000仍运行。确认先完成18段并完整解码，再停止旧正式worker、2048真实工程测试，OOM才逐档1536/1024/512；rollout48/epochs5/minibatches4、奖励课程门槛不变，继承实际模型Adam归一化器LR和更新预算，新增样本分段记账。工程模型不作正式来源，新配方冻结谱系和独立验收后续训。原生stop风险、零学习边界退出、独立工作树和后处理转交均为执行安排，当前未改冻结源、未停正式训练、未做大N GPU测试。授权来源如实记录为主控codex_delegation及本线程既有直接全部授权，不伪作本线程新原话；无直接发送工具，供共享读取。上一工具调用为JS语法解析错误、未执行任何文件操作；本次成功写入后记录日志。
+
+### 2026-11-19 18:18:04｜8000/8100/8200三速CPU预览视频分批解码核验
+
+按主控转交的明确用户授权接管现有串行18段录制，不重复启动、不打断正式训练。新建或追加外部视频目录/home/xxs/Videos/A2_8000_8100_8200/verification的逐段validation.json、decode.log与decode_progress.txt，完成10段全片ffmpeg -xerror解码，核对768×432/25fps、实际解码帧数=(控制步+1)//2+1、时长、对应checkpoint实际SHA及冻结gate-A首例字段一致。核验段：8100/flat_vx0.3 reason=final_unstable frames=751 seconds=30.04；8100/flat_vx0.5 reason=final_unstable frames=751 seconds=30.04；8100/flat_vx0.6 reason=final_unstable frames=751 seconds=30.04；8100/L40_vx0.3 reason=success frames=1214 seconds=48.56；8100/L40_vx0.5 reason=success frames=1120 seconds=44.80；8100/L40_vx0.6 reason=success frames=1082 seconds=43.28；8200/flat_vx0.3 reason=final_unstable frames=751 seconds=30.04；8200/flat_vx0.5 reason=flat_progress frames=201 seconds=8.04；8200/flat_vx0.6 reason=flat_progress frames=201 seconds=8.04；8200/L40_vx0.3 reason=final_unstable frames=1271 seconds=50.84。它们为CPU单环境零学习预览，不能代替正式GPU完整门禁；保留原视频和成功/失败结果，不裁剪，不修改正在运行的record.py或冻结源码/配方。其余2段仍未完成本次核验，合集与总索引尚未生成，不声称18段已全部完成。
+
+### 2026-11-19 18:22:35｜8000/8100/8200三速CPU预览视频分批解码核验
+
+按主控转交的明确用户授权接管现有串行18段录制，不重复启动、不打断正式训练。新建或追加外部视频目录/home/xxs/Videos/A2_8000_8100_8200/verification的逐段validation.json、decode.log与decode_progress.txt，完成2段全片ffmpeg -xerror解码，核对768×432/25fps、实际解码帧数=(控制步+1)//2+1、时长、对应checkpoint实际SHA及冻结gate-A首例字段一致。核验段：8200/L40_vx0.5 reason=final_unstable frames=1148 seconds=45.92；8200/L40_vx0.6 reason=final_unstable frames=1115 seconds=44.60。它们为CPU单环境零学习预览，不能代替正式GPU完整门禁；保留原视频和成功/失败结果，不裁剪，不修改正在运行的record.py或冻结源码/配方。其余0段仍未完成本次核验，合集与总索引尚未生成，不声称18段已全部完成。
+
+### 2026-11-19 18:26:28｜三速CPU预览合集生成与完整解码核验
+
+按18段视频任务授权，在/home/xxs/Videos/A2_8000_8100_8200对应更新目录生成已具备六段完整核验源片的三种合集：flat三速、L40三速及先平地后L40六段总合集。实际新建：8100_flat_three_speeds: 2253frames/90.12s；8100_L40_three_speeds: 3416frames/136.64s；8100_flat_and_L40_three_speeds: 5669frames/226.76s；8200_flat_three_speeds: 1153frames/46.12s；8200_L40_three_speeds: 3534frames/141.36s；8200_flat_and_L40_three_speeds: 4687frames/187.48s。采用ffmpeg流复制，按0.3→0.5→0.6顺序完整拼接，不裁剪、不新增画面、不调速，失败片段照常纳入；每份合集全片-xerror解码、帧数等于源片之和、25fps/768×432及时间核对通过，拼接前后源片SHA未变，JSON/ffconcat/解码日志保存在verification。它们仅是CPU单环境预览合集，不替代正式GPU门禁，不新增策略推理/物理或学习；其余尚未录完更新和18段总索引仍待完成。冻结源码、活动录制脚本及正式训练均未修改。
+
+### 2026-11-19T18:29:21.757725+08:00｜18段历史权重预览完整交付索引与画面证据
+
+在/home/xxs/Videos/A2_8000_8100_8200新增index.html、INDEX.md、INDEX.csv、VIDEO_INDEX.json、PREVIEW_REPORT.md及verification/visual三张真实抽帧、VISUAL_CHECK_8000.json。18原片+9合集均全片-xerror解码通过，原片15773帧/630.92秒，来源checkpoint/固定首例/768×432/25fps/实际帧数时长及原片SHA一致；CPU单例结果{'success': 8, 'posture': 1, 'final_unstable': 7, 'flat_progress': 2}，失败均完整保留，不将单例当正式GPU门禁。索引按权重、地形、三速组织，合集按三速排序且总合集先平地后L40，不新增策略推理/物理/学习。真实8000行走/停车三帧用vision.js检查侧面主体清楚、楼梯不挡躯干，停车标注0命令；不据单帧判断站稳。报告完整说明时序、参数、来源、验证和CPU/GPU差异。仅改媒体交付产物和日志，原片、活动录制脚本、模型及当前冻结训练源码未改。目录打开与环境数迁移另记实际结果，不提前声称完成。
+
+### 2026-11-19T18:39:08.915157+08:00｜18视频完成后于完整零学习边界提交环境数迁移停止
+
+18原片+9合集均已完整解码并核对SHA，现有串行录制/原始编码进程已退出。源worker2438417仍处于完整更新8300的原生待办边界，刚持久化序号104回执（年龄13.29秒），pending index=2/3、pending_update为空、下一PPO intent不存在。核对原生checkpoint SHA/正式模式/512环境/完整Adam计数后，仅通过旧版原生write_control原子写入FORMAL/control.json的stop，理由绑定用户授权回执SHA；没有发送进程信号、改源码或丢弃采样。它是停止请求，worker还需按原生顺序完成待办和operator/exit保存，尚未声称已退出。退出后必须核对update/Adam、pending均空及discarded_rollout不增加。
+同时将原waiting_formal后处理伴随任务通过其原生POSTPROCESS_CONTROL.json显式取消，保存变更前状态及intent/APPLIED证据，理由为环境数谱系转交，不是训练目标完成；后继需绑定新正式运行和独立验收。新增coordination/ENV_SCALE_STOP_REQUEST_01.intent.json、ENV_SCALE_STOP_REQUEST_01.json、ENV_SCALE_OLD_POSTPROCESS_CONTROL_BEFORE.json，原请求/原媒体完整保留。此时尚未开展2048测试或迁移正式来源，原更新预算、奖励和课程未变。
+
+### 2026-11-19T18:45:05.299441+08:00｜用户18:41撤销扩容与续训，持久化暂停等待意图
+
+按主控连续两条最新明确用户指令，停止环境数迁移实现/测试及所有自动续训安排。先保留原FORMAL/control.json（envscale_after_all18 stop）与POSTPROCESS_CONTROL的完整字节/SHA至coordination/pause_20261119_1841，再通过旧原生write_control原子改为action=pause、本次暂停等待理由。新增TRAINING_HOLD.json禁用training、engineering learning、envscale probe和auto resume，须新明确授权；旧后处理cancel保持true并更新理由，旧记录未删。新增PAUSE_INTENT.json和最新checkpoint元数据快照，追加共享MAIN_OUTBOX以告知主控正在使用的唯一控制路径，避免重复操作。当前8300完整更新/新增1900，序号104checkpoint存在且SHA核对一致，worker仍running、尚未声称退出；没有发进程信号，没有新学习、GPU扩容测试或新正式来源。环境扩容工作树未创建，活动冻结源码/奖励/课程均未改。后续只做停止收尾核验和回报，等待用户指示；旧授权回执如实保留并由本次新意图明确覆盖。
+
+## 2026-11-19 — 录制 L40 结束 6100 权重
+目的：按用户要求保存训练结果视频到 /home/xxs/Videos。新增外部目录 A2_L40_end_6100_20261119/record_l40.py，沿用原录制脚本，来源改为6100课程权重及6100固定病例，播放phase=L/substage=L40；CPU单环境、seed42、确定性策略、三速0.2/0.4/0.6、25fps、右侧镜头，完整回合不裁剪。未改训练源码、奖励、课程和权重。验证：录制尚未完成，结果待追加；不声称效果改善。
+
+### 2026-11-19 — 6100录制完成及验证
+更正前条计划：原门禁实际速度0.3/0.5/0.6，首次0.2无病例退出。CPU接触力内核设备不兼容，实际采用cuda:0单环境；失败片标为failed_cpu_incomplete.mp4。三速完整视频均生成，使用imageio附带ffmpeg全片-xerror解码通过，结果(vx,reason,frames)：[(0.3, 'success', 880), (0.5, 'success', 630), (0.6, 'success', 571)]。来源权重SHA录制前后通过一致性校验；未修改训练源码/奖励/课程/权重，学习更新0。仅各速固定首例预览，不替代完整门禁或证明效果改善。视频及verification.json位于/home/xxs/Videos/A2_L40_end_6100_20261119。
+
+### 2026-11-19T19:03:06.974996+08:00｜用户要求停止后中断冗余收尾，保留完整8300存档
+
+针对用户“暂停收尾差多少、为什么不能直接Ctrl+C”的询问，在既有明确停止授权下，先验证最新完整元数据序号105、checkpoint实际SHA、8300/Adam166000/512环境/累计1900更新、pending_update为空、剩余仅save且评估已完成、无8301事务，再仅对身份核对过的worker2438417发送['SIGINT']。保存CTRL_C_REQUEST.json、CTRL_C_RESULT.json和完整checkpoint元数据副本，原checkpoint文件保留，中断后SHA再次一致；未校验的新partial/异常文件不当作正式来源。worker_active_after=False，控制器回执running/exit=None以实际刷新为准。此为用户主动停止，不是策略或工程通过/失败结论，不声称完成原生exit保存。TRAINING_HOLD和pause控制持续生效，未开始任何扩容、测试学习或续训，不修改冻结源码/奖励/课程。此前等待原生多次重复存档过于保守；本次使用已校验完整存档结束等待，后续只确认进程退出并回报。
+
+### 2026-11-19T19:07:10.495487+08:00｜暂停收尾完成，停止任何后续工作
+
+新增coordination/pause_20261119_1841/PAUSE_COMPLETE.json和PAUSE_REPORT.md，记录控制器finished/exit=-2、19:03:06.974129实际结束，worker/controller/旧后处理PID均已消失，GPU计算进程已释放。最新完整已校验8300/0105 checkpoint实际SHA再次一致，无8301PPO事务，Adam166000、N512、实际LR7.593750000000002e-05；未完成校验文件只保留证据，不作为正式来源。报告同时汇总已完成18原片+9合集、文件夹已打开及5分支/5worktree/main旧提交+未提交v0.7/v0.8隔离目录的实际状态。追加共享MAIN_OUTBOX回报主控实际保存路径与退出状态，不声称已直接工具发信。TRAINING_HOLD和原生pause均保留，不启动任何工程/正式学习，不继续迁移或整理分支，等待用户新指示。
+
+
+## 2026-11-19T19:20:39.367122+08:00：按用户指令将 main 更新到 v0.7 并推送、清理已整合分支
+
+- 修改目的：将原目录 main 从 42d4a1152e54af5584cf709bf5f679b06da808a1 快进至 v0.7 已发布提交 be74615fa7aa9c70729a2aaf9adcef9ddce230f0，随后推送 main，并删除已被其包含的 C1 与 v0.7 本地/远端分支。用户明确要求不备份，保留训练记录和权重。
+- 涉及内容：main 引用、Git 索引、两个临时发布 worktree 的 HEAD、远端分支引用、本修改日志。两个临时发布目录保留为 detached HEAD；不删除其文件。
+- 实际修改与理由：只将与目标提交逐文件相同的现有文件纳入索引，以标准 fast-forward 更新 main；不移动、不清空原目录。0.7 的全部改动与历史 C1 提交被 main 继承；原有 scripts/play.py、scripts/train.py 的早期任务入口修改、额外历史文件以及本日志原有全部字节保留。本日志仅追加；未创建备份。
+- 核心设置：不修改模型、观测、奖励、损失、学习率、课程、预算、环境数量、checkpoint 保存周期或训练控制；训练继续暂停。本次只整合既有 v0.7 代码，未启动训练、评估或学习测试，不声称行为效果改进。
+- 已验证：main 已快进到 be74615fa7aa9c70729a2aaf9adcef9ddce230f0；目标引入的 217 个非日志文件整合前与目标内容一致，整合后原文件内容和两个本地入口内容均未改变；原 v0.7 日志的全部片段已包含于现有日志，未覆盖历史。Git 临时空仓库验证了相同文件与修改日志可以无损快进。
+- 数据保护基线：logs/ 下除本日志外 24452 文件、76671812849 字节，路径/大小/纳秒修改时间摘要 b88ddec38a529835adcc8f104706b912bcd21d8f349d02a08a3962b7782b84de；6400 权重 SHA256=30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2；8300 权重 SHA256=3ec6e8f7bb4abd9e1a73f2899a508c167dfcc4271459f875c113fbe62341316c。推送、远端分支删除与最终数据保留结果将在操作后追加。
+- 未验证：本次未重跑 CPU/GPU 功能测试及训练效果测试；只做 Git 整合与数据保留核验。
+
+
+### 2026-11-19T19:22:20.605420+08:00：main v0.7 整合、远端推送与分支清理核验
+
+- 已实际完成：main 快进到 be74615fa7aa9c70729a2aaf9adcef9ddce230f0；通过现有 GitHub CLI 凭据完成原子推送，远端 main 同步到该提交，同时删除 codex/a2-c1-continue-20261117 和 codex/a2-v07-d22-curriculum。确认两条历史均被 main 包含后，使用 git branch -d 删除本地同名分支。未 force-push。首次无凭据 HTTPS 推送失败且无远端变化，随后使用本机已登录凭据成功；未修改全局认证配置。
+- 实测保留结果：logs/ 下除本修改日志外全部 24452 文件、76671812849 字节及路径/大小/纳秒修改时间摘要均与操作前完全相同；6400 和 8300 checkpoint SHA256 逐一复核与操作前一致。没有删除、移动或上传训练权重，没有创建备份。
+- 代码与范围核验：main 的代码树与原 v0.7 提交完全相同；仅将原目录已有较新的修改日志补充提交到 main，不把额外历史文件或两个早期入口的本地修改混入本次提交。0.8 及 pointcloud 远端 SHA 与操作前一致；两条临时发布 worktree 保留目录，HEAD 分离。本次未运行学习、评估或 CPU/GPU 功能测试，训练仍暂停。
+- 后续交付：本日志作为唯一附加文件提交并推送至 main；最终 main 的代码仍为 v0.7，额外提交仅保存已有日志与本次整合记录。
