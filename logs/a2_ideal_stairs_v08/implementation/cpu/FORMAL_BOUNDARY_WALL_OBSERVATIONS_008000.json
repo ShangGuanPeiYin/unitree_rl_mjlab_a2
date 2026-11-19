@@ -1,0 +1,117 @@
+{
+  "time": "2026-11-19T12:17:44.124969+08:00",
+  "observations": [
+    {
+      "sequence": 79,
+      "update": 7900,
+      "reason": "boundary",
+      "receipt_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/checkpoints/boundary_007900_0079.json",
+      "receipt_sha256": "c0beaf966fdbccf8eaafbcf63846bebfe3c743051f80d54ecf8d36a53a0a1d06",
+      "receipt_mtime_unix": 1795048823.540082,
+      "receipt_time": "2026-11-19T08:40:23.540082+08:00"
+    },
+    {
+      "sequence": 80,
+      "update": 7900,
+      "reason": "boundary_event",
+      "receipt_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/checkpoints/boundary_event_007900_0080.json",
+      "receipt_sha256": "037689b263213215a9cd1b80977bb5c6910e0feb361cbb0f043c7d4091d9e2e3",
+      "receipt_mtime_unix": 1795049729.626245,
+      "receipt_time": "2026-11-19T08:55:29.626245+08:00"
+    },
+    {
+      "sequence": 81,
+      "update": 7900,
+      "reason": "boundary_event",
+      "receipt_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/checkpoints/boundary_event_007900_0081.json",
+      "receipt_sha256": "5c9090bd5bbc9d0354456638f1edba15fca623fa3e21cad1e80f177c78a099a9",
+      "receipt_mtime_unix": 1795052012.289902,
+      "receipt_time": "2026-11-19T09:33:32.289902+08:00"
+    },
+    {
+      "sequence": 82,
+      "update": 7900,
+      "reason": "interval",
+      "receipt_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/checkpoints/interval_007900_0082.json",
+      "receipt_sha256": "bd50c0cee75233484f5d07b4325a304929a5cf258ff7cc22b3d5443154234e04",
+      "receipt_mtime_unix": 1795052997.5566285,
+      "receipt_time": "2026-11-19T09:49:57.556628+08:00"
+    },
+    {
+      "sequence": 83,
+      "update": 7900,
+      "reason": "boundary_event",
+      "receipt_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/checkpoints/boundary_event_007900_0083.json",
+      "receipt_sha256": "27fdc08bf2cd118b4e0c60c7ff8ac5e885ac048f7a1f4e95b71f61496ecb3a06",
+      "receipt_mtime_unix": 1795053983.884574,
+      "receipt_time": "2026-11-19T10:06:23.884574+08:00"
+    },
+    {
+      "sequence": 84,
+      "update": 8000,
+      "reason": "boundary",
+      "receipt_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/checkpoints/boundary_008000_0084.json",
+      "receipt_sha256": "1fe89706082eee0521d86f6874853ec38f1114928fca010d27bc5261ea4c9b2f",
+      "receipt_mtime_unix": 1795055398.4596212,
+      "receipt_time": "2026-11-19T10:29:58.459621+08:00"
+    },
+    {
+      "sequence": 85,
+      "update": 8000,
+      "reason": "boundary_event",
+      "receipt_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/checkpoints/boundary_event_008000_0085.json",
+      "receipt_sha256": "14febaf72e083be1562bb0b54c0f5d0e7c87d9ea3fa3c6d619bfd8471594f5e0",
+      "receipt_mtime_unix": 1795056394.5313478,
+      "receipt_time": "2026-11-19T10:46:34.531348+08:00"
+    },
+    {
+      "sequence": 86,
+      "update": 8000,
+      "reason": "boundary_event",
+      "receipt_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/checkpoints/boundary_event_008000_0086.json",
+      "receipt_sha256": "f0f539afbee2e654d1d207e319be89fcd1cb41b7f5dfb9f87756d2b21936afc2",
+      "receipt_mtime_unix": 1795058717.3554902,
+      "receipt_time": "2026-11-19T11:25:17.355490+08:00"
+    },
+    {
+      "sequence": 87,
+      "update": 8000,
+      "reason": "boundary_event",
+      "receipt_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/checkpoints/boundary_event_008000_0087.json",
+      "receipt_sha256": "7d3d3ae97f04963f438c40721c1d5f537353ee8aa757fedd43d21a86e3442f70",
+      "receipt_mtime_unix": 1795059912.2445326,
+      "receipt_time": "2026-11-19T11:45:12.244533+08:00"
+    },
+    {
+      "sequence": 88,
+      "update": 8000,
+      "reason": "interval",
+      "receipt_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_ideal_stairs_v08/continue_seed42_from006400_trial01/checkpoints/interval_008000_0088.json",
+      "receipt_sha256": "72a370518adc1ddea55684ecb2383f12ac83a9e27b468aaa5e341e5fbb28e602",
+      "receipt_mtime_unix": 1795060989.4824662,
+      "receipt_time": "2026-11-19T12:03:09.482466+08:00"
+    }
+  ],
+  "selected_save_intervals": [
+    {
+      "from_sequence": 81,
+      "to_sequence": 82,
+      "seconds": 985.266726,
+      "qualification": "native consecutive saves; no intervening policy/physics/learning in frozen runner sequence"
+    },
+    {
+      "from_sequence": 82,
+      "to_sequence": 83,
+      "seconds": 986.327945,
+      "qualification": "native consecutive saves; no intervening policy/physics/learning in frozen runner sequence"
+    },
+    {
+      "from_sequence": 87,
+      "to_sequence": 88,
+      "seconds": 1077.237934,
+      "qualification": "native consecutive saves; no intervening policy/physics/learning in frozen runner sequence"
+    }
+  ],
+  "qualification": "Passive receipt filesystem mtime wall-clock observations, not isolated validation-function benchmarks or monotonic timings. Other gaps include learning/gates/H00 and cannot be attributed to checkpoint validation alone. No new CUDA, physics, policy evaluation or learning; no cache/migration/source/recipe changes. No finish-time extrapolation.",
+  "formal_worker_pid": 2438417
+}
