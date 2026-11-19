@@ -3319,3 +3319,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-19｜8000被动存档耗时观察与归档日志补齐
 
 新增implementation/cpu/FORMAL_BOUNDARY_WALL_OBSERVATIONS_008000.json，工作树同路径已归档至本地b21884e，按sequence数值排序绑定79—88号原生回执SHA与文件mtime。连续保存实测墙钟间隔：81→82为985.267秒、82→83为986.328秒、87→88为1077.238秒。冻结runner顺序表明这些选择间隔内无中间物理/学习；它们是两个回执写入之间的文件墙钟间隔，不是独立validate_checkpoint函数耗时或单调时钟基准；其他间隔含学习/门禁/H00，不能都归因于校验。仅读取原文件并追加观察证据和日志，未重跑测试、校验、策略/物理/学习，未改变冻结源码、恢复缓存、配方或预算，也不据此外推完成时间。先前终端只读查看按文件名排序曾临时出现负差值，未持久化该临时输出；结果文件采用sequence数值排序并断言严格递增。归档数据后，手写微秒期望值与浮点舍入差1微秒的保护断言拒绝了日志追加；Python失败时外层set -e位置不当仍产生仅含观察JSON的本地提交。本条补齐两根目录追加日志，核对十个原回执SHA、两个JSON字节一致及三间隔均由记录mtime重算一致，未更改观察JSON，未删除历史记录；后续shell将set -e置于首行。正式worker继续8000末次原生保存。
+
+### 2026-11-19｜8100站稳失败窗口只读复算
+
+原raw中54例final/mid unstable按原consumer重算，首个不合格项{'endpoint_stop_mean_speed': 36, 'endpoint_stop_max_speed': 18}；逐例指标保存logs/a2_ideal_stairs_v08/implementation/gpu/FORMAL_GATE_008100_A_STAND_ANALYSIS.json，绑定原sidecar SHA。没有重跑策略/物理，没有改变GPU学习、训练源或判据；首个失败项不等于唯一失败项，不据此推断未经对照的训练因果。
+
+### 2026-11-19｜8100完整门禁与1700次新增正式更新
+
+实际120/120 valid、invalid/error/engineering0，success66/failure54；平地0.3/0.5/0.6为2/20、0/20、4/20，失败均final_unstable；L40上楼三速均20/20，完成真实上楼、制动、20秒零速度保持及原站稳窗口。A gatefalse、整体连续通过0，预算1700/4000/global8100；上楼本轮三组单轮达标不替代六组整体连续两轮，8000平地60/60也未在本轮保持，不能据某一分组宣称整体可靠性改善。完成批次账本231320控制样本/925280物理子步，真实raw、事务及gpu/FORMAL_GATE_008100_A_SUMMARY.json保留且SHA核对一致，原生8100学习commit的继承Adam总计162000。54个平地停车站稳失败窗口按原consumer只读复算，首项mean_speed36/max_speed18，详见gpu/FORMAL_GATE_008100_A_STAND_ANALYSIS.json，首项不等于唯一失败项；没有将它们混写成上楼站稳失败。归档两份小型JSON及本日志，不重评、不新增学习、不修改冻结源码/配方/阈值；正式worker继续本边界原生存档。8100不是200更新边界，不额外运行H00。最终2100及固定八视频尚未执行。
