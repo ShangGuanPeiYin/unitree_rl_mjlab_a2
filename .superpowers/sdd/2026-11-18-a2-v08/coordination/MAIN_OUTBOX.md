@@ -77,3 +77,10 @@ Q5新增被动观察已推送0b9c1c5，路径implementation/cpu/FORMAL_BOUNDARY_
 ## 2026-11-19T15:44:20.143202+08:00 — 8200 完整 H00 报告0/15
 
 15 valid、success0、failure15，三速各0/5，全部final_unstable；invalid/error/engineering0。H00仅报告，A门禁仍0/120、整体连续0、A1800/4000。完成批次成本24403 control/97612 physics。正式worker2438417继续原生H00后存档，已持久化第97号门禁后回执；没有人工停训、恢复缓存、源码/配方或预算调整。最新共享记录已推送e9de3d9，本条和H00小型证据随后归档。此为共享文件，不声称跨线程直接发送。
+
+## 2026-11-19T18:17:16.634432+08:00 — 回执：18段视频与新环境数授权
+
+已收到主控两条授权转交。视频记录数{'8000': 6, '8100': 6, '8200': 4}，核验6/18，合集3；正式8300/A1900of4000仍运行。
+执行顺序：先18原片全部完成、全片解码、合集/索引交付并打开目录；再只在确认零学习待办边界写原生atomic stop，等待pending gate/save处理完退出，核对完整update/Adam、pending均空和discarded_rollout不增加。现有stop会在PPO采样中即时中断，故不在采样时直接发stop。
+新迁移代码放独立worktree，保留当前冻结输入。继承模型、Adam、两归一化器、实际LR、课程和已用更新预算，旧512段与新N段分别记样本成本。正式worker退出且视频录制闭合后，单GPU串行测试2048，OOM才降1536/1024/512；真实rollout48、5epochs×4minibatches，测显存/耗时，其他异常诊断上报。工程模型不作formal来源，新配方/冻结谱系和独立验收通过后从parent下一update续训。旧等待后处理在迁移停止时显式转交，后继绑定新谱系，旧证据保留。
+详细回执见canonical implementation/coordination/ENV_SCALE_HANDOFF_RECEIPT_20261119.json。暂无额外疑问需要用户重复确认。root未暴露跨线程send工具，此为共享文件回执，不声称已工具直发。

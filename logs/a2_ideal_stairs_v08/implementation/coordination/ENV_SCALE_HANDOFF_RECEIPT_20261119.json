@@ -1,0 +1,102 @@
+{
+  "time": "2026-11-19T18:17:16.634432+08:00",
+  "source_thread_id": "01a1d49c-5f5d-7890-ac95-9234b307139a",
+  "source_type": "main controller codex_delegation quoting user authorization",
+  "local_direct_authorization": "全部授权，包括修改项目，测试环境，启动正式训练，psuh上传等",
+  "scope": "After all18 previews finish and fully decode, drain formal worker at complete-update/settled-boundary checkpoint. Preserve parent. Test real production rollout+PPO single-GPU2048, OOM-only fallback1536/1024/512. New recipe/freeze lineage/migration/independent acceptance. Resume next update from formal parent, never probe model.",
+  "fixed_parameters": {
+    "rollout": 48,
+    "epochs": 5,
+    "minibatches": 4,
+    "reward": "unchanged",
+    "curriculum_thresholds": "unchanged",
+    "update_budget": "original contract with inherited spent counts",
+    "learning_rate": "exact actual parent Adam LR; inherited adaptive rule"
+  },
+  "recorded": {
+    "8000": [
+      {
+        "name": "L40_vx0.3",
+        "reason": "success"
+      },
+      {
+        "name": "L40_vx0.5",
+        "reason": "posture"
+      },
+      {
+        "name": "L40_vx0.6",
+        "reason": "success"
+      },
+      {
+        "name": "flat_vx0.3",
+        "reason": "success"
+      },
+      {
+        "name": "flat_vx0.5",
+        "reason": "success"
+      },
+      {
+        "name": "flat_vx0.6",
+        "reason": "success"
+      }
+    ],
+    "8100": [
+      {
+        "name": "L40_vx0.3",
+        "reason": "success"
+      },
+      {
+        "name": "L40_vx0.5",
+        "reason": "success"
+      },
+      {
+        "name": "L40_vx0.6",
+        "reason": "success"
+      },
+      {
+        "name": "flat_vx0.3",
+        "reason": "final_unstable"
+      },
+      {
+        "name": "flat_vx0.5",
+        "reason": "final_unstable"
+      },
+      {
+        "name": "flat_vx0.6",
+        "reason": "final_unstable"
+      }
+    ],
+    "8200": [
+      {
+        "name": "L40_vx0.3",
+        "reason": "final_unstable"
+      },
+      {
+        "name": "flat_vx0.3",
+        "reason": "final_unstable"
+      },
+      {
+        "name": "flat_vx0.5",
+        "reason": "flat_progress"
+      },
+      {
+        "name": "flat_vx0.6",
+        "reason": "flat_progress"
+      }
+    ]
+  },
+  "verified_clips": 6,
+  "compiled_files": 3,
+  "formal_worker_pid": 2438417,
+  "formal_latest_update": 8300,
+  "formal_new_updates": 1900,
+  "formal_stage": "A",
+  "formal_untouched": true,
+  "envscale_gpu_tests_started": false,
+  "new_worktree": "/home/xxs/dog/unitree_rl_mjlab_a2_v08_envscale",
+  "proposed_branch": "codex/a2-v08-env-scale",
+  "stop_plan": "Arm existing atomic stop only during confirmed zero-learning pending boundary. Verify full update/Adam, no pending work, and no new discarded rollout samples. Do not edit live frozen source.",
+  "postprocess_plan": "Explicitly supersede old waiting companion on migration stop, preserve evidence, bind replacement to new formal lineage.",
+  "reply_delivery": "shared MAIN_OUTBOX file only; no thread send tool exposed",
+  "questions": "No additional user permission needed for supplied scope."
+}

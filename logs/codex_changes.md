@@ -3351,3 +3351,19 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 ### 2026-11-19｜8300完整门禁与1900次新增正式更新
 
 实际120/120 valid、invalid/error/engineering0，success60/failure60。平地0.3/0.5/0.6均20/20，按原协议完成8秒行走、2秒制动和20秒零速度保持及最后10秒站稳窗口；L40上楼三速均0/20，0.3为timeout20，0.5/0.6各final_unstable20。A gatefalse、整体连续通过0、预算1900/4000/global8300；平地本轮60/60只涉及固定A分组，不能代表A六组整体通过或最终可靠性，8200的0/120与此前各轮波动均保留。完成批次账本295984控制样本/1183936物理子步，完整raw、事务及gpu/FORMAL_GATE_008300_A_SUMMARY.json保留且原sidecar SHA核对一致，实际8300学习commit继承Adam总计166000。40个上楼停车站稳失败窗口按原consumer只读复算，首项均endpoint_stop_support，详见gpu/FORMAL_GATE_008300_A_STAND_ANALYSIS.json，首项不等于唯一失败项；20例低速超时不算完成停车站稳验收。归档两份小型JSON及追加本日志，不重评、不新增物理/学习、不改变冻结源码、配方、阈值、恢复缓存或预算。普通策略失败继续原合同，正式worker继续本边界后续存档；8300非200边界，不额外运行H00。17:00只读复核原6400权重与备份仍同SHA30ed23ba…f9a8b2；最终2100和固定八视频尚未执行。
+
+### 2026-11-19 18:00:57｜8000/8100/8200三速CPU预览视频分批解码核验
+
+按主控转交的明确用户授权接管现有串行18段录制，不重复启动、不打断正式训练。新建或追加外部视频目录/home/xxs/Videos/A2_8000_8100_8200/verification的逐段validation.json、decode.log与decode_progress.txt，完成4段全片ffmpeg -xerror解码，核对768×432/25fps、实际解码帧数=(控制步+1)//2+1、时长、对应checkpoint实际SHA及冻结gate-A首例字段一致。核验段：8000/flat_vx0.3 reason=success frames=751 seconds=30.04；8000/flat_vx0.5 reason=success frames=751 seconds=30.04；8000/flat_vx0.6 reason=success frames=751 seconds=30.04；8000/L40_vx0.3 reason=success frames=1240 seconds=49.60。它们为CPU单环境零学习预览，不能代替正式GPU完整门禁；保留原视频和成功/失败结果，不裁剪，不修改正在运行的record.py或冻结源码/配方。其余14段仍未完成本次核验，合集与总索引尚未生成，不声称18段已全部完成。
+
+### 2026-11-19 18:03:16｜8000/8100/8200三速CPU预览视频分批解码核验
+
+按主控转交的明确用户授权接管现有串行18段录制，不重复启动、不打断正式训练。新建或追加外部视频目录/home/xxs/Videos/A2_8000_8100_8200/verification的逐段validation.json、decode.log与decode_progress.txt，完成2段全片ffmpeg -xerror解码，核对768×432/25fps、实际解码帧数=(控制步+1)//2+1、时长、对应checkpoint实际SHA及冻结gate-A首例字段一致。核验段：8000/L40_vx0.5 reason=posture frames=815 seconds=32.60；8000/L40_vx0.6 reason=success frames=1109 seconds=44.36。它们为CPU单环境零学习预览，不能代替正式GPU完整门禁；保留原视频和成功/失败结果，不裁剪，不修改正在运行的record.py或冻结源码/配方。其余12段仍未完成本次核验，合集与总索引尚未生成，不声称18段已全部完成。
+
+### 2026-11-19 18:04:32｜三速CPU预览合集生成与完整解码核验
+
+按18段视频任务授权，在/home/xxs/Videos/A2_8000_8100_8200对应更新目录生成已具备六段完整核验源片的三种合集：flat三速、L40三速及先平地后L40六段总合集。实际新建：8000_flat_three_speeds: 2253frames/90.12s；8000_L40_three_speeds: 3164frames/126.56s；8000_flat_and_L40_three_speeds: 5417frames/216.68s。采用ffmpeg流复制，按0.3→0.5→0.6顺序完整拼接，不裁剪、不新增画面、不调速，失败片段照常纳入；每份合集全片-xerror解码、帧数等于源片之和、25fps/768×432及时间核对通过，拼接前后源片SHA未变，JSON/ffconcat/解码日志保存在verification。它们仅是CPU单环境预览合集，不替代正式GPU门禁，不新增策略推理/物理或学习；其余尚未录完更新和18段总索引仍待完成。冻结源码、活动录制脚本及正式训练均未修改。
+
+### 2026-11-19T18:17:16.634432+08:00｜接收视频与环境数迁移授权回执
+
+新增coordination/ENV_SCALE_HANDOFF_RECEIPT_20261119.json并复制工作树，追加既定MAIN_OUTBOX共享回执。视频记录数{'8000': 6, '8100': 6, '8200': 4}，核验6/18，合集3；正式8300/A1900of4000仍运行。确认先完成18段并完整解码，再停止旧正式worker、2048真实工程测试，OOM才逐档1536/1024/512；rollout48/epochs5/minibatches4、奖励课程门槛不变，继承实际模型Adam归一化器LR和更新预算，新增样本分段记账。工程模型不作正式来源，新配方冻结谱系和独立验收后续训。原生stop风险、零学习边界退出、独立工作树和后处理转交均为执行安排，当前未改冻结源、未停正式训练、未做大N GPU测试。授权来源如实记录为主控codex_delegation及本线程既有直接全部授权，不伪作本线程新原话；无直接发送工具，供共享读取。上一工具调用为JS语法解析错误、未执行任何文件操作；本次成功写入后记录日志。
