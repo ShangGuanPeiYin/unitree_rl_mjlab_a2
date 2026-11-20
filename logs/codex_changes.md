@@ -3909,3 +3909,21 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新增docs/v09_s1_q010_resource_entry_review_20261120.md（SHA007c960119f661211d1a0bd36450a3ee3e744a614b4677874d0395b24a7384d1）；本机s1_resource_engineering_entry_q010_c9ee.json（SHAcdb3bfcedceffe0b7018178053e9db0060ede23242ce593721113a038f20c6f7）和独立dry证明8c503eeca04a61a29339b169c645002d476ef8ed70d13371b7c8dea0ea8cba9e不提交Git。批准严格c9ee/同r3/同0d158清单，仅S1_RESOURCE engineering。
 - 独审确认四probe未消费、各59工作项，资源上界16030340控制样本保持；5热身+50测量、48步/20Adam、两次额外全参数N×48、独立100×5005评估/1×5005视频的Q009工作量不变。仅容量/OOM可降档，工程异常停止，不扩大或自动重跑。learning_approved=false，resource_capacity_passed=false。
 - 更新计划和执行说明。提交前已重新逐323源码及全部测试/fixture核对最终freeze一致，SDS/6400重验通过，git diff --check通过；正式学习/实际资源仍0。精确暂存本次任务源、测试、裁定、计划、3独审报告及日志共24文件，排除用户play.py/train.py各9行及其他未提交内容、所有权重/轨迹/批准大JSON。接下来统一commit和非强制上传，核远端后才实际探测；本记录不提前声称push或GPU通过。
+
+
+### 2026-11-20T17:28:43.863683+08:00 — Q010任务上传核验完成，开始独审批准的实际资源探测
+
+- 本地/远端main完整提交均a43b48eacd32b6c8f578a3a3206d41fbb5896c60，原Git对象API上传核验成功，force=false；24任务文件，不含用户play/train或权重/轨迹。实际前置再次查询远端、核批准/清单/报告完整SHA、当前c9ee/SDS/6400及live ledger仍为dry-run原SHA。
+- 开始一次S1_RESOURCE工程实测，执行批准JSON allowed_command（真实dry-run参数仅加--execute），CUDA_VISIBLE_DEVICES=0、device=cuda:0、physical-gpu-index=0、monitor-interval=0.02、segment=s1-q010-resource-20261120-r1、output=resource_q010_r1。2048→1536→1024→512，5热身+50测量/48步/20Adam与Q009全负载及16030340上界保持。
+- 本机新增q010_resource_launch_20261120.json和q010_resource_execution_20261120.log，结束时另存exit receipt；模型、视频和资源报告留本机。此条只记录启动，尚无稳定档位/容量/效果结论，正式学习仍未批准，后续按真实结果独审。
+
+
+### 2026-11-20 17:56:57 CST — Q010实际资源完成及真实学习CLI零物理预检
+
+- 更新docs/v09_s1_execution.md与计划已执行提交/远端核验/资源命令步骤；源码、测试、既有3独审报告、兼容清单及旧447证据保持冻结。resource进程exit0，程序选512，报告语义SHAd712183d48eaa89db4c76209cbf4e52b99d8bd83d873b724a3e409c599e17f3b。2048/1536分别1/2热身后OOM；1024完整工作量但保守峰值9635.3125MiB（观测6953.1875）越7168拒绝；512完整工作量、保守6367.625MiB（观测5167.625）、host最低11.028236GiB，程序容量条件通过，独立容量验收仍进行中。没有调门槛或配方。
+- 1024/512各完成55完整迭代+全参数更新+100×5005外部评估+1×5005视频+恢复完整更新，视频验证与终止帧标记true；实际视频/模型/结果与resource_settlement均留本机。source和formal初始化继续原6400，不把一次性探测训练当正式学习或继承其状态。
+- root从活ledger完整链读取seq1157/eventSHA7b75a39666ab73a08e683bd0fa1ce662dc9fd3b950195d9ed3b0e0bbb7e8c0a5：资源收费5631298，已知5459266+两unknown上界172032，全部资源op已settled；累计engineering5942450（含原校准311152）、evaluation15419500、learning0。总收费21361950不夸称全部为已知实际物理样本。本机budget summary SHAd2b1819c7edf8930150d9307ae898236afc7fe7531109bb6bb507c469a71ded8。
+- 新本机q010_s1_preflight_stdout.json/stderr.log/proof.json，实际train CLI不带execute且禁CUDA，exit0/ledger字节不变，旧baseline/校准与新resource同Ctx集成通过；proof SHA54e5b1210d433df7fd76d0a883a32cda5351f2e15b55ed9fffb9897562cb6a32。N512、24576样本/迭代、20Adam，S1.1 813次/主25634次/恢复每4069次；所有关键参数显式与原配方一致。未发学习许可、未推进正式物理。
+- 下一步：独审实际容量/费用/恢复与视频，容量确认后另审S1.1/S1.2学习准入，仍无行为恢复或效果改善结论。
+
+- 2026-11-20T18:06:21+08:00 进度文档提交准备：资源exit0及真实训练CLI零物理预检exit0/账本未变收据已重读，当前仅docs/v09_s1_execution.md、Q010计划与追加日志3个任务文件待提交；独立容量验收仍进行中，文档不冒称学习获准。源码/测试不变，本次仅记录实测与费用，不重复运行CPU套件。
