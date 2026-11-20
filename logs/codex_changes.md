@@ -3808,3 +3808,29 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 2026-11-20 15:03:27 CST 资源owner只读计划检查未发现阻断，补清EvidenceRef为frozen dataclass且基本类型可asdict序列化；Context公开批准/run身份只读属性供子进程参数传播；旧checkpoint负例限定既有子CLI/内部恢复，禁止为测试新增主CLI checkpoint入口。仍仅计划文档更新，未实施生产代码或运行新测试。
 
 - 2026-11-20 15:05:44 CST 学习/账本owner只读计划检查确认主消费链完整，补清比较CLI显式run_id及Hooks传参、学习批准实际比较同一Context清单、所有学生checkpoint加载点共同CPU预检、baseline多manifest suite=None、冻结input不要求不存在的producer字段、资源外层新SHA与内嵌旧校准分开校验、final资格读取活journal/ledger而非旧封存计数。仍仅文档，未运行新代码或物理。
+
+
+### 2026-11-20 15:10:33 CST — 旧端Python启动身份补充采样
+
+- 独审新增本机`logs/a2_v09/s1_seed42_r3/old447_python_startup_identity_20261120.json`，记录4个.pth/egg-link/site.py/direct_url相关常规文件身份，文件SHA=bbe47d8dd159ab9a65ed3ca0f4ebc6a52baea126d1e87686b05277f8d9d40791；唯一editable工程实际指向本仓库a2，相关Python依赖已由此前全Python源清单覆盖。
+- 此项是final3仍运行时的补充采样，不声称这些启动文件已在第一份身份清单中被提前密码学测量；将纳入旧finalize后连续性重验。未改任何源码、运行依赖或账本，未新增物理步，无新阻断。大清单留本机，不提交Git。
+
+
+## 2026-11-20 15:23:38 CST — 全部原教师缓存闭合，进入600例校准
+
+- 文件：更新`docs/v09_s1_execution.md`；本机新增`teacher_final_3_seal_receipt.json`与独审`teacher_final_3_independent_integrity_20261120.json`，后者SHA=9a942eefd7594395acf5ed0b8e6fcf003c961c5f7761651c855124a8a5907e36。
+- 内容与验证：第三套封存对照7500病例覆盖完整、closed=true/reserved=0；实际4644400控制样本、18577600物理子步（含全部padding），闭合seq756。独审75PT/75geometry、7500唯一连续首终态/全metrics重算/固定观测CPU教师输出及ledger均一致，无工程无效。
+- 汇总范围：五套教师缓存各独审完整性通过，共25500病例，实际15419500控制样本。只公开覆盖/身份/费用，不公开final成功失败、行为值或选模建议，不能理解为学生终验通过。root从外部账本生成seal receipt，不读取封存成绩。
+- 下一步：原批准范围内的600例train_calibration已开始（每组8并行、75批），s_V尚未生成或核验；旧finalize/全部依赖连续性结论仍待完成。源码322项仍旧44780，学习0；Q010生产修改继续等待Task0完成。
+
+- 2026-11-20 15:24:59 CST 五套原轨迹时序独审补记：新增本机`s1_0_raw_temporal_independent_integrity_20261120.json`，SHA=12cb864f4a1795748e3155835f1639d39b97e24882622ecf84ba005580039273。25500例previous_action[1:]与action[:-1]一致、首previous_action为0、actual sample_command与冻结case/Q002 actor索引一致、is_cruise序列一致。指令浮点比较atol=1e-7仅作float32输入时序校验，不改变任何行为阈值；final行为值未公开，无新物理步。
+
+
+## 2026-11-20 15:55:19 CST — 旧S1.0完整性验收完成，允许进入Q010限定实施
+
+- 文件：新增`docs/v09_s1_0_sealed_integrity_review_20261120.md`（SHA=f2fcd9e5b99be5eb643a0adfbb8bbb8ddbb1e0dc67630498d2efeb4e1daf91d2）；更新`docs/v09_s1_execution.md`及计划Task0完成状态；本机校准/最终证明JSON保留，不上传原轨迹/权重。
+- 完成与实际费用：五套教师25500例、600独立校准完整，六义务closed；375教师PT+75校准values PT、450geometry全量独审通过，无工程无效。实际S1.0共15730652控制样本=15419500评估+311152校准，62922608物理子步；正式学习操作及样本0。
+- 核心设置与验证：s_V=2.136540383972894来自289564个首回合value；以FP64总体分母n重算2.1365403839728914，在rtol1e-12/atol1e-10内一致，21588等待样本严格排除、不筛成功病例。保持原文件冻结值，不替换为独审重算值。此值仅用于原定动作MSE+0.1归一化value MSE，不改变奖励或训练配方。
+- 身份与连续性：旧322源码仍44780cd5d6f9ee4029fb38b2f9348a872268e7bedf995d4b36e2e30ec2f2163f；34883已记录常规路径SHA未变，8关键包/全部Python源/启动文件集合无增删，保留晚加载/设备等覆盖边界，不夸称无限依赖闭包。闭合907/eventSHA=503fbb81eb11acff4bc068d722c4cba65905c8a1424359c9bf3d01a539ee737f，前缀字节SHA=c526987c278867f390ae7c02dd50ccd5de898f8df734ed0d6a157f7441e4194e。calibration文件历史metadata是906/closed=false，实际907已close；不得倒回计数。
+- 本机关键文件：calibration SHA=9ea9e55dfc66e4a140a99cee87171ea805c47ccc7b310a8b1928342b26d9fc6e，baseline_admission SHA=ffa28f8b9f78b7c59379e4168b7252844bd697955d38048b688046dc83020ae2；calibration独审证明SHA=e09cc2591cb55fa4030bd3d11bb32effed3390def34424fdc8164bc0b387b37b，最终独审证明SHA=e4117a495b0abdac58066a0d0ad2a493bfb034894666384abe087e78e48321d6。
+- 后续资格：独审明确旧端Task0通过，可开始已批准Q010限定修复/新freeze准备。三套final成绩始终封存；旧→新直接清单、新资源执行、真实资源通过及S1学习仍需后续独审，不宣称学生效果恢复，S2/S3未启动。
