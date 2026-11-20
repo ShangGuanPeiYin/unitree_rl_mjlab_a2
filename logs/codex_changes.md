@@ -4071,3 +4071,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 
 - 新增docs/v09_s1_q013_loss_reference_ruling_20261120.md，记录规划明确生产GPU正式值/独立CPU参考分别保留；当前最大标量差8.06073769039628e-5本身不阻断。不移用Q012逐输出tol、不新加loss阈值/重放/审批。
 - 原动作和值MSE/sV/0.1系数/归约/分母/finite继续独审，adapt75及原S1.2入口完成即训练。没有修改生产公式、损失、数据、速度、预算或行为门槛，不推断具体算子；实际公式或分母错误若发现另报，完整after工程尚未验收。
+
+
+### 2026-11-20T23:24:34+08:00 — Q008 after完整验收及S1.2实际开训
+
+- 新增docs/v09_s1_q008_after_evidence_review_20261120.md，更新docs/v09_s1_execution.md、Q010计划after项为完成并追加本日志。报告SHA73811ec6edbf393a9ed7d6f269a3e0f45c52c0ad77ceba748a20fd4a1ce090b0、综合proof SHAf83b1143e798acdefedfb3be1ebbab086940de4fe8ebabe60f1de34642004b7d；root实际读报告并核SHA。
+- after DIAG1500原件/812240费用单次闭合、Q012数值/四路公式原sV/分母600标量及1500配对、adapt75完整18118帧/36049控制/终止帧及费用全部独审通过。实际DIAG成功382→1051/1500；同before状态目标0.0192690→0.00471891、同after状态0.0737465→0.00226362，仅各自同数据诊断变化，不作跨分布或S1恢复结论。
+- 原进程按批准自然S1.2，实录main9轮/总20201472学习样本，原N512/48步/20Adam/LR3e-5/5m保存不变；依SDS由S1.1仅18地图参数/teacher50%切到44学习参数/teacher10%，std及归一化仍冻结、同Adam保留，不是另改配方。主段最多25634轮/629981184样本，门禁按原合同。入口/首轮CP工程独审进行中；正式A/B/final、S1_RESTORED及S2/S3未验证。

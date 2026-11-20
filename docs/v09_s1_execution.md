@@ -178,3 +178,12 @@ S1.1实际训练已开始，本次记录时确认97/813完整迭代、2383872学
 Q012解除报告提交460922c236d199808b1de1924dffdd41fb628186已push核远端后，root复核原9d4同Context/C9及同父PID/tick/argv、diag子exit0、账本5067不变，仅CONT原父一次；append-only resume收据SHA `01c18bb3348b10fd632fbef0a0d599bc45dce026bee193dbc2d024b9f4d7d851`。原父继续production四路比较及adapt75，没有重启或改配方。
 
 Q013参考口径见`docs/v09_s1_q013_loss_reference_ruling_20261120.md`，SHA `b4a9e1febb8040c2a2fa83ccda1ac90b17e515342fe107cafa430b0da3fe4b43`：GPU正式值与CPU参考分别保留，不新增跨后端聚合loss门槛；独核公式/归约/原sV/分母和有限性。comparison工程flags均true，完整独审及adapt75仍待闭合；S1.2尚未启动。
+
+
+## Q008 after完整独审通过，正式S1.2运行
+
+完整报告`docs/v09_s1_q008_after_evidence_review_20261120.md` SHA `73811ec6edbf393a9ed7d6f269a3e0f45c52c0ad77ceba748a20fd4a1ce090b0`，综合proof SHA `f83b1143e798acdefedfb3be1ebbab086940de4fe8ebabe60f1de34642004b7d`。适配CP、after75批/1500例原件及812240单次收费、Q012签字、Q013四路公式/分母/600项finite/1500行为配对及adapt75全套完整解码均通过；录像18118帧/36049控制样本，75工程操作closed，终止帧准确。
+
+固定DIAG成功由382增至1051/1500，失败1113至449，超时5至0。正式GPU同一before状态9366条上的动作+0.1值由0.0192690352309至0.00471890637915；同一after状态15110条由0.0737464808282至0.00226361836703。两套状态分布不同，不能互相当同分布对照；正式恢复仍须A/B/final。
+
+同原driver已按既定工程条件进入S1.2，当前记录9次main完整迭代、总822次/20201472学习样本，最近20Adam及loss/梯度finite。S1.2仍N512/rollout48/5epoch×4逻辑minibatch/micro512/LR3e-5/clip1；teacher控制回合10%、Actor/Critic44参数可学习，std与全部normalizer冻结，沿用原Adam动量；主段上限25634完整迭代/629981184学习样本，既定门禁/恢复条件不变。入口和首main周期CP另作纯CPU独审，不暂停现运行。S1_RESTORED及S2/S3尚未取得或启动。
