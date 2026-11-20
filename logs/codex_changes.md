@@ -4059,3 +4059,15 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新增docs/v09_s1_q012_numeric_audit_result_20261120.md（SHA1847986dcdf86fe9c6eb53a15defed08eb167e82c7d4127d386471c39feda524），更新docs/v09_s1_execution.md与本日志；本机clearance SHA8701392499df92ccdbc5efda9fd265543047f3938cf6a45155bbfa78f11d3560，actual proof SHA691a781b94e0ba0cb32d9e58a1e0893f857b9b6e69ddb514eefb0bdd2d85d5b0。root核两文件原文及SHA。
 - 独审实际双PT逐tensor原tol重算全部saved/互比/双fill/mask均零差零超差；各分母/模型原生输入/原件/配置/槽位通过，ledger5067与学习19980288未推进。原9d4同Ctx继续有效，解除JSON不冒充新学习批准。无配方/损失/速度/门槛/C9变化，无行为恢复结论。
 - 下一步提交push核远端、守护同父仅CONT一次，完成原Q008 comparison/adapt75后才按原入口训练。当前父尚未恢复，production比较/视频及S1.2仍未验收，未声称效果改善。
+
+
+### 2026-11-20T22:55:29+08:00 — Q012解除后原父守护恢复一次
+
+- 解除记录提交460922c236d199808b1de1924dffdd41fb628186已push并再次API核远端==本地。root实际复验C9/SDS/6400、原9d4同Context、解除及独审proof/report SHA、原PID3228141/tick145922371/T/完整launch argv、diag子3350375/Z exit0、ledger5067/file369a…8730未变及唯一GPU父。
+- 先fsync resume intent，再仅SIGCONT原父一次，确认同tick R；append-only q012_parent_resume_20261120.jsonl SHA01c18bb3348b10fd632fbef0a0d599bc45dce026bee193dbc2d024b9f4d7d851。未重启、未加载probe、未改权重/训练配方/费用；原进程继续production comparison及adapt75，独审跟进。当前未验证S1.2入口或行为恢复；后续依原运行时条件自动训练/评估，不重复请求授权。
+
+
+### 2026-11-20T22:58:07+08:00 — Q013明确四路loss跨后端参考口径
+
+- 新增docs/v09_s1_q013_loss_reference_ruling_20261120.md，记录规划明确生产GPU正式值/独立CPU参考分别保留；当前最大标量差8.06073769039628e-5本身不阻断。不移用Q012逐输出tol、不新加loss阈值/重放/审批。
+- 原动作和值MSE/sV/0.1系数/归约/分母/finite继续独审，adapt75及原S1.2入口完成即训练。没有修改生产公式、损失、数据、速度、预算或行为门槛，不推断具体算子；实际公式或分母错误若发现另报，完整after工程尚未验收。
