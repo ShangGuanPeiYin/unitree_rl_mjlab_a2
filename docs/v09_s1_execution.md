@@ -150,3 +150,12 @@ Q011解除记录提交`fbcc118cb89dc0ddfb3f1cdac424c47a85ebc30e`已push并在恢
 学前费用DIAG539740+teacher视频35954+init视频21605=597299控制样本，全部known complete，无unknown/重复；对应2389196物理子步。两套视频共28965帧（teacher18070、init10895）。权威账本closed次序diag seq1313、teacher1464、init1615，均早于首学习reserve1618、commit1623；journal before seq5/恢复6/首optimizer8，首轮24576样本20Adam有限。Q011等待与GPU核验没有新增物理费。
 
 S1.1实际训练已开始，本次记录时确认97/813完整迭代、2383872学习样本，最近20Adam及loss/梯度有限。训练继续原N512/48步/5epoch×4逻辑批/micro512/LR3e-5/clip1/std及normalizer冻结；每5m学习样本保存。before工程通过不代表loss改善或恢复，after1500例/75视频及同数据比较仍是S1.2工程条件，正式A/B与final另验。
+
+
+## 首个500万学习样本checkpoint独立工程审查通过
+
+报告`docs/v09_s1_checkpoint_005013504_independent_review_20261120.md` SHA `74ee0915599e16e84bca7718253cb04282a8554286c82861e0967911bee3d8fd`，本机proof SHA `4bd47530f7df414581f441e6a1b28244aab9eec987270e1559954bb8fa8bac97`。指定首周期文件SHA `e43257834144000f5f8b810fcd7539c1b9d04333bee4098226f9d95d6ab327a1`，在第204次完整迭代后保存，对应5,013,504学习控制样本；第203次为4,988,928，故符合每5,000,000学习样本在完整rollout边界保存的原规则。文件名415为journal保存事件序号。
+
+纯CPU独审确认同C9/SDS/6400/Context，实际初始checkpoint的53项state中仅18项学习分支变化，其余35项精确一致，包含std与8个normalizer buffers。Adam管理45参数，恰18份状态各4,080步=204×20，模型及动量有限，原LR3e-5等设置不变。CPU/Python/NumPy RNG局部装载通过；CUDA/shuffle/environment的16字节编码完整，未额外执行GPU恢复或物理重放。环境offset0由实际named-stream病例及initial_cases源码解释为合法未消费，不是训练异常，未修改生产数据或设置。
+
+保存前缀seq2443、7,737,998字节、SHA `18d57dfb84ff748862589b3848c6dd5e684d52655d9198573fae7ee7bb40a372`，204项学习操作完整结算，metadata阶段/累计费用及角色租约精确对齐；活ledger后续合法追加，未回退消费。工程一致性通过不代表行为改善、S1.2资格或S1_RESTORED。S1.1继续既定813迭代上限，after1500例诊断/75视频/同数据比较以及A/B/final仍按原条件执行。没有修改冻结源码/tests、签署旧报告/catalog、训练权重或运行配置。

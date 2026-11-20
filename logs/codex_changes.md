@@ -4012,3 +4012,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新增docs/v09_s1_q008_before_evidence_review_20261120.md，SHAb4304067051fa649b4c30d78de8813777b12ee3fa3de288474431cc627a50d0b；新本机before汇总proof SHA10295a9b4e10d58197358117b9e73667f5c91d7a536b48826543b65bd19917ca、init75 proof SHA9aea51581788224c72a8b678ba7f29542bdf2ac49318f3c43cc712e13d26eb78，均留本机。150视频独立完整解码28965帧、DIAG1500与75几何/PT、初始迁移和Q011链全部工程验收通过。
 - 学前225项全部已知complete，共597299控制样本=DIAG539740+teacher35954+init21605，2389196子步；闭合seq1313/1464/1615严格早于first learning reserve1618/commit1623，journal before5/恢复6/optimizer8。独审捕获时已有1351680学习样本，报告未将初始CP learning0误作运行当前消费。
 - 更新执行说明和计划，初始Q008勾选通过、after证据仍未完成。本次实际完整训练记录确认97/813、2383872学习样本，末轮20Adam且全部loss/梯度有限；各设置/损失/冻结合同前后未变，不把单轮loss或初始轨迹当能力恢复。source C9及旧签字/catalog不改，after工程和A/B/final仍按原门槛。
+
+
+### 2026-11-20T20:23:54+08:00 — 首个500万学习样本checkpoint独立工程验收
+
+- 新增docs/v09_s1_checkpoint_005013504_independent_review_20261120.md（SHA74ee0915599e16e84bca7718253cb04282a8554286c82861e0967911bee3d8fd）；更新docs/v09_s1_execution.md并追加本日志，记录实际第204轮/5013504学习样本checkpoint e43257834144000f5f8b810fcd7539c1b9d04333bee4098226f9d95d6ab327a1的状态审查。本机proof SHA4bd47530f7df414581f441e6a1b28244aab9eec987270e1559954bb8fa8bac97和权重不上传。
+- 验证：CPU同字节/schema/C9/SDS/6400/Context通过；53状态中18学习张量变化、35冻结项对实际初始精确一致，含std+8norm；45参数组/18Adam状态各4080步且全finite。写前ledger2443完整204学习操作、阶段/累计费用/角色租约及journal415保存关联通过，活尾合法追加。CPU RNG局部roundtrip通过，GPU/shuffle/env只核编码，不冒称实测GPU恢复或完整轨迹重放。root再次核报告/proof文件SHA与原文，未重复CPU回归：生产源码和tests本次无修改。
+- 设计及前后差异：仅增加已完成工程审查的记录，训练配置、损失、冻结合同、速度、课程、预算和阈值前后均未变；未暂停或重启原driver。运行继续S1.1，尚未完成813次适配及after工程条件，不声称loss或行为改善、S1.2晋级或恢复。行为效果与额外GPU恢复测试未验证。
