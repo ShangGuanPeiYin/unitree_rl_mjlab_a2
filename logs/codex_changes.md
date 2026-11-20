@@ -3777,3 +3777,34 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 未改变：冻结322源码、所有病例/阈值/训练参数、账本计费核心。S1.0继续采集，正式学习0。
 
 - 2026-11-20 13:55:56 CST 上传核验补记：运行工件使用真实b4eec34e73b16720d7ac3ce823d49a0749891540成功，远端、本地与追踪分支一致，force=false；凭证api_exact_upload_b4eec34.json。
+
+
+## 2026-11-20 14:22:12 CST — 封存教师final_1对照采集结账（不解封成绩）
+
+- 文件：更新`docs/v09_s1_execution.md`；新增本机`logs/a2_v09/s1_seed42_r3/teacher_final_1_seal_receipt.json`，只含覆盖、身份与计费，不含成功/失败或行为指标。
+- 实际内容与理由：teacher_final_1进程exit0，75批各100例；外部账本7500个completed_cases、closed=true/reserved=0，实际4760300控制样本（19041200物理子步，含padding）。仅凭外部账本与进度确认采集闭合，不读取final PT/episodes/summary行为内容；成绩继续封存。teacher_final_2已按已批准串行流程启动。
+- 验证：重新核对322源码SHA仍44780cd5d6f9ee4029fb38b2f9348a872268e7bedf995d4b36e2e30ec2f2163f，源6400保持同一身份，formal_learning=0。独立完整性审核进行中，尚未宣称其证据已独审通过，更不是学生终验通过。
+- 未验证：余下两套对照、校准/finalize、Q010兼容、资源和正式学习/行为恢复尚未完成。最新上传日志提交226d60e9bf56e22ecae6ad824a8f1a97ca5e1a74已核验远端本地一致，force=false。
+
+- 2026-11-20 14:24:37 CST 独立核验补记：final_1的75PT/75geometry、7500唯一病例/连续首终态、全部metrics重算、固定观测教师CPU输出及ledger完整性通过，无工程无效。闭合seq454链通过；本机teacher_final_1_independent_integrity_20261120.json SHA=8019910a3291b5214be30921f4706599b237de51eebcb9fce534a41f8cb27573。只接受完整性/覆盖/费用，未提供或解封行为成绩，未新增物理执行，学习0。统一封存报告待其余S1.0完成。
+
+
+## 2026-11-20 14:52:32 CST — 封存教师final_2完成及独立完整性验收
+
+- 文件：更新`docs/v09_s1_execution.md`；本机新增`teacher_final_2_seal_receipt.json`和独审`teacher_final_2_independent_integrity_20261120.json`（SHA=ca2638ab75f0b5e0d2024b48df082875f8233c71d22c9d04b69e77c48f758047）。原始及独审运行文件均不提交Git，不含公开成绩。
+- 实际内容与验证：final_2进程exit0，账本7500个completed_cases完整、closed=true/reserved=0。计费4327600控制样本（17310400物理子步，包含padding），闭合seq605。独审全75PT/75geometry、7500唯一连续首终态及全metrics重算/固定观测教师CPU输出/账本一致，无工程无效。
+- 设计与范围：只接受封存教师对照的覆盖/身份/完整性/费用；root只读外部账本做seal receipt，不解封任何final行为成绩，不给训练选模建议，也不声称学生终验通过。源码322项仍44780原freeze。独审另只读抽查N100实际进程252个mapped常规库，全部旧身份清单覆盖且零变更；未将抽查夸称全部动态依赖闭包证明。
+- 状态：final_3已串行启动，后续600例校准和旧finalize/依赖连续性仍待完成；Q010生产修复、资源和正式学习尚未开始，学习0。
+
+
+## 2026-11-20 14:59:22 CST — Q010实施计划（仅文档）
+
+- 新增`docs/superpowers/plans/2026-11-20-a2-v09-q010.md`，依据已批准SDS/Q010和三个agent只读盘点确定共享Context接口、资源/学习消费归属、真实final资格时序、同bytes解析、正反测试及独立新freeze/资源/学习准入顺序。
+- 理由：在不修改旧447生产源码期间把后续修复变成可独立审核的具体任务，避免消费者各自放宽SHA。原基线/校准生产和cases生成不改，源20→100资源负载不降，旧数据不改producer/不重计费。
+- 计划按Spec覆盖、接口一致、五类Review Focus逐项自检；这是设计文件，未执行新测试或修复，未宣称兼容/资源/行为通过。已授权SDS指定实现+独审工作法继续沿用，不引入新训练配方或额外用户审批。源码/依赖/rulings仍冻结，须等全部旧端独审完成再实施。
+
+- 2026-11-20 15:01:51 CST 计划自检补记：明确所有Task Git index/日志/提交上传均由root统一管理，agent不得自行操作index。仅本机docs上传运行工件额外允许当前计划的一个精确路径`docs/superpowers/plans/2026-11-20-a2-v09-q010.md`，未放宽到任意目录，Python编译检查通过；未新增物理或改变生产源码。
+
+- 2026-11-20 15:03:27 CST 资源owner只读计划检查未发现阻断，补清EvidenceRef为frozen dataclass且基本类型可asdict序列化；Context公开批准/run身份只读属性供子进程参数传播；旧checkpoint负例限定既有子CLI/内部恢复，禁止为测试新增主CLI checkpoint入口。仍仅计划文档更新，未实施生产代码或运行新测试。
+
+- 2026-11-20 15:05:44 CST 学习/账本owner只读计划检查确认主消费链完整，补清比较CLI显式run_id及Hooks传参、学习批准实际比较同一Context清单、所有学生checkpoint加载点共同CPU预检、baseline多manifest suite=None、冻结input不要求不存在的producer字段、资源外层新SHA与内嵌旧校准分开校验、final资格读取活journal/ledger而非旧封存计数。仍仅文档，未运行新代码或物理。
