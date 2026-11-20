@@ -4027,3 +4027,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新实际after batch0 CPU原tol动作162/4800超差（max6.966292858e-5），value0/400，raw指标/几何/finite通过；proof9aecff60…原件保留，不复用before Q011作为豁免、不放宽tol、不声称具体算子根因。完整after CPU审计与DIAG自然采集继续，整体工程通过未验证。
 - root验证原父3228141/tick145922371/完整launch argv、journal1640 after env/buffers已释放、do_wait、唯一子3350375/CP345335绑定及main学习0；fsync意图后仅SIGSTOP父一次，确认T且子继续R/S。append-only hold receipt SHA54361dbab6e232b075611705c8afe9d7826cef1f85ce9f1819a1d9a2526479b3。此为防未验收进入S1.2的可逆运行保护，未重启、改权重或回退费用。
 - 规划发送两次被自动审核拒绝；只读查明历史规划用户明确要求回问后，审核仍认为工具输出不能验证当前外发授权，已停止重试并向当前用户异步请求该目的地许可。拟Q012 GPU零物理方案/恢复尚未裁定或执行，不以本报告替代许可。生产源码/tests本次未改，未重复239项CPU回归；GPU恢复、after全套及行为改善未验证。
+
+
+### 2026-11-20T22:10:13+08:00 — after全量CPU部分审查记录及Q012已发送
+
+- 新增docs/v09_s1_q008_after_cpu_pending_review_20261120.md，SHA6d5bf95a8ff4753b85782215e3ebafd0c3b797289df743103e24ca4ebd8922e2。75批/1500例原件、geometry和metrics通过，812240控制样本费用闭合；teacher15110状态原tol仍有4991动作/244value分量例外，student固定初始观测39批有92动作分量例外，不能只核teacher放行。四组同数据CPU参考完成，生产comparison/adapt75尚未生成，整体工程仍pending，不声称行为恢复。
+- 当前用户已明确授权向指定规划会话发送，root随后成功发送Q012及完整CPU补充，等待明确范围裁定。用户进一步明确任务相关修改/push/数据访问/跨对话通信持续授权。原父保持Q009安全暂挂；本次无GPU/物理/CONT，无源码、配方、损失、阈值或原件变化；GPU数值核验和S1.2资格未验证。仅核新报告SHA及文档格式，不重复未改源码的CPU测试。
