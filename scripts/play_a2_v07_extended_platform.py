@@ -81,6 +81,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--checkpoint-sha256', required=True)
+    parser.add_argument('--terrain', choices=('stairs', 'air-platform'), default='stairs')
+    parser.add_argument('--platform-height', type=float, default=2.0)
     parser.add_argument('--stair-steps', type=int, default=40,
                         help='Playback-only stair count; frozen training terrain is unchanged')
     parser.add_argument('--platform-length', type=float, default=20.0)
@@ -99,7 +101,7 @@ def main():
                         help='Positive value runs a finite smoke check without a window')
     args = parser.parse_args()
     if not all(math.isfinite(v) for v in (args.vx, args.vy, args.wz)) or args.vx <= 0:
-        parser.error('L40 playback requires finite commands and vx > 0')
+        parser.error('Playback requires finite commands and vx > 0')
     if args.headless_steps < 0:
         parser.error('--headless-steps must be >= 0')
     digest = hashlib.sha256(args.checkpoint.read_bytes()).hexdigest()
@@ -111,24 +113,32 @@ def main():
     from src.tasks.velocity.v07 import terrain, spec
     from src.tasks.velocity.v07.env import V07Env
     from src.tasks.velocity.v07.model import V07ActorCritic
-    terrain.configure_playback_platform(tile_id=21, length=args.platform_length, width=args.platform_width, steps=args.stair_steps)
+    air = args.terrain == 'air-platform'
+    if air:
+        terrain.configure_air_platform(length=args.platform_length, width=args.platform_width,
+                                       height=args.platform_height)
+    else:
+        terrain.configure_playback_platform(tile_id=21, length=args.platform_length,
+                                            width=args.platform_width, steps=args.stair_steps)
     torch.manual_seed(args.seed)
     model = V07ActorCritic().to(args.device)
     state = torch.load(args.checkpoint, map_location=args.device, weights_only=False)
     model.load_state_dict(state['model'], strict=True)
     model.eval()
-    env = V07Env(num_envs=1, device=args.device, seed=args.seed, phase='L',
-                 substage='L40', evaluation=True, fixed_vx=args.vx, frontier_tile_id=21,
-                 initial_cases=[dict(x=-1., y=0., yaw=0., vx=args.vx)])
+    env = V07Env(num_envs=1, device=args.device, seed=args.seed, phase='F0' if air else 'L',
+                 substage=None if air else 'L40', evaluation=True, fixed_vx=args.vx, frontier_tile_id=0 if air else 21,
+                 initial_cases=[dict(x=1.0 if air else -1., y=0., yaw=0., vx=args.vx)])
     try:
         env.reset()
         # User requested continuous observation including success/failure aftermath.
         # Keep event calculations but suppress teleport/reset for this viewer only.
         env._reset_ids = lambda ids, **kwargs: None
         command = torch.tensor([args.vx, args.vy, args.wz], device=args.device)
-        print(f'Playback: {args.stair_steps} steps, h=d=0.2m, '
-              f'landing x=[{args.stair_steps*.2:g},{args.stair_steps*.2 + args.platform_length:g}]m; '
-              f'landing width={args.platform_width:g}m; constant command={command.tolist()}; no automatic reset', flush=True)
+        description = (f'Air platform: {args.platform_length:g} x {args.platform_width:g}m, '
+                       f'height={args.platform_height:g}m, spawn x=1m' if air else
+                       f'Stairs: {args.stair_steps}, h=d=0.2m, '
+                       f'landing {args.platform_length:g} x {args.platform_width:g}m')
+        print(f'{description}; command={command.tolist()}; no automatic reset', flush=True)
 
         @torch.inference_mode()
         def advance():

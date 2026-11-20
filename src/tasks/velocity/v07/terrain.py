@@ -56,6 +56,19 @@ def _fail(message):
 
 # Playback-only override, configured before constructing an environment.
 _PLAYBACK_PLATFORM: tuple[int, float, float, int | None] | None = None
+_AIR_PLATFORM: tuple[float, float, float] | None = None
+
+
+def configure_air_platform(*, length: float, width: float, height: float):
+    """Replace only the flat playback tile with an isolated elevated slab."""
+    global _AIR_PLATFORM
+    if _AIR_PLATFORM is not None or _PLAYBACK_PLATFORM is not None or _TABLE_CACHE or _LAST_BUILD is not None:
+        raise RuntimeError("Configure playback terrain once before construction")
+    if not all(math.isfinite(v) and v > 0 for v in (length, width, height)):
+        raise ValueError("Platform dimensions and height must be finite and positive")
+    if width > 4 or length < 3:
+        raise ValueError("Playback platform requires width <= 4m and length >= 3m")
+    _AIR_PLATFORM = (float(length), float(width), float(height))
 
 
 def configure_playback_platform(*, tile_id: int, length: float, width: float = 0.8,
@@ -65,7 +78,7 @@ def configure_playback_platform(*, tile_id: int, length: float, width: float = 0
     Call once, before any geometry/map cache or environment is constructed.
     """
     global _PLAYBACK_PLATFORM
-    if _PLAYBACK_PLATFORM is not None or _TABLE_CACHE or _LAST_BUILD is not None:
+    if _AIR_PLATFORM is not None or _PLAYBACK_PLATFORM is not None or _TABLE_CACHE or _LAST_BUILD is not None:
         raise RuntimeError("Configure playback platform once before building terrain")
     table = build_terrain_specs()
     if not 0 <= tile_id < len(table) or table[tile_id].N == 0:
@@ -146,6 +159,10 @@ def build_terrain_specs() -> tuple:
         extended = replace(tile, N=n, platform_length=length,
                            valid_bounds_local=(lo, n * tile.step_depth + length, ylo, yhi))
         table = table[:tid] + (extended,) + table[tid + 1:]
+    if _AIR_PLATFORM is not None:
+        length, width, height = _AIR_PLATFORM
+        table = (replace(table[0], width=width, frame_origin_world=(0., 0., height),
+                         valid_bounds_local=(0., length, -width/2, width/2)),) + table[1:]
     return table
 
 
@@ -180,7 +197,9 @@ def tile_boxes(tile: "object") -> tuple[Box, ...]:
     half_t = float(tread_thickness(tile)) / 2.0
     boxes: list[Box] = []
     if n == 0:
-        boxes.append(Box("flat", 0, (ox + 10.0, oy, oz - 0.05), (12.0, 4.0, 0.05), oz))
+        x0, x1, y0, y1 = tile.valid_bounds_local
+        boxes.append(Box("flat", 0, (ox+(x0+x1)/2, oy+(y0+y1)/2, oz-.05),
+                         ((x1-x0)/2, (y1-y0)/2, .05), oz))
         return tuple(boxes)
     length = n * d + float(tile.platform_length) + 2.0
     boxes.append(Box("ground", 0, (ox - 2.0 + length / 2.0, oy, oz - 0.05),
@@ -482,7 +501,7 @@ def query_surface(points_world: torch.Tensor, tile_ids: torch.Tensor):
     # Outside the 0.80 m stair footprint only the approach/platform ground
     # exists (open side edges, no side walls): exact highest surface is z=0.
     height = torch.where(on_tread, height, torch.zeros_like(height))
-    height = torch.where(flat, torch.zeros_like(height), height)
+    height = torch.where(flat, torch.zeros_like(height), height) + origins[..., 2]
     height = torch.where(valid, height, torch.full_like(height, float("nan")))
     return height, valid
 
