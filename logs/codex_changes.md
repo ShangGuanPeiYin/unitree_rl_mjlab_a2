@@ -3681,3 +3681,40 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 未验证：未运行训练或物理仿真，未做显存资源探测，未证明6400恢复/登顶前倾修复/鲁棒提升；这些必须由执行主对话组织实现与独立验收。现有scripts/play.py和scripts/train.py修改原样保留、不纳入本次提交。
 
 - 落盘验证补充：初次空白检查发现5处Markdown行尾双空格，已仅移除SDS与原稿归档行尾空白；参数/正文相同。正式SDS SHA=500ad32aaa946c927459427f3a65565b15d4b77fca4be214817121d15c742976（上条41fe6c…为独立复审原稿SHA）。三阶段/课程预算、75/36/33/51组、6300/11700轨迹数、提示词引用均通过静态断言；scripts/play.py和scripts/train.py SHA未变。未运行行为测试。
+
+## 2026-11-20 A2 v0.9 S1 实施启动
+- 目的：按SDS v1.1 / v09-native40x30-sequential-r2开展独立v09地图迁移及6400原能力恢复。
+- 核验：SDS SHA500ad32aaa946c927459427f3a65565b15d4b77fca4be214817121d15c742976和源6400 SHA30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2实测匹配。
+- 文件：src/tasks/velocity/v09/__init__.py、spec.py，logs/a2_v09/resources_initial.json及本日志；实现子agent新增模块待独立审查后补充。
+- 修改与设计：隔离v09身份、schema11和S1预算/批次常量。地图48×32→40×30、两个FC768→640的具体实现分派子agent；固定源6400、冻结归一化及std、S1纯蒸馏。主agent管理日志、共享配置与Git，独立agent审核验收。
+- 资源快照：RTX3070Ti总8192MiB、空闲6474MiB，主机可用16.2GiB、磁盘可用436.9GiB。仅静态探测，不能据此确定2048环境可用。
+- 验证：文档与权重SHA已验证；正式仿真、资源55完整迭代、基线、训练和行为恢复尚未验证，正式学习/工程仿真消费均0。本次没有效果改善结论。
+- S1首批实现补充：新增v09 map/model（40×30真查询、双网格同状态缓存、仅两个FC重叠迁移）、cases/budget（75组冻结流及实际timeout费用）、distillation（动作MSE+0.1归一化value MSE，逻辑批统一分母、一次clip/Adam）、checkpoint（schema11身份/有限元数据检查/原子写）、prepare_a2_v09.py干跑冻结入口及对应CPU回归。
+- 已验证：独立审核真实6400的53项状态中51项逐字继承、2矩阵独立重叠积分一致；两图实际terrain.query_surface跨11帧对照；66组楼梯timeout与FP32原函数一致。map/model10+checkpoint7+distillation1共18项CPU检查通过。distillation额外独立高梯度裁剪/不整微批与Adam动量等价检查通过。checkpoint原先接受NaN/inf等五反例已复现修复。
+- 未验证/阻断：独立审核复现预算账本未阶段预留可登记学习操作，正在由预算实现agent修正；未来必需评估预算分项保护也待修正。资源训练、基线、行为及正式课程均未运行，不以CPU通过代表行为恢复。
+- 更新验证：新增完整48步rollout→5epoch×4逻辑batch=20次Adam的CPU调度测试；checkpoint7+distillation2共9项通过。增加project源码/资产清单SHA快照接口供后续正式证据绑定。正式物理仍0。
+- 规划请求：Q001询问S1平地逐例连续指标到组级保持容差的聚合与缺窗处理；Q002询问100步ramp首零起1000步HOLD与精确30s完成之间1步时序冲突。已发规划对话等待裁定，依赖项未自行定配方。
+- 已收到并入库规划Q001/Q002正式裁定，文件doc/sds/reviews/v09_execution_rulings.md绑定原SDS SHA。Q001明确每指标按教师完整窗口病例T作配对、缺窗处理和组均值/中位数；Q002明确ramp最后零速区间仍DECEL，随后HOLD1000步、共1001零速区间、30秒结算和1501硬上限。对应行为/边界实现待独立验证。原SDS文件未改字节。
+- 追加规划Q003/Q004裁定到绑定SDS的补充文件。Q003明确从出生真实x0开始全巡航段51样本窗口/连续50次停滞锁存，出生最初2s也检测，旧楼梯仍仅诊断；Q004明确每足≥2周期后汇集四足全部周期求本例步幅/步频中位数，组级仍逐例等权。环境实现agent正在修复相应边界，尚未仿真。
+- 已完成基础模块整合验证：map/model10+checkpoint7+distillation2+acceptance6+runtime1共26项CPU测试通过。runtime测试证明完成slot继续推进计费且每slot只记录首次终止。组级比较包含零成功进度退化和失败类别增加反例。仍未批准资源或正式课程。
+- 规划Q005已记录，S1_RESOURCE独立工程归属明确；S1.0子cap覆盖6400基线/校准及其重跑，二者均计S1非学习stagecap且不重复收费。
+- 新增scripts/evaluate_a2_v09_s1.py，显式源SHA、manifest、预算义务、真实批次caseSHA，逐slot首次终止留原始轨迹和固定观测Actor/Critic审计；记录等待槽物理费用，异常整套无效并保守结算。入口尚待独立审核和真实执行，未运行仿真。
+- 补充规划Q006/Q007已入库，明确S1.2确认可提前消费未来段有效门禁名额而不解锁学习，以及提前通过结束段后取消未用阈值的规则。实际attempt与原slot分别记录，课程状态机实现中。
+- 独立审核已验证首次终止校准排除已完成slot后续标签，padding仍按实际N×步收费；保留每批原始6400值和case slot，支持独立重算总体std s_V。校准尚未实际执行。
+- 旧纯CPU冻结目录logs/a2_v09/s1_seed42仅有初始预留，实际消费0，因R-CAL01完成目标需修正将由新r2账本替代执行，保留旧文件与账本历史。不得对同一实际操作使用两个账本。
+- Q008独立诊断与固定视频规模已记录；新增diagnostics.py、compare_a2_v09_diagnostics.py与diagnostics三项CPU反例，验证同数据两模型损失、严格标签形状/有限值/来源，拒绝广播和零尺度。新增geometry.py，运行入口对实际compiled地形重验并保存位置/大小/顶面/接触索引证书；独立CPU实际编译231个地形geom验证成功，并对1mm位置错位硬拒绝（零物理步）。证书如实记录原np.allclose尺寸atol与默认rtol，未修改原验证器阈值。
+- S1.0评估入口新增独立审定codeSHA核验和env.close异常整套无效/已结算不重复计费处理，summary先保存后关闭义务。候选最终集在读取前需权威journal/ledger同SHA相邻A/B通过及当前最终套证明；源6400冻结对照独立角色保持封存。
+- 已新增完整资源/录像/训练课程驱动，均仍在独立审核；资源CPU验证S1.2全44参数梯度/Adam状态，录像mock验证pre-reset终止帧与固定失败病例保留。真实GPU显存准入、renderer/ffmpeg、任何正式物理与学习仍未运行。
+- Q009进一步落实完整串行进程布局与新增上界：RESOURCE16,030,340，阶段非学习124,142,190，余25,857,810；r3新冻结正在生成，旧r1/r2账本和d94源码批准均为未执行历史、实际消费0，已保留审核原文快照。恢复/外部截断不计成功失败、不重复Adam或实际费用。
+- 真实只读CUDA/NVML检查发现同一UUID有无GPU-前缀误判，已独立修复与同卡/异卡反例验证；真实monitor查询成功但零仿真，不能当资源负载通过。实际CUDA微型线性模型一次Adam的CPU offload/原device恢复由独立审核验证身份与数值不变，仅为代数测试、非正式学习。
+- 固定视频依赖检查发现系统无ffmpeg/ffprobe CLI，使用已安装imageio_ffmpeg本地二进制及完整解码校验作为回退，真实后端标明，未安装或下载新依赖；对应真编码/解码验证待完成。
+- 补充SDS要求的Wilson95区间报告（acceptance新增1回归通过，组通过阈值不变），episode记录显式stageS1/course用于与底层原v07 phase元数据区分。前Q009源码全v09回归110项通过，后续修改仍待最终整合验证；所有正式物理/学习消费持续0。
+
+## 2026-11-20 A2 v0.9 S1 实现冻结与独立工程准入
+- 完成文件：src/tasks/velocity/v09的spec/map/model/env/metrics/cases/budget/checkpoint/distillation/runtime/geometry/acceptance/diagnostics/resources/video/s1_runner及初始化模块；scripts下prepare/evaluate/calibrate/finalize/compare/probe/video/train的v09入口与resource_worker；对应test_v09回归；docs/v09_s1_execution.md、docs/v09_s1_independent_review.md、doc/sds/reviews/v09_execution_rulings.md及本日志。
+- 整体逻辑：唯一6400源迁移原生40×30，两个FC768→640、其余51状态逐项复制；S1.1仅地图/融合适配，S1.2均值/critic恢复，std和所有normalizer继承冻结。动作MSE+0.1×以独立校准sV归一化的value MSE，固定LR3e-5、48步rollout、5×4=20次Adam、微批≤512、梯度1.0。原v07、机器人资产、PD和动作缩放没有源码修改。
+- 任务/预算：75组覆盖全部22类旧楼梯及普通平地走/走停；同SHA相邻A/B和100例/组终验；S1_DIAG与固定75例视频独立；只追加外部账本保留费用/门禁/终验/episode状态，schema11原子checkpoint及复原。Q001～Q009均记录规划裁定与反例。资源按2048→1536→1024→512验证真实串行训练/子进程布局；阶段非学习预留124,142,190、余额25,857,810，尚无实际费用。
+- 关键修复：未知/中断与padding不漏费；终验封存、同SHA和作用域硬门；完整窗口/缺测/50次停滞与100步减速边界；同Adam和每tensor原device/RNG恢复；外部截断不发奖励；零学习恢复复用已完成证据；冻结checkpoint不可被同名保存覆盖；UUID格式归一化与真实本地视频编码回退。
+- 最终验证：全tests/test_v09_*.py 140 passed、1个既有Torch弃用警告，104.91s；git diff --check通过。源码清单322项，SHA44780cd5d6f9ee4029fb38b2f9348a872268e7bedf995d4b36e2e30ec2f2163f。独立审核限定批准JSON为logs/a2_v09/s1_seed42_r3/s1_0_independent_admission_q009.json；报告SHA0b676e5abcd2c6c79e1a64f4a282d7118098ab0c0a695051c0cccfcaad204436，原文已不可变归档。
+- 已实际验证：源SDS/6400 SHA，53项迁移清单，真实CPU compiled地形231项及1mm错位硬拒绝，真实CUDA/NVML零物理查询，微型模型真实设备迁移代数，以及4帧640×480/25fps本地编码/完整解码。仅这些工程结果已有证据。
+- 当前未验证：6400五套真实基线/校准尚未启动，实际物理/正式学习消费0；完整GPU负载、真实机器人视频、S1恢复、S2/S3效果未验证，不声称行为改善。独立批准仅覆盖S1.0原6400基线和600例校准，后续资源与学习另行准入。原scripts/play.py和scripts/train.py各9行既有改动保留且不纳入本次提交。
