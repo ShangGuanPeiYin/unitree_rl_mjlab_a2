@@ -80,7 +80,7 @@ Q010协议独审已通过，见`docs/v09_s1_q010_compatibility_review_20261120.m
 使用同清单及真实旧校准的资源主CLI dry-run已exit0，20源/100槽×5005及录像1槽×5005校验通过，活ledger字节不变，无输出目录、无物理执行。本机证明`q010_real_resource_dry_proof.json` SHA `df567e11c48d8408758e3a3361ce91c9f59c5521c1a8ca92a0ebf3314b5de5c1`保存完整显式命令及来源引用；大stdout留本机。独立S1_RESOURCE工程入口已批准，见`docs/v09_s1_q010_resource_entry_review_20261120.md`；须完成任务提交/push及远端核验后才执行同一干跑命令加--execute。批准仅工程探测，resource_capacity_passed=false、learning_approved=false；实际资源及S1学习尚未启动。
 
 
-## Q010真实资源探测结果（程序完成，独审验收中）
+## Q010真实资源探测结果（独立容量验收通过）
 
 已审24文件提交`a43b48eacd32b6c8f578a3a3206d41fbb5896c60`非强制上传，启动前再次核远端一致。一次性探测exit0，程序选择512；本机报告`resource_q010_r1/resource_admission.json`语义SHA `d712183d48eaa89db4c76209cbf4e52b99d8bd83d873b724a3e409c599e17f3b`。
 
@@ -89,10 +89,22 @@ Q010协议独审已通过，见`docs/v09_s1_q010_compatibility_review_20261120.m
 | 2048 | 8105.5 | 8827.5 | 热身1次后下一迭代OOM |
 | 1536 | 8117.0625 | 8169.125 | 热身2次后下一迭代OOM |
 | 1024 | 6953.1875 | 9635.3125 | 完整负载完成，保守峰值超过7168上限 |
-| 512 | 5167.625 | 6367.625 | 完整负载及程序容量条件通过，待独审 |
+| 512 | 5167.625 | 6367.625 | 完整负载及独立容量验收通过 |
 
 1024与512均完成5热身+50测量、全参数S1.2更新、独立100环境×5005评估、独立1环境×5005视频及恢复更新；两视频验证和reset前终止帧标记为true。512最低主机可用内存11.028236389160156GiB。保守估计与采样观测值分列，未调整原7168MiB/4GiB门槛。探测模型全部为一次性工程模型，正式学习不继承其权重或Adam。
 
 资源收费5,631,298控制样本，其中已知完成5,459,266，两个OOM未知操作按预留上界收费172,032。活ledger seq1157闭合，各资源操作无未结算；S1累计收费21,361,950，正式学习操作和样本均0。上述总收费不能全部表述为已知实际物理步。
 
-真实train CLI无execute预检通过，账本未变、CUDA禁用：512环境每迭代24,576样本、20次Adam；S1.1最大813次（19,980,288样本），S1.2主段最大25,634次（629,981,184），终验行为失败后每次恢复最多4,069次（99,999,744）。seed42、rollout48、5epoch×4逻辑minibatch、microbatch512、LR0.00003、clip1、每5,000,000学习样本保存及原sV均不变。只读预检证明`q010_s1_preflight_proof.json` SHA `54e5b1210d433df7fd76d0a883a32cda5351f2e15b55ed9fffb9897562cb6a32`；它没有学习批准。实际资源尚待独审，正式学习/行为恢复及S2/S3均未完成。
+真实train CLI无execute预检通过，账本未变、CUDA禁用：512环境每迭代24,576样本、20次Adam；S1.1最大813次（19,980,288样本），S1.2主段最大25,634次（629,981,184），终验行为失败后每次恢复最多4,069次（99,999,744）。seed42、rollout48、5epoch×4逻辑minibatch、microbatch512、LR0.00003、clip1、每5,000,000学习样本保存及原sV均不变。只读预检证明`q010_s1_preflight_proof.json` SHA `54e5b1210d433df7fd76d0a883a32cda5351f2e15b55ed9fffb9897562cb6a32`；它没有学习批准。实际资源容量已独审通过，正式学习准入仍另审，行为恢复及S2/S3均未完成。
+
+
+独立容量验收正式通过，报告`docs/v09_s1_q010_resource_capacity_review_20261120.md`（SHA `2b8882c71194c85c6dc32e6c78ea4c5bb1801d224491da7b595dc25a73586f76`）及本机proof（SHA `b6bc45b9e6fcf92b79884085cfd6154afd12148fcff9b095b7d6f6256d8aac65`）独立确认最大可准入档512。两档完整运行视频各2505帧已完整解码；18个地图Adam状态从1100至1120步，新增26个全参数状态各20步、共44状态，冻结统计/std及RNG/对象身份恢复证据通过；59工作项和1157闭合收据一致。验收者未新增物理，没有解封final成绩或批准学习。S1.1/S1.2学习作用域及具体命令继续单独审核。进度记录提交`651f820b991ce517775a83a31716d2bd291ebf1a`已非强制上传并核远端一致，源码仍为c9ee。
+
+
+## S1学习独立准入（已签发，尚未启动）
+
+独立报告`docs/v09_s1_q010_learning_admission_20261120.md` SHA `e2dd965924f1a86c14a2526cbf2db75f9c01ab34fdc4fae86f7a7cca2b3f57f3`及本机批准`s1_learning_approval_q010_c9ee.json` SHA `9d4c515d799ecfbd586e57ba7ec75d436e610dca4738a9ab1086ccb2580d689f`只授权S1.1、受运行时工程条件限制的S1.2及既定串行证据/门禁/终验子流程。绑定同一C9源码、r3、6400/SDS、0d158旧证据清单、512容量报告；没有S2/S3执行资格或行为恢复结论。
+
+独审实际CPU admissions/schedule/最终learning approval验证通过；root再次真实构造同Context并验证最终JSON、报告/清单SHA和source/test freeze一致，通过。账本未变，正式journal不存在。唯一允许命令为已保存真实preflight.command追加--approval-report本JSON及--execute，CUDA_VISIBLE_DEVICES=0，无resume；禁止使用probe权重。
+
+提交报告、日志、计划并核远端后才启动。首次正式学习rollout之前，驱动先做75组×20例的S1_DIAG初始诊断、6400与迁移初始各75个固定视频；813个完整适配rollout后再做同套诊断和75个适配后视频。有限性、迁移/几何/接触一致性与完整对照条件满足后才进入S1.2；其余行为门禁、预算和final鲜活资格保持原合同。当前仅学习准入通过，尚未推进上述物理或正式学习，效果未验证。

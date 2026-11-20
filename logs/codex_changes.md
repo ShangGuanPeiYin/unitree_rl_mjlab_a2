@@ -3927,3 +3927,18 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 下一步：独审实际容量/费用/恢复与视频，容量确认后另审S1.1/S1.2学习准入，仍无行为恢复或效果改善结论。
 
 - 2026-11-20T18:06:21+08:00 进度文档提交准备：资源exit0及真实训练CLI零物理预检exit0/账本未变收据已重读，当前仅docs/v09_s1_execution.md、Q010计划与追加日志3个任务文件待提交；独立容量验收仍进行中，文档不冒称学习获准。源码/测试不变，本次仅记录实测与费用，不重复运行CPU套件。
+
+
+### 2026-11-20 18:09:36 CST — Q010独立容量验收正式通过
+
+- 新增docs/v09_s1_q010_resource_capacity_review_20261120.md，SHA2b8882c71194c85c6dc32e6c78ea4c5bb1801d224491da7b595dc25a73586f76；独审本机proof SHAb6bc45b9e6fcf92b79884085cfd6154afd12148fcff9b095b7d6f6256d8aac65。逐实际checkpoint、两MP4各2505帧完整CPU解码、帧审计、44参数Adam覆盖/步数、冻结stats/std、RNG载荷/运行恢复断言及1157链/59项/单父收费验证通过，接受N512容量。不夸称独立重演GPU随机序列或逐像素判断姿态。
+- 独审重核resource5631298=known5459266+unknown上界172032、全部123操作已结算、总收费21361950/learning0；resource报告open512属保存时历史，settlement/live1157实际已closed，均保留原件不改计数。1024保守估计与实际采样分列，门槛未改。
+- 更新执行说明为容量通过，行为恢复、正式学习及S2/S3仍未通过。资源进度3文档提交651f820b991ce517775a83a31716d2bd291ebf1a已精确Git对象非强制上传，核本地远端一致；source/tests与旧3报告/catalog冻结。后续独立审核S1.1/S1.2与既定证据流程的学习准入，当前未启动。
+
+
+### 2026-11-20 18:14:58 CST — S1学习独立准入签发及root实际校验
+
+- 新增docs/v09_s1_q010_learning_admission_20261120.md，SHAe2dd965924f1a86c14a2526cbf2db75f9c01ab34fdc4fae86f7a7cca2b3f57f3；本机批准JSON SHA9d4c515d799ecfbd586e57ba7ec75d436e610dca4738a9ab1086ccb2580d689f，scope严格S1.1_learning/S1.2_learning，绑定C9/r3/SDS/6400/同0d158清单/实际512容量。前置proof SHAa81ee1f6a99537326e9118f52d5f9b824b13679f7e4e761248e6e2f12aae2250、签后验证收据SHA9bd64942b39532ae9ca003fa3f936f8f7b859ee0fbb9396a5870a8e2516e7112均留本机不提交。
+- 独审纯CPU actual validate_admissions/validate_schedule_ledger/validate_learning_approval通过，工程only scope负例拒绝；root独立重核最终JSON/报告和清单内容SHA、真实同Context校验通过，允许命令精确为preflight.command+approval-report+execute且无resume，source323及全部tests/fixture仍等于已通过239回归的freeze，SDS/6400重验通过，live ledger未变、formal journal不存在。未重复大回归、未构造trainer/推进物理。
+- 配方与核心逻辑前后不变：N512，813适配/主最多25634/每retry4069；48步、5×4Adam、micro512、LR3e-5、clip1、std/stats冻结、原sV、每5m保存；fresh6400初始化，S1.1→S1.2同Adam动量，Q008硬门及同SHA A/B/final fresh资格、行为失败才解锁retry仍强制。批准不保证行为或loss改善，不涵盖S2/S3。
+- 更新计划将学习准入与Q008实际执行拆开，后者未完成；执行说明同步仅批准尚未启动。接下来只提交新容量/学习报告、执行doc/计划/日志5文件并push核远端后，才运行唯一已审命令。既有报告/catalog/源/tests不改。
