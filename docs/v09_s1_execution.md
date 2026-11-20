@@ -141,3 +141,12 @@ root先将裁定、结果和日志提交push并核远端，再核原PID3228141/s
 Q011解除记录提交`fbcc118cb89dc0ddfb3f1cdac424c47a85ebc30e`已push并在恢复前再次核远端一致；原PID3228141/start_ticks145922371/argv/账本重核后仅CONT一次，同一父进程已继续init75视频。append-only resume收据SHA `9d493388cae0eb41950f5e07b173bc0014fb2f1bf9834c4017f8ab7f98fc7a79`，恢复后独立核teacher旧子已回收、teacher仍精确75操作/35954收费不变、init已启动，post-resume proof SHA `1cdae128c64d1ddeca10f2aa88be92ba7304b50abf9c55f2e6a8689577b5cf3c`。
 
 6400固定75视频只CPU独审已通过，proof `q008_teacher75_videos_independent_proof.json` SHA `f6c7799195f09c7170f5ae2b4e107901053a075db992454d2492dee26089e1bd`：75 case0/manifest/C9/Context/源6400一致，全部独立完整解码共18070帧、640×480/25fps，初始帧/每2控制步/精确首终止帧及Q002命令阶段均核对通过。费用35954与75项已知complete及closed义务一致，无unknown或重复费用。初始迁移75视频尚采集中，尚无完整学习迭代，学前Q008整体不能提前宣称通过。
+
+
+## Q008 before完整独审通过，S1.1运行中
+
+完整报告`docs/v09_s1_q008_before_evidence_review_20261120.md` SHA `b4304067051fa649b4c30d78de8813777b12ee3fa3de288474431cc627a50d0b`，汇总proof SHA `10295a9b4e10d58197358117b9e73667f5c91d7a536b48826543b65bd19917ca`。初始化53-state迁移、DIAG1500例/75PT与几何、Q011GPU数值链、两套150视频工程完整性均通过。新增init75 proof SHA `9aea51581788224c72a8b678ba7f29542bdf2ac49318f3c43cc712e13d26eb78`；仅新增75做了完整解码，未重复teacher75。
+
+学前费用DIAG539740+teacher视频35954+init视频21605=597299控制样本，全部known complete，无unknown/重复；对应2389196物理子步。两套视频共28965帧（teacher18070、init10895）。权威账本closed次序diag seq1313、teacher1464、init1615，均早于首学习reserve1618、commit1623；journal before seq5/恢复6/首optimizer8，首轮24576样本20Adam有限。Q011等待与GPU核验没有新增物理费。
+
+S1.1实际训练已开始，本次记录时确认97/813完整迭代、2383872学习样本，最近20Adam及loss/梯度有限。训练继续原N512/48步/5epoch×4逻辑批/micro512/LR3e-5/clip1/std及normalizer冻结；每5m学习样本保存。before工程通过不代表loss改善或恢复，after1500例/75视频及同数据比较仍是S1.2工程条件，正式A/B与final另验。

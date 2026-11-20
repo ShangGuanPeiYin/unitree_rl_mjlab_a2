@@ -4005,3 +4005,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 更新执行doc，记录q011_parent_resume_20261120.jsonl SHA9d493388cae0eb41950f5e07b173bc0014fb2f1bf9834c4017f8ab7f98fc7a79；post-resume proof SHA1cdae128c64d1ddeca10f2aa88be92ba7304b50abf9c55f2e6a8689577b5cf3c，旧teacher子已回收、75操作/closed35954保持单次计费，init视频新子已开始，未重启原进程。
 - 独审新本机q008_teacher75_videos_independent_proof.json SHAf6c7799195f09c7170f5ae2b4e107901053a075db992454d2492dee26089e1bd，75固定case0/manifest/Context/C9/6400文件摘要、metadata与阶段/帧时序通过，全部75 MP4独立CPU完整解码18070帧、640x480/25fps；35954费用全已知、无重复/unknown/overflow/nonfinite。没有新GPU/物理或改旧报告。
 - 当前init视频5/75验证收据，training_iterations无完整记录、学习0。只记录已完教师视频工程证据，不能说Q008全完或效果改善；source/tests/已签文件保持冻结，init闭合后仅审新增75。
+
+
+### 2026-11-20 19:53:00 CST — Q008 before完整独审及正式S1.1学习记录
+
+- 新增docs/v09_s1_q008_before_evidence_review_20261120.md，SHAb4304067051fa649b4c30d78de8813777b12ee3fa3de288474431cc627a50d0b；新本机before汇总proof SHA10295a9b4e10d58197358117b9e73667f5c91d7a536b48826543b65bd19917ca、init75 proof SHA9aea51581788224c72a8b678ba7f29542bdf2ac49318f3c43cc712e13d26eb78，均留本机。150视频独立完整解码28965帧、DIAG1500与75几何/PT、初始迁移和Q011链全部工程验收通过。
+- 学前225项全部已知complete，共597299控制样本=DIAG539740+teacher35954+init21605，2389196子步；闭合seq1313/1464/1615严格早于first learning reserve1618/commit1623，journal before5/恢复6/optimizer8。独审捕获时已有1351680学习样本，报告未将初始CP learning0误作运行当前消费。
+- 更新执行说明和计划，初始Q008勾选通过、after证据仍未完成。本次实际完整训练记录确认97/813、2383872学习样本，末轮20Adam且全部loss/梯度有限；各设置/损失/冻结合同前后未变，不把单轮loss或初始轨迹当能力恢复。source C9及旧签字/catalog不改，after工程和A/B/final仍按原门槛。
