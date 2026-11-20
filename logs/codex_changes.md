@@ -3767,3 +3767,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 文件：新增`docs/v09_s1_teacher_gate_B_independent_review_20261120.md`，SHA=bd5041784866863a59b1e95ca7abc49d6a87889a2b9ac23f01be03202d3d1476；本机独审JSON SHA=12ce3cbe642a21f0c977c92bf14c2e15eea4fc10b5c9d18fb9909fb44765a923。更新执行记录链接。
 - 验证与设计：独审CPU禁CUDA全量重算75PT/geometry、1500连续首终态/metrics、教师固定观测输出、75组主JSON及Markdown；均与原始数据一致，无工程错误/nonfinite/overflow。869800实际控制样本=726201有效首终态+143599等待padding，物理子步3479200；闭合seq303哈希链通过，事件SHA=bdbb46a4fe18ac5354b66f76c42dc55e3fda3588014784d5365313c3b658086a。
 - 范围：只接受原6400 gate_B真实数据与计费，不扩大为完整S1.0、资源或学习批准。未读final任何PT/episodes/summary/派生行为内容；所有final仍封存。原A报告/旧S1.0签字/322源码不变，未新增物理步，学习仍0。
+
+
+### 2026-11-20 13:54:36 CST — 文档上传运行工件（不改变生产源码）
+
+- 文件：新增本机`logs/a2_v09/s1_seed42_r3/commands/push_docs_exact_api.py`，将已验证的原Git对象API上传过程复用；该文件不在源码snapshot、不提交为产品代码。
+- 实际内容与理由：仅接受当前main的单个直接子提交；仓库origin必须精确匹配当前项目，变更路径仅允许`docs/v09_s1_*.md`及`logs/codex_changes.md`，逐blob/tree/提交作者时间还原并核对完整SHA，核对旧远端后force=false快进，再核验本地/远端一致并存凭证。解决GitHTTPS不可达而API可达的实际上传问题，不上传工作树未提交内容、权重或凭据。
+- 验证：首次调用时执行方误填完整commit SHA，被HEAD身份断言在任何API写入前拒绝；读取实际HEAD=b4eec34e73b16720d7ac3ce823d49a0749891540后已重试，结果待核验。不将这次人为输入错误称为训练/评估失败，没有物理或预算消耗。此前两轮独立API原SHA上传及非强制更新已实际成功。
+- 未改变：冻结322源码、所有病例/阈值/训练参数、账本计费核心。S1.0继续采集，正式学习0。
+
+- 2026-11-20 13:55:56 CST 上传核验补记：运行工件使用真实b4eec34e73b16720d7ac3ce823d49a0749891540成功，远端、本地与追踪分支一致，force=false；凭证api_exact_upload_b4eec34.json。
