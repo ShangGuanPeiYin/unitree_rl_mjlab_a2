@@ -136,3 +136,8 @@ Q011 v3离线工具经fresh复审两Important闭合，CPU独立17项通过后，
 独审证明`q011_actual_gpu_independent_proof.json` SHA `f67ae1ffd3719b1b5898cff4a16c59f69f53c33f4e0913ce30e390d39d69b020`，GPU重放物理/收费0，live1464/file9478...未变，学习仍0。原9d4学习批准真实同Context复验有效，clearance因只有Q011 scope被学习validator拒绝，不能冒充新学习授权。
 
 root先将裁定、结果和日志提交push并核远端，再核原PID3228141/start_ticks145922371/完整argv和账本，仅CONT一次；不重启、不载入probe、不回退费用。随后仍需init75视频及既定全部Q008条件，不能据数值标签通过宣称训练或停车效果改善。旧裁定doc、所有既有签字文件、C9源/tests/catalog保持不变。
+
+
+Q011解除记录提交`fbcc118cb89dc0ddfb3f1cdac424c47a85ebc30e`已push并在恢复前再次核远端一致；原PID3228141/start_ticks145922371/argv/账本重核后仅CONT一次，同一父进程已继续init75视频。append-only resume收据SHA `9d493388cae0eb41950f5e07b173bc0014fb2f1bf9834c4017f8ab7f98fc7a79`，恢复后独立核teacher旧子已回收、teacher仍精确75操作/35954收费不变、init已启动，post-resume proof SHA `1cdae128c64d1ddeca10f2aa88be92ba7304b50abf9c55f2e6a8689577b5cf3c`。
+
+6400固定75视频只CPU独审已通过，proof `q008_teacher75_videos_independent_proof.json` SHA `f6c7799195f09c7170f5ae2b4e107901053a075db992454d2492dee26089e1bd`：75 case0/manifest/C9/Context/源6400一致，全部独立完整解码共18070帧、640×480/25fps，初始帧/每2控制步/精确首终止帧及Q002命令阶段均核对通过。费用35954与75项已知complete及closed义务一致，无unknown或重复费用。初始迁移75视频尚采集中，尚无完整学习迭代，学前Q008整体不能提前宣称通过。

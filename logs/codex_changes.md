@@ -3992,3 +3992,16 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新增docs/v09_s1_q011_numeric_audit_result_20261120.md，SHA50f8d46a535255537fbc2a1911dd78d04a19f21659afd919a54f3d84878a7e3a；本机clearance SHA22139fcb8ce685adb7191c67cc8ed6a35822607d04bf35b35185bb1cf1edbfe3、actual proof SHAf67ae1ffd3719b1b5898cff4a16c59f69f53c33f4e0913ce30e390d39d69b020、签后收据SHAc1ad39feeaa69b3033cec71dcbb4f98cc9bf7e9577e21633f12be73ac240aea1。root实际读并核文件/原9d4/输出/证据SHA关联通过。
 - 独审CPU从两GPU PT重算221728 saved分量及520组互比/89双fill/66遮盖参考，全部finite/等shape/原tol零差零例外；source/模型/map/slot/time/config身份无错误，Q011解除。保留原CPU超差2407/112392、10/9366以及TF32反事实/历史flags未直接保存/56缺失inactive无历史重建等限制，不作具体算子因果或行为改善结论。
 - 原9d4学习批准同Context仍通过，Q011 clearance仅解除数值等待且被学习validator作为新学习许可拒绝；init75及其他Q008、S1.2门禁/final条件不跳过。修改执行说明，下一步提交4任务文档并核远端后，只CONT原已暂停父一次。当前parent T、learning0、live1464未变、无新物理或fee。C9 source/tests、旧签字报告/主rulings/catalog均不改。
+
+
+### 2026-11-20T19:26:59.884918+08:00 — Q011解除记录上传后仅恢复原父一次
+
+- 四文档提交fbcc118cb89dc0ddfb3f1cdac424c47a85ebc30e已原Git对象非强制上传，并在发信号前再次API查询远端==HEAD。root重核clearance/report/actual GPU/safe proof/原9d4 SHA、原PID3228141/start_ticks145922371/T态/完整批准argv、旧子Z exit0、无额外GPUworker、C9/SDS/6400/同Context有效及live1464/file9478...未变。video6400正好75操作、closed/35954，只结算一次，learning0。
+- 新append-only本机q011_parent_resume_20261120.jsonl先fsync记录intent，再仅SIGCONT一次，随后确认同tick父进入R态；未重启、未改命令/模型/参数/数据、未强解锁。原driver继续init75等Q008，其余hard gates和原9d4批准不变。恢复不等于已梯度学习或行为恢复，后续继续只读核子退出/唯一收费和物理进度。
+
+
+### 2026-11-20 19:32:10 CST — 恢复后单次收费复核及teacher75完整视频独审
+
+- 更新执行doc，记录q011_parent_resume_20261120.jsonl SHA9d493388cae0eb41950f5e07b173bc0014fb2f1bf9834c4017f8ab7f98fc7a79；post-resume proof SHA1cdae128c64d1ddeca10f2aa88be92ba7304b50abf9c55f2e6a8689577b5cf3c，旧teacher子已回收、75操作/closed35954保持单次计费，init视频新子已开始，未重启原进程。
+- 独审新本机q008_teacher75_videos_independent_proof.json SHAf6c7799195f09c7170f5ae2b4e107901053a075db992454d2492dee26089e1bd，75固定case0/manifest/Context/C9/6400文件摘要、metadata与阶段/帧时序通过，全部75 MP4独立CPU完整解码18070帧、640x480/25fps；35954费用全已知、无重复/unknown/overflow/nonfinite。没有新GPU/物理或改旧报告。
+- 当前init视频5/75验证收据，training_iterations无完整记录、学习0。只记录已完教师视频工程证据，不能说Q008全完或效果改善；source/tests/已签文件保持冻结，init闭合后仅审新增75。
