@@ -159,3 +159,10 @@ S1.1实际训练已开始，本次记录时确认97/813完整迭代、2383872学
 纯CPU独审确认同C9/SDS/6400/Context，实际初始checkpoint的53项state中仅18项学习分支变化，其余35项精确一致，包含std与8个normalizer buffers。Adam管理45参数，恰18份状态各4,080步=204×20，模型及动量有限，原LR3e-5等设置不变。CPU/Python/NumPy RNG局部装载通过；CUDA/shuffle/environment的16字节编码完整，未额外执行GPU恢复或物理重放。环境offset0由实际named-stream病例及initial_cases源码解释为合法未消费，不是训练异常，未修改生产数据或设置。
 
 保存前缀seq2443、7,737,998字节、SHA `18d57dfb84ff748862589b3848c6dd5e684d52655d9198573fae7ee7bb40a372`，204项学习操作完整结算，metadata阶段/累计费用及角色租约精确对齐；活ledger后续合法追加，未回退消费。工程一致性通过不代表行为改善、S1.2资格或S1_RESTORED。S1.1继续既定813迭代上限，after1500例诊断/75视频/同数据比较以及A/B/final仍按原条件执行。没有修改冻结源码/tests、签署旧报告/catalog、训练权重或运行配置。
+
+
+## S1.1完成与Q012 after数值待裁定
+
+813轮/19,980,288学习样本实际完成，适配checkpoint SHA `3453350b921e81d0e3e568a3d6c93a6044b8c6b62edc6d3362083a0a0235d800`；CPU独审proof SHA `3401b0d5502db9674530d24f8e1609782931dd69cd308c33d6fe376da6abf74a`确认35冻结项精确一致、18Adam状态各16260、全部813轮有限性及账本/journal关联。after首已结算批400状态的4800动作分量中162超原tol，value0/400超差，raw指标/geometry/finite通过；不扩展before Q011结论。详见`docs/v09_s1_q012_after_numeric_audit_20261120.md`。
+
+为阻断未闭合数值验收下的S1.2，原父同PID/tick/argv与Q009 after已卸载/do_wait身份复核后，只SIGSTOP父一次，子diag_after继续自然采集。hold receipt SHA `54361dbab6e232b075611705c8afe9d7826cef1f85ce9f1819a1d9a2526479b3`。Q012消息两次被自动审核拒绝，查到历史规划用户明确回问授权后仍未获通信审核放行；消息未发出，当前用户发送许可异步待答，不通过其他渠道绕过。新GPU核验/恢复未经裁定不执行；after整套、比较、视频及S1.2资格仍未验收，不作行为恢复结论。

@@ -4019,3 +4019,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新增docs/v09_s1_checkpoint_005013504_independent_review_20261120.md（SHA74ee0915599e16e84bca7718253cb04282a8554286c82861e0967911bee3d8fd）；更新docs/v09_s1_execution.md并追加本日志，记录实际第204轮/5013504学习样本checkpoint e43257834144000f5f8b810fcd7539c1b9d04333bee4098226f9d95d6ab327a1的状态审查。本机proof SHA4bd47530f7df414581f441e6a1b28244aab9eec987270e1559954bb8fa8bac97和权重不上传。
 - 验证：CPU同字节/schema/C9/SDS/6400/Context通过；53状态中18学习张量变化、35冻结项对实际初始精确一致，含std+8norm；45参数组/18Adam状态各4080步且全finite。写前ledger2443完整204学习操作、阶段/累计费用/角色租约及journal415保存关联通过，活尾合法追加。CPU RNG局部roundtrip通过，GPU/shuffle/env只核编码，不冒称实测GPU恢复或完整轨迹重放。root再次核报告/proof文件SHA与原文，未重复CPU回归：生产源码和tests本次无修改。
 - 设计及前后差异：仅增加已完成工程审查的记录，训练配置、损失、冻结合同、速度、课程、预算和阈值前后均未变；未暂停或重启原driver。运行继续S1.1，尚未完成813次适配及after工程条件，不声称loss或行为改善、S1.2晋级或恢复。行为效果与额外GPU恢复测试未验证。
+
+
+### 2026-11-20T21:43:29+08:00 — S1.1完成及Q012 after原容差差异安全阻断
+
+- 新增docs/v09_s1_q012_after_numeric_audit_20261120.md，更新docs/v09_s1_execution.md并追加本日志：记录实际813轮/19980288样本完成与适配checkpoint345335…、独立CPU proof3401b0…；35冻结状态对初始精确一致、18Adam各16260、全813轮finite及写前ledger4912通过。训练配方、损失、速度、冻结、预算和阈值前后无变化，未进行效果或行为门禁比较。
+- 新实际after batch0 CPU原tol动作162/4800超差（max6.966292858e-5），value0/400，raw指标/几何/finite通过；proof9aecff60…原件保留，不复用before Q011作为豁免、不放宽tol、不声称具体算子根因。完整after CPU审计与DIAG自然采集继续，整体工程通过未验证。
+- root验证原父3228141/tick145922371/完整launch argv、journal1640 after env/buffers已释放、do_wait、唯一子3350375/CP345335绑定及main学习0；fsync意图后仅SIGSTOP父一次，确认T且子继续R/S。append-only hold receipt SHA54361dbab6e232b075611705c8afe9d7826cef1f85ce9f1819a1d9a2526479b3。此为防未验收进入S1.2的可逆运行保护，未重启、改权重或回退费用。
+- 规划发送两次被自动审核拒绝；只读查明历史规划用户明确要求回问后，审核仍认为工具输出不能验证当前外发授权，已停止重试并向当前用户异步请求该目的地许可。拟Q012 GPU零物理方案/恢复尚未裁定或执行，不以本报告替代许可。生产源码/tests本次未改，未重复239项CPU回归；GPU恢复、after全套及行为改善未验证。
