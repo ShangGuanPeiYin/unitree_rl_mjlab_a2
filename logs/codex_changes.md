@@ -3743,3 +3743,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 验证：1500条唯一病例SHA集合与manifest完全相等，75组各20例，成功和原因计数与summary/外部账本一致。报告排版第一次误将Wilson字典当二元序列而退出；未改任何原始数据或生产源，随后按lower/upper字段修正并核对75组及计数。独审新增范围CUDA禁用CPU四文件62 passed/25.14s，无物理；旧源码322项及原S1.0报告保持不变。完整Python源采样hash零变化。
 - 未验证与状态：gate_B刚启动；三套教师缓存、s_V、资源真实负载、机器人视频、S1学习与行为恢复尚未完成。资源入口R-RES-ENTRY-01确定阻断，需旧S1.0封存后按Q010修复/桥接和再独审。未声称新策略效果改善，正式学习为0。S2/S3未启动。
 - 提交推送：前次日志de91439因TLS/网络超时尚未推送；原实现c5b2878已先前成功推送。仅提交本次文档与日志；权重/运行大工件及用户原play/train修改不提交。
+
+
+## 2026-11-20 13:33:08 CST — 首套基线独立单项验收与原SHA上传核验
+
+- 文件：新增`docs/v09_s1_teacher_gate_A_independent_review_20261120.md`（SHA=fb1687b0d7af2f352dbdf5caa87ab39f28140456b78cdb79b1400d67087b56e6）；本机`teacher_gate_A_independent_verification_20261120.json`（SHA=d588fed2fc1e60711580635ec9d313204214a85450c521ccd12e863a231303db）保留每批PT/geometry内容身份。
+- 实际内容与理由：独审CPU禁CUDA检查75PT、75geometry、231地形box/index、1500例连续首终态和全部metrics重算、75组均值/中位数/分位数/Wilson、教师固定初始观测输出及账本闭合前缀。接受原6400 gate_A基线数据完整性与费用，仅此；不批准资源、学习或学生行为晋级。
+- 验证：1051成功/448失败/1超时；817400计费控制样本=722776首终态+94624padding；3269600物理子步，无nonfinite/contact_overflow/工程错误。75批初始教师CPU输出对GPU记录rtol=1e-4、atol=1e-5均成立，这是数值跨设备校验公差，未改行为阈值。闭合seq152/eventSHA=7a0e364b61a5ccc7e55aa7e8afab3e48264dece86bfe3dc0fd1283f9b50a811d。teacher_control=False是环境回合选择字段，本评估入口直接固定教师动作，不能用该字段误推学生执行或训练教师比例。
+- 上传核验：标准GitHTTPS连续网络故障，GitHub API可达。使用既有授权gh凭据逐blob/tree及原作者时间构造提交对象，返回完整de91439df31f16c32a52b17ac192f2ccd37d6b32和4a3fe4c16534e2cad7d9f013c28dc02392dc09a1，均与本地原SHA严格相同。连接器integration不能updateRefs，改用已授权gh REST并先核对旧远端c5b2878，force=false快进。复查远端与本地均为4a3fe4c；运行凭证api_exact_commit_upload.json/api_exact_ref_update.json留本机。无强制推送，无权重或无关文件上传。
+- 尚未完成：其余四套基线、600例校准、finalize、Q010桥接、资源、初始/后测视频、学习和行为恢复均不在本单项验收结论内。源码仍44780冻结、学习0。
