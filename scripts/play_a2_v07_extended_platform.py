@@ -82,6 +82,7 @@ def main():
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--checkpoint-sha256', required=True)
     parser.add_argument('--platform-length', type=float, default=20.0)
+    parser.add_argument('--platform-width', type=float, default=4.0)
     parser.add_argument('--vx', type=float, default=0.6)
     parser.add_argument('--vy', type=float, default=0.0)
     parser.add_argument('--wz', type=float, default=0.0)
@@ -108,7 +109,7 @@ def main():
     from src.tasks.velocity.v07 import terrain, spec
     from src.tasks.velocity.v07.env import V07Env
     from src.tasks.velocity.v07.model import V07ActorCritic
-    terrain.configure_playback_platform(tile_id=21, length=args.platform_length)
+    terrain.configure_playback_platform(tile_id=21, length=args.platform_length, width=args.platform_width)
     torch.manual_seed(args.seed)
     model = V07ActorCritic().to(args.device)
     state = torch.load(args.checkpoint, map_location=args.device, weights_only=False)
@@ -124,7 +125,7 @@ def main():
         env._reset_ids = lambda ids, **kwargs: None
         command = torch.tensor([args.vx, args.vy, args.wz], device=args.device)
         print(f'L40: 40 steps, h=d=0.2m, landing x=[8,{8 + args.platform_length:g}]m; '
-              f'constant command={command.tolist()}; no automatic reset', flush=True)
+              f'landing width={args.platform_width:g}m; constant command={command.tolist()}; no automatic reset', flush=True)
 
         @torch.inference_mode()
         def advance():

@@ -55,10 +55,10 @@ def _fail(message):
 
 
 # Playback-only override, configured before constructing an environment.
-_PLAYBACK_PLATFORM: tuple[int, float] | None = None
+_PLAYBACK_PLATFORM: tuple[int, float, float] | None = None
 
 
-def configure_playback_platform(*, tile_id: int, length: float):
+def configure_playback_platform(*, tile_id: int, length: float, width: float = 0.8):
     """Extend one platform in this process; never edits the frozen training spec.
 
     Call once, before any geometry/map cache or environment is constructed.
@@ -71,7 +71,16 @@ def configure_playback_platform(*, tile_id: int, length: float):
         raise ValueError("Playback platform requires a stair tile")
     if not math.isfinite(length) or length < 2.0:
         raise ValueError("Playback platform length must be finite and >= 2 metres")
-    _PLAYBACK_PLATFORM = (tile_id, float(length))
+    if not math.isfinite(width) or not 0.8 <= width <= 4.0:
+        raise ValueError("Playback platform width must be within [0.8, 4] metres")
+    _PLAYBACK_PLATFORM = (tile_id, float(length), float(width))
+
+
+def platform_width(tile):
+    """Landing width, independently of the unchanged stair tread width."""
+    if _PLAYBACK_PLATFORM is not None and int(tile.tile_id) == _PLAYBACK_PLATFORM[0]:
+        return _PLAYBACK_PLATFORM[2]
+    return float(tile.width)
 
 
 # --------------------------------------------------------------- spec binding
@@ -127,7 +136,7 @@ def build_terrain_specs() -> tuple:
         if len(origin) != 3 or not all(math.isfinite(v) for v in origin):
             _fail(f"tile {tid}: frame_origin_world must be a finite 3-tuple")
     if _PLAYBACK_PLATFORM is not None:
-        tid, length = _PLAYBACK_PLATFORM
+        tid, length, _ = _PLAYBACK_PLATFORM
         tile = table[tid]
         lo, _, ylo, yhi = tile.valid_bounds_local
         extended = replace(tile, platform_length=length,
@@ -181,7 +190,7 @@ def tile_boxes(tile: "object") -> tuple[Box, ...]:
         "platform", n,
         (ox + n * d + float(tile.platform_length) / 2.0, oy,
          oz + n * h - half_t),
-        (float(tile.platform_length) / 2.0, width / 2.0, half_t), oz + n * h))
+        (float(tile.platform_length) / 2.0, platform_width(tile) / 2.0, half_t), oz + n * h))
     return tuple(boxes)
 
 
@@ -347,7 +356,12 @@ def index_geometry(model, specs=None) -> GeometryIndex:
                 tile_spec.platform_length)
             joined = (x0, x1, platform[1] - _FOOT_HALF_WIDTH, platform[1] + _FOOT_HALF_WIDTH)
             for g in last:
-                support[g] = np.asarray(joined)
+                if platform_width(tile_spec) != float(tile_spec.width) and bounds[g, 0] >= platform[0] + n * float(tile_spec.step_depth) - 1e-6:
+                    # The widened landing and last narrow tread form a non-rectangular
+                    # union: never invent support beside the last stair tread.
+                    support[g] = bounds[g]
+                else:
+                    support[g] = np.asarray(joined)
     return GeometryIndex(tile, step, bounds, top, support, tuple(int(g) for g in ids))
 
 
@@ -417,7 +431,8 @@ def _table_tensors(device):
                          dtype=torch.float32)
         w = torch.tensor([float(s.width) for s in table], device=device,
                          dtype=torch.float32)
-        cached = (bounds, origins, n, h, d, w)
+        pw = torch.tensor([platform_width(s) for s in table], device=device, dtype=torch.float32)
+        cached = (bounds, origins, n, h, d, w, pw)
         _TABLE_CACHE[key] = cached
     return cached
 
@@ -443,7 +458,7 @@ def query_surface(points_world: torch.Tensor, tile_ids: torch.Tensor):
         points_world = torch.as_tensor(points_world)
     points = points_world.to(torch.float32)
     ids = _broadcast_ids(tile_ids, points)
-    bounds_t, origins_t, n_t, h_t, d_t, w_t = _table_tensors(points.device)
+    bounds_t, origins_t, n_t, h_t, d_t, w_t, pw_t = _table_tensors(points.device)
     origins = origins_t[ids]
     n, h, d, width = n_t[ids], h_t[ids], d_t[ids], w_t[ids]
     x = points[..., 0] - origins[..., 0]
@@ -453,7 +468,7 @@ def query_surface(points_world: torch.Tensor, tile_ids: torch.Tensor):
     lo, hi, ylo, yhi = lo[ids], hi[ids], ylo[ids], yhi[ids]
     valid = (x >= lo) & (x <= hi) & (y >= ylo) & (y <= yhi)
     stair_end = n * d
-    on_tread = y.abs() <= width / 2.0
+    on_tread = y.abs() <= torch.where(x >= stair_end, pw_t[ids], width) / 2.0
     height = torch.where(
         x < 0.0, torch.zeros_like(x),
         torch.where(
@@ -493,7 +508,7 @@ def platform_bounds(tile_id: int) -> tuple[float, float, float, float]:
     n, d = int(tile.N), float(tile.step_depth)
     if n == 0:
         return (float("nan"),) * 4
-    half = float(tile.width) / 2.0
+    half = platform_width(tile) / 2.0
     x0 = n * d + SAFE_INSET
     x1 = n * d + float(tile.platform_length) - SAFE_INSET
     y0 = -half + SAFE_INSET
