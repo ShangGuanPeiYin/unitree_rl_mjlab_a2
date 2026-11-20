@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ctypes
 from copy import deepcopy
+from dataclasses import asdict
 import gc
 import hashlib
 import json
@@ -37,16 +38,28 @@ VIDEO_ENVS = 1
 VIDEO_STEPS = 5005
 
 
-def load_calibration(path, *, code_sha256):
+def load_calibration(path, *, code_sha256, identity_context=None):
     path = Path(path)
-    raw = path.read_bytes()
-    data = json.loads(raw)
+    reference = None
+    if identity_context is None:
+        raw = path.read_bytes()
+        data = json.loads(raw)
+        file_sha256, producer_code_sha256 = hashlib.sha256(raw).hexdigest(), code_sha256
+    else:
+        from .evidence_identity import EvidenceIdentityContext
+        if (not isinstance(identity_context, EvidenceIdentityContext)
+                or identity_context.consumer_code_sha256 != code_sha256):
+            raise ValueError('calibration identity context differs from the current consumer')
+        expected = identity_context.expected_ref(path, kind='calibration', suite='train_calibration')
+        data, reference = identity_context.read_legacy_json(path, kind='calibration', suite='train_calibration',
+                                                           manifest_sha256=expected.manifest_sha256)
+        file_sha256, producer_code_sha256 = reference.file_sha256, reference.producer_code_sha256
     required = {'sds_sha256', 'source_sha256', 'manifest_sha256', 'code_sha256',
                 'value_scale', 'value_samples', 'physical_control_samples', 'method'}
     if not required <= data.keys():
         raise ValueError('complete explicit frozen calibration JSON is required')
     if (data['sds_sha256'] != spec.SDS_SHA256 or data['source_sha256'] != spec.SOURCE_SHA256
-            or data['code_sha256'] != code_sha256 or data['method'] != 'population_std_max_1'):
+            or data['code_sha256'] != producer_code_sha256 or data['method'] != 'population_std_max_1'):
         raise ValueError('calibration identity/method differs from current execution')
     if (isinstance(data['value_scale'], bool) or not isinstance(data['value_scale'], (int, float))
             or not math.isfinite(data['value_scale']) or data['value_scale'] < 1):
@@ -58,8 +71,11 @@ def load_calibration(path, *, code_sha256):
     digest = data['manifest_sha256']
     if not isinstance(digest, str) or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest):
         raise ValueError('calibration manifest SHA is invalid')
-    return dict(data, calibration_file_sha256=hashlib.sha256(raw).hexdigest(),
-                calibration_path=str(path.resolve()))
+    result = dict(data, calibration_file_sha256=file_sha256,
+                  calibration_path=reference.path if reference is not None else str(path.resolve()))
+    if reference is not None:
+        result['evidence_ref'] = asdict(reference)
+    return result
 
 
 def host_available_bytes():
@@ -253,8 +269,13 @@ def validate_child_reservation(snapshot, operation_key, *, mode, checkpoint_sha2
 
 def resource_assessment_cases(gate_cases, *, num_envs):
     chosen = [case for case in gate_cases if case['lesson'] == 'L40' and case['speed'] == .3]
-    if len(chosen) != 20 or any(case['hard_timeout_steps'] != 5005 for case in chosen):
+    if (len(chosen) != 20 or any(case['hard_timeout_steps'] != 5005 for case in chosen)
+            or any(case.get('suite') != 'gate_A' or case.get('task') != 'stairs' for case in chosen)):
         raise ValueError('resource cases must come from20 gate_A original L40/.3 cases')
+    if (len({case['case_sha256'] for case in chosen}) != 20
+            or {case['case_id'] for case in chosen} != set(range(20))
+            or len({canonical_json(case['case_key']) for case in chosen}) != 20):
+        raise ValueError('resource source cases require20 unique original SHA/identities')
     if num_envs == 100:
         return [deepcopy(case) for _ in range(5) for case in chosen]
     if num_envs == 1:
@@ -351,7 +372,7 @@ def collect_padded_video(env, policy, case, path, *, renderer, writer, control_s
 class RealProbeCandidate:
     """Owns only disposable models/optimizer/environments, never a formal run."""
     def __init__(self, num_envs, *, device, calibration, output_dir, gate_cases, code_sha256,
-                 ledger_run_id, ledger_path, gate_manifest_path):
+                 ledger_run_id, run_dir, ledger_path, gate_manifest_path, identity_context=None):
         from .env import EpisodeIds
         from .model import Frozen6400Teacher, V09ActorCritic
         self.num_envs, self.device = num_envs, device
@@ -359,7 +380,14 @@ class RealProbeCandidate:
         self.course = 'S1.1'
         self.code_sha256 = code_sha256
         self.ledger_run_id = ledger_run_id
+        self.run_dir = Path(run_dir).resolve()
         self.ledger_path, self.gate_manifest_path = Path(ledger_path), Path(gate_manifest_path)
+        self.identity_context = identity_context
+        if identity_context is not None and (
+                identity_context.consumer_code_sha256 != code_sha256
+                or identity_context.run_id != ledger_run_id or identity_context.run_dir != self.run_dir
+                or identity_context.ledger_path != self.ledger_path.resolve()):
+            raise ValueError('resource candidate context/run identity differs')
         self.gate_cases = gate_cases
         self.roles = role_allocation(num_envs)
         self.ids = EpisodeIds()
@@ -442,7 +470,8 @@ class RealProbeCandidate:
                     metrics_storage_bytes=self.env.trace.storage_bytes)
 
     def save_and_restore(self):
-        from .checkpoint import save_checkpoint, load_checkpoint
+        from .checkpoint import save_checkpoint
+        from .s1_runner import load_current_checkpoint
         from .model import V09ActorCritic, state_sha256
         from src.tasks.velocity.v07.continuation_v07 import tree_digest
         import numpy as np
@@ -458,6 +487,8 @@ class RealProbeCandidate:
             random_state=dict(python=random.getstate(), numpy=np.random.get_state()),
             probe=True, completed_resource_iterations=self.iterations,
             shuffle_generator=self.generator.get_state())
+        if 'evidence_ref' in self.calibration:
+            metadata['calibration_evidence_ref'] = self.calibration['evidence_ref']
         checkpoint_sha = save_checkpoint(path, self.student, self.optimizer, metadata)
         # The new physical rollout starts a fresh episode; counters remain
         # monotonic and are not reconstructed from slot or update number.
@@ -468,7 +499,8 @@ class RealProbeCandidate:
         del self.optimizer, self.student
         gc.collect()
         torch.cuda.empty_cache()
-        payload = load_checkpoint(path, device='cpu')
+        payload = load_current_checkpoint(path, code_sha256=self.code_sha256,
+                                          checkpoint_sha256=checkpoint_sha, device='cpu')
         self.student = V09ActorCritic().to(self.device)
         self.student.load_state_dict(payload['model'], strict=True)
         self.student.set_s1_course('S1.1')
@@ -518,6 +550,8 @@ class RealProbeCandidate:
             role_state=dict(num_envs=self.num_envs, episode_counters=self.ids.state_dict(), assignments=self.roles),
             random_state=dict(python=random.getstate(), numpy=np.random.get_state()), probe=True,
             completed_resource_iterations=self.iterations, shuffle_generator=self.generator.get_state())
+        if 'evidence_ref' in self.calibration:
+            metadata['calibration_evidence_ref'] = self.calibration['evidence_ref']
         path = self.output_dir / 'external_evidence_parent.pt'
         checkpoint_sha = save_checkpoint(path, self.student, self.optimizer, metadata)
         self.external_checkpoint = dict(path=str(path.resolve()), checkpoint_sha256=checkpoint_sha,
@@ -546,12 +580,15 @@ class RealProbeCandidate:
         count = EVAL_ENVS if mode == 'evaluation' else VIDEO_ENVS
         directory = self.output_dir / ('external_' + mode)
         command = [sys.executable, str(spec.PROJECT_ROOT / 'scripts/a2_v09_resource_worker.py'),
-            '--mode', mode, '--ledger', str(self.ledger_path), '--run-id', self.ledger_run_id,
+            '--mode', mode, '--run-dir', str(self.run_dir), '--ledger', str(self.ledger_path), '--run-id', self.ledger_run_id,
             '--operation-key', operation_key, '--checkpoint', self.external_checkpoint['path'],
             '--checkpoint-sha256', self.external_checkpoint['checkpoint_sha256'],
             '--code-sha256', self.code_sha256, '--gate-manifest', str(self.gate_manifest_path),
             '--device', str(self.device), '--num-envs', str(count), '--control-steps', '5005',
             '--width', '640', '--height', '480', '--fps', '25', '--output-dir', str(directory), '--execute']
+        if self.identity_context is not None:
+            command += ['--evidence-identity', str(self.identity_context.approval_path),
+                        '--evidence-identity-sha256', self.identity_context.approval_sha256]
         process = subprocess.run(command, capture_output=True, text=True)
         self.output_dir.joinpath(mode + '_stdout.log').write_text(process.stdout)
         self.output_dir.joinpath(mode + '_stderr.log').write_text(process.stderr)
@@ -576,15 +613,14 @@ class RealProbeCandidate:
         return result
 
     def restore_after_evidence(self):
-        from .checkpoint import load_checkpoint
+        from .s1_runner import load_current_checkpoint
         from .model import state_sha256
         from src.tasks.velocity.v07.continuation_v07 import tree_digest
         import numpy as np
         info = self.external_checkpoint
         path = Path(info['path'])
-        if hashlib.sha256(path.read_bytes()).hexdigest() != info['checkpoint_sha256']:
-            raise RuntimeError('offloaded parent checkpoint SHA changed')
-        payload = load_checkpoint(path, device='cpu')
+        payload = load_current_checkpoint(path, code_sha256=self.code_sha256,
+                                          checkpoint_sha256=info['checkpoint_sha256'], device='cpu')
         actual = dict(model=state_sha256(self.student.state_dict()),
             teacher=state_sha256(self.teacher.state_dict()), optimizer=tree_digest(self.optimizer.state_dict()))
         if (actual != info['fingerprints'] or state_sha256(payload['model']) != actual['model']
@@ -645,7 +681,8 @@ def _write_new_json(path, result):
 
 
 def run_resource_probe(*, ledger, segment_id, calibration, output_dir, code_sha256,
-                       candidate_factory, monitor_factory, progress=None, source_snapshot=None):
+                       candidate_factory, monitor_factory, progress=None, source_snapshot=None,
+                       input_evidence=None):
     """Strict descending candidates; exceptions retain evidence and billed cost.
 
     Mock factories are supported for nonphysical CPU tests. A real caller must
@@ -832,6 +869,7 @@ def run_resource_probe(*, ledger, segment_id, calibration, output_dir, code_sha2
             break
     report = dict(schema_version=11, sds_sha256=spec.SDS_SHA256, source_sha256=spec.SOURCE_SHA256,
                   recipe=spec.RECIPE, code_sha256=code_sha256,
+                  input_evidence=input_evidence or {},
                   calibration=calibration, selected_num_envs=selected, candidates=results,
                   admitted=selected is not None, cancelled=cancelled,
                   halted_for_engineering=engineering_halt, behavior_verified=False,

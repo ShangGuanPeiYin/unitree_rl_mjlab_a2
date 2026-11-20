@@ -304,6 +304,50 @@ def test_calibration_never_supplies_default_scale_or_final_data(tmp_path):
         r.load_calibration(path, code_sha256='b' * 64)
 
 
+def calibration_context(tmp_path):
+    from v09_identity_fixtures import make_identity_fixture
+    from src.tasks.velocity.v09.evidence_identity import EvidenceIdentityContext
+    fixture = make_identity_fixture(tmp_path, consumer_code_sha256='c' * 64)
+    context = EvidenceIdentityContext.from_approval(fixture.approval_path, fixture.approval_sha256,
+                                                    **fixture.context_kwargs())
+    return fixture, context
+
+
+def test_approved_legacy_calibration_keeps_producer_values_and_verified_ref(tmp_path):
+    fixture, context = calibration_context(tmp_path)
+    original = fixture.calibration_path.read_bytes()
+    result = r.load_calibration(fixture.calibration_path, code_sha256='c' * 64, identity_context=context)
+    assert result['code_sha256'] == '44780cd5d6f9ee4029fb38b2f9348a872268e7bedf995d4b36e2e30ec2f2163f'
+    assert result['value_scale'] == 2. and result['value_samples'] == 600
+    assert result['physical_control_samples'] == 720
+    assert result['calibration_file_sha256'] == hashlib.sha256(original).hexdigest()
+    assert result['evidence_ref']['producer_code_sha256'] == result['code_sha256']
+    assert result['evidence_ref']['consumer_code_sha256'] == 'c' * 64
+    assert result['evidence_ref']['approval_sha256'] == fixture.approval_sha256
+    assert result['calibration_path'] == result['evidence_ref']['path']
+    assert fixture.calibration_path.read_bytes() == original
+
+
+def test_legacy_calibration_without_context_remains_rejected(tmp_path):
+    from v09_identity_fixtures import make_identity_fixture
+    fixture = make_identity_fixture(tmp_path)
+    with pytest.raises(ValueError):
+        r.load_calibration(fixture.calibration_path, code_sha256='c' * 64, identity_context=None)
+
+
+def test_calibration_context_cannot_authorize_a_different_consumer(tmp_path):
+    fixture, context = calibration_context(tmp_path)
+    with pytest.raises(ValueError):
+        r.load_calibration(fixture.calibration_path, code_sha256='d' * 64, identity_context=context)
+
+
+def test_legacy_calibration_changed_after_approval_is_rejected(tmp_path):
+    fixture, context = calibration_context(tmp_path)
+    fixture.put_json(fixture.calibration_path, dict(fixture.calibration, value_scale=3.))
+    with pytest.raises(ValueError):
+        r.load_calibration(fixture.calibration_path, code_sha256='c' * 64, identity_context=context)
+
+
 def test_role_allocation_and_provider_keep_native_frozen_case_inputs():
     roles = r.role_allocation(2048)
     assert [roles.count(role) for role in ('flat_walk', 'flat_stop', 'H00_H15', 'D25_D22_D20_L12_L20_L40')] == [410, 410, 614, 614]
@@ -357,6 +401,42 @@ def test_resource_child_cases_use_only_gate_A_copies_for_exact100_and1():
     assert len(cases) == 100 and len({case['case_sha256'] for case in cases}) == 20
     assert all(case['suite'] == 'gate_A' and case['lesson'] == 'L40' for case in cases)
     assert len(r.resource_assessment_cases(manifest['cases'], num_envs=1)) == 1
+
+
+def test_resource_gate20_is_replicated_five_times_without_changing_source_identity():
+    from collections import Counter
+    from src.tasks.velocity.v09.cases import build_s1_manifest
+    manifest = build_s1_manifest('gate_A')
+    original = {case['case_sha256']: case for case in manifest['cases']
+                if case['lesson'] == 'L40' and case['speed'] == .3}
+    expanded = r.resource_assessment_cases(manifest['cases'], num_envs=100)
+    assert len(original) == 20 and len(expanded) == 100
+    assert Counter(case['case_sha256'] for case in expanded) == {key: 5 for key in original}
+    assert all(case == original[case['case_sha256']] for case in expanded)
+    assert r.resource_assessment_cases(manifest['cases'], num_envs=1)[0] == expanded[0]
+
+
+@pytest.mark.parametrize('corruption', ['missing', 'duplicate_sha', 'duplicate_identity', 'duplicate_case_key', 'timeout', 'gate_B', 'final'])
+def test_resource_source_cases_reject_missing_duplicate_or_wrong_namespace(corruption):
+    from copy import deepcopy
+    from src.tasks.velocity.v09.cases import build_s1_manifest
+    cases = deepcopy([case for case in build_s1_manifest('gate_A')['cases']
+                      if case['lesson'] == 'L40' and case['speed'] == .3])
+    if corruption == 'missing':
+        cases.pop()
+    elif corruption == 'duplicate_sha':
+        cases[-1]['case_sha256'] = cases[0]['case_sha256']
+    elif corruption == 'duplicate_identity':
+        cases[-1]['case_id'] = cases[0]['case_id']
+    elif corruption == 'duplicate_case_key':
+        cases[-1]['case_key'] = cases[0]['case_key']
+    elif corruption == 'timeout':
+        cases[-1]['hard_timeout_steps'] = 5004
+    else:
+        for case in cases:
+            case['suite'] = 'gate_B' if corruption == 'gate_B' else 'final_1'
+    with pytest.raises(ValueError):
+        r.resource_assessment_cases(cases, num_envs=100)
 
 
 def test_resource_child_entrypoint_has_no_budget_reserve_or_commit_calls():

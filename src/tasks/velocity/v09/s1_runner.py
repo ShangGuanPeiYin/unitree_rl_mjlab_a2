@@ -10,6 +10,7 @@ from copy import deepcopy
 import gc
 from dataclasses import asdict, dataclass, field
 import hashlib
+import io
 import json
 import math
 import os
@@ -276,7 +277,21 @@ def file_sha256(path):
 
 
 
-def validate_learning_approval(approval, *, run_dir, run_id, code_sha256):
+
+def load_current_checkpoint(path, *, code_sha256, checkpoint_sha256=None, device='cpu'):
+    """Schema-11 current producer only; no legacy-evidence identity exception."""
+    from .checkpoint import load_checkpoint
+    raw = Path(path).read_bytes()
+    actual = hashlib.sha256(raw).hexdigest()
+    if checkpoint_sha256 is not None and actual != checkpoint_sha256:
+        raise ValueError('current checkpoint SHA mismatch')
+    payload = load_checkpoint(io.BytesIO(raw), device=device)
+    if payload['metadata']['code_sha256'] != code_sha256:
+        raise ValueError('student checkpoint code SHA differs from current source')
+    return payload
+
+
+def validate_learning_approval(approval, *, run_dir, run_id, code_sha256, identity_context=None):
     """An S1.0 engineering entry cannot authorize the automatic two-course learner."""
     if not isinstance(approval, dict):
         raise PlanningRequired('explicit independent learning approval JSON required')
@@ -298,23 +313,105 @@ def validate_learning_approval(approval, *, run_dir, run_id, code_sha256):
             or approval.get('run_id') != run_id
             or Path(approved_path).resolve() != Path(run_dir).resolve()):
         raise PlanningRequired('learning approval belongs to a different run_id/run_dir')
+    if identity_context is not None:
+        require_identity_context(identity_context, code_sha256=code_sha256, run_id=run_id, run_dir=run_dir)
+        identity_path = approval.get('evidence_identity_path')
+        if (not isinstance(identity_path, str)
+                or Path(identity_path).resolve() != identity_context.approval_path
+                or approval.get('evidence_identity_sha256') != identity_context.approval_sha256):
+            raise PlanningRequired('learning approval must bind the same evidence identity path/SHA')
+    elif 'evidence_identity_path' in approval or 'evidence_identity_sha256' in approval:
+        raise PlanningRequired('evidence identity binding requires a verified context')
     return True
 
 
-def validate_admissions(*, run_dir, resource_path, baseline_path, calibration_path, code_sha256, ledger):
+def require_identity_context(context, *, code_sha256, run_id=None, run_dir=None):
+    if context.consumer_code_sha256 != code_sha256:
+        raise ValueError('evidence consumer code differs from current source')
+    if run_id is not None and context.run_id != run_id:
+        raise ValueError('evidence context run_id differs')
+    if run_dir is not None and context.run_dir != Path(run_dir).resolve():
+        raise ValueError('evidence context run_dir differs')
+    return context
+
+
+def identity_cli_args(context):
+    if context is None:
+        return []
+    return ['--evidence-identity', str(context.approval_path),
+            '--evidence-identity-sha256', context.approval_sha256]
+
+
+
+def identity_binding(context):
+    if context is None:
+        return None
+    return dict(approval_path=str(context.approval_path), approval_sha256=context.approval_sha256,
+                consumer_code_sha256=context.consumer_code_sha256,
+                run_id=context.run_id, run_dir=str(context.run_dir))
+
+
+def validate_formal_checkpoint_identity(payload, context):
+    """Formal learner recovery must retain its exact evidence approval binding."""
+    metadata = payload['metadata']
+    if 'evidence_identity' not in metadata:
+        raise ValueError('formal checkpoint evidence identity binding is missing')
+    saved = metadata['evidence_identity']
+    expected = identity_binding(context)
+    if expected is None:
+        if saved is not None:
+            raise ValueError('formal checkpoint evidence identity requires the same context')
+        return
+    if not isinstance(saved, dict) or set(saved) != set(expected):
+        raise ValueError('formal checkpoint evidence identity binding differs')
+    normalized = dict(saved)
+    for key in ('approval_path', 'run_dir'):
+        if not isinstance(saved[key], str) or not saved[key]:
+            raise ValueError('formal checkpoint evidence identity path is invalid')
+        normalized[key] = str(Path(saved[key]).resolve())
+    if normalized != expected:
+        raise ValueError('formal checkpoint evidence identity binding differs')
+
+
+def create_identity_context(*, approval_path, approval_sha256, code_sha256, run_id, run_dir):
+    if approval_path is None or approval_sha256 is None:
+        raise ValueError('both evidence identity path and complete SHA are required')
+    from .evidence_identity import EvidenceIdentityContext
+    return EvidenceIdentityContext.from_approval(approval_path, approval_sha256,
+        consumer_code_sha256=code_sha256, run_id=run_id, run_dir=run_dir,
+        ledger_path=Path(run_dir) / 'budget.jsonl', sds_sha256=spec.SDS_SHA256,
+        source_sha256=spec.SOURCE_SHA256)
+
+
+def validate_admissions(*, run_dir, resource_path, baseline_path, calibration_path, code_sha256, ledger, identity_context=None):
     """Validate only final-cache index metadata until its formal acceptance turn."""
-    baseline, resource, calibration = map(_read_json, (baseline_path, resource_path, calibration_path))
+    baseline_ref = None
+    if identity_context is None:
+        baseline, resource, calibration = map(_read_json, (baseline_path, resource_path, calibration_path))
+        for name, record in (('baseline', baseline), ('calibration', calibration)):
+            if record.get('code_sha256') != code_sha256:
+                raise ValueError(f'{name} independently admitted code SHA differs')
+    else:
+        require_identity_context(identity_context, code_sha256=code_sha256, run_dir=run_dir,
+                                 run_id=ledger.run_id)
+        baseline, baseline_ref = identity_context.read_legacy_json(
+            baseline_path, kind='baseline_index', suite=None)
+        from .resources import load_calibration
+        calibration = load_calibration(calibration_path, code_sha256=code_sha256,
+                                       identity_context=identity_context)
+        resource = _read_json(resource_path)
     for name, record in (('baseline', baseline), ('resource', resource), ('calibration', calibration)):
         if record.get('sds_sha256') != spec.SDS_SHA256 or record.get('source_sha256') != spec.SOURCE_SHA256:
             raise ValueError(f'{name} source/SDS admission mismatch')
-        if record.get('code_sha256') != code_sha256:
-            raise ValueError(f'{name} independently admitted code SHA differs')
+    if resource.get('code_sha256') != code_sha256:
+        raise ValueError('resource independently admitted code SHA differs')
     if baseline.get('schema') != 11 or baseline.get('baseline_complete') is not True:
         raise PlanningRequired('all original baseline caches must be admitted before learning')
     if (baseline.get('calibration_path') != str(Path(calibration_path).resolve())
             or baseline.get('value_scale') != calibration.get('value_scale')
             or baseline.get('calibration_manifest_sha256') != calibration.get('manifest_sha256')
-            or baseline.get('calibration_sha256') != file_sha256(calibration_path)):
+            or baseline.get('calibration_sha256') != (calibration.get('calibration_file_sha256')
+                if identity_context is not None else file_sha256(calibration_path))):
         raise ValueError('baseline/calibration contract mismatch')
     if (not isinstance(calibration.get('value_scale'), (int, float))
             or not math.isfinite(calibration['value_scale']) or calibration['value_scale'] < 1
@@ -332,14 +429,28 @@ def validate_admissions(*, run_dir, resource_path, baseline_path, calibration_pa
             raise PlanningRequired('original teacher suite not externally completed')
         if not Path(entry['episodes_path']).is_file() or not Path(entry['summary_path']).is_file():
             raise PlanningRequired('teacher cache files missing')
+        if identity_context is not None:
+            for kind, path_key, sha_key in (
+                ('teacher_summary', 'summary_path', 'summary_file_sha256'),
+                ('teacher_episodes', 'episodes_path', 'episodes_file_sha256')):
+                ref = identity_context.verify_ref(entry[path_key], kind=kind, suite=suite,
+                                                  manifest_sha256=entry['manifest_sha256'])
+                if entry.get(sha_key) != ref.file_sha256 or entry.get('code_sha256') != ref.producer_code_sha256:
+                    raise ValueError('teacher index reference differs from approved original evidence')
     if not obligations.get('calibration', {}).get('closed'):
         raise PlanningRequired('calibration obligation must be fully completed')
     if resource.get('report_sha256') != sha256({k: v for k, v in resource.items() if k != 'report_sha256'}):
         raise ValueError('resource admission report SHA mismatch')
     if (not resource.get('admitted') or resource.get('selected_num_envs') not in spec.ENV_CANDIDATES
             or resource.get('calibration', {}).get('value_scale') != calibration['value_scale']
-            or resource.get('calibration', {}).get('calibration_file_sha256') != file_sha256(calibration_path)):
+            or resource.get('calibration', {}).get('calibration_file_sha256') != (calibration.get('calibration_file_sha256')
+                if identity_context is not None else file_sha256(calibration_path))):
         raise PlanningRequired('stable maximum resource candidate and matching calibration required')
+    if identity_context is not None:
+        embedded = resource.get('calibration', {})
+        if (embedded.get('code_sha256') != calibration['code_sha256']
+                or embedded.get('evidence_ref') != calibration['evidence_ref']):
+            raise ValueError('resource calibration provenance differs from verified original evidence')
     n = resource['selected_num_envs']
     duty = obligations.get(f'probe_{n}', {})
     if not duty.get('closed') or duty.get('skipped') or duty.get('failed'):
@@ -350,7 +461,8 @@ def validate_admissions(*, run_dir, resource_path, baseline_path, calibration_pa
     if len(selected) != 1 or not qualifies(selected[0]):
         raise PlanningRequired('resource peak memory/workload/restore conditions failed')
     return dict(num_envs=n, value_scale=calibration['value_scale'], baseline=baseline,
-                calibration=calibration, resource=resource)
+                calibration=calibration, resource=resource, identity_context=identity_context,
+                baseline_evidence_ref=asdict(baseline_ref) if baseline_ref is not None else None)
 
 
 def compare_suite(manifest, teacher_records, candidate_records):
@@ -389,11 +501,16 @@ def compare_suite(manifest, teacher_records, candidate_records):
 
 
 class SubprocessEvaluator:
-    def __init__(self, *, run_dir, run_id, device, code_sha256, python, teacher_cache):
+    def __init__(self, *, run_dir, run_id, device, code_sha256, python, teacher_cache, identity_context=None):
         self.run_dir, self.run_id, self.device = Path(run_dir), run_id, device
         self.code_sha256, self.python, self.teacher_cache = code_sha256, python, teacher_cache
+        self.identity_context = identity_context
+        if identity_context is not None:
+            require_identity_context(identity_context, code_sha256=code_sha256, run_id=run_id, run_dir=run_dir)
 
     def __call__(self, *, suite, candidate_path, candidate_sha256, attempt, segment_id):
+        if self.identity_context is None:
+            raise ValueError('verified evidence identity is required for original teacher comparison')
         final = suite in FINAL_SUITES
         obligation = 'candidate_' + suite if final else f'candidate_gate_{attempt:02d}'
         command = [self.python, str(spec.PROJECT_ROOT / 'scripts/evaluate_a2_v09_s1.py'),
@@ -402,23 +519,45 @@ class SubprocessEvaluator:
             '--checkpoint-sha256', candidate_sha256, '--code-sha256', self.code_sha256,
             '--obligation-id', obligation, '--segment-id', segment_id,
             '--batch-size', '100' if final else '20', '--device', self.device, '--execute']
+        command += identity_cli_args(self.identity_context)
         subprocess.run(command, cwd=spec.PROJECT_ROOT, check=True)
         # This is the only final-cache unseal point, after actual same-SHA A/B.
-        manifest = load_manifest(self.run_dir / 'cases' / f'{suite}.json',
-                                 purpose='acceptance' if final else 'gate')
+        manifest, manifest_ref = self.identity_context.read_manifest(
+            self.run_dir / 'cases' / f'{suite}.json', suite=suite,
+            purpose='acceptance' if final else 'gate', candidate_sha256=candidate_sha256 if final else None)
         entry = self.teacher_cache[suite]
-        if file_sha256(entry['episodes_path']) != entry['episodes_file_sha256']:
-            raise ValueError('sealed teacher behavior cache SHA mismatch')
-        teacher = [json.loads(line) for line in Path(entry['episodes_path']).read_text().splitlines()]
+        summary, summary_ref = self.identity_context.read_legacy_json(
+            entry['summary_path'], kind='teacher_summary', suite=suite,
+            manifest_sha256=manifest['manifest_sha256'], candidate_sha256=candidate_sha256 if final else None)
+        raw, teacher_ref = self.identity_context.read_legacy_bytes(
+            entry['episodes_path'], kind='teacher_episodes', suite=suite,
+            manifest_sha256=manifest['manifest_sha256'], candidate_sha256=candidate_sha256 if final else None)
+        if (teacher_ref.file_sha256 != entry['episodes_file_sha256']
+                or summary_ref.file_sha256 != entry['summary_file_sha256']
+                or summary.get('suite') != suite or summary.get('total') != len(manifest['cases'])):
+            raise ValueError('original teacher index/summary reference mismatch')
+        teacher = [json.loads(line) for line in raw.splitlines()]
         output = self.run_dir / 'evidence' / segment_id
-        candidate = [json.loads(line) for line in (output / 'episodes.jsonl').read_text().splitlines()]
+        candidate_summary = _read_json(output / 'summary.json')
+        if candidate_summary.get('code_sha256') != self.code_sha256:
+            raise ValueError('candidate result code differs from current source')
+        if (candidate_summary.get('checkpoint_sha256') != candidate_sha256
+                or candidate_summary.get('manifest_sha256') != manifest['manifest_sha256']
+                or candidate_summary.get('suite') != suite
+                or candidate_summary.get('total') != len(manifest['cases'])):
+            raise ValueError('candidate result identity/denominator mismatch')
+        candidate = [json.loads(line) for line in (output / 'episodes.jsonl').read_bytes().splitlines()]
         if any(row.get('checkpoint_sha256') != spec.SOURCE_SHA256 for row in teacher):
             raise ValueError('sealed teacher record source mismatch')
         if any(row.get('checkpoint_sha256') != candidate_sha256 for row in candidate):
             raise ValueError('candidate suite mixed checkpoint identities')
         result = compare_suite(manifest, teacher, candidate)
         result.update(candidate_sha256=candidate_sha256, code_sha256=self.code_sha256,
-                      teacher_checkpoint_sha256=spec.SOURCE_SHA256)
+                      teacher_checkpoint_sha256=spec.SOURCE_SHA256,
+                      evidence_identity=identity_binding(self.identity_context),
+                      teacher_summary_evidence_ref=asdict(summary_ref),
+                      teacher_episodes_evidence_ref=asdict(teacher_ref),
+                      frozen_manifest_evidence_ref=asdict(manifest_ref))
         result['report_sha256'] = sha256(result)
         with (output / 'paired_report.json').open('x') as stream:
             stream.write(canonical_json(result) + '\n')
@@ -595,6 +734,9 @@ class RealS1Trainer:
         self.run_dir, self.run_id, self.segment_id = Path(run_dir), run_id, segment_id
         self.device, self.code_sha256, self.ledger, self.journal = device, code_sha256, ledger, journal
         self.admissions = admissions
+        self.identity_context = admissions.get('identity_context')
+        if self.identity_context is not None:
+            require_identity_context(self.identity_context, code_sha256=code_sha256, run_id=run_id, run_dir=run_dir)
         if evidence_hooks is None:
             raise PlanningRequired('Q008 physical before/after and video evidence hooks required')
         self.evidence_hooks = evidence_hooks
@@ -610,6 +752,11 @@ class RealS1Trainer:
             raise PlanningRequired('N change requires a separately evidenced resource transition')
         validate_schedule_ledger(self.schedule, ledger.snapshot())
         self.last_saved_checkpoint_sha = file_sha256(resume) if resume is not None else None
+        resume_payload = None
+        if resume is not None:
+            resume_payload = load_current_checkpoint(resume, device='cpu', code_sha256=code_sha256,
+                checkpoint_sha256=self.last_saved_checkpoint_sha)
+            validate_formal_checkpoint_identity(resume_payload, self.identity_context)
         if resume is None:
             import numpy as np
             random.seed(42)
@@ -625,7 +772,7 @@ class RealS1Trainer:
         self.candidate_path = None
         self.candidate_sha256 = None
         if resume is not None:
-            payload = load_checkpoint(resume, device='cpu')
+            payload = resume_payload
             metadata = payload['metadata']
             if metadata.get('code_sha256') != code_sha256:
                 raise ValueError('resume code SHA mismatch')
@@ -662,7 +809,8 @@ class RealS1Trainer:
         self.loss_reports = []
         self.latest = sorted((self.run_dir / 'checkpoints').glob('*_latest_*.pt'))
         self.evaluator = SubprocessEvaluator(run_dir=run_dir, run_id=run_id, device=device,
-            code_sha256=code_sha256, python=python, teacher_cache=admissions['baseline']['teacher_cache'])
+            code_sha256=code_sha256, python=python, teacher_cache=admissions['baseline']['teacher_cache'],
+            identity_context=self.identity_context)
         self._record('initialized_new_physical_episodes', resume=str(resume) if resume else None)
 
     def _record(self, event, **details):
@@ -693,7 +841,10 @@ class RealS1Trainer:
         path = self.run_dir / 'checkpoints' / f'{self.segment_id}_{label}_{schedule.learning_samples:012d}_{save_id}.pt'
         if path.exists():
             raise FileExistsError('refuse to overwrite any SHA-referenced checkpoint')
-        metadata = dict(checkpoint_save_id=save_id, stage='S1', course=schedule.course, value_scale=self.admissions['value_scale'],
+        metadata = dict(evidence_identity=identity_binding(getattr(self, 'identity_context', None)),
+            calibration_evidence_ref=self.admissions['calibration'].get('evidence_ref'),
+            baseline_evidence_ref=self.admissions.get('baseline_evidence_ref'),
+            checkpoint_save_id=save_id, stage='S1', course=schedule.course, value_scale=self.admissions['value_scale'],
             manifest_sha256=self.admissions['calibration']['manifest_sha256'], ledger_run_id=self.run_id,
             learning_samples=schedule.learning_samples, code_sha256=self.code_sha256,
             gate_state=dict(next_suite=schedule.next_suite, attempts=len(schedule.gates),
@@ -861,7 +1012,9 @@ class RealS1Trainer:
                 or self.student is not state['model_object'] or self.ids is not state['ids_object']
                 or training_state_fingerprint(self.student, self.optimizer) != state['fingerprint']):
             raise PlanningRequired('external evidence changed immutable training checkpoint/model/Adam/role allocator')
-        payload = load_checkpoint(state['checkpoint'], device='cpu')
+        payload = load_current_checkpoint(state['checkpoint'], device='cpu',
+            code_sha256=self.code_sha256, checkpoint_sha256=state['checkpoint_sha256'])
+        validate_formal_checkpoint_identity(payload, getattr(self, 'identity_context', None))
         # Compare a lightweight state-view; no new model/optimizer is built.
         class ModelView:
             def state_dict(self):
@@ -1053,7 +1206,7 @@ class RealS1Trainer:
 class SubprocessEvidenceHooks:
     """Q008 uses explicit diagnostic, comparison and independent replay CLIs."""
     def __init__(self, *, python, run_dir, run_id, segment_id, device, code_sha256,
-                 calibration_path, script=None):
+                 calibration_path, script=None, identity_context=None):
         self.python = python
         self.eval_script = Path(script) if script else spec.PROJECT_ROOT / 'scripts/evaluate_a2_v09_s1.py'
         self.compare_script = spec.PROJECT_ROOT / 'scripts/compare_a2_v09_diagnostics.py'
@@ -1063,8 +1216,13 @@ class SubprocessEvidenceHooks:
         self.run_dir, self.run_id, self.segment_id = Path(run_dir), run_id, segment_id
         self.device, self.code_sha256 = device, code_sha256
         self.calibration_path = Path(calibration_path)
+        self.identity_context = identity_context
+        if identity_context is not None:
+            require_identity_context(identity_context, code_sha256=code_sha256, run_id=run_id, run_dir=run_dir)
 
     def diagnostic(self, *, phase, checkpoint, checkpoint_sha256):
+        if self.identity_context is None:
+            raise ValueError('verified identity context required for frozen diagnostic input')
         if phase not in ('before', 'after'):
             raise ValueError('diagnostic phase must be before/after')
         segment = f'{self.segment_id}_diag_{phase}'
@@ -1074,10 +1232,12 @@ class SubprocessEvidenceHooks:
             '--checkpoint-sha256', checkpoint_sha256, '--code-sha256', self.code_sha256,
             '--obligation-id', 'diag_' + phase, '--batch-size', '20',
             '--device', self.device, '--execute']
+        command += identity_cli_args(self.identity_context)
         subprocess.run(command, cwd=spec.PROJECT_ROOT, check=True)
         folder = self.run_dir / 'evidence' / segment
         summary = _read_json(folder / 'summary.json')
-        manifest = load_manifest(self.run_dir / 'cases/S1_DIAG.json', purpose='diagnostic')
+        manifest, manifest_ref = self.identity_context.read_manifest(
+            self.run_dir / 'cases/S1_DIAG.json', purpose='diagnostic', suite='S1_DIAG')
         if (summary.get('suite') != 'S1_DIAG' or summary.get('total') != 1500
                 or summary.get('checkpoint_sha256') != checkpoint_sha256
                 or summary.get('manifest_sha256') != manifest['manifest_sha256']
@@ -1086,13 +1246,17 @@ class SubprocessEvidenceHooks:
         result = dict(sds_sha256=spec.SDS_SHA256, code_sha256=self.code_sha256,
             folder=str(folder.resolve()), checkpoint=str(Path(checkpoint).resolve()),
             checkpoint_sha256=checkpoint_sha256, summary=summary,
-            summary_file_sha256=file_sha256(folder / 'summary.json'))
+            summary_file_sha256=file_sha256(folder / 'summary.json'),
+            evidence_identity=identity_binding(self.identity_context),
+            frozen_manifest_evidence_ref=asdict(manifest_ref))
         result['report_sha256'] = sha256(result)
         return result
 
     def compare(self, *, before, after):
+        if self.identity_context is None:
+            raise ValueError('verified identity context required for original calibration')
         output = self.run_dir / 'evidence' / f'{self.segment_id}_adapt_comparison.json'
-        command = [self.python, str(self.compare_script), '--run-dir', str(self.run_dir),
+        command = [self.python, str(self.compare_script), '--run-dir', str(self.run_dir), '--run-id', self.run_id,
             '--before-dir', before['folder'], '--after-dir', after['folder'],
             '--initial-checkpoint', before['checkpoint'],
             '--initial-checkpoint-sha256', before['checkpoint_sha256'],
@@ -1100,6 +1264,7 @@ class SubprocessEvidenceHooks:
             '--adapted-checkpoint-sha256', after['checkpoint_sha256'],
             '--calibration', str(self.calibration_path), '--code-sha256', self.code_sha256,
             '--device', self.device, '--output', str(output)]
+        command += identity_cli_args(self.identity_context)
         subprocess.run(command, cwd=spec.PROJECT_ROOT, check=True)
         report = _read_json(output)
         if report.get('sds_sha256') != spec.SDS_SHA256 or report.get('code_sha256') != self.code_sha256:
@@ -1112,6 +1277,8 @@ class SubprocessEvidenceHooks:
         return report
 
     def video(self, *, model_id, checkpoint, checkpoint_sha256):
+        if self.identity_context is None:
+            raise ValueError('verified identity context required for frozen video input')
         segment = f'{self.segment_id}_video_{model_id}'
         output = self.run_dir / 'videos' / segment
         command = [self.python, str(self.video_script), '--run-dir', str(self.run_dir),
@@ -1120,6 +1287,7 @@ class SubprocessEvidenceHooks:
             '--checkpoint', str(checkpoint), '--checkpoint-sha256', checkpoint_sha256,
             '--obligation-id', 'video_' + model_id, '--output-dir', str(output),
             '--device', self.device, '--width', '640', '--height', '480', '--fps', '25', '--execute']
+        command += identity_cli_args(self.identity_context)
         subprocess.run(command, cwd=spec.PROJECT_ROOT, check=True)
         report = _read_json(output / 'video_summary.json')
         if (report.get('schema_version') != 11 or report.get('sds_sha256') != spec.SDS_SHA256

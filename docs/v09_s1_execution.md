@@ -1,6 +1,6 @@
 # A2 v0.9 S1 执行记录
 
-规范为SDS v1.1 / `v09-native40x30-sequential-r2`，SHA256为`500ad32aaa946c927459427f3a65565b15d4b77fca4be214817121d15c742976`。规划补充裁定Q001～Q009保存在`doc/sds/reviews/v09_execution_rulings.md`。
+规范为SDS v1.1 / `v09-native40x30-sequential-r2`，SHA256为`500ad32aaa946c927459427f3a65565b15d4b77fca4be214817121d15c742976`。规划补充裁定Q001～Q010保存在`doc/sds/reviews/v09_execution_rulings.md`。
 
 源权重为`logs/a2_ideal_stairs_v07/continue_seed42_from004817_trial01/checkpoints/stop_006400.pt`，SHA256为`30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2`。执行目录为`logs/a2_v09/s1_seed42_r3`，run_id为`a2-v09-s1-seed42-r3`。早期r1/r2冻结及其批准保留为零物理消费历史，实际执行仅使用r3账本。
 
@@ -27,7 +27,7 @@ L=\frac{1}{12}\sum_j(\mu_{09,j}-\mu_{6400,j})^2
 \quad s_V=\max(\operatorname{std}(V_{6400}),1).
 \]
 
-s_V由600个独立校准病例的首次物理回合值确定，使用FP64累计总体标准差，最多945,800个实际控制样本的冻结清单、预留上限1,000,000。原始值及病例slot保存为可重算证据。当前s_V实际数值需执行校准后填写。
+s_V由600个独立校准病例的首次物理回合值确定，使用FP64累计总体标准差，最多945,800个实际控制样本的冻结清单、预留上限1,000,000。原始值及病例slot保存为可重算证据。实际冻结s_V=2.136540383972894，来自289,564个首回合value；21,588个等待样本未进入统计。独立FP64重算已通过，原统计值及原文件保持不变。
 
 ## 地图和网络继承
 
@@ -66,3 +66,15 @@ S1.2主段每1亿学习样本及末尾检查，阶段最多11次门禁；相邻A
 2026-11-20，原6400的gate_A已完成75组×20例（1500例），成功1051、失败448、超时1，实际控制样本817,400，该义务已结账。完整组表见`docs/v09_s1_teacher_gate_A.md`。gate_B也已完成75组×20例：成功1037、失败460、超时3，实际控制样本869,800，义务已结账；组表见`docs/v09_s1_teacher_gate_B.md`。A/B合计1,687,200实际控制样本。两套均已通过独立全量CPU证据复核，分别见`docs/v09_s1_teacher_gate_A_independent_review_20261120.md`与`docs/v09_s1_teacher_gate_B_independent_review_20261120.md`；此结论不批准资源或学习。教师final_1缓存已采集7500例并结账，实际4,760,300控制样本，成绩继续封存，75批/7500例已通过独立完整性复核（非行为验收）。教师final_2也已采集7500例并结账，实际4,327,600控制样本，独立完整性复核通过，成绩仍封存。教师final_3已完成7500例并结账，实际4,644,400控制样本，独立完整性复核通过；三套final成绩仍封存。五套教师对照共25,500例、15,419,500控制样本。600例校准、旧finalize及依赖连续性已独审通过，见`docs/v09_s1_0_sealed_integrity_review_20261120.md`。冻结s_V=2.136540383972894，289,564首回合value、21,588等待样本不入分母；校准311,152控制样本。S1.0总15,730,652控制样本（62,922,608物理子步），外部ledger闭合seq907，正式学习0。baseline_admission已生成且baseline_complete=true；resource_admitted=false、behavior_restored=false，Q010复用和资源/学习仍未批准。
 
 新增独审`docs/v09_s1_resource_evidence_review_20261120.md`确认资源CLI将20例门禁误比较为100槽的入口阻断，尚未批准资源执行或学习。按规划Q010，先完成旧447全部S1.0并封存，之后再修入口并逐项审核旧证据向新源码的单向复用；旧生产者SHA不得改写。真实资源负载、固定机器人视频、S1学习和行为恢复仍未验证；正式学习0，S2/S3尚未启动。
+
+
+## Q010限定修复进度（2026-11-20）
+
+旧S1.0已完整封存后实施消费端修复：资源入口严格验证gate_A/L40/0.3的20个唯一源病例，再复制五轮形成100物理槽；每槽5005控制步和录像1槽5005步的资源负载保持不变。共享EvidenceIdentityContext仅允许独审清单中此次旧447→单一新源码的原文件，保留原producer与内容SHA；新报告、学生checkpoint、DIAG和学习批准仍严格绑定新源码。封存final原文仍须真实当前候选及当前套资格，不因hash核验解封。
+
+上一候选231项CPU回归通过后，fresh独审发现资源子CLI同时省略两身份参数能绕过清单字节校验（R-RES-ID-OMIT01）。该候选未获批准；已用evaluation/video两模式及gate尾加空格的真实CLI测试复现，已限定修复，资源CLI 30项CPU测试通过。新源码c9ee8789f6051bc6c36cbfc24f076deba6121d8ffedb48ce5d689e0a6b665ea4已冻结，全部16模块239项CPU回归通过（197.04秒，源/测试前后hash一致）。独立代码审核通过，报告见`docs/v09_s1_q010_code_review_20261120.md`，独立限定62项通过；代码ready不等于实际兼容或资源准入。协议独审继续核对旧证据及运行依赖，之后签发直接复用清单，再使用真实校准做零物理dry-run；资源工程入口独立批准且实际资源通过后才另审正式学习。当前无真实资源执行或S1学习，未验证行为恢复，S2/S3未启动。
+
+
+Q010协议独审已通过，见`docs/v09_s1_q010_compatibility_review_20261120.md`。正式只读清单`q010_s1_0_evidence_identity_c9ee.json`（SHA `0d158b266dde7daeefaf81bc5b270a4294a94f473203015ea8fd9d6df6380408`）位于r3目录，且在源码snapshot之外，唯一scope为S1.0_evidence_reuse，绑定7冻结输入、12必要runtime及931仅hash审计材料。旧原件和费用不变；它不批准资源物理执行或学习。
+
+使用同清单及真实旧校准的资源主CLI dry-run已exit0，20源/100槽×5005及录像1槽×5005校验通过，活ledger字节不变，无输出目录、无物理执行。本机证明`q010_real_resource_dry_proof.json` SHA `df567e11c48d8408758e3a3361ce91c9f59c5521c1a8ca92a0ebf3314b5de5c1`保存完整显式命令及来源引用；大stdout留本机。独立S1_RESOURCE工程入口已批准，见`docs/v09_s1_q010_resource_entry_review_20261120.md`；须完成任务提交/push及远端核验后才执行同一干跑命令加--execute。批准仅工程探测，resource_capacity_passed=false、learning_approved=false；实际资源及S1学习尚未启动。

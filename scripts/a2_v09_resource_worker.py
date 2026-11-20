@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
+from dataclasses import asdict
 import json
 import os
 from pathlib import Path
@@ -14,6 +14,7 @@ from a2_v07_bootstrap import activate
 activate(ROOT)
 from src.tasks.velocity.v09 import spec
 from src.tasks.velocity.v09.cases import load_manifest, sha256
+from src.tasks.velocity.v09.evidence_identity import OLD_RUN_ID
 from src.tasks.velocity.v09.resources import (
     validate_child_reservation, resource_assessment_cases, collect_padded_assessment,
     collect_padded_video, _write_new_json,
@@ -23,6 +24,7 @@ from src.tasks.velocity.v09.resources import (
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mode', choices=('evaluation', 'video'), required=True)
+    parser.add_argument('--run-dir', type=Path, required=True)
     parser.add_argument('--ledger', type=Path, required=True)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--operation-key', required=True)
@@ -30,6 +32,8 @@ def main():
     parser.add_argument('--checkpoint-sha256', required=True)
     parser.add_argument('--code-sha256', required=True)
     parser.add_argument('--gate-manifest', type=Path, required=True)
+    parser.add_argument('--evidence-identity', type=Path)
+    parser.add_argument('--evidence-identity-sha256')
     parser.add_argument('--device', required=True)
     parser.add_argument('--num-envs', type=int, required=True)
     parser.add_argument('--control-steps', type=int, required=True)
@@ -42,12 +46,19 @@ def main():
     spec.validate_sources()
     if spec.code_snapshot()['code_sha256'] != args.code_sha256:
         raise ValueError('external worker source snapshot mismatch')
-    if hashlib.sha256(args.checkpoint.read_bytes()).hexdigest() != args.checkpoint_sha256:
-        raise ValueError('external worker checkpoint SHA mismatch')
+    if (args.evidence_identity is None) != (args.evidence_identity_sha256 is None):
+        raise ValueError('both evidence identity path and complete SHA are required')
+    if args.run_id == OLD_RUN_ID and args.evidence_identity is None:
+        raise ValueError('fixed legacy run requires both evidence identity path and complete SHA')
     expected_n = 100 if args.mode == 'evaluation' else 1
     if (args.num_envs != expected_n or args.control_steps != 5005
             or (args.width, args.height, args.fps) != (640, 480, 25)):
         raise ValueError('external worker must use the exact Q009 workload')
+    from src.tasks.velocity.v09.s1_runner import load_current_checkpoint
+    payload = load_current_checkpoint(args.checkpoint, code_sha256=args.code_sha256,
+                                      checkpoint_sha256=args.checkpoint_sha256, device='cpu')
+    if payload['metadata']['course'] != 'S1.2':
+        raise ValueError('external worker requires the frozen full S1.2 parent')
     if not args.ledger.is_file():
         raise ValueError('child cannot create a ledger or execute without a parent reservation')
     from src.tasks.velocity.v09.budget import AppendOnlyLedger
@@ -55,25 +66,30 @@ def main():
     snapshot = ledger.snapshot()
     validate_child_reservation(snapshot, args.operation_key, mode=args.mode,
                                checkpoint_sha256=args.checkpoint_sha256)
-    manifest = load_manifest(args.gate_manifest, purpose='gate')
+    manifest_ref = None
+    if args.evidence_identity is None:
+        manifest = load_manifest(args.gate_manifest, purpose='gate')
+    else:
+        from src.tasks.velocity.v09.evidence_identity import EvidenceIdentityContext
+        identity_context = EvidenceIdentityContext.from_approval(args.evidence_identity, args.evidence_identity_sha256,
+            consumer_code_sha256=args.code_sha256, run_id=args.run_id, run_dir=args.run_dir,
+            ledger_path=args.ledger, sds_sha256=spec.SDS_SHA256, source_sha256=spec.SOURCE_SHA256)
+        manifest, manifest_ref = identity_context.read_manifest(args.gate_manifest, purpose='gate', suite='gate_A')
     if manifest['suite'] != 'gate_A':
         raise ValueError('resource child uses gate_A only, never sealed final cases')
     cases = resource_assessment_cases(manifest['cases'], num_envs=args.num_envs)
     if not args.execute:
         print(json.dumps(dict(mode=args.mode, num_envs=args.num_envs, control_steps=5005,
-                              reservation_verified=True, physical_control_steps=0)))
+                              reservation_verified=True, physical_control_steps=0,
+                              manifest_evidence_ref=asdict(manifest_ref) if manifest_ref is not None else None)))
         return 0
     args.output_dir.mkdir(parents=True, exist_ok=False)
     os.environ.setdefault('MUJOCO_GL', 'egl')
     from src.tasks.velocity.v09.env import V09S1Env
     from src.tasks.velocity.v09.model import V09ActorCritic
-    from src.tasks.velocity.v09.checkpoint import load_checkpoint
     env = renderer = writer = None
     error = result = None
     try:
-        payload = load_checkpoint(args.checkpoint, device='cpu')
-        if payload['metadata']['course'] != 'S1.2' or payload['metadata']['code_sha256'] != args.code_sha256:
-            raise ValueError('external worker requires the frozen full S1.2 parent')
         policy = V09ActorCritic().to(args.device)
         policy.load_state_dict(payload['model'], strict=True)
         policy.eval()
@@ -106,6 +122,7 @@ def main():
         checkpoint_sha256=args.checkpoint_sha256, operation_key=args.operation_key,
         reservation_verified=True, reservation_ledger_sha256=snapshot['ledger_sha256'],
         manifest_sha256=manifest['manifest_sha256'], child_budget_mutations=0)
+    result['manifest_evidence_ref'] = asdict(manifest_ref) if manifest_ref is not None else None
     result['report_sha256'] = sha256(result)
     _write_new_json(args.output_dir / 'worker_result.json', result)
     return 0

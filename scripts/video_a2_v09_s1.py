@@ -24,6 +24,8 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--segment-id', required=True)
     parser.add_argument('--code-sha256', required=True)
+    parser.add_argument('--evidence-identity', type=Path)
+    parser.add_argument('--evidence-identity-sha256')
     parser.add_argument('--policy', choices=('teacher', 'student'), required=True)
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--checkpoint-sha256', required=True)
@@ -42,7 +44,22 @@ def main():
     digest = hashlib.sha256(args.checkpoint.read_bytes()).hexdigest()
     if digest != args.checkpoint_sha256:
         raise ValueError('video checkpoint SHA mismatch')
-    manifest = load_manifest(args.run_dir / 'cases/S1_DIAG.json', purpose='evidence')
+    if args.policy == 'teacher' and digest != spec.SOURCE_SHA256:
+        raise ValueError('teacher must use the unique original 6400 source SHA')
+    payload = None
+    if args.policy == 'student':
+        from src.tasks.velocity.v09.s1_runner import load_current_checkpoint
+        payload = load_current_checkpoint(args.checkpoint, device='cpu',
+            code_sha256=args.code_sha256, checkpoint_sha256=args.checkpoint_sha256)
+    from src.tasks.velocity.v09.s1_runner import create_identity_context, identity_binding
+    from dataclasses import asdict
+    identity_context = create_identity_context(approval_path=args.evidence_identity,
+        approval_sha256=args.evidence_identity_sha256, code_sha256=args.code_sha256,
+        run_id=args.run_id, run_dir=args.run_dir)
+    manifest, manifest_ref = identity_context.read_manifest(
+        args.run_dir / 'cases/S1_DIAG.json', purpose='evidence', suite='S1_DIAG')
+    snapshot = dict(snapshot, evidence_identity=identity_binding(identity_context),
+                    frozen_manifest_evidence_ref=asdict(manifest_ref))
     selected = [case for case in manifest['cases'] if case['case_id'] == 0]
     plan = batch_worst_cost(selected, batch_size=1)
     if (args.width, args.height, args.fps) != (640, 480, 25):
@@ -67,7 +84,6 @@ def main():
     else:
         if args.obligation_id == 'video_6400':
             raise ValueError('6400 obligation cannot use a student')
-        payload = load_checkpoint(args.checkpoint, device=args.device)
         policy = V09ActorCritic().to(args.device)
         policy.load_state_dict(payload['model'], strict=True)
     policy.eval()

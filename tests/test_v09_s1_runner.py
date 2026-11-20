@@ -391,7 +391,8 @@ def test_s12_transition_resets_physical_episodes_keeps_adam_momentum_and_ids():
     assert student.course == trainer.env.course == 'S1.2'
 
 
-def test_q009_evidence_offload_restores_same_adam_rng_and_new_ids(tmp_path, monkeypatch):
+@pytest.mark.parametrize('saved_identity',['matching','mismatch','missing'])
+def test_q009_evidence_offload_restores_same_adam_rng_and_new_ids(tmp_path, monkeypatch, saved_identity):
     import random
     import numpy as np
     import torch
@@ -427,6 +428,7 @@ def test_q009_evidence_offload_restores_same_adam_rng_and_new_ids(tmp_path, monk
     trainer.schedule = main_schedule(512)
     trainer.env, trainer.roles, trainer.ids, trainer.ledger = env, roles, ids, ledger
     trainer.device = 'cpu'
+    trainer.code_sha256 = 'c'*64
     trainer.generator = torch.Generator().manual_seed(42)
     trainer.buffers = [torch.ones(2), torch.ones(3)]
     trainer.evidence_session_state = None
@@ -437,12 +439,21 @@ def test_q009_evidence_offload_restores_same_adam_rng_and_new_ids(tmp_path, monk
     saves = []
     def save(label):
         path = tmp_path / f'{len(saves)}.pt'
-        torch.save(dict(model=deepcopy(student.state_dict()), optimizer=deepcopy(optimizer.state_dict()),
-                        metadata={'external_ledger': {}}), path)
+        metadata = dict(stage='S1', course='S1.2', value_scale=1., manifest_sha256='d'*64,
+            ledger_run_id='session-run', learning_samples=trainer.schedule.learning_samples,
+            code_sha256='c'*64, external_ledger={},
+            gate_state=dict(next_suite='gate_A', attempts=0, final_suites_used=0,
+                            recoveries=0, next_gate_samples=100000000, passes=[]),
+            role_state=dict(num_envs=512, episode_counters=ids.state_dict(), assignments=roles),
+            random_state={'python': random.getstate(), 'numpy': np.random.get_state()})
+        if saved_identity == 'matching':
+            metadata['evidence_identity'] = None
+        elif saved_identity == 'mismatch':
+            metadata['evidence_identity'] = {'approval_sha256': 'f'*64}
+        digest = checkpoint.save_checkpoint(path, student, optimizer, metadata)
         saves.append(path)
-        return path, runner.file_sha256(path)
+        return path, digest
     trainer._save = save
-    monkeypatch.setattr(checkpoint, 'load_checkpoint', lambda path, device: torch.load(path, weights_only=False))
     def new_env():
         torch.rand(3)  # construction must not perturb the learner RNG
         return Env([ids.reserve(role) for role in roles])
@@ -462,6 +473,12 @@ def test_q009_evidence_offload_restores_same_adam_rng_and_new_ids(tmp_path, monk
     assert len(saves) == 1  # same-SHA contiguous evidence never repeats save/Adam
     random.random(); np.random.rand(); torch.rand(2)
     trainer.generator.manual_seed(19)
+    if saved_identity != 'matching':
+        with pytest.raises(ValueError,match='identity'):
+            trainer._end_evidence_session()
+        assert trainer.schedule.learning_samples == before_samples
+        assert trainer.env is None
+        return
     trainer._end_evidence_session()
     assert trainer.schedule.learning_samples == before_samples
     assert trainer.optimizer is optimizer and trainer.ids is ids

@@ -14,7 +14,7 @@ activate(ROOT)
 from src.tasks.velocity.v09 import spec
 from src.tasks.velocity.v09.budget import AppendOnlyLedger
 from src.tasks.velocity.v09.s1_runner import (PlanningRequired, RealS1Trainer,
-    ScheduleJournal, SubprocessEvidenceHooks, file_sha256, validate_admissions, validate_learning_approval)
+    ScheduleJournal, SubprocessEvidenceHooks, file_sha256, validate_admissions, validate_learning_approval, load_current_checkpoint, create_identity_context)
 
 
 def main():
@@ -26,6 +26,8 @@ def main():
     parser.add_argument('--baseline-admission', type=Path, required=True)
     parser.add_argument('--calibration', type=Path, required=True)
     parser.add_argument('--code-sha256', required=True)
+    parser.add_argument('--evidence-identity', type=Path)
+    parser.add_argument('--evidence-identity-sha256')
     parser.add_argument('--num-envs', type=int, choices=spec.ENV_CANDIDATES, required=True)
     parser.add_argument('--device', required=True)
     parser.add_argument('--seed', type=int, default=42)
@@ -47,12 +49,20 @@ def main():
     spec.validate_sources()
     if spec.code_snapshot()['code_sha256'] != args.code_sha256:
         raise ValueError('current code snapshot differs from independently approved code SHA')
+    if args.resume_checkpoint is not None:
+        if not args.resume_checkpoint_sha256:
+            raise ValueError('explicit resume checkpoint SHA required')
+        load_current_checkpoint(args.resume_checkpoint, device='cpu', code_sha256=args.code_sha256,
+                                checkpoint_sha256=args.resume_checkpoint_sha256)
+    identity_context = create_identity_context(approval_path=args.evidence_identity,
+        approval_sha256=args.evidence_identity_sha256, code_sha256=args.code_sha256,
+        run_id=args.run_id, run_dir=args.run_dir)
     if not (args.run_dir / 'budget.jsonl').is_file():
         raise PlanningRequired('run prepare --reserve and all nonlearning admissions before S1 learning')
     ledger = AppendOnlyLedger(args.run_dir / 'budget.jsonl', run_id=args.run_id)
     admissions = validate_admissions(run_dir=args.run_dir, resource_path=args.resource_admission,
         baseline_path=args.baseline_admission, calibration_path=args.calibration,
-        code_sha256=args.code_sha256, ledger=ledger)
+        code_sha256=args.code_sha256, ledger=ledger, identity_context=identity_context)
     if args.num_envs != admissions['num_envs']:
         raise ValueError('explicit N differs from the largest stable resource admission')
     if args.resume_checkpoint is not None:
@@ -70,10 +80,10 @@ def main():
         raise PlanningRequired('independent S1 implementation approval and Q008 evidence driver required')
     approval = json.loads(args.approval_report.read_text())
     validate_learning_approval(approval, run_dir=args.run_dir, run_id=args.run_id,
-                               code_sha256=args.code_sha256)
+                               code_sha256=args.code_sha256, identity_context=identity_context)
     hooks = SubprocessEvidenceHooks(python=sys.executable, calibration_path=args.calibration,
         run_dir=args.run_dir, run_id=args.run_id, segment_id=args.segment_id,
-        device=args.device, code_sha256=args.code_sha256)
+        device=args.device, code_sha256=args.code_sha256, identity_context=identity_context)
     with (args.run_dir / 'formal_training.lock').open('a') as lock:
         try:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)

@@ -3834,3 +3834,78 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 身份与连续性：旧322源码仍44780cd5d6f9ee4029fb38b2f9348a872268e7bedf995d4b36e2e30ec2f2163f；34883已记录常规路径SHA未变，8关键包/全部Python源/启动文件集合无增删，保留晚加载/设备等覆盖边界，不夸称无限依赖闭包。闭合907/eventSHA=503fbb81eb11acff4bc068d722c4cba65905c8a1424359c9bf3d01a539ee737f，前缀字节SHA=c526987c278867f390ae7c02dd50ccd5de898f8df734ed0d6a157f7441e4194e。calibration文件历史metadata是906/closed=false，实际907已close；不得倒回计数。
 - 本机关键文件：calibration SHA=9ea9e55dfc66e4a140a99cee87171ea805c47ccc7b310a8b1928342b26d9fc6e，baseline_admission SHA=ffa28f8b9f78b7c59379e4168b7252844bd697955d38048b688046dc83020ae2；calibration独审证明SHA=e09cc2591cb55fa4030bd3d11bb32effed3390def34424fdc8164bc0b387b37b，最终独审证明SHA=e4117a495b0abdac58066a0d0ad2a493bfb034894666384abe087e78e48321d6。
 - 后续资格：独审明确旧端Task0通过，可开始已批准Q010限定修复/新freeze准备。三套final成绩始终封存；旧→新直接清单、新资源执行、真实资源通过及S1学习仍需后续独审，不宣称学生效果恢复，S2/S3未启动。
+
+
+## 2026-11-20 16:20:02 CST — Q010身份核心首轮RED→GREEN及正式裁定追加
+
+- 实际文件：新增`src/tasks/velocity/v09/evidence_identity.py`、`tests/test_v09_evidence_identity.py`及测试专用`tests/v09_identity_fixtures.py`；旧端Task0结束后才在`doc/sds/reviews/v09_execution_rulings.md`按时间追加Q010，原Q001～Q009与旧归档保留。
+- 修改前后与设计：原消费端只能要求相同code SHA，无法合法保留旧S1.0；资源入口另外误将20源病例与100物理槽比较。新核心只接受独审完整旧447→单一新consumer、同r3 run/SDS/6400与精确文件清单；冻结input、12项必要runtime类型及hash-only审计材料分栏。Ref保留旧producer和内容SHA，不改原JSON；新资源/批准/checkpoint/DIAG不在旧读取白名单。文件同一已验bytes解析、相关teacher摘要证明JSONL生产者，活ledger旧前缀每次实际读/验均重核，final另fresh真实资格，不能把桥接当学习或资源授权。
+- 验证：首先26项失败、补充后27项均因缺失真实validator而明确RED；长生命周期前缀篡改另1项RED。实现后28项CPU测试通过（1.18s）；日志q010_identity_red.log/q010_identity_red_final.log/q010_identity_cached_prefix_red.log/q010_identity_green_attempt.log。真实文件/ledger/manifest测试，无GPU或物理。资源及消费接线由独立文件owner继续做TDD，尚未完成集成、新freeze/独审和任何真实资源/学习准入，不能声明已兼容或效果改善。
+- 本机独审素材：新增q010_old_evidence_catalog_draft_v1.json（SHA7a301444d8087224a2a60d651d4c33b5ef0ddfaac4eaa26efe42bceeb2e1a67c）、draft_v2.json（SHA6d6ce27a7f9ebf11b721e2f330fe465a085885c30634cf8907ad596ed2d79f33）与q010_ledger_prefix_old447_seq000907.jsonl（6866456字节/SHA c526987c278867f390ae7c02dd50ccd5de898f8df734ed0d6a157f7441e4194e）。v2列7冻结输入、12拟消费证据、922仅hash材料；approved=false、consumer未签，绝不能当作批准。上述本机素材不提交Git、不改活ledger或旧证据。
+- 上传：旧端正式报告及日志提交404407a1e977f400e35e04242035aa99bde6d24b已原SHA API force=false上传，核验本地远端一致。当前生产修复尚未提交，待任务验证与独审集成；原用户play/train等无关修改继续保留。
+
+
+### 2026-11-20 16:28:03 CST — 核心独审反馈R-ID-TAIL01与schema类型RED→GREEN
+
+- 原问题与实际修复：Context构造时原先全链校验，后续读取只重验被冻结的旧前缀；合法append后若新增尾部event_sha被篡改，旧prefix仍相同，旧Ctx非final读取仍会返回。新增真实ledger追加/篡改回归确实RED（DID NOT RAISE），随后每次_reference也要求validate_chain=True，既保留旧prefix锚点又检查当前完整活链，29项GREEN（1.33s）。非final不能依赖以后reserve或constructor才发现损坏；final原实际资格校验未被绕过。
+- 同scope格式修复：新独审清单schema=1.0曾被==1误接受；先写负例观察DID NOT RAISE，再明确新协议标识须JSON整数1（bool/float不接受）。没有既有正式Q010清单受影响，不改任何统计浮点值。全部核心30项CPU GREEN（1.28s）；日志q010_tail_red/green.log、q010_schema_type_red.log、q010_identity_green_review_fixes.log。
+- 独立时序核验：审核员另以/tmp真实ScheduleJournal/AppendOnlyLedger/actual validate_final_unseal验证child candidate_finals义务已reserve/complete/close、父仍final_pending时，Context JSONL关联summary读取可用；实际finish_final和计数/journal更新后同套同candidate拒绝。未mock资格、未读真实final数据；实现owner正在固化该集成回归，尚未将临时证明当已完成项目测试。
+- 范围：仅src/tasks/velocity/v09/evidence_identity.py及其核心tests改变；旧证据/活生产账本/所有训练配方未改，真实物理0，学习0。资源及消费接线CPU回归由各owner继续；尚未稳定freeze或签发复用/资源/学习批准。
+
+
+### 2026-11-20 16:38:57 CST — R-ID-PREFIX-SWAP01同一账本image修复
+
+- 独审真实/tmp复现并由root固化回归：先验证批准前缀，再调用snapshot重新打开文件期间，若替换为同run/同seq且自身合法但prefix不同的另一账本，旧实现会返回数据。新增测试确实RED（returned且当前prefix不符）。
+- 只改evidence_identity.py及核心test：LOCK_SH下单次捕获完整活账本image，prefix SHA/关闭事件与完整chain/state均基于同一image；复用AppendOnlyLedger原_read/_state于StringIO，不调用会重新open的constructor/snapshot，也不改budget.py或真实ledger。修后31项核心CPU GREEN（1.39s），日志q010_prefix_swap_red/green.log。
+- 修复不改变合法append、旧数据producer、任何费用/训练配方。与原始artifact读取一样采用同bytes验证/解析；当前仍未签新freeze、兼容清单、资源或学习批准。Task2三文件63项CPU由owner和独审分别通过，无实际GPU/物理；Task3仍在收尾。
+- 独审新增本机draft_v3（q010_old_evidence_catalog_draft_v3.json，SHA2ef76266e4a847d5e64345bd5fbad15f0ec7db8741949450df006b10dae4c58d）补schema整数1，仍approved=false；v1/v2全部保留，草稿不作批准、不提交Git。
+
+
+### 2026-11-20 16:42:02 CST — Q010 Task2资源消费端定稿（零物理CPU验证）
+
+- 实际文件：src/tasks/velocity/v09/resources.py、scripts/probe_a2_v09_s1.py、scripts/a2_v09_resource_worker.py；tests/test_v09_resources.py、tests/test_v09_resource_worker.py、新tests/test_v09_resource_cli.py。
+- 修改前后：旧主入口把gate_A原20例误当EVAL_ENVS100直接拒绝；共享helper又会放过重复SHA/身份和错namespace。现主入口复用严格20唯一gate_A/L40/0.3/5005 helper，再复制5轮100槽；不变100×5005负载、1×5005录像或任何物理/预算配方。旧calibration/train/gate全部受同Context控制，原producer447与统计值/原bytes保留，来源为evidence_ref；两个worker显式run-dir/run_id及同批准路径/SHA独立重建Context。
+- checkpoint边界：旧child dry-run及父恢复曾接受fileSHA匹配但producer旧的schema11；RED已证实，现既有CPU共同预检/两父恢复lazy复用同bytes current loader，仍不让旧checkpoint进入旧证据白名单，主CLI不新增checkpoint入口。
+- 验证：owner逐组保留入口/helper身份、child与父恢复、显式run-dir、Ctx loader、主子CLI和父传播RED→GREEN。最终CUDA禁用三文件63 passed/53.50s；独审独立63 passed/53.63s，仅上游Torch弃用警告。真实CLI均不带execute，临时ledger字节不变、未创建运行输出，无真实GPU/物理/生产账本修改。
+- 状态：Task2作者文件已定稿，等待完整集成/稳定freeze/独审签单；不是实际资源准入，更不是学习或行为恢复。root核心31CPU及独审原PREFIX-SWAP/final窗口反例现通过，budget.py仍与旧447逐字节一致。Task3专用same-context resume及整体回归待完成。
+
+
+### 2026-11-20 17:05 CST — Q010消费端集成与独审新问题待修
+
+- Task3文件：src/tasks/velocity/v09/s1_runner.py；scripts/train_a2_v09_s1.py、evaluate_a2_v09_s1.py、video_a2_v09_s1.py、compare_a2_v09_diagnostics.py；tests/test_v09_s1_runner.py、新tests/test_v09_consumer_cli.py与test_v09_consumer_identity.py。已有diagnostics/video测试参与回归，文件字节未改。
+- 修改前后：原学生消费可在dry-run前漏检旧checkpoint，旧baseline/calibration/teacher原文也无受控复用通道。现在统一CPU同bytes schema/当前code预检；旧证据仅经共享Context，原producer/文件保留。所有子入口显式传相同run及清单路径/SHA；正式resume及Q009恢复还要求checkpoint保存的同份清单身份。学习批准必须独立包含S1.1与S1.2并匹配同Context；桥接不是学习授权。final子close但父未finish时可读，实际finish后拒绝的真实journal/ledger集成反例已固化。未改动作、loss、std/normalizer、控制/训练参数。
+- 验证：Task3作者限定CPU回归63 passed/51.16s。root上一候选全16个v09测试文件231 passed/172.93s，仅Torch弃用警告；前后323生产文件及测试hash一致，日志q010_full_cpu_20261120.log。没有执行含真实物理步的全仓pytest，不能据此声明全部历史测试通过。
+- 独审结果：fresh reviewer候选2b35c33f022788e4623e656495a4c05d6fe6b1f34b0dcc1b1dcb5b1bcdacf247发现R-RES-ID-OMIT01 Important：本r3资源子CLI同时省略两identity参数可绕过原字节清单（gate仅追加空格，带Ctx拒绝而省略接受）。确定性病例仍保护语义，未证明负载改变；但违反同清单约束。Task2已重开TDD限定修复，该候选未批准，不能用于后续资源或学习。实际资源、Q008证据及学习仍未执行。
+- 本机运行工件：新增commands/push_q010_exact_api.py，仅额外允许20个精确Q010源/测试/裁定/计划/日志路径及既有v09_s1文档；禁止play.py、train.py、其他源码、权重与凭据。沿用原Git对象SHA、远端旧SHA核对、force=false及上传后复验；Python compile已通过，尚未执行该新工件上传。原docs uploader保留不改。
+
+- 2026-11-20T17:04:45+08:00 文档/本机工件补记：docs/v09_s1_execution.md同步Q010进度与已验冻结sV，明确231通过但新Important待修，无准入或效果声明；新commands/verify_q010_final_cpu.py对源/全部16个v09测试及fixture前后hash、完整pytest输出和退出码建立新证据。工件Python compile通过，等待资源owner定稿后才执行，未创建最终freeze、未新增物理步。
+
+
+### 2026-11-20 17:07:25 CST — R-RES-ID-OMIT01限定修复及新freeze
+
+- 实际文件仅scripts/a2_v09_resource_worker.py和tests/test_v09_resource_cli.py；worker引用共享OLD_RUN_ID，对本次a2-v09-s1-seed42-r3同时缺两identity参数提前拒绝，已有XOR仍拒绝缺任一参数。其他run无参数正例保持通过。没有扩大旧证据白名单或改变负载/模型/训练配方。
+- 先新增evaluation/video×原字节/追加空格共4个反例，真实CLI全部RED（原错误返回0），18.78s；修复后再补两模式×缺任一参数共4例，完整CLI 30 passed/65.53s，仅既有torch.jit FutureWarning。缺参stdout空、无输出目录、临时ledger字节不变；无物理执行。
+- 新完整源码c9ee8789f6051bc6c36cbfc24f076deba6121d8ffedb48ce5d689e0a6b665ea4，323文件；本机source_freeze_s1_q010_final.json为待批准候选，不覆盖旧freeze。root全16模块CPU回归已启动并记录源/测试前后hash，fresh独审和协议独审分别重开；此刻尚未取得最终结果或任何准入。
+- 更新计划Task1～3已完成的实现测试步骤，统一提交仍待最终验证；docs/v09_s1_execution.md同步修复状态。旧S1.0原件、907前缀、活账本费用未改，正式学习0。
+
+
+### 2026-11-20 17:10:32 CST — Q010新候选完整CPU回归及独立代码审核通过
+
+- root命令：CUDA_VISIBLE_DEVICES='' /home/xxs/anaconda3/envs/a2/bin/python -m pytest tests/test_v09_*.py -q（wrapper展开全部16文件），239 passed/197.04s、exit0，仅现有torch.jit弃用警告。323源码与全部测试/fixture前后hash一致，SDS/6400完整SHA重核通过；本机proof=074d46c48c11d3012f56b4e30680c2fa789d134c0e08bcaa29dd88ab41bccb33, logSHA526bbe4caefea34459ce37124e0171cb73696fb0f594278ee38e714ade40883b。没有运行含物理步的全仓pytest。
+- 新增独审报告docs/v09_s1_q010_code_review_20261120.md，SHA=4015c67106d52e7b9b557561a1b56bfd2134255758e481fd5c58a4861b0b5b3d, fresh审核者非实现者。独立限定62 passed/70.82s；R-RES-ID-OMIT01闭合，无剩余Critical/Important/Minor。新旧差异仍仅9指定旧文件及新增身份模块，无删除，配方和旧生产核心不变。
+- 本次代码ready不等于实际兼容/资源/学习批准。协议独审正在重核34883依赖路径和旧证据直接绑定，正式catalog尚未签；真实资源、Q008、学习与行为恢复未验证。新commands/verify_q010_real_resource_dry.py已compile，仅准备固定真实r3参数、旧校准/20源100槽5005/账本不变证明，等清单签发才运行，未执行物理。
+
+
+### 2026-11-20 17:19:37 CST — Q010实际兼容批准与真实r3零物理dry-run
+
+- 新增独审报告docs/v09_s1_q010_compatibility_review_20261120.md，SHA31c52746aa052940c4fab77dfb50a033cba6842570c29489ebe2f876fc12ec37；独立逐旧322/新323核对313不变、9消费/入口/裁定变化、1新增，34883已记录依赖/资产路径及文件集合零变化。原草稿941项逐hash无不符，七manifest按未改生成器验证；旧final原文未解码。
+- 正式本机只读清单q010_s1_0_evidence_identity_c9ee.json SHA0d158b266dde7daeefaf81bc5b270a4294a94f473203015ea8fd9d6df6380408，旧447直接唯一c9ee、同r3/SDS/6400/live907锚点；7输入、12runtime、931audit（含新增核验材料），没有扩大runtime种类。报告先完成再由清单引用reportSHA，不反写报告或清单避免循环。实际factory和cal/index读取保留producer及统计值。
+- root真实CLI dry-run exit0，命令用cuda:0、physical-gpu-index=0、monitor-interval=0.02、同清单及原校准，无execute；证实20源→100槽×5005、视频1×5005和原sV2.136540383972894，live ledger SHA前后相同、无output目录、0物理。proof df567e11c48d8408758e3a3361ce91c9f59c5521c1a8ca92a0ebf3314b5de5c1，完整命令/stdout引用留本机，不上传大JSON。
+- 更新docs/v09_s1_execution.md与计划对应完成步骤。资源engineering entry仍待独审，实际GPU实测、Q008证据、学习和行为改善未验证；S2/S3不具备进入资格，旧生产账本费用仍不变。
+
+
+### 2026-11-20 17:25:11 CST — Q010仅资源工程入口独立批准，准备统一提交
+
+- 新增docs/v09_s1_q010_resource_entry_review_20261120.md（SHA007c960119f661211d1a0bd36450a3ee3e744a614b4677874d0395b24a7384d1）；本机s1_resource_engineering_entry_q010_c9ee.json（SHAcdb3bfcedceffe0b7018178053e9db0060ede23242ce593721113a038f20c6f7）和独立dry证明8c503eeca04a61a29339b169c645002d476ef8ed70d13371b7c8dea0ea8cba9e不提交Git。批准严格c9ee/同r3/同0d158清单，仅S1_RESOURCE engineering。
+- 独审确认四probe未消费、各59工作项，资源上界16030340控制样本保持；5热身+50测量、48步/20Adam、两次额外全参数N×48、独立100×5005评估/1×5005视频的Q009工作量不变。仅容量/OOM可降档，工程异常停止，不扩大或自动重跑。learning_approved=false，resource_capacity_passed=false。
+- 更新计划和执行说明。提交前已重新逐323源码及全部测试/fixture核对最终freeze一致，SDS/6400重验通过，git diff --check通过；正式学习/实际资源仍0。精确暂存本次任务源、测试、裁定、计划、3独审报告及日志共24文件，排除用户play.py/train.py各9行及其他未提交内容、所有权重/轨迹/批准大JSON。接下来统一commit和非强制上传，核远端后才实际探测；本记录不提前声称push或GPU通过。
