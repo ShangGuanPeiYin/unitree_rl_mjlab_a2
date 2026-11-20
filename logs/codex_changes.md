@@ -3956,3 +3956,39 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 更新docs/v09_s1_execution.md，登记已上传并核远端一致的2e532609c83fc75197f7abf9cd0184eb9a0dbcbc、正式PID3228141及Q008初始诊断已实际启动，运行/launch收据留本机。此阶段首个学习rollout尚未发生，不将初始化或诊断计为已梯度学习。
 - 独审新本机q008_formal_initial_checkpoint_independent_proof.json SHAa5a802c78e6ecf5f708baf992329f02d33069ffdd782a4420743ebb42ae2eba1；course_entry文件SHA32c962f28352b13f81c1c9b39e4c5a9bbe01f5e3f6545d98f8b46414492e6c13、evidence_before SHA4893c425476368592488bde8e155117194178e0d266d8438bdeb5f5be09f3042，模型state同f9a038b73bf2e97290cfb38428d9a6d186e1a136f908ec664e7a0c2ebc8d853c。51非变state与6400精确一致，2FC按独立Fraction系数精确重算，std/stats继承、18 trainable/45 optimizer params/state为空，旧训练状态未载入、同Context/learning0。
 - root重核proof完整SHA及标量元数据；未新增物理或重复完整测试，source/tests/所有签字报告与catalog保持冻结。before DIAG/75固定视频尚未闭合，后续学习、行为改善与恢复未验证，不提前宣称通过。
+
+
+### 2026-11-20T18:48:01.950195+08:00 — Q011数值核验阻断首梯度，安全等待
+
+- 初始DIAG1500已闭合539740控制样本，独审发现CPU与保存GPU教师标签超旧审核容差；原件/容差/源/权重均未改。规划Q011要求按原逐元素界限做同GPU两次零物理重放，CPU单独超差不直接判身份错误；56个active子集异常快照无法真复原原20槽，处置补报规划待裁定。
+- 为落实首梯度阻断，确认批准命令精确匹配PID3228141、wchan=do_wait，唯一直接子为已授权video_6400，父已Q009卸载；仅向父SIGSTOP，确认T状态，当前录像子进程未发信号且仍运行/可自然退出。没有kill、重启、改源码或改变控制/梯度参数；学习仍0。新本机q011_parent_hold_20261120.json保存PID/命令/子进程/时间和原因，当前teacher视频照原预留自然闭合，随后无额外GPU任务与其争用。
+- 该等待是已授权工程核验中的进程控制，未将整个目标标记为用户请求暂停；Q011通过前不CONT父，不放行适配。裁定和结果将记在snapshot外，保持当前C9和既有签字文件冻结。
+
+
+### 2026-11-20 18:54:20 CST — Q011裁定及补充外部记录，不改在跑源码
+
+- 新增docs/v09_s1_q011_numeric_audit_20261120.md；更新执行doc，记录原始CPU/GPU教师标签差异、9366保存状态/396异常快照、340完整与56 active子集缺失事实、规划同GPU原容差和固定形状两补位/全unique mask控制合同。数值合同与实际后端/槽位/帧身份先冻结后看GPU，不改原数据、训练精度、网络、loss或行为阈值；当前仍pending，不能宣称通过。
+- 裁定明确放在snapshot外以保留C9有效，不改rulings、源/tests、既有签字报告/catalog。CPU TF32第三Conv模拟仅定位反事实，不声称已直接观察生产GPU算子。没有重跑1500物理，也没有额外GPU重放。
+- 暂停父进程已核T，子teacher仍R/普通文件输出；补录q011_parent_hold_identity_guard_20261120.json SHAb9d719c17cefd9faf7e86aad664fa8a7c61cb7727a03a9d160f7a86253c6fe3d，start_ticks145922371。启动tick实际为信号后补核，不冒称事前已录；与launch时间/argv一致，未来CONT前严格同tick/账本复验，仅CONT一次。运行journal已有env/buffers_released=true、complete_rollouts0。
+- 学习批准继续有效但Q011未解除；当前teacher视频58/75验证收据，初始化video尚未开始、正式梯度0。GPU脚本v1保留，新v2清单/脚本准备中；待子自然退出并独审/安全证明后运行，结果未验证。
+
+
+### 2026-11-20T19:12:20.253033+08:00 — Q011 v3两进程零物理GPU核验启动
+
+- 临时审计v2由fresh实证两Important：NaN/Inf可误报0超差、production数值配置/layout未硬约束；v1/v2文件保持原样，另建v3。CPU真实16 fail/1 pass RED→17 pass GREEN（8.07s），fresh独立17 pass（7.84s）且两I闭合，无源/数据/原tol变化。v3 script SHA86f1c9521b806367459b36b3ddc125e864e78fa68db43645301eb9d0debb9ace，manifest SHAa1ba44e537dacc088ddf84523f6b09a6c01f1c1734efdddcdbcae4adc3396324，contract SHA147933ed10de30fa3f0a453fa50a09090523575181c9b80fad50ad74f96aab6b。比较finite/equal nonempty shapes硬拒绝、JSON禁NaN；software/precision/env/source/driver和53模型/每次N20 layout前后核对，预期在GPU结果前冻结；历史flags未直接保存的边界保留。
+- teacher75已自然exit0，report语义SHA73c72eb1e1ca711528a16de577677781679965c4c05843c277398bcbabb9b29e、closed35954；root自然退出收据SHAebb1bb68603356ca648181220821622651e5f3ec8f2b6b7bea608ebbdfafdc44。parent T/同startticks，只有父CUDA context、无child，journal env/buffers released、0rollout/0学习、live1464无pending，GPU串行边界已复验。
+- 新safe proof=/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v09/s1_seed42_r3/q011_gpu_replay_safe_boundary_20261120.json, SHA=1e02d8dfff8ee5145e13041cf78693c0abc1447d6f63a0d3f435e50ff16d9f09；按Q011只启动冻结6400的两个顺序独立GPU前向进程，342full+112partial-fill+66mask-fill每进程520组，原tol1e-5+1e-4|saved|，输出q011_gpu_replay_v3_r1。没有env构造、物理推进、权重更新、训练flag调参或标签重写；开始不表示通过，最终结果/独审未完成，父不CONT。
+
+
+### 2026-11-20 19:16:46 CST — Q011实际GPU两次重放完成，待最终独审
+
+- 本机q011_gpu_replay_v3_r1两顺序独立GPUworker PID3276157/3276203，各520layout检查，同原UUID和预冻结software/precision/source/driver/model/input layout硬核通过；全部selected saved μ/V、两次互比、双fill及masked/full控制原tol均0例外、最大数值差0。只覆盖指定340异常/2full对照、56部分两填法、33mask两填法，不冒称所有未保存状态或缺失inactive历史已恢复。
+- 实际exit0，env构造/物理推进/权重更新均0，ledger9478b5ef2ac71388872d6b0272f84a393bcbd97ba98db458e0378a1862ff44de前后不变。report文件SHAf657e49d9d93ee45879646ef70ef8188dc4515aaf1b926ed4978f5000328425a；pass1 JSON SHA4ebd5b7273b800594150ae8dea4ed3f9b1b6e6a8f0a01bb67e063994e83ca5f8，pass2 SHAfeeab2493ccce8aaeacda2b3b03e44a31ec24799a05f0ed33681f5026f2ebdd0，结果PT/JSON全部留本机。
+- 更新执行doc。程序learning_clearance=false，当前不CONT父，待独审实际输出后才可解除Q011；不因CPU后端单独超差改旧tol，不以GPU通过断言CPU差异具体算子来源，不声称停车或恢复效果改善。source/tests/所有既有签字文件与catalog均未改。
+
+
+### 2026-11-20 19:24:13 CST — Q011实际GPU结果独审签字解除
+
+- 新增docs/v09_s1_q011_numeric_audit_result_20261120.md，SHA50f8d46a535255537fbc2a1911dd78d04a19f21659afd919a54f3d84878a7e3a；本机clearance SHA22139fcb8ce685adb7191c67cc8ed6a35822607d04bf35b35185bb1cf1edbfe3、actual proof SHAf67ae1ffd3719b1b5898cff4a16c59f69f53c33f4e0913ce30e390d39d69b020、签后收据SHAc1ad39feeaa69b3033cec71dcbb4f98cc9bf7e9577e21633f12be73ac240aea1。root实际读并核文件/原9d4/输出/证据SHA关联通过。
+- 独审CPU从两GPU PT重算221728 saved分量及520组互比/89双fill/66遮盖参考，全部finite/等shape/原tol零差零例外；source/模型/map/slot/time/config身份无错误，Q011解除。保留原CPU超差2407/112392、10/9366以及TF32反事实/历史flags未直接保存/56缺失inactive无历史重建等限制，不作具体算子因果或行为改善结论。
+- 原9d4学习批准同Context仍通过，Q011 clearance仅解除数值等待且被学习validator作为新学习许可拒绝；init75及其他Q008、S1.2门禁/final条件不跳过。修改执行说明，下一步提交4任务文档并核远端后，只CONT原已暂停父一次。当前parent T、learning0、live1464未变、无新物理或fee。C9 source/tests、旧签字报告/主rulings/catalog均不改。
