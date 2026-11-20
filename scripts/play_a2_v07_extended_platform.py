@@ -81,6 +81,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--checkpoint-sha256', required=True)
+    parser.add_argument('--stair-steps', type=int, default=40,
+                        help='Playback-only stair count; frozen training terrain is unchanged')
     parser.add_argument('--platform-length', type=float, default=20.0)
     parser.add_argument('--platform-width', type=float, default=4.0)
     parser.add_argument('--vx', type=float, default=0.6)
@@ -109,7 +111,7 @@ def main():
     from src.tasks.velocity.v07 import terrain, spec
     from src.tasks.velocity.v07.env import V07Env
     from src.tasks.velocity.v07.model import V07ActorCritic
-    terrain.configure_playback_platform(tile_id=21, length=args.platform_length, width=args.platform_width)
+    terrain.configure_playback_platform(tile_id=21, length=args.platform_length, width=args.platform_width, steps=args.stair_steps)
     torch.manual_seed(args.seed)
     model = V07ActorCritic().to(args.device)
     state = torch.load(args.checkpoint, map_location=args.device, weights_only=False)
@@ -124,7 +126,8 @@ def main():
         # Keep event calculations but suppress teleport/reset for this viewer only.
         env._reset_ids = lambda ids, **kwargs: None
         command = torch.tensor([args.vx, args.vy, args.wz], device=args.device)
-        print(f'L40: 40 steps, h=d=0.2m, landing x=[8,{8 + args.platform_length:g}]m; '
+        print(f'Playback: {args.stair_steps} steps, h=d=0.2m, '
+              f'landing x=[{args.stair_steps*.2:g},{args.stair_steps*.2 + args.platform_length:g}]m; '
               f'landing width={args.platform_width:g}m; constant command={command.tolist()}; no automatic reset', flush=True)
 
         @torch.inference_mode()

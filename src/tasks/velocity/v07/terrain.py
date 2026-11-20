@@ -55,10 +55,11 @@ def _fail(message):
 
 
 # Playback-only override, configured before constructing an environment.
-_PLAYBACK_PLATFORM: tuple[int, float, float] | None = None
+_PLAYBACK_PLATFORM: tuple[int, float, float, int | None] | None = None
 
 
-def configure_playback_platform(*, tile_id: int, length: float, width: float = 0.8):
+def configure_playback_platform(*, tile_id: int, length: float, width: float = 0.8,
+                                steps: int | None = None):
     """Extend one platform in this process; never edits the frozen training spec.
 
     Call once, before any geometry/map cache or environment is constructed.
@@ -73,7 +74,9 @@ def configure_playback_platform(*, tile_id: int, length: float, width: float = 0
         raise ValueError("Playback platform length must be finite and >= 2 metres")
     if not math.isfinite(width) or not 0.8 <= width <= 4.0:
         raise ValueError("Playback platform width must be within [0.8, 4] metres")
-    _PLAYBACK_PLATFORM = (tile_id, float(length), float(width))
+    if steps is not None and (type(steps) is not int or steps <= 0):
+        raise ValueError("Playback stair steps must be a positive integer")
+    _PLAYBACK_PLATFORM = (tile_id, float(length), float(width), steps)
 
 
 def platform_width(tile):
@@ -136,11 +139,12 @@ def build_terrain_specs() -> tuple:
         if len(origin) != 3 or not all(math.isfinite(v) for v in origin):
             _fail(f"tile {tid}: frame_origin_world must be a finite 3-tuple")
     if _PLAYBACK_PLATFORM is not None:
-        tid, length, _ = _PLAYBACK_PLATFORM
+        tid, length, _, steps = _PLAYBACK_PLATFORM
         tile = table[tid]
         lo, _, ylo, yhi = tile.valid_bounds_local
-        extended = replace(tile, platform_length=length,
-                           valid_bounds_local=(lo, tile.N * tile.step_depth + length, ylo, yhi))
+        n = tile.N if steps is None else steps
+        extended = replace(tile, N=n, platform_length=length,
+                           valid_bounds_local=(lo, n * tile.step_depth + length, ylo, yhi))
         table = table[:tid] + (extended,) + table[tid + 1:]
     return table
 
