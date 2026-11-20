@@ -3752,3 +3752,18 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 验证：1051成功/448失败/1超时；817400计费控制样本=722776首终态+94624padding；3269600物理子步，无nonfinite/contact_overflow/工程错误。75批初始教师CPU输出对GPU记录rtol=1e-4、atol=1e-5均成立，这是数值跨设备校验公差，未改行为阈值。闭合seq152/eventSHA=7a0e364b61a5ccc7e55aa7e8afab3e48264dece86bfe3dc0fd1283f9b50a811d。teacher_control=False是环境回合选择字段，本评估入口直接固定教师动作，不能用该字段误推学生执行或训练教师比例。
 - 上传核验：标准GitHTTPS连续网络故障，GitHub API可达。使用既有授权gh凭据逐blob/tree及原作者时间构造提交对象，返回完整de91439df31f16c32a52b17ac192f2ccd37d6b32和4a3fe4c16534e2cad7d9f013c28dc02392dc09a1，均与本地原SHA严格相同。连接器integration不能updateRefs，改用已授权gh REST并先核对旧远端c5b2878，force=false快进。复查远端与本地均为4a3fe4c；运行凭证api_exact_commit_upload.json/api_exact_ref_update.json留本机。无强制推送，无权重或无关文件上传。
 - 尚未完成：其余四套基线、600例校准、finalize、Q010桥接、资源、初始/后测视频、学习和行为恢复均不在本单项验收结论内。源码仍44780冻结、学习0。
+
+
+## 2026-11-20 13:50:35 CST — 原6400 gate_B完整实测记录
+
+- 文件：新增`docs/v09_s1_teacher_gate_B.md`75组完整表；更新`docs/v09_s1_execution.md`；本机`logs/a2_v09/s1_seed42_r3/teacher_gate_B_report.json`保存连续指标覆盖和有符号距离分位数。
+- 实际内容与设计：仅汇总原6400第二套固定门禁对照，不比较两套不同病例作改善结论。1500唯一病例SHA与manifest完整一致，75组各20例；成功1037、物理/质量失败460、超时3，quality_failure16/side90/posture57/nonfoot253/body44，超时另3。完整分母包含失败，未按存活缩小分母，参数和核心逻辑均未更改。
+- 验证：summary计数、逐病例组计数和外部账本closed/reserved=0一致；actual=869800控制样本（3479200物理子步，含padding）。A/B合计1687200控制样本。B全量独立核验正在进行，不能将主汇总视为独立通过。前次独审报告及日志提交caa66ba1ffccdf89ddd7cacb19d26e3e9d169a03已按完整原SHA经API非强制快进，核验本地远端一致。
+- 后续状态：teacher_final_1已串行开始；三套教师final结果继续封存，不用于校准或训练选模。校准、finalize、Q010修复桥接、资源及学习仍未完成；学习0，S2/S3未启动。
+
+
+### 2026-11-20 13:52:56 CST — gate_B独立单项验收
+
+- 文件：新增`docs/v09_s1_teacher_gate_B_independent_review_20261120.md`，SHA=bd5041784866863a59b1e95ca7abc49d6a87889a2b9ac23f01be03202d3d1476；本机独审JSON SHA=12ce3cbe642a21f0c977c92bf14c2e15eea4fc10b5c9d18fb9909fb44765a923。更新执行记录链接。
+- 验证与设计：独审CPU禁CUDA全量重算75PT/geometry、1500连续首终态/metrics、教师固定观测输出、75组主JSON及Markdown；均与原始数据一致，无工程错误/nonfinite/overflow。869800实际控制样本=726201有效首终态+143599等待padding，物理子步3479200；闭合seq303哈希链通过，事件SHA=bdbb46a4fe18ac5354b66f76c42dc55e3fda3588014784d5365313c3b658086a。
+- 范围：只接受原6400 gate_B真实数据与计费，不扩大为完整S1.0、资源或学习批准。未读final任何PT/episodes/summary/派生行为内容；所有final仍封存。原A报告/旧S1.0签字/322源码不变，未新增物理步，学习仍0。
