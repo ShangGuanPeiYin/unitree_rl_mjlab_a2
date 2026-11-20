@@ -108,3 +108,12 @@ Q010协议独审已通过，见`docs/v09_s1_q010_compatibility_review_20261120.m
 独审实际CPU admissions/schedule/最终learning approval验证通过；root再次真实构造同Context并验证最终JSON、报告/清单SHA和source/test freeze一致，通过。账本未变，正式journal不存在。唯一允许命令为已保存真实preflight.command追加--approval-report本JSON及--execute，CUDA_VISIBLE_DEVICES=0，无resume；禁止使用probe权重。
 
 提交报告、日志、计划并核远端后才启动。首次正式学习rollout之前，驱动先做75组×20例的S1_DIAG初始诊断、6400与迁移初始各75个固定视频；813个完整适配rollout后再做同套诊断和75个适配后视频。有限性、迁移/几何/接触一致性与完整对照条件满足后才进入S1.2；其余行为门禁、预算和final鲜活资格保持原合同。当前仅学习准入通过，尚未推进上述物理或正式学习，效果未验证。
+
+
+## 正式驱动学前阶段（2026-11-20）
+
+提交`2e532609c83fc75197f7abf9cd0184eb9a0dbcbc`已上传并再次核远端一致后，按唯一批准命令启动PID3228141，运行日志`q010_s1_formal_20261120.log`、启动收据`q010_s1_formal_launch_20261120.json`留r3目录。首个学习rollout前正在执行Q008 before；启动不表示已有梯度学习或行为改善。
+
+正式初始checkpoint文件SHA `32c962f28352b13f81c1c9b39e4c5a9bbe01f5e3f6545d98f8b46414492e6c13`，卸载前checkpoint文件SHA `4893c425476368592488bde8e155117194178e0d266d8438bdeb5f5be09f3042`；两者模型state SHA相同 `f9a038b73bf2e97290cfb38428d9a6d186e1a136f908ec664e7a0c2ebc8d853c`。独审本机proof `q008_formal_initial_checkpoint_independent_proof.json` SHA `a5a802c78e6ecf5f708baf992329f02d33069ffdd782a4420743ebb42ae2eba1`确认53条state中51条非变化参数/buffer与唯一6400逐张量精确一致，另两个FC独立Fraction重叠系数重算也精确一致。std/stats精确继承、18参数可训练、Adam管理45参数且状态为空，同Context、learning_samples=0；没有加载旧或probe训练状态。
+
+上述仅正式初始化工程证据，before诊断与两模型各75视频尚在采集，完整性待闭合后独审；S1.1梯度学习和后续S1.2行为效果均未验证。

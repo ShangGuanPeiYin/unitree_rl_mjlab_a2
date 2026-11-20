@@ -3942,3 +3942,17 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 独审纯CPU actual validate_admissions/validate_schedule_ledger/validate_learning_approval通过，工程only scope负例拒绝；root独立重核最终JSON/报告和清单内容SHA、真实同Context校验通过，允许命令精确为preflight.command+approval-report+execute且无resume，source323及全部tests/fixture仍等于已通过239回归的freeze，SDS/6400重验通过，live ledger未变、formal journal不存在。未重复大回归、未构造trainer/推进物理。
 - 配方与核心逻辑前后不变：N512，813适配/主最多25634/每retry4069；48步、5×4Adam、micro512、LR3e-5、clip1、std/stats冻结、原sV、每5m保存；fresh6400初始化，S1.1→S1.2同Adam动量，Q008硬门及同SHA A/B/final fresh资格、行为失败才解锁retry仍强制。批准不保证行为或loss改善，不涵盖S2/S3。
 - 更新计划将学习准入与Q008实际执行拆开，后者未完成；执行说明同步仅批准尚未启动。接下来只提交新容量/学习报告、执行doc/计划/日志5文件并push核远端后，才运行唯一已审命令。既有报告/catalog/源/tests不改。
+
+
+### 2026-11-20T18:17:03.518313+08:00 — 正式S1驱动启动，先执行Q008初始工程证据
+
+- 本地与远端main完整提交2e532609c83fc75197f7abf9cd0184eb9a0dbcbc已核一致，force=false；容量/学习报告和日志已上传。启动前再次实际读远端、核学习JSON/report/capacity/catalog/resource完整SHA、C9/SDS/6400、真实validate_learning_approval及live1157字节未变，formal journal不存在。
+- 执行唯一allowed_command，CUDA_VISIBLE_DEVICES=0，N512/device cuda:0/seed42/rollout48/epochs5/minibatches4/micro512/LR0.00003/checkpoint5000000及同0d158清单全部显式，segment=s1-q010-formal-20261120-r1；无resume，fresh原6400迁移，未用probe权重/Adam。
+- 驱动首先做Q008初始1500例和6400/迁移初始固定视频，工程硬门满足后才开始813完整适配，后续S1.2仍受前后证据与数值一致性/门禁/final资格硬门限制。此条只记录启动，尚不声称已完成学习或效果恢复。新本机launch/log/最终exit收据保留，不上传权重/轨迹。
+
+
+### 2026-11-20 18:21:33 CST — 正式fresh初始化独立验证及Q008学前采集
+
+- 更新docs/v09_s1_execution.md，登记已上传并核远端一致的2e532609c83fc75197f7abf9cd0184eb9a0dbcbc、正式PID3228141及Q008初始诊断已实际启动，运行/launch收据留本机。此阶段首个学习rollout尚未发生，不将初始化或诊断计为已梯度学习。
+- 独审新本机q008_formal_initial_checkpoint_independent_proof.json SHAa5a802c78e6ecf5f708baf992329f02d33069ffdd782a4420743ebb42ae2eba1；course_entry文件SHA32c962f28352b13f81c1c9b39e4c5a9bbe01f5e3f6545d98f8b46414492e6c13、evidence_before SHA4893c425476368592488bde8e155117194178e0d266d8438bdeb5f5be09f3042，模型state同f9a038b73bf2e97290cfb38428d9a6d186e1a136f908ec664e7a0c2ebc8d853c。51非变state与6400精确一致，2FC按独立Fraction系数精确重算，std/stats继承、18 trainable/45 optimizer params/state为空，旧训练状态未载入、同Context/learning0。
+- root重核proof完整SHA及标量元数据；未新增物理或重复完整测试，source/tests/所有签字报告与catalog保持冻结。before DIAG/75固定视频尚未闭合，后续学习、行为改善与恢复未验证，不提前宣称通过。
