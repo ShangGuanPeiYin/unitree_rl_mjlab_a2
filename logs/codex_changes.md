@@ -4078,3 +4078,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新增docs/v09_s1_q008_after_evidence_review_20261120.md，更新docs/v09_s1_execution.md、Q010计划after项为完成并追加本日志。报告SHA73811ec6edbf393a9ed7d6f269a3e0f45c52c0ad77ceba748a20fd4a1ce090b0、综合proof SHAf83b1143e798acdefedfb3be1ebbab086940de4fe8ebabe60f1de34642004b7d；root实际读报告并核SHA。
 - after DIAG1500原件/812240费用单次闭合、Q012数值/四路公式原sV/分母600标量及1500配对、adapt75完整18118帧/36049控制/终止帧及费用全部独审通过。实际DIAG成功382→1051/1500；同before状态目标0.0192690→0.00471891、同after状态0.0737465→0.00226362，仅各自同数据诊断变化，不作跨分布或S1恢复结论。
 - 原进程按批准自然S1.2，实录main9轮/总20201472学习样本，原N512/48步/20Adam/LR3e-5/5m保存不变；依SDS由S1.1仅18地图参数/teacher50%切到44学习参数/teacher10%，std及归一化仍冻结、同Adam保留，不是另改配方。主段最多25634轮/629981184样本，门禁按原合同。入口/首轮CP工程独审进行中；正式A/B/final、S1_RESTORED及S2/S3未验证。
+
+
+### 2026-11-20T23:33:51+08:00 — S1.2入口/首main独审及持续监督
+
+- 新增docs/v09_s1_2_entry_independent_review_20261120.md（SHA0e700ec2be8b086288767e23ad7bf52ae69bf343e4588f364871b2a7eadfd457），更新docs/v09_s1_execution.md及本日志；root读原文/核SHA和本机proof dc6eb862f823759a6a6f6fed821df8407e582d0dd4759c7c6f426841ab29a4a0。入口53模型/完整Adam/RNG连续，首main18旧各16280/26新各20，9冻结state同initial，账本/journal/Q009/先闭合后更新和24576收费/512新IDs均通过，无阻断。
+- 没有重跑GPU/物理或额外大型测试，训练未hold/restart。固定checkpoint及已写前缀与活尾合法追加明确区分，活对象/requires_grad/GPU RNG执行的序列化边界见报告，不宣称直接观测或行为恢复。纯/tmp只读监督按SDS跟进checkpoint/正式门禁/预算与退出，不读未解封final；生产源码/配方/损失/门槛均未改，后续正式行为验收仍待实测。

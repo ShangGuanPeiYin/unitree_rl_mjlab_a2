@@ -187,3 +187,8 @@ Q013参考口径见`docs/v09_s1_q013_loss_reference_ruling_20261120.md`，SHA `b
 固定DIAG成功由382增至1051/1500，失败1113至449，超时5至0。正式GPU同一before状态9366条上的动作+0.1值由0.0192690352309至0.00471890637915；同一after状态15110条由0.0737464808282至0.00226361836703。两套状态分布不同，不能互相当同分布对照；正式恢复仍须A/B/final。
 
 同原driver已按既定工程条件进入S1.2，当前记录9次main完整迭代、总822次/20201472学习样本，最近20Adam及loss/梯度finite。S1.2仍N512/rollout48/5epoch×4逻辑minibatch/micro512/LR3e-5/clip1；teacher控制回合10%、Actor/Critic44参数可学习，std与全部normalizer冻结，沿用原Adam动量；主段上限25634完整迭代/629981184学习样本，既定门禁/恢复条件不变。入口和首main周期CP另作纯CPU独审，不暂停现运行。S1_RESTORED及S2/S3尚未取得或启动。
+
+
+S1.2入口和首main checkpoint独审通过，见`docs/v09_s1_2_entry_independent_review_20261120.md` SHA `0e700ec2be8b086288767e23ad7bf52ae69bf343e4588f364871b2a7eadfd457`；本机proof SHA `dc6eb862f823759a6a6f6fed821df8407e582d0dd4759c7c6f426841ab29a4a0`。入口53模型state/完整Adam/RNG同adapt；首main旧18各16280、新26各20，std无state、std+8normalizer同initial；账本5226及journal1646固定前缀证明after义务先闭合、Q009恢复后首轮24576单次计费及512新单调episode IDs。requires_grad/活Python ID/GPU恢复过程的序列化边界明确，不外推行为恢复或后续全部训练。
+
+只读监督已建立（/tmp观察器，不改运行/账本或读封存final），监测后续checkpoint、正式门禁、预算/工程异常、意外退出及阶段marker，出现关键事件即回报主对话。原driver持续训练，后续仍按既定固定病例和正式资格推进SDS。
