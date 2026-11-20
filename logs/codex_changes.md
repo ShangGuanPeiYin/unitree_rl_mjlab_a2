@@ -4084,3 +4084,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 
 - 新增docs/v09_s1_2_entry_independent_review_20261120.md（SHA0e700ec2be8b086288767e23ad7bf52ae69bf343e4588f364871b2a7eadfd457），更新docs/v09_s1_execution.md及本日志；root读原文/核SHA和本机proof dc6eb862f823759a6a6f6fed821df8407e582d0dd4759c7c6f426841ab29a4a0。入口53模型/完整Adam/RNG连续，首main18旧各16280/26新各20，9冻结state同initial，账本/journal/Q009/先闭合后更新和24576收费/512新IDs均通过，无阻断。
 - 没有重跑GPU/物理或额外大型测试，训练未hold/restart。固定checkpoint及已写前缀与活尾合法追加明确区分，活对象/requires_grad/GPU RNG执行的序列化边界见报告，不宣称直接观测或行为恢复。纯/tmp只读监督按SDS跟进checkpoint/正式门禁/预算与退出，不读未解封final；生产源码/配方/损失/门槛均未改，后续正式行为验收仍待实测。
+
+
+### 2026-11-21T00:06:44+08:00 — 2500万周期checkpoint限定独立核验
+
+- 更新docs/v09_s1_execution.md及本日志，记录新本机proof checkpoint_0025018368_independent_proof_20261121.json SHA153d949accf91fe290aa7c1b0e8db502a6297332fe1c63c4660cb804024f0785，原CP SHA4b873cfd60cd94c37c09b71de9636b1fcf3ef742744b2ffe7f899c648872034f；权重/proof留本机不上传。
+- CPU实际核1018总轮=813adapt+205main，total25018368/main5038080，旧18Adam各20360/新26各4100，9冻结state同初始、全部finite；同身份及journal2055/写前ledger6050完整前缀、费用allocation、角色/RNG/末轮loss摘要通过。root核文件/proof SHA与结论；累计47825906是计费额（含既有unknown保守收费），不全称精确物理量。
+- 没有修改C9、训练配方/损失/速度/门槛，未GPU/物理/信号或重复大回归。原训练和唯一只读观察器继续，尚未正式gate/final/行为恢复。

@@ -192,3 +192,8 @@ Q013参考口径见`docs/v09_s1_q013_loss_reference_ruling_20261120.md`，SHA `b
 S1.2入口和首main checkpoint独审通过，见`docs/v09_s1_2_entry_independent_review_20261120.md` SHA `0e700ec2be8b086288767e23ad7bf52ae69bf343e4588f364871b2a7eadfd457`；本机proof SHA `dc6eb862f823759a6a6f6fed821df8407e582d0dd4759c7c6f426841ab29a4a0`。入口53模型state/完整Adam/RNG同adapt；首main旧18各16280、新26各20，std无state、std+8normalizer同initial；账本5226及journal1646固定前缀证明after义务先闭合、Q009恢复后首轮24576单次计费及512新单调episode IDs。requires_grad/活Python ID/GPU恢复过程的序列化边界明确，不外推行为恢复或后续全部训练。
 
 只读监督已建立（/tmp观察器，不改运行/账本或读封存final），监测后续checkpoint、正式门禁、预算/工程异常、意外退出及阶段marker，出现关键事件即回报主对话。原driver持续训练，后续仍按既定固定病例和正式资格推进SDS。
+
+
+## 2026-11-21：2500万周期checkpoint工程核验
+
+真实journal2055保存总学习25,018,368/main5,038,080（813适配+205主段完整轮）checkpoint，文件SHA `4b873cfd60cd94c37c09b71de9636b1fcf3ef742744b2ffe7f899c648872034f`。限定CPU独审proof `checkpoint_0025018368_independent_proof_20261121.json` SHA `153d949accf91fe290aa7c1b0e8db502a6297332fe1c63c4660cb804024f0785`；C9/SDS/source/同Context正确，Adam44状态中旧18各20360、新26各4100，std无state，std+8normalizer精确同初始，模型/动量finite。写前ledger6050/9,445,201字节/SHA `fb79c18694e6e636849aebef3a39a2fe7ec96a19ef7d96c0fd2b63d3803ffa07`及1018项完整学习/角色/RNG/末轮摘要一致，无费用回退。未重跑大型回归/GPU/物理或暂停训练；原进程持续运行，非行为恢复结论。首正式gate按main独立100m触发，N512对应4070主段完整轮/main100024320，总120004608，仍待真实journal事件。
