@@ -166,3 +166,10 @@ S1.1实际训练已开始，本次记录时确认97/813完整迭代、2383872学
 813轮/19,980,288学习样本实际完成，适配checkpoint SHA `3453350b921e81d0e3e568a3d6c93a6044b8c6b62edc6d3362083a0a0235d800`；CPU独审proof SHA `3401b0d5502db9674530d24f8e1609782931dd69cd308c33d6fe376da6abf74a`确认35冻结项精确一致、18Adam状态各16260、全部813轮有限性及账本/journal关联。after首已结算批400状态的4800动作分量中162超原tol，value0/400超差，raw指标/geometry/finite通过；不扩展before Q011结论。详见`docs/v09_s1_q012_after_numeric_audit_20261120.md`。
 
 为阻断未闭合数值验收下的S1.2，原父同PID/tick/argv与Q009 after已卸载/do_wait身份复核后，只SIGSTOP父一次，子diag_after继续自然采集。hold receipt SHA `54361dbab6e232b075611705c8afe9d7826cef1f85ce9f1819a1d9a2526479b3`。Q012消息两次被自动审核拒绝，查到历史规划用户明确回问授权后仍未获通信审核放行；消息未发出，当前用户发送许可异步待答，不通过其他渠道绕过。新GPU核验/恢复未经裁定不执行；after整套、比较、视频及S1.2资格仍未验收，不作行为恢复结论。
+
+
+## Q012数值独立解除（恢复原父前）
+
+独审报告`docs/v09_s1_q012_numeric_audit_result_20261120.md` SHA `1847986dcdf86fe9c6eb53a15defed08eb167e82c7d4127d386471c39feda524`；本机clearance SHA `8701392499df92ccdbc5efda9fd265543047f3938cf6a45155bbfa78f11d3560`，actual proof SHA `691a781b94e0ba0cb32d9e58a1e0893f857b9b6e69ddb514eefb0bdd2d85d5b0`。独立CPU从双PT重算1130操作/各进程teacher μ196680、V16390及student μ18000、V1500，saved/互比/241双fill/218mask控制均max/RMS/超差0。全109实际mask、75学生及原件/软件/精度/槽位/冻结状态通过，物理与新增学习0，ledger5067/file369a…8730不变。原CPU例外及历史flags未直接保存、非真实inactive历史重建等边界保留，不断言具体算子根因或行为恢复。
+
+原9d4学习批准同Context仍有效，Q012文件仅解除数值等待，被学习validator作为新学习批准拒绝。root提交push并核远端后复核同PID3228141/tick145922371/argv、子自然exit0及账本，只CONT原父一次；随后仍需production四路comparison/adapt75及既有S1.2条件，不能用数值签字替代。

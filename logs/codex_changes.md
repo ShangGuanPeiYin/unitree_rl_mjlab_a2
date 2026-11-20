@@ -4039,3 +4039,23 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 
 - 新增docs/v09_s1_q012_numeric_ruling_20261120.md，逐项记录指定规划确认的教师571full+132partial+2对照、全部75学生满批、全unique mask/双补位、原tol及双独立串行GPU范围和独审放行条件。用户已授权核验后正式训练和持续评估推进SDS，无需重复启动许可。
 - 本次仅外部裁定文档与本日志变更，源码/数据/配方/损失/冻结/预算/门槛均不变。已只读核父3228141/T同tick145922371，诊断子3350375/Z exit0同tick147088853；未GPU/物理/CONT。工具CPU TDD和fresh复审进行中，GPU数值、完整Q008及S1.2资格尚未验证。
+
+
+### 2026-11-20T22:40:54.605211+08:00 — Q012 v3真实入口修复与双GPU重放准入
+
+- 本机新增Q012 v2/v3脚本、CPU测试、manifest/数值合同与独审proof，旧候选不覆盖；全部实际109mask覆盖已独立核实（异常仅101），每进程1130前向/22600输入/saved17890行/μ214680与V17890分量。v2独立20CPU通过，但实际execute因cudnn.version设备能力查询触发CUDA初始化，被CPU-only guard拒绝，尚未双worker。
+- 根因经trace/安装源码及独审确认；v3仅CPU库版本读改同底层getVersionInt，GPUworker显式初始化后前后仍调用标准cudnn.version兼容检查，保留CPU-only guard。真实入口RED复现后21CPU GREEN，独立21pass/25.55s且CVD0+初始化首句拦截的execute预检通过/触发0次。原模型、数据、scope、tol、精度设置前后不变；未改C9。v3脚本SHA7018023ef54aa892970173033acb29363fd88417ecfc846cd9c7a277f6b213f4，独审proof SHAf46ae4cd837dee3ccab782b2ecc7ce6176a8fdc9675a629d23177038857bb846。
+- 新safeproof logs/a2_v09/s1_seed42_r3/q012_gpu_replay_safe_boundary_v3_20261120.json SHA814de236f61a354b8d81f813f825483c5be569418df06918cbd545d50b72c776，重核父3228141/T/tick145922371/原argv、子3350375/Z/exit0、ledger369a…8730未变、唯一GPU父。准备执行v3两个串行新进程零物理重放；开始不表示数值通过或学习放行，实际结果独审尚未验证，不CONT父。
+
+
+### 2026-11-20T22:43:51+08:00 — Q012实际双GPU重放完成待独审
+
+- v3首次相对output-dir被固定run目录guard拒绝，root改为同run绝对新路径，不改工具/数据/合同。之后q012_gpu_replay_v3_r1实际exit0，两个独立串行进程各1130前向；teacher μ196680/V16390、student μ18000/V1500保存比较及跨进程/双fill/109mask均报告max/RMS0、零超差。pass1 JSON SHA04b5e35c5a71e7de903309785fd097176126e7c290585c923605347e9040e1f9，pass2 SHA7ad176e688f8dc26c3480c41115e8ac55c17ab603e500236208bf5f9b9c9d889，原输出全部留本机。
+- 物理/梯度0，账本369a89df9fe57943c3b1657dcb6abaec415beaa53b987d4c2223045dc5f18730不变。程序learning_clearance=false，独立CPU原PT重算/外部签字正在进行，父未CONT，S1.2及行为恢复未验证；没有改C9、原数据、tol或训练配方。
+
+
+### 2026-11-20T22:53:19+08:00 — Q012实际输出独审签字解除
+
+- 新增docs/v09_s1_q012_numeric_audit_result_20261120.md（SHA1847986dcdf86fe9c6eb53a15defed08eb167e82c7d4127d386471c39feda524），更新docs/v09_s1_execution.md与本日志；本机clearance SHA8701392499df92ccdbc5efda9fd265543047f3938cf6a45155bbfa78f11d3560，actual proof SHA691a781b94e0ba0cb32d9e58a1e0893f857b9b6e69ddb514eefb0bdd2d85d5b0。root核两文件原文及SHA。
+- 独审实际双PT逐tensor原tol重算全部saved/互比/双fill/mask均零差零超差；各分母/模型原生输入/原件/配置/槽位通过，ledger5067与学习19980288未推进。原9d4同Ctx继续有效，解除JSON不冒充新学习批准。无配方/损失/速度/门槛/C9变化，无行为恢复结论。
+- 下一步提交push核远端、守护同父仅CONT一次，完成原Q008 comparison/adapt75后才按原入口训练。当前父尚未恢复，production比较/视频及S1.2仍未验收，未声称效果改善。
