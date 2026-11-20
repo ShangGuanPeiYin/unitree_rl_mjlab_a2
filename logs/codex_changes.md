@@ -4091,3 +4091,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 更新docs/v09_s1_execution.md及本日志，记录新本机proof checkpoint_0025018368_independent_proof_20261121.json SHA153d949accf91fe290aa7c1b0e8db502a6297332fe1c63c4660cb804024f0785，原CP SHA4b873cfd60cd94c37c09b71de9636b1fcf3ef742744b2ffe7f899c648872034f；权重/proof留本机不上传。
 - CPU实际核1018总轮=813adapt+205main，total25018368/main5038080，旧18Adam各20360/新26各4100，9冻结state同初始、全部finite；同身份及journal2055/写前ledger6050完整前缀、费用allocation、角色/RNG/末轮loss摘要通过。root核文件/proof SHA与结论；累计47825906是计费额（含既有unknown保守收费），不全称精确物理量。
 - 没有修改C9、训练配方/损失/速度/门槛，未GPU/物理/信号或重复大回归。原训练和唯一只读观察器继续，尚未正式gate/final/行为恢复。
+
+
+### 2026-11-21T02:05:40+08:00 — 记录Q014原main/严格串行裁定
+
+- 仅更新docs/v09_s1_execution.md及本日志，记录规划确认原提示词第5行/SDS§1.3：不创建分支、worktree、其他checkout或树外暂存提前实施S2；不启动S2开发/专项测试/审核；真实S1_RESTORED后才在现有main开始S2.0。
+- 未做任何依赖改动或额外准备材料，C9源码、模型、配方、预算及门槛不变；原训练和唯一观察器继续健康运行。验证为只读核原提示词/裁定及当前进程；本次纯文档，不重复代码回归或物理验证，S1行为恢复仍未验证。

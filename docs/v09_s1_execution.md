@@ -197,3 +197,8 @@ S1.2入口和首main checkpoint独审通过，见`docs/v09_s1_2_entry_independen
 ## 2026-11-21：2500万周期checkpoint工程核验
 
 真实journal2055保存总学习25,018,368/main5,038,080（813适配+205主段完整轮）checkpoint，文件SHA `4b873cfd60cd94c37c09b71de9636b1fcf3ef742744b2ffe7f899c648872034f`。限定CPU独审proof `checkpoint_0025018368_independent_proof_20261121.json` SHA `153d949accf91fe290aa7c1b0e8db502a6297332fe1c63c4660cb804024f0785`；C9/SDS/source/同Context正确，Adam44状态中旧18各20360、新26各4100，std无state，std+8normalizer精确同初始，模型/动量finite。写前ledger6050/9,445,201字节/SHA `fb79c18694e6e636849aebef3a39a2fe7ec96a19ef7d96c0fd2b63d3803ffa07`及1018项完整学习/角色/RNG/末轮摘要一致，无费用回退。未重跑大型回归/GPU/物理或暂停训练；原进程持续运行，非行为恢复结论。首正式gate按main独立100m触发，N512对应4070主段完整轮/main100024320，总120004608，仍待真实journal事件。
+
+
+## Q014：继续原main和严格阶段顺序
+
+2026-11-21，指定规划会话明确：用户要求v0.9直接在现有main、不开worktree，并在原能力恢复后才解决第二项，执行提示词第5行及SDS§1.3继续适用。S1尚未真实S1_RESTORED时，不创建分支/worktree/其他checkout或树外暂存来提前实施S2，不启动S2开发、专项测试或审核，也不新增准备材料。S1.2沿原进程和正式评估推进；真实S1_RESTORED后才在现有main开始S2.0诊断与实施，并在相应训练前独立代码审核。本次仅询问准备边界，未实施任何依赖修改、创建worktree或启用后续课程；C9/模型/学习任务不改。
