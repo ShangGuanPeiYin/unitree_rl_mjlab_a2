@@ -4766,3 +4766,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 文件：`docs/v09_s2_1_r1_invalidated.md`。
 - 四个 `s2.1-r1` 检查点（5M/10M/15M/20M 样本）SHA 全部登记为作废，保留原件但不得用于门禁/终验/选模。
 - 台账：learning_S2_1 spent 20,275,200 / 800,000,000，reserved 0；重跑将从入口权重新开始，剩余 31,727 rollouts。
+
+
+## 2026-11-22 S2 奖励接入审计清单
+
+- 文件：`docs/v09_s2_reward_audit_checklist.md`。
+- 用途：重跑准入前逐项核对：调用链、§5.1 总公式、§5.3 20 项两列、g_level（Q027/Q028/Q032）、stable_stand、抬脚面、停车段、c_exec/H 查询/接触来源、−10/+8/+2 与失败优先、分项手算测试、检查点作废与重跑命令。
