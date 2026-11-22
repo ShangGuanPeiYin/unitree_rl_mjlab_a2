@@ -358,6 +358,7 @@ class S2PhysicsEnv:
                 heightmap=s2_env.to_numpy(obs['heightmap']).copy(),
                 route_error=s2_env.to_numpy(obs['route_error']).copy(),
                 c_exec=float(obs['c_exec']),
+                c_request=float(obs['c_request']),
                 refresh_index=(int(last.native_sample_id['refresh_index'])
                                if last and last.native_sample_id else None),
                 sample_sim_time_s=(float(last.native_sample_id['sample_sim_time_s'])
@@ -375,6 +376,8 @@ class S2PhysicsEnv:
                  else self.backend._step())
         if input_row is not None:
             input_row['recorded_action'] = list(frame.a_request)
+            input_row['post_step_terminal'] = bool(frame.terminal or self.machine.terminal)
+            input_row['post_reset'] = bool(frame.post_reset)
             self.input_rows.append(input_row)
         self.steps += 1
         platform = self.task_adapter.platform

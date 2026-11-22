@@ -17,7 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from a2_v07_bootstrap import activate
 activate(ROOT)
-from src.tasks.velocity.v09 import (s2_cases, s2_env, s2_execute, s2_ledger, s2_physics, s2_spec)
+from src.tasks.velocity.v09 import (s2_cases, s2_counterfactual, s2_env, s2_execute,
+                                    s2_ledger, s2_physics, s2_spec)
 import numpy as np
 import torch
 
@@ -123,17 +124,23 @@ def _sha256_file(path):
 PITCH_SIGN_CONVENTION = s2_env.PITCH_SIGN_CONVENTION
 
 
-def _write_inputs(output, env, *, attempt_id):
-    """Write every consumed real-branch Actor input plus immutable metadata."""
-    rows = list(getattr(env, 'input_rows', []))
+def _write_inputs(output, env, *, attempt_id, actor=None):
+    """Write consumed real-branch Actor inputs, excluding terminal/reset rows."""
+    captured = list(getattr(env, 'input_rows', []))
+    rows = [row for row in captured
+            if not row.get('post_reset', False)
+            and not row.get('post_step_terminal', False)]
+    excluded = len(captured) - len(rows)
     if not rows:
-        return None
+        return dict(path=None, sha256=None, metadata=None, frames=0,
+                    captured_frames=len(captured), excluded_terminal_or_reset=excluded)
     arrays = {
         'proprio': np.asarray([row['proprio'] for row in rows], dtype=np.float32),
         'history': np.asarray([row['history'] for row in rows], dtype=np.float32),
         'heightmap': np.asarray([row['heightmap'] for row in rows], dtype=np.float32),
         'route_error': np.asarray([row['route_error'] for row in rows], dtype=np.float32),
         'c_exec': np.asarray([row['c_exec'] for row in rows], dtype=np.float32),
+        'c_request': np.asarray([row['c_request'] for row in rows], dtype=np.float32),
         'recorded_action': np.asarray([row['recorded_action'] for row in rows],
                                       dtype=np.float32),
         'a_request': np.asarray([row['a_request'] for row in rows], dtype=np.float32),
@@ -150,6 +157,8 @@ def _write_inputs(output, env, *, attempt_id):
                                      for row in rows], dtype=np.float64),
         'refreshed': np.asarray([bool(row['refreshed']) for row in rows], dtype=bool),
         'front_foot_top_support': np.asarray([bool(row['front_foot_top_support']) for row in rows], dtype=bool),
+        'post_reset': np.asarray([bool(row.get('post_reset', False)) for row in rows], dtype=bool),
+        'post_step_terminal': np.asarray([bool(row.get('post_step_terminal', False)) for row in rows], dtype=bool),
     }
     path = output / 'inputs.npz'
     if path.exists():
@@ -159,11 +168,15 @@ def _write_inputs(output, env, *, attempt_id):
         attempt_id=attempt_id, case_sha256=rows[0]['case_sha256'],
         task=rows[0].get('task'),
         weight_sha256=rows[0]['weight_sha256'],
-        frames=len(rows), keys=sorted(arrays),
+        frames=len(rows), captured_frames=len(captured),
+        excluded_terminal_or_reset=excluded,
+        keys=sorted(arrays),
+        inference_identity=(s2_counterfactual.actor_identity(actor)
+                            if actor is not None else None),
         input_step_definition='Actor input consumed before the same-index control step',
         post_reset_excluded=True,
         fields=dict(proprio=[45], history=[5, 45], heightmap=[3, 40, 30],
-                    route_error=[3], c_exec=[], recorded_action=[12],
+                    route_error=[3], c_exec=[], c_request=[], recorded_action=[12],
                     refresh_triplet=['refresh_index', 'sample_sim_time_s',
                                      'produced_at_actor_step']))
     meta_path = output / 'inputs_metadata.json'
@@ -207,8 +220,9 @@ def _window_stats(rows):
         pitch_sign_convention=dict(PITCH_SIGN_CONVENTION))
 
 
-def _four_windows(rows, *, platform_front, case):
-    """Q030/V82 fixed windows, excluding auto-reset rows but keeping events."""
+def _four_windows(rows, *, platform_front, case, events=None):
+    """Q032 fixed windows: first true physical sample, not latched event step."""
+    events = events or []
     valid = [row for row in rows
              if not row.get('post_reset', False)
              and not (row is rows[-1] and row.get('terminal'))]
@@ -222,23 +236,29 @@ def _four_windows(rows, *, platform_front, case):
         for value in result.values():
             value['reason'] = 'no_platform'
         return result
-    starts = {}
+    event_steps = {event.get('name'): int(event.get('step'))
+                   for event in events if event.get('name')}
+    starts, event_values = {}, {}
     front_rows = [i for i, row in enumerate(valid) if float(row['route_x']) >= float(front)]
     if front_rows:
         starts['front_edge'] = front_rows[0]
+        event_values['front_edge'] = None
     four_rows = [i for i, row in enumerate(valid)
                  if all(bool(v) for v in row['foot_on_platform'])]
     if four_rows:
-        starts['four_feet'] = four_rows[0] + 1
+        starts['four_feet'] = four_rows[0]
+        event_values['four_feet'] = event_steps.get('four_feet_platform')
     top_rows = [i for i, row in enumerate(valid) if bool(row['top_arrived'])]
     if top_rows:
-        starts['top_arrived'] = top_rows[0] + 1
+        starts['top_arrived'] = top_rows[0]
+        event_values['top_arrived'] = event_steps.get('top_arrived')
     if 'four_feet' in starts:
         four_route = float(valid[starts['four_feet']]['route_x'])
         cruise_rows = [i for i in range(starts['four_feet'], len(valid))
                        if float(valid[i]['route_x']) >= four_route + 1.0]
         if cruise_rows:
             starts['s6_5_cruise'] = cruise_rows[0]
+            event_values['s6_5_cruise'] = None
     for name, start in starts.items():
         end = len(valid) - 1
         if name == 's6_5_cruise':
@@ -246,17 +266,37 @@ def _four_windows(rows, *, platform_front, case):
                          if bool(valid[i].get('stop_request'))]
             if stop_rows:
                 end = stop_rows[0]
+        row = valid[start]
         result[name] = _window_stats(valid[start:end + 1])
-        result[name]['row_start'] = start
-        result[name]['row_end'] = end
+        result[name].update(
+            trace_step=int(row['step']), row_index=int(start),
+            first_true_step=int(row['step']),
+            latched_event_step=event_values.get(name),
+            event_completed_steps=event_values.get(name),
+            start_basis='first_true_physical_sample',
+            threshold_frame_included=(name == 's6_5_cruise'),
+            row_start=int(start), row_end=int(end))
+    for name in result:
+        if result[name]['status'] == 'NA':
+            if name == 'four_feet':
+                result[name]['reason'] = 'four_feet_not_reached'
+            elif name == 'top_arrived':
+                result[name]['reason'] = 'top_arrived_not_reached'
+            elif name == 's6_5_cruise':
+                result[name]['reason'] = ('four_feet_not_reached'
+                                          if 'four_feet' not in starts
+                                          else 's6_5_threshold_not_reached')
     result['window_rule'] = dict(
         source_rows='trace rows in order',
         post_reset_rows='excluded; terminal event retained',
+        start='first valid physical sample satisfying each condition; threshold included',
         front_edge='body route_x >= platform_front_local_x',
         four_feet='all four foot_on_platform XY projections true',
-        top_arrived='top_arrived flag true',
-        s6_5_cruise='after four_feet, body route_x >= four_feet route_x + 1.0 m; '
-                    'until stop_request or last non-reset row')
+        top_arrived='native top_arrived flag true',
+        s6_5_cruise='after four_feet zero, body route_x >= zero + 1.0 m; '
+                    'until stop_request or last non-reset row',
+        event_step_note='latched_event_step is state-machine completed_steps; '
+                        'trace_step is the same control update row')
     return result
 
 
@@ -553,7 +593,8 @@ def main(argv=None):
                                           dtype=bool)
                 geometry = case.get('geometry') or {}
                 front = geometry.get('platform_front_local_x')
-                windows = _four_windows(evidence_rows, platform_front=front, case=case)
+                windows = _four_windows(evidence_rows, platform_front=front, case=case,
+                                        events=events)
                 summary['windows'] = windows
                 step_depth = float(geometry.get('step_depth') or 0.2)
                 stair_count = int(case.get('stair_count') or 0)
@@ -617,7 +658,8 @@ def main(argv=None):
             summary['trace_sha256'] = _sha256_file(trace_path)
             if args.save_inputs:
                 try:
-                    inputs = _write_inputs(output, env, attempt_id=attempt_id)
+                    inputs = _write_inputs(output, env, attempt_id=attempt_id,
+                                           actor=actor)
                     summary['inputs'] = inputs
                     if inputs:
                         summary['input_frames'] = inputs['frames']

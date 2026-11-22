@@ -4419,3 +4419,16 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 涉及文件：`doc/sds/reviews/v09_execution_rulings.md`、本日志。
 - 要点：不用 `event.step` 直接当 row_start；`s2_physics step=self.steps-1` 与 `s2_state` 先 `completed_steps+=1` 再写事件同指一次控制更新，1559/1560、1562/1563 不构成 20 ms 延迟证据；不为跨路径统一减一；四窗定义与首米/后段分界（阈值帧归后段）；real-r4 定稿 front 61/four 48（−24.6910°）/top 45（−25.6311°，全低头）/§6.5 NA；旧 44 帧 −25.96° 保留为被替代统计；报告区分 trace step/row_index/event.completed_steps；整批不重跑。
 - 验证：仅文档追加；未跑测试/物理/训练。
+
+
+## 2026-11-22 Q032 四窗定稿 + V8.3 三项处置
+
+- 目的：按 Q032 从现有 trace 重算四窗；处理 pair 快照证据、parity 归因、Q031 输入缺口与 orphan release。
+- 涉及文件：`s2_env.py`、`s2_physics.py`、`s2_counterfactual.py`、`scripts/run_a2_v09_s2_0.py`、`scripts/run_a2_v09_s2_matrix.py`、`scripts/run_a2_v09_s2_pair.py`、`tests/test_v09_s2_0_counterfactual.py`、`tests/test_v09_s2_0_matrix_runner.py`、文档 `docs/v09_s2_t10_case_selection_debug_ledger_parity_stairs.md`。
+- 四窗（real-r4）：front 61 帧（1546..1606）、four 48 帧（1559..1606，均值 −24.6910°）、top 45 帧（1562..1606，−25.6311°，全低头）、§6.5 NA；每窗并列 `trace_step/row_index/first_true_step/latched_event_step/event_completed_steps`；旧 44 帧 −25.96° 标 superseded。boundary 抽核：row1545 route 7.9801→1546 8.0015；row1558 flags [T,T,F,T]→1559 全 T；row1561 false→1562 true。
+- Q031 输入：剔除 post_terminal/post_reset 行，补 `c_request`、`inference_identity`（权重 SHA、normalizer 版本与统计 SHA、eval/no_grad/deterministic_mean、action_scale 0.25、not_clipped）；双输入逐 Actor 步冻结输入、仅切地图；A/A 与 B/B 噪声与显著性规则 `max|A-B| > max(max|A-A|,max|B-B|)`。
+- pair：撤掉无证据自述，写入 `snapshot_status=not_implemented`、`reached_trigger=false`、`prefix_end_frame=350`。
+- parity：去除"GPU float 噪声"与 1e-3 pass，保留 strict 失败与两 run 量级不一致事实。
+- orphan release：matrix 子进程异常后按未结算预留全额 release、`orphan_release` 事件、幂等。
+- 验证：S2 套件 **218 passed**；整批 15/156 完成、0 失败。
+- 未执行：训练；Q031 代表病例采集待整批结束。

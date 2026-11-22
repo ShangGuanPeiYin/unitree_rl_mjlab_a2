@@ -140,8 +140,8 @@ top_arrived: step 1563, route 8.43270, t=31.26 s
 g_level >0: step 1563; g_level=1: step 1587
 failure: step 1608, reason=body
 末次未 reset 采样: step 1606, route 9.26579, pitch -53.19°
-pitch 后段（step 1563..1606，44 帧，剔除复位行）:
-  mean -25.96°, min -53.19°, max -11.77°
+pitch 后段（Q032：trace step 1562..1606，45 帧，剔除复位行）:
+  mean -25.6311°, min -53.1867°, max -11.1802°；旧 44 帧/-25.96° Q030 标 superseded
   nose_down_fraction=1.0, nose_up_fraction=0.0, level_fraction=0.0
 四足每足最大高度约 8.12–8.25 m，四足均完成抬升
 ```
@@ -243,17 +243,20 @@ zero     = level
 从原始 trace 重算（剔除 auto-reset 出生行，保留终止事件）。固定四窗：
 
 ```text
-real-r4:
-  front_edge: 61 帧, step1546..1606, mean -20.0655°, nose_down=0.9344
-  four_feet:  47 帧, step1560..1606, mean -24.9922°, nose_down=1.0
-  top_arrived:44 帧, step1563..1606, mean -25.9595°, nose_down=1.0,
-              min -53.1867°, max -11.7747°
-  s6_5_cruise: NA（四足后净前进 1 m 未达到，即 body failure）
+real-r4（Q032 首真帧口径）:
+  front_edge: 61 帧, trace_step/row 1546..1606, mean -20.0655°, nose_down=0.9344
+  four_feet:  48 帧, trace_step/row 1559..1606, mean -24.6910°, nose_down=1.0,
+               latched_event_step=1560
+  top_arrived:45 帧, trace_step/row 1562..1606, mean -25.6311°, nose_down=1.0,
+               min -53.1867°, max -11.1802°, latched_event_step=1563
+  s6_5_cruise: NA（四足后净前进 1 m 未达到，body failure）
 plane-r1:
-  front_edge: 18 帧, step1550..1567, mean +14.1021°, nose_up=1.0,
+  front_edge: 18 帧, trace_step/row 1550..1567, mean +14.1021°, nose_up=1.0,
               min +12.2248°, max +15.9076°
   four_feet/top_arrived/s6_5_cruise: NA（未四足入台、未 top、未巡航）
 ```
+
+旧 Q030 的 44 帧/−25.96° 与 18 帧/+14.10° 原件保留但标 superseded；Q032 窗口包含首真帧，不再用事件号/全局 step-1。每窗并列 `trace_step`、`row_index`、`latched_event_step`、`event_completed_steps`。
 
 所有窗口 `post_reset` 行剔除；`step_min/max` 与 `step_row_pairs` 在重算产物中逐条记录。
 
@@ -341,7 +344,7 @@ branch_prefix_sha256.plane=8646c71250b8d9411c5f448ea2ae24d152b793d986e4a08125f57
 real_actions_sha256=a79da2df...
 ```
 
-结论：**病例/动作前缀一致，但 qpos/qvel 从 step1 起不同**。同进程顺序重建 env 也不可复现同一物理状态；因此不能声明 Q016 通过，也不能把 1e-3 类容差当同态证据。mujoco/mjlab 当前未提供可靠的完整状态克隆；仅恢复 qpos/qvel/time/ctrl/qacc_warmstart 后继续运行仍在 step2 分叉（本机实测）。可行替代只有：同一 env 内先跑 prefix、在干预点做完整物理状态快照/恢复（需要引擎状态克隆），或单 env 双输入/双策略的显式 fork；当前实现没有该能力，报告按“仅动作/命令前缀一致”记录。
+结论：**病例/动作前缀一致，但 qpos/qvel 从 step1 起不同**。同进程顺序重建 env 也不可复现同一物理状态；因此不能声明 Q016 通过，也不能把 1e-3 类容差当同态证据。**状态快照/恢复尚未实现，也未验证**。pair summary 明确写 `snapshot_taken=false, snapshot_restored=false, snapshot_status='not_implemented', restored_state_sha256=null, divergence_after_restore=null`。full pair 的 plane 在 350 步 nonfoot 终止，未到触发帧 1528，因此也不能作为“触发时刻同帧”证据。可行替代是完整引擎状态克隆或单 env 双输入/双策略 fork；当前均未实现。
 
 ### 6.1b Q024 状态
 
@@ -397,7 +400,7 @@ r4 仅 row 1607=true；plane 仅 row 1568=true。Q030 重算已剔除这些行�
 
 ### 6.4 Q030 报告口径
 
-见第 4.6 节；real-r4 44 帧全低头均值 -25.96°，plane-r1 18 帧全抬头均值 +14.10°。旧的 `positive_forward_lean_fraction` 产物保留但不用于结论。
+见第 4.6 节；Q032 real-r4 top 45 帧全低头均值 -25.6311°，plane-r1 front 18 帧全抬头均值 +14.1021°。旧 Q030 44 帧/-25.96° 与 `positive_forward_lean_fraction` 产物保留但标 superseded。
 
 ## 7. 用户观察与分支复现（单例）
 
@@ -405,3 +408,119 @@ r4 仅 row 1607=true；plane 仅 row 1568=true。Q030 重算已剔除这些行�
 - plane-r1：作为干预对照，在平台前缘附近 nonfoot failure，未 top；表现为抬头（pitch>0）。
 - 当前证据**不支持**“仿真与现场相反”；也**不支持**“地图替换导致摔倒”作为因果结论：plane 与 real 的干预前物理状态未对齐（qpos/qvel step1 即不同），Q016 同态输入尚未成立。
 - 这是单例诊断；未触发奖励、损失、课程或配方变化。
+
+## 8. Q031 同帧双输入反事实（代码已就绪，GPU 采集待整批后）
+
+### 8.1 real 输入采集字段
+
+`--save-inputs`（或矩阵 runner 的 `--save-inputs`）在 real 分支每个控制步、推进物理前保存：
+
+```text
+proprio                 [45] float32
+history                 [5,45] float32
+heightmap               [3,40,30] float32（height/valid/age）
+route_error             [3] float32
+c_exec                  scalar
+recorded_action         [12] float32（同一步真实记录动作）
+a_request               [12] float32（输入给动作管理器的动作）
+step                    actor step
+refresh_index           int
+sample_sim_time_s       float
+produced_at_actor_step  int
+base_sample_z           float
+plane_world_z           float（参考顶平台）
+refreshed               bool
+front_foot_top_support  bool
+case_sha256 / weight_sha256=efa9caa8...
+```
+
+落盘：
+
+```text
+output/inputs.npz
+output/inputs_metadata.json
+```
+
+`inputs.npz` 不含 reset 出生帧；metadata 记录 `post_reset_excluded=true`。
+
+### 8.2 plane 派生与核验
+
+`src/tasks/velocity/v09/s2_counterfactual.py` 使用正式 `S2PlaneAblation`：
+
+- 事件后首次严格更晚的正常刷新才生效；
+- 生效前逐元素完全相同；
+- 生效后 `valid/age` 完全不变，只有有效格 `height` 改变；
+- 每个 post 帧核验替换值等于 `raw_cache`；
+- 保留未触发/无差异病例；
+- 任一检查失败 `InputContractError`。
+
+### 8.3 双输入推理与报告
+
+`run_dual_inference` 用同一权重/CPU 推理/归一化，分别对 real 与 plane 输入计算确定性动作均值；不做物理推进。同时：
+
+- real→real 重复推理得数值底噪；
+- 若 `recorded_action` 可用，同阶段比较原记录 real 动作；
+- 按 `pre_trigger / activation_refresh / post_activation / not_triggered` 汇总 `n`、动作差 RMS、最大绝对差、逐维 RMS/max、动作单位、scale=0.25、`clip_position='not_clipped'`。
+
+报告固定：
+
+```text
+evidence_grade = pending
+physical_trajectory = not_proven
+```
+
+不得由该报告推断“改图导致摔倒或方向改变”。
+
+### 8.4 代表病例缺口
+
+截至本提交，四个代表目录**都缺 `inputs.npz`**（旧 trace 只有状态/动作，不是完整输入）：
+
+```text
+t10-stairs-real-r4
+t10-stairs-plane-r1
+limit-2 real
+limit-2 plane
+```
+
+缺口清单：
+
+```text
+logs/a2_v09/s2_0/evidence/q031_input_coverage.json
+```
+
+因此当前只能完成代码与 CPU 测试；Q031 的 pending 证据必须等 GPU 采集。
+
+### 8.5 GPU 采集命令（整批结束后，经批准再执行）
+
+```bash
+python scripts/run_a2_v09_s2_0.py \
+  --execute --smoke --suite S2_DIAG \
+  --case-sha 0140473c4282e721cceec4f0fcd05536337869b9b0379c9947a4059224012150 \
+  --branch real --steps 2000 --save-inputs \
+  --device cuda:0 \
+  --attempt-id q031-stairs-real-inputs-r1 \
+  --obligation-id s2_0_pipeline_debug \
+  --ledger logs/a2_v09/s2/ledger.jsonl
+```
+
+采集后离线：
+
+```bash
+python scripts/run_a2_v09_s2_counterfactual.py \
+  --inputs logs/a2_v09/s2_0/evidence/q031-stairs-real-inputs-r1/inputs.npz \
+  --metadata logs/a2_v09/s2_0/evidence/q031-stairs-real-inputs-r1/inputs_metadata.json \
+  --task stairs_walk --device cpu \
+  --output logs/a2_v09/s2_0/evidence/q031-stairs-real-inputs-r1/counterfactual_report.json
+```
+
+矩阵正式跑时若需覆盖更多 real 病例，加 `--save-inputs`；该参数只对 real 分支生效。
+
+Q032 边界抽核（real-r4，raw trace）：
+
+```text
+front: row1545 route 7.9801 (below 8.0), row1546 8.0015 (first), row1547 8.0245
+four : row1558 flags [T,T,F,T], row1559 [T,T,T,T] (first), row1560 [T,T,T,T]
+top  : row1561 top=False, row1562 top=True (first), row1563 top=True
+```
+
+Q030→Q032 对应关系：事件锁存步 1560/1563 比首真 trace 行 1559/1562 大 1；新窗口以首真行为准，不再全局 `step-1`。

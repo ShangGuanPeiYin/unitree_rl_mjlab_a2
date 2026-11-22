@@ -18,7 +18,7 @@ import torch
 from . import s2_map_ablation
 
 INPUT_KEYS = dict(proprio=(45,), history=(5, 45), heightmap=(3, 40, 30),
-                  route_error=(3,), c_exec=(), recorded_action=(12,))
+                  route_error=(3,), c_exec=(), c_request=(), recorded_action=(12,))
 STAGE_PRE = 'pre_trigger'
 STAGE_ACTIVATION = 'activation_refresh'
 STAGE_POST = 'post_activation'
@@ -27,6 +27,30 @@ STAGE_NOT_TRIGGERED = 'not_triggered'
 
 class InputContractError(ValueError):
     pass
+
+
+def actor_identity(actor_bundle):
+    """Normalizer/inference identity for Q031 repeatability."""
+    import hashlib
+    model = actor_bundle['model'] if isinstance(actor_bundle, dict) else actor_bundle
+    normalizer = model.actor.normalizer
+    state = normalizer.state_dict()
+    digest = hashlib.sha256()
+    for key in sorted(state):
+        value = state[key]
+        array = np.asarray(value.detach().cpu() if hasattr(value, 'detach') else value,
+                           dtype=np.float64)
+        digest.update(key.encode())
+        digest.update(np.asarray(array.shape, dtype=np.int64).tobytes())
+        digest.update(np.ascontiguousarray(array).tobytes())
+    return dict(
+        weight_sha256=(actor_bundle.get('state_sha256')
+                       if isinstance(actor_bundle, dict) else None),
+        normalizer_version='frozen_ETH_actor_normalizer',
+        normalizer_state_sha256=digest.hexdigest(),
+        inference_mode='eval/no_grad/deterministic_mean',
+        action_scale=0.25,
+        clip_position='not_clipped')
 
 
 def load_saved_inputs(npz_path, metadata_path=None):
@@ -138,20 +162,23 @@ def _batch(rows, key):
 
 
 def run_dual_inference(rows, plane_rows, *, policy):
-    """Run the same policy twice per row; no physics and no internal-state reuse."""
-    real_obs = {key: _batch(rows, key) for key in INPUT_KEYS if key != 'recorded_action'}
-    plane_obs = dict(real_obs)
-    plane_obs['heightmap'] = torch.as_tensor(
-        np.asarray(plane_rows, dtype=np.float32))
-    real_a = policy(real_obs)
-    plane_a = policy(plane_obs)
-    repeat_a = policy(real_obs)
-    return dict(real=np.asarray(real_a.detach().cpu()
-                                if hasattr(real_a, 'detach') else real_a),
-                plane=np.asarray(plane_a.detach().cpu()
-                                 if hasattr(plane_a, 'detach') else plane_a),
-                real_repeat=np.asarray(repeat_a.detach().cpu()
-                                       if hasattr(repeat_a, 'detach') else repeat_a))
+    """Freeze one Actor step, switch only the map, infer twice; no physics."""
+    real_all, plane_all, aa_all, bb_all = [], [], [], []
+    for row, plane_map in zip(rows, plane_rows):
+        obs = {key: torch.as_tensor(np.asarray(row[key], dtype=np.float32)[None])
+               for key in INPUT_KEYS if key != 'recorded_action'}
+        plane_obs = dict(obs)
+        plane_obs['heightmap'] = torch.as_tensor(
+            np.asarray(plane_map, dtype=np.float32)[None])
+        def run(inputs):
+            value = policy(inputs)
+            return np.asarray(value.detach().cpu() if hasattr(value, 'detach') else value).reshape(-1)
+        real_all.append(run(obs))
+        plane_all.append(run(plane_obs))
+        aa_all.append(run(obs))
+        bb_all.append(run(plane_obs))
+    return dict(real=np.asarray(real_all), plane=np.asarray(plane_all),
+                real_repeat=np.asarray(aa_all), plane_repeat=np.asarray(bb_all))
 
 
 def _stage_rows(rows, activation):
@@ -166,6 +193,7 @@ def _stage_rows(rows, activation):
 def build_stage_report(rows, actions, activation):
     """Aggregate action differences by Q031 stage."""
     real, plane, repeat = actions['real'], actions['plane'], actions['real_repeat']
+    plane_repeat = actions['plane_repeat']
     groups = {STAGE_PRE: [], STAGE_ACTIVATION: [], STAGE_POST: []}
     if activation is None:
         groups[STAGE_NOT_TRIGGERED] = list(range(len(rows)))
@@ -184,13 +212,20 @@ def build_stage_report(rows, actions, activation):
             report[name] = dict(status='NA', n=0)
             continue
         diff = plane[indices] - real[indices]
-        noise = repeat[indices] - real[indices]
+        noise_a = repeat[indices] - real[indices]
+        noise_b = plane_repeat[indices] - plane[indices]
         report[name] = dict(
             status='ok', n=len(indices),
             action_diff_rms=float(np.sqrt(np.mean(diff ** 2))),
             action_max_abs=float(np.max(np.abs(diff))),
-            noise_rms=float(np.sqrt(np.mean(noise ** 2))),
-            noise_max_abs=float(np.max(np.abs(noise))),
+            a_a_noise_rms=float(np.sqrt(np.mean(noise_a ** 2))),
+            a_a_noise_max_abs=float(np.max(np.abs(noise_a))),
+            b_b_noise_rms=float(np.sqrt(np.mean(noise_b ** 2))),
+            b_b_noise_max_abs=float(np.max(np.abs(noise_b))),
+            difference_significant=bool(
+                float(np.max(np.abs(diff))) > max(float(np.max(np.abs(noise_a))),
+                                                  float(np.max(np.abs(noise_b))))),
+            significance_rule='max|A-B| > max(max|A-A|, max|B-B|)',
             per_dim_rms=np.sqrt(np.mean(diff ** 2, axis=0)).tolist(),
             per_dim_max_abs=np.max(np.abs(diff), axis=0).tolist(),
             action_unit='policy mean, raw normalized joint-position offset; '
@@ -205,7 +240,8 @@ def build_stage_report(rows, actions, activation):
     return report
 
 
-def analyze(rows, *, policy, task, case_sha256=None, weight_sha256=None):
+def analyze(rows, *, policy, task, case_sha256=None, weight_sha256=None,
+            identity=None):
     plane_rows, rule = derive_plane_rows(rows, task=task)
     actions = run_dual_inference(rows, plane_rows, policy=policy)
     activation = rule['activation_frame']
@@ -213,6 +249,8 @@ def analyze(rows, *, policy, task, case_sha256=None, weight_sha256=None):
     return dict(
         case_sha256=case_sha256, weight_sha256=weight_sha256, task=task,
         inputs=len(rows), rule=rule, stages=stages,
+        inference_identity=identity,
+        same_frame_runner=True,
         evidence_grade='pending',
         physical_trajectory='not_proven',
         statement='immediate Actor response to same-frame input replacement; '

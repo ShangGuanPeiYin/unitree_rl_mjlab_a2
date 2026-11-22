@@ -32,13 +32,15 @@ def load_entries():
     for index, row in enumerate(plan['entries']):
         entries.append(dict(kind='s2', index=index, suite='S2_DIAG',
                             branch=row['map_branch'], case_sha256=row['case_sha256'],
-                            task=row['task'], steps=int(row['hard_timeout_steps']),
+                            task=row['task'], case_id=int(row['case_id']),
+                            steps=int(row['hard_timeout_steps']),
                             obligation='s2_0_matrix_two_branches'))
     for index, record in enumerate(h['records']):
         case = record['case']
         entries.append(dict(kind='h', index=index, suite='H_SERIES',
                             branch='real', case_sha256=case['case_sha256'],
-                            task=case['task'], steps=int(case['hard_timeout_steps']),
+                            task=case['task'], case_id=int(case['case_id']),
+                            steps=int(case['hard_timeout_steps']),
                             obligation='h_series_baseline_supplement'))
     return entries
 
@@ -84,6 +86,39 @@ def next_attempt(entry_dir):
     while f'r{index}' in used:
         index += 1
     return f'r{index}'
+
+
+def _reservation_for(ledger_path, base):
+    """Return (obligation, samples) for an unsettled reserve, else None."""
+    path = Path(ledger_path)
+    reserve, settled = None, False
+    for line in path.read_text().splitlines():
+        row = json.loads(line)
+        operation = row.get('operation_id')
+        if operation == f'{base}:reserve':
+            reserve = (row['obligation_id'], int(row['samples']))
+        elif operation in (f'{base}:commit', f'{base}:release',
+                            f'{base}:orphan_release'):
+            settled = True
+    return None if reserve is None or settled else reserve
+
+
+def settle_orphan(ledger_path, base, *, entry):
+    """Idempotently release an unsettled child reservation and record it."""
+    pending = _reservation_for(ledger_path, base)
+    if pending is None:
+        return None
+    obligation_id, samples = pending
+    ledger = s2_ledger.S2Ledger(ledger_path, run_id=s2_ledger.read_run_id(ledger_path))
+    receipt = ledger.release(
+        obligation_id, samples, operation_id=f'{base}:orphan_release',
+        reason=f"orphan release after child exit: {entry['entry_id'] if 'entry_id' in entry else entry['case_sha256'][:12]}")
+    ledger.append('event', event='orphan_release',
+                  obligation_id=obligation_id, samples=samples,
+                  child_operation_id=base,
+                  reason='runner observed unsettled child reservation')
+    return dict(obligation_id=obligation_id, samples=samples,
+                release=receipt)
 
 
 def command(entry, attempt, output, args):
@@ -153,6 +188,8 @@ def main(argv=None):
                 completed_ids.append(entry_id)
                 continue
         attempt = f'matrix-{args.run_tag}-{entry_id}-{next_attempt(entry_dir)}'
+        base_operation = f"smoke:{entry['suite']}:{entry['case_id']}:{attempt}"
+        entry['entry_id'] = entry_id
         output = entry_dir / attempt.rsplit('-', 1)[-1]
         output.mkdir(parents=True, exist_ok=True)
         log_path = output / 'runner.log'
@@ -179,6 +216,16 @@ def main(argv=None):
         except Exception as exc:
             error = repr(exc)
         elapsed = time.time() - started
+        if status != 'completed':
+            try:
+                orphan = settle_orphan(args.ledger, base_operation, entry=entry)
+                if orphan is not None:
+                    line_orphan = dict(orphan, entry_id=entry_id)
+                    with progress_path.open('a', encoding='utf-8') as handle:
+                        handle.write(json.dumps(dict(orphan=line_orphan),
+                                                ensure_ascii=False) + '\n')
+            except Exception as orphan_error:
+                error = (error + '; ' if error else '') + f'orphan_settle_failed={orphan_error!r}'
         line = dict(ordinal=ordinal, entry_id=entry_id, branch=entry['branch'],
                     case_sha256=entry['case_sha256'], task=entry['task'],
                     status=status, error=error, elapsed_s=elapsed,
