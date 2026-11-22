@@ -76,8 +76,11 @@ def main(argv=None):
     admission = _load_json(args.admission_evidence, '--admission-evidence')
     if probe.get('num_envs') != args.num_envs or probe.get('admitted') is not True:
         raise SystemExit('probe report does not admit this num_envs')
-    if admission.get('admitted') is not True:
-        raise SystemExit('independent admission is not true')
+    try:
+        s2_resources.validate_admission(
+            admission, probe_path=args.probe_report, num_envs=args.num_envs)
+    except Exception as error:
+        raise SystemExit(f'admission invalid: {error}')
     if not args.fake_backend and args.device == 'cpu':
         raise SystemExit('real S2.1 training requires a CUDA device or --fake-backend')
     run_id = s2_ledger.read_run_id(args.ledger)

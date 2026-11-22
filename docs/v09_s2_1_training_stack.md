@@ -89,3 +89,21 @@ training full:             16,276 rollouts × 49,152 = 800,000,000
 2. 1024×3×40×30 heightmap + history 的显存放大；
 3. PPO 逻辑批 49,152 的 heightmap 拼接（~700 MB）与 5×4 micro 的峰值；
 4. probe 的 evaluation/video 段尚未接入，不能提前报 admitted。
+
+### 1024 显存超 7168 MiB 的判定规则
+
+按 §2.3 只允许因资源不足降低并行，不得改物理精度、地图或网络：
+
+1. **先降 micro**：512 → 256（仍保持完整逻辑 minibatch、样本数、5×4 Adam
+   次数和梯度累积等价；只改显存/并行粒度）。重新 probe；不改变
+   physics dt/decimation、40×30 地图、观测、网络或奖励。
+2. 若 micro=256 后仍超 7168 MiB，才 fallback **1024→512 env**；必须保留
+   1024 失败报告，按 512 重算 role plan、rollout 边界和预算；不得静默切换。
+3. 不允许通过改小地图、降低物理精度、改 decimation、裁剪观测/网络来“过
+   probe”。probe `admitted=false` 时训练不得启动。
+
+### 当前 probe 缺口
+
+`run_probe` 已包含 evaluation 100、video 1、save/load/restore；但
+`independent_copy` 只记录调用参数，evaluation 使用的是同进程新 env，尚需
+在 GPU 窗口确认独立的探测副本语义。

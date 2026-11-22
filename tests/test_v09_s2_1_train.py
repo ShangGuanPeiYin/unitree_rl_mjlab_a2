@@ -186,3 +186,21 @@ def test_probe_plan_cli_is_cpu_only(tmp_path):
     assert doc['measurements'] == 50
     assert doc['restore_checks'] == 1
     assert doc['control_samples'] == 3_709_184
+
+
+def test_admission_binds_probe_sha_and_review(tmp_path):
+    from src.tasks.velocity.v09 import s2_resources
+    probe = tmp_path / 'probe.json'
+    report = dict(num_envs=1024, admitted=True, evaluation_envs=100,
+                  evaluation_steps=9472, video_envs=1, video_steps=200,
+                  restore_ok=True, peak_mib=6000, host_free_mib=8192)
+    probe.write_text(json.dumps(report))
+    admission = s2_resources.write_admission(
+        tmp_path / 'admission.json', probe_report=report, probe_path=probe,
+        num_envs=1024, independent_review_sha256='a' * 64)
+    assert s2_resources.validate_admission(
+        admission, probe_path=probe, num_envs=1024) is True
+    probe.write_text(probe.read_text() + '\n')
+    with pytest.raises(ValueError, match='probe SHA'):
+        s2_resources.validate_admission(admission, probe_path=probe,
+                                        num_envs=1024)

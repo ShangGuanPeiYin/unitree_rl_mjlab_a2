@@ -4470,3 +4470,15 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 限制：probe 尚未接 evaluation/video（`evaluation_envs=0`），**不能构成完整 §2.3 admission**；须补齐后才能开训。
 - 验证：S2 套件 **230 passed**；整批 37/156（stairs 进行中，0 失败）。
 - 未执行：GPU probe/训练、台账写入、整批干预。
+
+
+## 2026-11-22 probe evaluation/video/restore 与训练准入文件
+
+- 目的：补齐 probe 的 100-env 评估、1-env 录像、schema 11 保存-重载-续训恢复检查，并定义训练准入文件。
+- 涉及文件：`s2_resources.py`（`run_probe` 全段与报告字段）、`scripts/probe_a2_v09_s2_resources.py`（`--write-admission`、review SHA 绑定）、`scripts/train_a2_v09_s2.py`（admission 三重校验）、`tests/test_v09_s2_1_train.py`、`docs/v09_s2_1_training_stack.md`。
+- 报告字段：`num_envs/admitted/evaluation_envs/evaluation_steps/video_envs/video_steps/restore_checks/restore_ok/peak_mib/host_free_mib/oom/nonfinite/contact_overflow/failure_reasons/warmups/measurements/elapsed_s/independent_copy/requirements`；`admitted=true` 需全部项通过。
+- admission schema `a2_v09_s2_1_admission_v1`：绑定 probe report SHA、independent review SHA、num_envs、entry weight SHA、创建时间；train 校验 admitted/num_envs/report SHA/review SHA/台账。
+- 判定规则（写入文档）：显存超限先 micro 512→256，仍超再 1024→512 env，并保留失败报告；不得改 physics dt/decimation、地图、观测、网络或奖励。
+- 限制：`independent_copy` 仅记录参数，GPU 上待确认。
+- 验证：S2 套件 **231 passed**；整批 39/156（flat 30 + stairs 9），0 失败，41,033 步。
+- 未执行：GPU probe/训练、台账写入。

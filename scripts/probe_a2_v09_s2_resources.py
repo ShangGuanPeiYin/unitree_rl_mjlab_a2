@@ -27,6 +27,9 @@ def main(argv=None):
     parser.add_argument('--execute', action='store_true')
     parser.add_argument('--output-dir', type=Path)
     parser.add_argument('--independent-copy', action='store_true')
+    parser.add_argument('--write-admission', type=Path)
+    parser.add_argument('--independent-review-sha256')
+    parser.add_argument('--independent-review-path', type=Path)
     parser.add_argument('--evaluation-timeout-steps', type=int,
                         default=s2_resources.PROBE_EVAL_TIMEOUT_STEPS)
     args = parser.parse_args(argv)
@@ -47,5 +50,13 @@ def main(argv=None):
     report = s2_resources.run_probe(
         num_envs=args.num_envs, device=args.device, output_dir=out,
         independent_copy=args.independent_copy)
+    if args.write_admission is not None:
+        if not args.independent_review_sha256:
+            raise SystemExit('--write-admission requires --independent-review-sha256')
+        s2_resources.write_admission(
+            args.write_admission, probe_report=report,
+            probe_path=out / 'probe_report.json', num_envs=args.num_envs,
+            independent_review_sha256=args.independent_review_sha256,
+            independent_review_path=args.independent_review_path)
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report.get('admitted') else 2
