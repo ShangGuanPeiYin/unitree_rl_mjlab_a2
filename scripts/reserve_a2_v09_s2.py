@@ -42,13 +42,21 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=ROOT)
     parser.add_argument('--ledger', type=Path, default=ROOT / s2_spec.LEDGER_HINT)
-    parser.add_argument('--run-id', default='a2-v09-s2-q021-r1')
+    parser.add_argument('--run-id', default=None,
+                        help='new-ledger run id; existing ledgers use their header')
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--write', action='store_true')
     args = parser.parse_args(argv)
     if args.write and args.dry_run:
         raise SystemExit('choose --dry-run or --write, not both')
     plan = load_plan(args.root)
+    if args.ledger.exists():
+        header_run_id = s2_ledger.read_run_id(args.ledger)
+        if args.run_id is not None and args.run_id != header_run_id:
+            raise SystemExit(f'run_id mismatch: {args.run_id!r} != {header_run_id!r}')
+        run_id = header_run_id
+    else:
+        run_id = args.run_id or 'a2-v09-s2-q021-r1'
     summary = dict(stage=plan['stage'], sds_sha256=plan['sds_sha256'],
                    plan_sha256=plan['plan_sha256'],
                    nonlearning_total=plan['total_control_samples'],
@@ -61,7 +69,7 @@ def main(argv=None):
     if not args.write:
         print(json.dumps(summary, ensure_ascii=False, indent=2))
         return 0
-    ledger = s2_ledger.S2Ledger(args.ledger, run_id=args.run_id)
+    ledger = s2_ledger.S2Ledger(args.ledger, run_id=run_id)
     state = ledger.state()
     if state['envelope'] or state['obligations']:
         print(json.dumps(dict(summary, written=False,
