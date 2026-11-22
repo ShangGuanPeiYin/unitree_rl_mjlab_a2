@@ -4837,3 +4837,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 训练已停、GPU 空闲（free 6466 MiB），并发闸允许；启动 `collect_a2_v09_s2_gate_reference.py --reference s1_l40 --suite gate_A --execute`。
 - 预算：`l40_milestone_cache_gate_A` 219,220 原子预留，逐例按实际步数 commit；串行约 4.7 h。
 - 目的：门禁 A 的 L40 里程碑对照缓存（s1_least，原生 3×40×30），Q034-B 口径。
+
+
+## 2026-11-22 L40 缓存生成器静默早停（1/60 例）
+
+- 实测：`collect ... --reference s1_l40 --suite gate_A --execute` 退出码 0，仅执行 1 个 case（commit 1,554 步），release 217,666；未写 `reference_cache.json`/`cases/`/`cache_receipt.json`，日志无错误。
+- 台账：`l40_milestone_cache_gate_A` spent 1,554 / 219,220，reserved 0（实际消耗已记）。
+- 已下达：定位静默早停、逐 case 进度日志、未完成非零退出、完整落盘；重跑前 dry-run 复核 60 例/219,220。
+- 另：§5.4 锚定 teacher 当前用 40×30 迁移模型，需按 Q034 改为原始 6400+3×48×32 旧图（或提交规划裁定）。
