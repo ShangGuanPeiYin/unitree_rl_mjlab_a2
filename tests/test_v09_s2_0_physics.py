@@ -99,7 +99,7 @@ def test_h_legacy_uses_v07_success_and_original_timeout():
     assert env.task_adapter.config.legacy_h is True
 
 
-def test_build_s2_env_refuses_without_real_backend():
-    with pytest.raises(s2_physics.S2PhysicsAssemblyError):
-        s2_physics.build_s2_env(case('flat_walk'), device='cpu',
-                                backend_factory=None)
+def test_build_s2_env_defaults_to_the_real_mjlab_backend_factory():
+    # Static factory identity only; no scene/GPU/CPU physics is constructed here.
+    assert s2_physics.MjlabS2Backend is not s2_physics.S2FakeBackend
+    assert callable(s2_physics.build_s2_env)

@@ -4287,3 +4287,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 接口：`reset/step/observe`；`observe` 返回 `proprio(45)/history(5,45)/heightmap(3,40,30)/route_error(3)/c_request/c_exec`；`four_feet_on_platform`/`front_foot_top_support`；`diagnostics()` 足位/接触/法向力/contact pairs/PD/地图 valid/采样时刻/`native_sample_id`/`g_level`；`evidence()` trace+map_evidence+state_summary+failure_context+g_level_report；缺真实 backend 时在 GPU 分配前报错。
 - 验证：本机复跑 S2 套件 **178 passed**；fake backend 覆盖 reset→step→observe、两分支前缀、Q016 `s−t`、H legacy、无 backend 拒绝。
 - 未执行：真实 mjlab 物理、GPU smoke、训练；`q021_reservation_written=false`。
+
+
+## 2026-11-22 T7 真实 mjlab backend 路径（部分）
+
+- 目的：把 S2 地形与 40×30 地图接入 mjlab 场景，为 GPU smoke 做准备。
+- 涉及文件：`src/tasks/velocity/v09/s2_physics.py`（`MjlabS2Backend`：`V07Env(phase='L', substage='L40', initial_cases=…, frontier_tile_id=S2)` 构造期 patch v07 terrain/events/env_cfg 为 `s2_terrain` 表并替换 40×30 `HeightMap`；`S2AtlasCfg` 由 `s2_terrain.boxes` 生成碰撞盒）、`tests/test_v09_s2_0_physics.py`（仅 fake/静态契约）、文档 `docs/v09_s2_0_implementation_plan_v10.md`。
+- 验证：S2 套件 **178 passed**；真实装配/策略/地图/接触证据尚未验证；本轮一次测试曾短暂构造默认场景（未 `step`、未训练、未测量），已改为纯静态断言，不作为 smoke 证据。
+- 仍未完成：Actor 与冻结 normalizer 装配、`contact_pairs`/`pd_target`/`a_applied` 实值、`native_sample_id` 真实绑定、H legacy 独立 backend、真实地形编译一致性验证。
+- 未执行：GPU smoke、训练、正式预留。

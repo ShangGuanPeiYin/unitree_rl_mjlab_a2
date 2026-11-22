@@ -313,10 +313,197 @@ def build_s2_env(case, *, device='cuda:0', num_envs=1, seed=42,
                  map_branch='real', h_legacy=False, backend_factory=None):
     """Construct the S2 env; refuse before GPU allocation if no real backend."""
     if backend_factory is None:
-        raise S2PhysicsAssemblyError(
-            'no real v09/mjlab S2 backend_factory is installed; provide '
-            'backend_factory and re-run after the V7 GPU audit')
+        backend_factory = MjlabS2Backend
     report = s2_execute.device_report(device)
     return S2PhysicsEnv(case, backend_factory=backend_factory, device=device,
                         num_envs=num_envs, seed=seed, map_branch=map_branch,
                         h_legacy=h_legacy), report
+
+
+# --------------------------------------------------------------- mjlab backend
+def _s2_patch_context(specs):
+    """Temporarily install S2 terrain into the unchanged v07/mjlab assembly."""
+    from contextlib import contextmanager
+    from src.tasks.velocity.v07 import terrain as v07terrain
+    from src.tasks.velocity.v07 import events as v07events
+    from src.tasks.velocity.v07 import env_cfg as v07cfg
+    from src.tasks.velocity.v07 import env as v07env
+
+    @contextmanager
+    def patches():
+        import torch
+        originals = {name: getattr(v07terrain, name) for name in
+                     ('build_terrain_specs', 'tile_boxes', 'query_surface')}
+        original_events_table = getattr(v07events, 'build_terrain_specs', None)
+        original_cfg_gen = getattr(v07cfg, 'terrain_generator_cfg', None)
+        original_validate = getattr(v07env, '_validate_frontier_tile', None)
+        original_check = getattr(v07env, '_check_schedule_frontier', None)
+        try:
+            v07terrain.build_terrain_specs = lambda: tuple(specs)
+            v07terrain.tile_boxes = lambda tile: s2_terrain.boxes(tile)
+            def query(points_world, tile_ids):
+                points = torch.as_tensor(points_world, dtype=torch.float64)
+                ids = torch.as_tensor(tile_ids, dtype=torch.long)
+                while ids.ndim < points.ndim - 1:
+                    ids = ids.unsqueeze(-1)
+                out = torch.full(points.shape[:-1], float('nan'), dtype=torch.float32,
+                                 device=points.device)
+                valid = torch.zeros_like(out, dtype=torch.bool)
+                for index, spec in enumerate(specs):
+                    mask = (ids == index).expand(points.shape[:-1])
+                    if not bool(mask.any()):
+                        continue
+                    height, ok = s2_terrain.query_surface(points[mask].cpu().numpy(), spec)
+                    out[mask] = torch.as_tensor(height, dtype=torch.float32,
+                                                device=points.device)
+                    valid[mask] = torch.as_tensor(ok, dtype=torch.bool,
+                                                  device=points.device)
+                return out, valid
+            v07terrain.query_surface = query
+            v07events.build_terrain_specs = lambda: tuple(specs)
+            v07events._TABLE_CACHE.clear()
+            def generator_cfg(seed=42):
+                from mjlab.terrains.terrain_generator import (
+                    SubTerrainCfg, TerrainGeneratorCfg, TerrainGeometry, TerrainOutput)
+                import mujoco
+                class S2AtlasCfg(SubTerrainCfg):
+                    def function(self, difficulty, spec, rng):
+                        del difficulty, rng
+                        body = spec.body('terrain')
+                        shift = np.array((16.0, 4.0, 0.0))
+                        geometries = []
+                        for terrain_spec in specs:
+                            for box in s2_terrain.boxes(terrain_spec):
+                                geom = body.add_geom(
+                                    name=f's2_{terrain_spec.tile_id:02d}_{box.name}',
+                                    type=mujoco.mjtGeom.mjGEOM_BOX,
+                                    pos=np.asarray(box.center) + shift,
+                                    size=np.asarray(box.half), rgba=(0.3, 0.5, 0.7, 1.0),
+                                    contype=1, conaffinity=1, condim=3,
+                                    friction=(0.6, 0.005, 0.0001))
+                                geometries.append(TerrainGeometry(geom=geom,
+                                                                  color=(0.3, 0.5, 0.7, 1.0)))
+                        return TerrainOutput(origin=shift, geometries=geometries)
+                return TerrainGeneratorCfg(
+                    seed=int(seed), size=(32.0, 8.0), num_rows=1, num_cols=1,
+                    curriculum=False, border_width=0.0,
+                    sub_terrains={'v07_atlas': S2AtlasCfg(proportion=1.0)},
+                    color_scheme='none')
+            v07cfg.terrain_generator_cfg = generator_cfg
+            v07env._validate_frontier_tile = lambda *args, **kwargs: (
+                kwargs.get('frontier_tile_id') if 'frontier_tile_id' in kwargs
+                else args[0] if args else None)
+            v07env._check_schedule_frontier = lambda *args, **kwargs: None
+            yield
+        finally:
+            for name, value in originals.items():
+                setattr(v07terrain, name, value)
+            if original_events_table is not None:
+                v07events.build_terrain_specs = original_events_table
+            v07events._TABLE_CACHE.clear()
+            if original_cfg_gen is not None:
+                v07cfg.terrain_generator_cfg = original_cfg_gen
+            if original_validate is not None:
+                v07env._validate_frontier_tile = original_validate
+            if original_check is not None:
+                v07env._check_schedule_frontier = original_check
+    return patches()
+
+
+class MjlabS2Backend:
+    """v09/mjlab assembly using s2_terrain boxes; single environment."""
+
+    def __init__(self, case, *, device='cuda:0', seed=42, branch='real',
+                 h_legacy=False):
+        if h_legacy:
+            raise S2PhysicsAssemblyError(
+                'H legacy requires the original v07 atlas backend; run it in a '
+                'separate process/backend selection')
+        from src.tasks.velocity.v07.env import V07Env
+        from . import s2_terrain
+        spec = s2_terrain.spec_from_geometry(case['geometry'])
+        self.case = case
+        self.device = device
+        self.branch = branch
+        self.spec = spec
+        self._patches = _s2_patch_context(tuple(s2_terrain.terrain_specs()))
+        self._patches.__enter__()
+        try:
+            spawn = case['spawn']
+            x, y = spawn['local_position_xy']
+            self.env = V07Env(
+                num_envs=1, device=device, seed=int(seed), phase='L',
+                substage='L40',
+                initial_cases=[[float(x), float(y),
+                                float(spawn['local_yaw_radians']),
+                                float(case['speed'])]],
+                frontier_tile_id=int(spec.tile_id), evaluation=True)
+            from .map import HeightMap
+            self.env.map_cache = HeightMap(1, device)
+        except Exception:
+            self._patches.__exit__(None, None, None)
+            raise
+        self.steps = 0
+
+    def close(self):
+        self._patches.__exit__(None, None, None)
+
+    def reset(self):
+        self.env.reset()
+        self.steps = 0
+        return self._frame()
+
+    def step(self, action=None):
+        import torch
+        if action is None:
+            action = torch.zeros(1, 12, device=self.device)
+        action = torch.as_tensor(action, dtype=torch.float32,
+                                 device=self.device).reshape(1, 12)
+        _, _, terminated, truncated, _ = self.env.step(action)
+        self.steps += 1
+        return self._frame(terminal=bool(terminated[0] or truncated[0]))
+
+    def _frame(self, terminal=False):
+        import torch
+        data = self.env.robot.data
+        origin = self.env.origins[self.env.tile_ids[0]]
+        local = data.root_link_pos_w[0] - origin
+        feet = data.site_pos_w[0, self.env.foot_ids]
+        contact = self.env.contacts.raw[0].bool()
+        platform = self.env.current_platform[0].bool()
+        front = float(self.spec.platform_front_local_x)
+        body_ok = bool(local[0] > front + 0.4)
+        feet_ok = bool(platform.all())
+        map_valid = self.env.map_cache.map[0, 1].bool().cpu().numpy()
+        sample_id = dict(refresh_index=self.steps // 5,
+                         sample_sim_time_s=self.steps * 0.02,
+                         produced_at_actor_step=self.steps)
+        return BackendStep(
+            route_x=float(local[0]), base_xy=(float(local[0]), float(local[1])),
+            feet_xy=feet[:, :2].detach().cpu().numpy().tolist(),
+            feet_route_x=(feet[:, 0] - origin[0]).detach().cpu().numpy().tolist(),
+            foot_on_platform=platform.detach().cpu().numpy().tolist(),
+            foot_contact=contact.detach().cpu().numpy().tolist(),
+            foot_normal_force=self.env.contacts.top_forces[0].detach().cpu().numpy().tolist(),
+            pitch=float(__import__('src.tasks.velocity.v07.events', fromlist=['euler_heading'])
+                        .euler_heading(data.root_link_quat_w[0:1])[1][0]),
+            velocity_b=data.root_link_lin_vel_b[0].detach().cpu().numpy().tolist(),
+            velocity_route=float(data.root_link_lin_vel_w[0, 0]),
+            omega_b=data.root_link_ang_vel_b[0].detach().cpu().numpy().tolist(),
+            c_exec=float(self.env.sample_command[0, 0]),
+            c_request=float(self.env.command[0, 0]),
+            a_request=self.env.action_manager.action[0].detach().cpu().numpy().tolist(),
+            a_applied=self.env.action_term._processed_actions[0].detach().cpu().numpy().tolist(),
+            pd_target=self.env.action_term._processed_actions[0].detach().cpu().numpy().tolist(),
+            joint_position=data.joint_pos[0, self.env.joint_ids].detach().cpu().numpy().tolist(),
+            joint_velocity=data.joint_vel[0, self.env.joint_ids].detach().cpu().numpy().tolist(),
+            map_valid=map_valid, map_base_z=float(data.root_link_pos_w[0, 2]),
+            refreshed=bool(int(self.env.map_cache.steps[0]) >= 5),
+            terminal=terminal, failure=bool(self.env._physical_failure[0])
+            if hasattr(self.env, '_physical_failure') else False,
+            top_arrived=feet_ok and body_ok,
+            four_feet_on_platform=feet_ok,
+            front_foot_top_support=bool(platform[0] or platform[1]),
+            feet_ok=feet_ok, body_ok=body_ok,
+            contact_pairs=[], native_sample_id=sample_id,
+            sim_time_s=self.steps * 0.02)
