@@ -139,3 +139,39 @@ python scripts/run_a2_v09_s2_0.py \
 
 预期：spawn z=8.4、feet_z≈8.03、contact_feet>0、首帧 `a_request` 非零；
 失败/超时不得由 `policy_not_applied` 伪判。
+
+## T13 报告生成器
+
+`scripts/report_a2_v09_s2_0.py` 只读 evidence，生成版本化：
+
+```text
+report.json
+evidence_index.json
+```
+
+字段：
+
+- 150 条 S2 总表：case/task/branch/speed/width、termination、success/failure、
+  route_delta/max、四窗（front/four/top/s6.5）的 frames/step_min/max/
+  nose_down/up/level/mean/min/max、first_meter/post_first_meter、
+  failure_context/class、quality、trace/npz SHA；
+- 六例 H：events、四足、top、failure、coverage original failure position、
+  `top_forward_lean`、d_post、首米/后段；
+- 用户观察专节：real-r4 vs plane-r1 窗口 + “单例不支持因果/现场相反”声明；
+- evidence_index：case_sha/branch/attempt/status/trace/npz/evidence_dir。
+
+干运行：
+
+```bash
+python scripts/report_a2_v09_s2_0.py --dry-run
+```
+
+正式（矩阵完成后）：
+
+```bash
+python scripts/report_a2_v09_s2_0.py \
+  --evidence-root logs/a2_v09/s2_0/matrix \
+  --output-dir logs/a2_v09/s2_0/reports/q031-final
+```
+
+禁止改写任何原始 trace/npz/windows；重复生成使用新输出目录。

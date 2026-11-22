@@ -4491,3 +4491,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 修复：`MjlabS2Backend` 保存 `spawn_z` 并在每次 reset 前设 `default_root_state[:,2]=spawn_z`；`S2TrainEnv` 平台角色用 `platform_height+0.4`；新增 plan 断言。
 - 验证：S2 套件 **231 passed**；GPU 单例平台复测（case `b128038d…`、0.5 m/s、宽 0.8）→ spawn z 8.4、四足接触 1.9、首帧动作非零、59 步后 failure 终止（`terminal/failure/post_reset` 均记录），不再误报 `policy_not_applied`。
 - 台账：debug 义务 +59 步；整批此前 20 条 platform failed（各 1 步）保留，resume 将重跑。
+
+
+## 2026-11-22 S2.0 报告生成器（只读证据）
+
+- 目的：矩阵完成后一条命令出 150 条总表、六例 H 复现与用户观察专节。
+- 涉及文件：新增 `scripts/report_a2_v09_s2_0.py`；文档 `docs/v09_s2_1_training_stack.md` 更新。
+- 输出：`report.json`（逐例 status/termination/success/failure/timeout/top_arrived、`route_delta/route_max`、首米/后段、failure_context/class、四窗、证据 SHA）与 `evidence_index.json`（case_sha/branch/attempt/status/证据 SHA）；六例 H 段含 enter/four/top/failure/d_post/首米后段/`top_forward_lean`/原失败位置覆盖（`covered/not_covered/not_verified`）；`user_observation.real_vs_plane` 单列并不作因果结论。
+- 只读 `smoke_summary.json`/`trace.jsonl`/`windows.json`/`evidence_files`，不改原始证据。
+- 验证：S2 套件 **231 passed**；`--dry-run` 当前覆盖 observed_s2=71、observed_h=0（矩阵未完成）；平地在无平台时四窗 NA 正确。
+- 未执行：全量报告（待矩阵完成）、GPU、训练。
