@@ -4698,3 +4698,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 目的：固化 Q034 口径下的缓存生成与门禁执行顺序、命令、预算与晋级条件。
 - 文件：`docs/v09_s2_1_gate_runbook.md`。
 - 内容：L40（s1_least，3×40×30，A/B 各 219,220）与 original 6400（30ed23ba…，3×48×32 旧图，A/B 各 234,180）缓存生成；门禁 A/B 命令与 cache 身份要求；≥18/20、平地绝对+相对、L40 不退化；晋级 S2.2 条件。
+
+
+## 2026-11-22 门禁 collector 形状校验与 L40 cache 校验复核
+
+- 目的：静态复核 Q034-A collector 与 gate L40 cache 校验，并加并发安全要求。
+- 事实：`validate_teacher_observation` 强制 `[20,3,48,32]`；collector 先校验后推理；gate `_load_l40_cache` 已校验 source `efa9caa8…`、逐组字段、P10/P50/P90、regression 判定。
+- 待 GPU 验证：`V09S1Env(course='S1.2')` 是否真给出 3×48×32 teacher 旧图；若否则需修 map 装配。
+- 已下达并发安全闸：cache 生成前检测训练进程与空闲显存，不足即拒绝；禁止非 4-env 之外的"凑显存"手段。
