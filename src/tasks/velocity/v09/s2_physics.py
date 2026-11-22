@@ -42,6 +42,13 @@ class S2PhysicsAssemblyError(RuntimeError):
     pass
 
 
+def apply_default_spawn_z(env, spawn_z):
+    """Set the V07 default root height used by every subsequent reset."""
+    state = env.robot.data.default_root_state
+    state[:, 2] = float(spawn_z)
+    return state
+
+
 def sim_state_digest(qpos, qvel):
     """Stable qpos/qvel digest for same-process branch replay evidence."""
     import hashlib
@@ -62,6 +69,7 @@ def sim_state_digest(qpos, qvel):
 class BackendStep:
     route_x: float
     base_xy: tuple[float, float]
+    root_z: float
     feet_xy: list
     feet_route_x: list
     feet_z: list
@@ -197,7 +205,7 @@ class S2FakeBackend:
         top = bool(on_platform and self.route_x >= (front + 0.4 if front else 1e9))
         terminal = self.step_index >= self.steps_to_terminal
         return BackendStep(
-            route_x=self.route_x, base_xy=(self.route_x, 0.0), feet_xy=feet,
+            route_x=self.route_x, base_xy=(self.route_x, 0.0), root_z=0.4, feet_xy=feet,
             feet_route_x=[f[0] for f in feet],
             feet_z=[0.0, 0.0, 0.0, 0.0],
             foot_on_platform=[on_platform] * 4,
@@ -424,7 +432,7 @@ class S2PhysicsEnv:
         self.recorder.append(dict(
             step=self.steps - 1, route_x=frame.route_x, base_xy=frame.base_xy,
             feet_xy=frame.feet_xy, feet_route_x=frame.feet_route_x,
-            feet_z=frame.feet_z, pitch=frame.pitch, foot_on_platform=frame.foot_on_platform,
+            feet_z=frame.feet_z, root_z=frame.root_z, pitch=frame.pitch, foot_on_platform=frame.foot_on_platform,
             sim_state_sha256=frame.sim_state_sha256, post_reset=frame.post_reset,
             foot_contact=frame.foot_contact, g_level=g_value,
             top_arrived=frame.top_arrived, failure=frame.failure,
@@ -713,7 +721,7 @@ class MjlabS2Backend:
 
     def reset(self):
         if hasattr(self, 'spawn_z'):
-            self.env.robot.data.default_root_state[:, 2] = self.spawn_z
+            apply_default_spawn_z(self.env, self.spawn_z)
         obs, _ = self.env.reset()
         self._store_observation(obs)
         self.steps = 0
@@ -788,6 +796,7 @@ class MjlabS2Backend:
             termination_reason = 'unknown'
         return BackendStep(
             route_x=float(local[0]), base_xy=(float(local[0]), float(local[1])),
+            root_z=float(data.root_link_pos_w[0, 2]),
             feet_xy=feet[:, :2].detach().cpu().numpy().tolist(),
             feet_route_x=(feet[:, 0] - origin[0]).detach().cpu().numpy().tolist(),
             feet_z=feet[:, 2].detach().cpu().numpy().tolist(),

@@ -206,3 +206,25 @@ def test_admission_binds_probe_sha_and_review(tmp_path):
     with pytest.raises(ValueError, match='probe SHA'):
         s2_resources.validate_admission(admission, probe_path=probe,
                                         num_envs=1024)
+
+
+def test_spawn_z_is_applied_on_both_resets_and_training_plan():
+    from types import SimpleNamespace
+    from src.tasks.velocity.v09 import s2_physics, s2_train_real
+    data = SimpleNamespace(default_root_state=torch.zeros(2, 13))
+    env = SimpleNamespace(robot=SimpleNamespace(data=data))
+    s2_physics.apply_default_spawn_z(env, 8.4)
+    assert torch.all(data.default_root_state[:, 2] == 8.4)
+    s2_physics.apply_default_spawn_z(env, 8.4)
+    assert torch.all(data.default_root_state[:, 2] == 8.4)
+    plan = s2_train_real.build_env_plan(1024)
+    for row in plan['rows']:
+        if row['role'] == 'platform_walk':
+            assert row['spawn_z'] == row['geometry']['platform_height'] + 0.4
+        else:
+            assert row['spawn_z'] == 0.4
+    train_data = SimpleNamespace(default_root_state=torch.zeros(1024, 13))
+    train_env = SimpleNamespace(robot=SimpleNamespace(data=train_data))
+    s2_train_real.apply_train_spawn_z(train_env, plan)
+    assert torch.all(train_data.default_root_state[:, 2] ==
+                     torch.tensor([row['spawn_z'] for row in plan['rows']]))

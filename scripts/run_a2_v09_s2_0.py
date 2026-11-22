@@ -45,6 +45,7 @@ def case_metadata(case, *, suite, source):
         platform_width=geometry.get('platform_width', case.get('platform_width')),
         platform_front_local_x=geometry.get('platform_front_local_x'),
         spawn_x=float(case['spawn']['local_position_xy'][0]),
+        spawn_z=float(case['spawn'].get('local_position', [0.0, 0.0, 0.4])[2]),
         spawn_y=float(case['spawn']['local_position_xy'][1]))
 
 
@@ -223,9 +224,11 @@ def _window_stats(rows):
 def _four_windows(rows, *, platform_front, case, events=None):
     """Q032 fixed windows: first true physical sample, not latched event step."""
     events = events or []
-    valid = [row for row in rows
-             if not row.get('post_reset', False)
-             and not (row is rows[-1] and row.get('terminal'))]
+    valid_pairs = [(raw, row) for raw, row in enumerate(rows)
+                   if not row.get('post_reset', False)
+                   and not (raw == len(rows) - 1 and row.get('terminal'))]
+    valid = [row for _raw, row in valid_pairs]
+    raw_index = [raw for raw, _row in valid_pairs]
     result = {name: dict(status='NA', reason='window_not_reached')
               for name in ('front_edge', 'four_feet', 'top_arrived',
                            's6_5_cruise')}
@@ -270,6 +273,7 @@ def _four_windows(rows, *, platform_front, case, events=None):
         result[name] = _window_stats(valid[start:end + 1])
         result[name].update(
             trace_step=int(row['step']), row_index=int(start),
+            raw_trace_row=int(raw_index[start]),
             first_true_step=int(row['step']),
             latched_event_step=event_values.get(name),
             event_completed_steps=event_values.get(name),
@@ -288,6 +292,8 @@ def _four_windows(rows, *, platform_front, case, events=None):
                                           else 's6_5_threshold_not_reached')
     result['window_rule'] = dict(
         source_rows='trace rows in order',
+        row_index='zero-based index in the filtered valid-row list after post_reset exclusion',
+        raw_trace_row='zero-based original trace file line index before filtering',
         post_reset_rows='excluded; terminal event retained',
         start='first valid physical sample satisfying each condition; threshold included',
         front_edge='body route_x >= platform_front_local_x',
@@ -552,6 +558,8 @@ def main(argv=None):
             summary['evidence_frames'] = len(evidence_rows)
             summary['evidence_partial'] = summary.get('evidence_partial', False) or (
                 len(evidence_rows) != summary.get('control_steps', -1))
+            summary['first_root_z'] = (float(evidence_rows[0]['root_z'])
+                                       if evidence_rows else None)
             summary['terminal_row_is_post_reset'] = bool(
                 evidence_rows[-1].get('post_reset')) if evidence_rows else None
             windows = None

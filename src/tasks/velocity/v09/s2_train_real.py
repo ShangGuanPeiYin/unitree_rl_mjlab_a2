@@ -66,6 +66,15 @@ def _geometry_for(row):
                 valid_bounds_local=[-2.0, 28.0, -2.0, 2.0])
 
 
+def apply_train_spawn_z(env, plan):
+    import torch
+    env.robot.data.default_root_state[:, 2] = torch.tensor(
+        [row['spawn_z'] for row in plan['rows']],
+        dtype=env.robot.data.default_root_state.dtype,
+        device=env.robot.data.default_root_state.device)
+    return env.robot.data.default_root_state[:, 2]
+
+
 def build_env_plan(num_envs=1024):
     role_plan = s2_train_env.build_role_plan(num_envs)
     specs = {spec.terrain_key: spec for spec in s2_terrain.terrain_specs()}
@@ -149,9 +158,7 @@ class S2TrainEnv:
                 initial_cases=[row['spawn'] for row in self.plan['rows']],
                 frontier_tile_id=0, evaluation=False)
             self.env.map_cache = HeightMap(self.num_envs, device)
-            self.env.robot.data.default_root_state[:, 2] = torch.tensor(
-                [row['spawn_z'] for row in self.plan['rows']],
-                dtype=self.env.robot.data.default_root_state.dtype, device=device)
+            apply_train_spawn_z(self.env, self.plan)
             import types
             tile_by = list(self._tile_by_env)
             def _sample_tiles(ids):

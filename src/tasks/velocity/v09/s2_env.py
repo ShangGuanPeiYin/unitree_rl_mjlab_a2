@@ -88,7 +88,7 @@ PITCH_SIGN_CONVENTION = dict(
     forward_axis='+X', world_up='+Z')
 
 TRACE_FIELDS = (
-    'step', 'route_x', 'base_xy', 'feet_xy', 'feet_route_x', 'feet_z', 'pitch',
+    'step', 'route_x', 'base_xy', 'root_z', 'feet_xy', 'feet_route_x', 'feet_z', 'pitch',
     'sim_state_sha256', 'post_reset',
     'foot_on_platform', 'foot_contact', 'g_level', 'top_arrived', 'failure',
     'stop_request', 'terminal', 'c_exec', 'c_request', 'a_request', 'a_applied',
@@ -96,7 +96,7 @@ TRACE_FIELDS = (
     'pd_target', 'joint_position', 'joint_velocity', 'map_valid',
     'map_sample_time_s', 'native_sample_id')
 REQUIRED_PER_STEP = set(TRACE_FIELDS)
-SCALAR_FIELDS = {'step', 'route_x', 'pitch', 'g_level', 'c_exec', 'c_request',
+SCALAR_FIELDS = {'step', 'route_x', 'root_z', 'pitch', 'g_level', 'c_exec', 'c_request',
                  'velocity_route', 'pitch_rate', 'map_sample_time_s'}
 BOOLEAN_FIELDS = {'top_arrived', 'failure', 'stop_request', 'terminal', 'post_reset'}
 VECTOR3_FIELDS = {'base_xy'}
@@ -372,6 +372,7 @@ class S2EvidenceRecorder:
                         suite=self.case.get('suite'), task=self.case['task'],
                         stair_count=self.case.get('stair_count'),
                         speed=self.case['speed'], map_branch=self.map_branch,
+                        spawn_z=float(self.case['spawn'].get('local_position', [0, 0, 0.4])[2]),
                         geometry=self.case.get('geometry'),
                         terrain_key=self.adapter.terrain.terrain_key,
                         hard_timeout_steps=self.case['hard_timeout_steps'],

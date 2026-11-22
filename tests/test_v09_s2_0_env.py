@@ -25,8 +25,11 @@ def frame(step, *, task='stairs_walk', top=False, four=False, failure=False,
           sample=None):
     return dict(
         step=step, route_x=1.0 + 0.1 * step, base_xy=[1.0 + 0.1 * step, 0.0],
+        root_z=0.4,
         feet_xy=[[1.0, 0.1], [1.0, -0.1], [0.9, 0.1], [0.9, -0.1]],
-        feet_route_x=[1.0, 1.0, 0.9, 0.9], pitch=0.0,
+        feet_route_x=[1.0, 1.0, 0.9, 0.9],
+        feet_z=[0.03, 0.03, 0.03, 0.03], pitch=0.0,
+        sim_state_sha256='0' * 64, post_reset=False,
         foot_on_platform=[False, False, False, False],
         foot_contact=[True, True, False, False], g_level=0.0,
         top_arrived=top, failure=failure, stop_request=False, terminal=False,
@@ -80,11 +83,17 @@ def test_evidence_recorder_roundtrip_and_contract(tmp_path):
     trace = recorder.trace()
     assert trace['feet_xy'].shape == (2, 4, 2)
     assert trace['contact_pairs'][0][0]['surface'] == 'tread'
-    written = recorder.write(tmp_path)
+    written = recorder.write(tmp_path, attempt_id='test-attempt')
     assert Path(written['npz']).exists() and Path(written['metadata']).exists()
+    assert case['case_sha256'][:12] in Path(written['npz']).name
     metadata = json.loads(Path(written['metadata']).read_text())
     assert metadata['rows'] == 2
     assert metadata['native_samples'][0]['actor_step'] == 0
+    assert metadata['case_sha256'] == case['case_sha256']
+    assert metadata['attempt_id'] == 'test-attempt'
+    assert metadata['geometry'] == case['geometry']
+    assert metadata['hard_timeout_steps'] == case['hard_timeout_steps']
+    assert metadata['npz_sha256'] == written['npz_sha256']
     assert metadata['contract']['required_fields'] == s2_env.evidence_contract()['required_fields']
     with pytest.raises(FileExistsError):
         recorder.write(tmp_path)
@@ -166,3 +175,103 @@ def test_b_v5_2_all_six_h_adapters_keep_original_timeout_and_legacy_mode():
         assert adapter.config.legacy_h is True
         assert adapter.config.timeout_steps == record['case']['hard_timeout_steps']
         assert adapter.config.post_distance is None
+
+
+def test_incremental_ragged_trace_survives_illegal_later_frame(tmp_path):
+    case = case_for('stairs_walk')
+    adapter = s2_env.S2TaskAdapter.from_case(case)
+    recorder = s2_env.S2EvidenceRecorder(case=case, adapter=adapter)
+    trace_path = recorder.attach_trace(tmp_path / 'trace.jsonl')
+    for step in range(64):
+        item = frame(step)
+        item['contact_pairs'] = [
+            dict(foot=index, geom=f'g{index}', normal_force=1.0,
+                 duration_s=0.02, position_xy=[0.0, 0.0],
+                 surface='tread', valid=True) for index in range(step % 4)]
+        recorder.append(item)
+    lines = trace_path.read_text().splitlines()
+    assert len(lines) == 64
+    assert all(json.loads(line)['step'] == index for index, line in enumerate(lines))
+    assert recorder.trace()['contact_pairs'].shape[0] == 64
+    written = recorder.write(tmp_path)
+    assert Path(written['npz']).exists()
+    bad = frame(64)
+    bad['contact_pairs'] = [dict(foot=0)]
+    with pytest.raises(ValueError):
+        recorder.append(bad)
+    assert len(trace_path.read_text().splitlines()) == 64
+
+
+def test_to_numpy_boundary_handles_tensor_list_and_scalar():
+    import torch
+    tensor = torch.arange(4, dtype=torch.float32)
+    out = s2_env.to_numpy(tensor)
+    assert isinstance(out, np.ndarray) and out.tolist() == [0, 1, 2, 3]
+    assert s2_env.to_numpy([1, 2]).tolist() == [1, 2]
+    assert float(s2_env.to_numpy(np.float32(3.5))) == 3.5
+    frame = globals()['frame'](0)
+    frame['feet_xy'] = torch.zeros(4, 2)
+    frame['foot_on_platform'] = torch.zeros(4, dtype=torch.bool)
+    frame['foot_contact'] = torch.ones(4, dtype=torch.bool)
+    frame['foot_normal_force'] = torch.ones(4)
+    frame['a_request'] = torch.zeros(12)
+    case = case_for('flat_walk')
+    adapter = s2_env.S2TaskAdapter.from_case(case)
+    recorder = s2_env.S2EvidenceRecorder(case=case, adapter=adapter)
+    recorder.append(frame)
+    assert recorder.trace()['feet_xy'].shape == (1, 4, 2)
+
+
+def test_observation_contract_reports_field_shape_dtype_and_nonfinite_indices():
+    from src.tasks.velocity.v09 import s2_env as env_mod
+    good = dict(proprio=np.zeros(45, dtype=np.float32),
+                history=np.zeros((5, 45), dtype=np.float32),
+                heightmap=np.zeros((3, 40, 30), dtype=np.float32),
+                route_error=np.zeros(3, dtype=np.float32))
+    env_mod.validate_policy_observation(good)
+    bad = dict(good, proprio=np.zeros(45, dtype=np.float32))
+    bad['proprio'][7] = np.nan
+    with pytest.raises(env_mod.ObservationContractError) as error:
+        env_mod.validate_policy_observation(bad)
+    assert 'proprio' in str(error.value)
+    assert '[7]' in str(error.value) or '7' in str(error.value)
+    wrong_dtype = dict(good, proprio=np.zeros(45, dtype=np.float64))
+    with pytest.raises(env_mod.ObservationContractError):
+        env_mod.validate_policy_observation(wrong_dtype)
+
+
+def test_diagnostics_and_jsonable_accept_torch_tensors_and_are_json_native():
+    import inspect
+    import json
+    import torch
+    obs = dict(
+        proprio=torch.zeros(45, dtype=torch.float32),
+        history=torch.zeros(5, 45, dtype=torch.float32),
+        heightmap=torch.zeros(3, 40, 30, dtype=torch.float32),
+        route_error=torch.zeros(3, dtype=torch.float32))
+    diag = s2_env.observation_diagnostics(obs)
+    assert diag['proprio']['dtype'] == 'float32'
+    assert diag['proprio']['shape'] == [45]
+    json.dumps(s2_env.jsonable(diag))
+    s2_env.validate_policy_observation(obs)
+    source = inspect.getsource(s2_env.observation_diagnostics)
+    assert 'np.asarray(value)' not in source
+    # Unknown objects must fail with a type/path, never silently stringify.
+    with pytest.raises(TypeError):
+        s2_env.jsonable(object())
+
+
+def test_boundary_functions_do_not_directly_numpy_cuda_values():
+    import inspect
+    from src.tasks.velocity.v09 import s2_physics, s2_parity
+    sources = [
+        inspect.getsource(s2_env.observation_diagnostics),
+        inspect.getsource(s2_env.validate_policy_observation),
+        inspect.getsource(s2_env.S2EvidenceRecorder.append),
+        inspect.getsource(s2_env.S2EvidenceRecorder.trace),
+        inspect.getsource(s2_physics.S2PhysicsEnv._policy_observation),
+        inspect.getsource(s2_physics.S2PhysicsEnv.observe),
+        inspect.getsource(s2_parity._array),
+    ]
+    for source in sources:
+        assert 'np.asarray(value)' not in source

@@ -4511,3 +4511,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 关键发现：同 case 的 plane 分支可走完 5 m（785–790 步 success），real 分支 39–95 步失稳——**不能只归因权重**，需 Q031 同帧双输入区分地图输入与状态；平台为平面，real/plane 本应几乎一致，若差异显著则可能暴露平台处地图采样/一致性问题的真实诊断线索。
 - 缺项：B-V85-1 缺 backend 连续 reset / `S2TrainEnv` default state / flat·stairs 0.4 回归测试；R-V85-1 summary/trace 未保存 `spawn_z`/root z。
 - 预算（17:00）：matrix 62,700/420,390、debug 10,235、H 0、无活跃预留。
+
+
+## 2026-11-22 spawn_z 回归与平台 real/plane 对比
+
+- 目的：补 B-V85-1 测试、R-V85-1 自证字段，并量化已完成平台用例的 real/plane 分离。
+- 涉及文件：`s2_physics.py`（`apply_default_spawn_z` 双 reset 回归）、`s2_env.py`、`s2_train_real.py`（`apply_train_spawn_z`、plan 断言）、`scripts/run_a2_v09_s2_0.py`（`spawn_z`/`first_root_z`/trace `root_z`）、新增 `scripts/analyze_a2_v09_s2_platform_split.py`、测试与 `logs/a2_v09/s2_0/reports/platform_split.json`。
+- 结果（10 对已完成平台用例）：real 39–95 步、`route_max` 9.00–9.16 m、posture/nonfoot failure；plane 491–790 步、`route_max` 13.99 m（约 5 m）、`failure=false`；样例 `01f80378b777`（0.3 m/s、宽 0.8）real 59 步 vs plane 788 步，`route_max` 差 +4.9879 m。
+- 缺数据：现有 trace/npz 无 heightmap 通道，无法量化平台处 real/plane 地图差异；需采 `--save-inputs` 代表病例后作同帧双输入。
+- 验证：S2 套件 **232 passed**；整批 72/156、0 失败。
+- 未执行：GPU 采集、训练、台账写入。
