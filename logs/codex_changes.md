@@ -4722,3 +4722,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - `s2_1_000015040512.pt`，SHA `247cc0c47173120c2fea9cffb5cff87b821ea69685416d920d43410005aa703f`，15,040,512 样本 / 612 rollouts，std 0.1772–0.2526，`ledger_cursor` 15,040,512（台账 15,089,664，差 2 个在途 rollout），gates []、序列 gate_A。
 - 训练速率约 7.5 s/rollout，S2.1 ETA 约 65–68 h。
 - 待办：L40 20-env 向量装配（已下达）；训练结束窗口生成 L40/6400 cache；门禁 A/B execute。
+
+## 2026-11-22 L40 cache 串行收口与并发闸
+
+- 目的：按用户决定停止 L40 20-env 向量化，采用单 env 逐例；保留并发安全闸。
+- L40：整套 219,220 原子 reserve，逐例按实际步数 commit，末尾 release；早终止不按满 timeout；`envs_per_batch=1`、约 4.7 h/套、A/B 9.4 h；逐例字段/P10/P50/P90/失败分类；post_reset 排除。
+- 并发闸：`s2_concurrency.require_safe_window` 在 collector `--execute` 前检查训练进程与 GPU free；当前训练中 PIDs 1931599/1931607、free 1393<3072，拒绝。
+- 测试：S2 套件 **262 passed**（含串行 settle、post_reset、组统计、并发闸）。
+- 未执行：GPU cache/门禁，等训练结束窗口。

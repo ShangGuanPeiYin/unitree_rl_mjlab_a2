@@ -30,6 +30,51 @@ def _load(path):
     return json.loads(Path(path).read_text())
 
 
+def last_valid_terminal(trace, *, start_x):
+    route = np.asarray(trace.get("route_x", []), dtype=float)
+    post_reset = np.asarray(trace.get("post_reset", [False] * len(route)),
+                            dtype=bool)
+    valid = np.flatnonzero(~post_reset)
+    index = int(valid[-1]) if valid.size else 0
+    x = float(route[index]) if route.size else float(start_x)
+    return dict(x=x, index=index,
+                post_reset=bool(post_reset[index]) if post_reset.size else None)
+
+
+def group_statistics(groups, rows):
+    grouped = {}
+    for row in rows:
+        grouped.setdefault(row["group"], []).append(row)
+    out = {}
+    for group in groups:
+        members = grouped.get(group["group_id"], [])
+        values = np.asarray([row["net_distance"] for row in members], dtype=float)
+        out[group["group_id"]] = dict(
+            cases=len(members),
+            successes=sum(bool(row["success"]) for row in members),
+            p10=float(np.percentile(values, 10)) if values.size else None,
+            p50=float(np.percentile(values, 50)) if values.size else None,
+            p90=float(np.percentile(values, 90)) if values.size else None,
+            failure_classes={
+                str(name): sum(1 for row in members
+                               if row.get("termination_reason") == name)
+                for name in {row.get("termination_reason") for row in members
+                             if row.get("failure")}},
+            physical_failures=sum(bool(row.get("failure")) for row in members),
+            timeouts=sum(bool(row.get("timeout")) for row in members),
+            engineering_failures=sum(bool(row.get("engineering_failure"))
+                                     for row in members),
+            rows=members)
+    return out
+
+
+def suite_settlement(rows, *, upper=219_220):
+    actual = int(sum(int(row["steps"]) for row in rows))
+    if actual > int(upper):
+        raise ValueError("actual L40 samples exceed suite upper bound")
+    return dict(actual=actual, unused=int(upper) - actual, upper=int(upper))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--reference', required=True,
@@ -130,21 +175,24 @@ def main(argv=None):
                               f'{args.reference}-{args.suite}-{stamp}')
     out.mkdir(parents=True, exist_ok=True)
     results = []
+    suite_reserved = 219_220
+    suite_actual = 0
+    ledger.reserve(obligation, suite_reserved,
+                   operation_id='ref:s1_l40:suite:reserve',
+                   reason='L40 reference whole-suite atomic reservation')
     for case in cases:
         h_legacy = case['task'] == 'legacy_l40'
         env, _ = s2_physics.build_s2_env(
             case, device=args.device, seed=s2_spec.SEED, map_branch='real',
             h_legacy=h_legacy)
-        reserved = int(case['hard_timeout_steps'])
+        timeout = int(case['hard_timeout_steps'])
         op = f'ref:{args.reference}:{case["case_sha256"][:12]}'
-        ledger.reserve(obligation, reserved,
-                       operation_id=f'{op}:reserve', reason='gate reference cache')
         steps = 0
         try:
             import torch
             env.reset()
             done = False
-            while not done and steps < reserved:
+            while not done and steps < timeout:
                 obs = env.observe()
                 tensor_obs = {
                     key: (value[None] if isinstance(value, torch.Tensor) else value)
@@ -156,13 +204,10 @@ def main(argv=None):
                 steps += 1
                 done = bool(done_list[0])
             trace = s2_env.jsonable(env.evidence(0))
-            route = np.asarray(trace['route_x'], dtype=float)
-            post_reset = np.asarray(trace.get('post_reset', [False] * len(route)),
-                                    dtype=bool)
-            valid = np.flatnonzero(~post_reset)
-            last_index = int(valid[-1]) if valid.size else 0
             start_x = float(case['spawn']['local_position_xy'][0])
-            terminal_x = float(route[last_index]) if route.size else start_x
+            last = last_valid_terminal(trace, start_x=start_x)
+            last_index, terminal_x = last['index'], last['x']
+            route = np.asarray(trace.get('route_x', []), dtype=float)
             results.append(dict(
                 group=case['group_id'], case_sha256=case['case_sha256'],
                 success=bool(env.machine.success),
@@ -174,11 +219,9 @@ def main(argv=None):
                 start=dict(x=start_x,
                            local_position_xy=list(case['spawn']['local_position_xy'])),
                 start_x=start_x, terminal_x=terminal_x,
-                last_valid_terminal=dict(x=terminal_x, index=last_index,
-                                         post_reset=bool(post_reset[last_index])
-                                         if post_reset.size else None),
+                last_valid_terminal=last,
                 last_valid_index=last_index,
-                terminal_is_post_reset=bool(post_reset[last_index]) if post_reset.size else None,
+                terminal_is_post_reset=last['post_reset'],
                 route_max=float(route.max()) if route.size else start_x,
                 net_distance=terminal_x - start_x,
                 termination_reason=getattr(env.last, 'termination_reason', None),
@@ -191,41 +234,24 @@ def main(argv=None):
             if steps:
                 ledger.commit(obligation, steps, operation_id=f'{op}:commit',
                               reason='gate reference partial')
-            unused = reserved - steps
-            if unused:
-                ledger.release(obligation, unused, operation_id=f'{op}:release',
-                               reason='gate reference failed')
+                suite_actual += steps
+            unused = suite_reserved - suite_actual
+            if unused > 0:
+                ledger.release(obligation, unused,
+                               operation_id='ref:s1_l40:suite:release',
+                               reason='L40 reference failed/unused')
             raise
         ledger.commit(obligation, steps, operation_id=f'{op}:commit',
                       reason='gate reference actual')
-        unused = reserved - steps
-        if unused:
-            ledger.release(obligation, unused, operation_id=f'{op}:release',
-                           reason='gate reference unused')
-    grouped = {}
-    for row in results:
-        grouped.setdefault(row['group'], []).append(row)
-    groups_out = {}
-    for group in groups:
-        rows = grouped.get(group['group_id'], [])
-        groups_out[group['group_id']] = dict(
-            cases=len(rows), successes=sum(bool(row['success']) for row in rows),
-            rows=rows)
-    for group in groups:
-        rows = grouped.get(group['group_id'], [])
-        values = np.asarray([row['net_distance'] for row in rows], dtype=float)
-        groups_out[group['group_id']].update(
-            p10=float(np.percentile(values, 10)) if values.size else None,
-            p50=float(np.percentile(values, 50)) if values.size else None,
-            p90=float(np.percentile(values, 90)) if values.size else None,
-            failure_classes={
-                str(name): sum(1 for row in rows
-                               if row.get('termination_reason') == name)
-                for name in {row.get('termination_reason') for row in rows
-                             if row.get('failure')}},
-            physical_failures=sum(bool(row.get('failure')) for row in rows),
-            timeouts=sum(bool(row.get('timeout')) for row in rows),
-            engineering_failures=sum(bool(row.get('engineering_failure')) for row in rows))
+        suite_actual += steps
+    settlement = suite_settlement(results)
+    unused = suite_reserved - suite_actual
+    if unused > 0:
+        ledger.release(obligation, unused,
+                       operation_id='ref:s1_l40:suite:release',
+                       reason='L40 reference unused reservation')
+    groups_out = group_statistics(groups, results)
+
     if args.reference == 's1_l40':
         cases_dir = out / 'cases'
         cases_dir.mkdir(parents=True, exist_ok=True)
@@ -241,7 +267,9 @@ def main(argv=None):
                      manifest_sha256=manifest['manifest_sha256'],
                      source_sha256=source_sha, model_sha256=source_sha,
                      checkpoint=str(checkpoint), groups=groups_out,
-                     concurrency=window,
+                     concurrency=window, settlement=settlement,
+                     execution=dict(envs_per_batch=1, batches=len(cases),
+                                    estimated_seconds=4.7 * 3600),
                      case_files=case_files,
                      generated_at_utc=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
         path = out / 'reference_cache.json'

@@ -77,7 +77,10 @@ def main(argv=None):
         manifest_file_sha256=_sha(manifest_path),
         source_path=str(source_path), source_sha256=source_sha,
         groups=len(groups), cases=len(cases), control_samples=cost,
-        envs_per_batch=20, batches=len(groups), max_batch_samples=45_000,
+        envs_per_batch=(1 if args.cache_kind == 'l40' else 20),
+        batches=(len(cases) if args.cache_kind == 'l40' else len(groups)),
+        max_batch_samples=(5005 if args.cache_kind == 'l40' else 45_000),
+        estimated_seconds=(4.7 * 3600 if args.cache_kind == 'l40' else None),
         peak_limit_mib=7168, obligation_id=obligation,
         physics_started=False, ledger_written=False)
     if args.dry_run:

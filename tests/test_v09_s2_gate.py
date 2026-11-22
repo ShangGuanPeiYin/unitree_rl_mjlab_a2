@@ -80,6 +80,8 @@ def test_t14_cache_builder_dry_run_and_source_model(tmp_path):
         '--manifest', str(manifest_path), '--output-dir', str(out_l40)]) == 0
     plan = json.loads((out_l40 / 'l40_gate_A_plan.json').read_text())
     assert plan['control_samples'] == 219_220
+    assert plan['envs_per_batch'] == 1
+    assert plan['estimated_seconds'] == 4.7 * 3600
     assert plan['source_sha256'] == 'efa9caa8ce99e2cdff967212063e198b7ae68a6415727083b1db027f615ead24'
     assert plan['reference'] == 's1_l40'
     out_6400 = tmp_path / '6400'
@@ -188,3 +190,25 @@ def test_gate_validates_l40_cache_source_fields_and_percentiles(tmp_path):
     path.write_text(json.dumps(bad))
     with pytest.raises(ValueError, match='p50'):
         cli._load_l40_cache(path, manifest)
+
+
+def test_l40_serial_helpers_post_reset_settlement_and_group_stats():
+    import collect_a2_v09_s2_gate_reference as cli
+    trace = dict(route_x=[0.0, 1.0, 2.0, 99.0],
+                 post_reset=[False, False, False, True])
+    last = cli.last_valid_terminal(trace, start_x=0.0)
+    assert last == {'x': 2.0, 'index': 2, 'post_reset': False}
+    rows = [dict(group='l40/0.3', steps=100, net_distance=1.0, success=True,
+                 failure=False, timeout=False, engineering_failure=False,
+                 termination_reason=None) for _ in range(20)]
+    settlement = cli.suite_settlement(rows)
+    assert settlement['actual'] == 2000
+    assert settlement['actual'] <= 219_220
+    assert settlement['unused'] == 217_220
+    groups = [dict(group_id='l40/0.3')]
+    stats = cli.group_statistics(groups, rows)
+    assert stats['l40/0.3']['cases'] == 20
+    assert stats['l40/0.3']['successes'] == 20
+    assert stats['l40/0.3']['p10'] == 1.0
+    assert stats['l40/0.3']['p50'] == 1.0
+    assert stats['l40/0.3']['p90'] == 1.0
