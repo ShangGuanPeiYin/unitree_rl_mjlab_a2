@@ -4684,3 +4684,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 向量化：原 6400 使用 `V09S1Env` 20 env/batch；L40 当前执行器逐例，batch plan 已定义/测试，真实 20 env 向量装配仍待补。
 - 文档：删除“同一 6400 迁移模型”措辞；写入 seed 42 非流标识、suite 盐派生、A/B 与训练/终验 case SHA 独立。
 - 验证：S2 套件 **256 passed**；6400 迁移直调/错误 source/map/模型类型均拒绝；Q034-A dry-run 9/180/234,180/20 env。
+
+
+## 2026-11-22 第二检查点核验 + V11'' 门禁复核
+
+- 第二检查点：`s2_1_000010027008.pt`，SHA `429384de…`，10,027,008 样本 / 408 rollouts，`ledger_cursor` 与台账一致（台账 10,051,584），std 0.1754–0.2510，schema11 通过。
+- V11''：6400 旁路封堵与 gate cache 身份校验（source `30ed23ba…`、`original_6400`、`3×48×32`、非 migrated）通过；**新阻断** = original-6400 collector 用 student 40×30 观测喂 teacher（`ObservationError: heightmap must be [B,3,48,32]`）、预留粒度按 group 而非整套、L40 collector 字段缺失（start/last_valid_terminal/failure_class）、gate 不校验 L40 cache、文档 6400 命令指向被拒入口。
+- 处置：已下达实现组按 1-5 修复；GPU 生成等训练结束后窗口。
