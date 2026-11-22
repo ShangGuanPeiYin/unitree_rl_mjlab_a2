@@ -1,8 +1,8 @@
 # S2.1 512 训练执行准备（V10 修复后）
 
-状态：代码与 CPU 测试已修正；512 independent-copy probe 运行中/完成后以
-`logs/a2_v09/s2/probe/512-r5/probe_report.json` 为准。admission 尚未写入，
-必须等 V10 重新复核给出 review SHA。
+状态：代码与 CPU 测试已修正；512 independent-copy probe 已完成并通过
+（`admitted=true`，SHA `bdb02d67…`）。admission 尚未写入，必须等 V10
+重新复核给出 review SHA。
 
 ## 1. 512 probe 证据
 
@@ -87,9 +87,9 @@ GPU 前拒绝条件（均已实现）：
 
 ## 5. 预计时长与 OOM
 
-- probe 50 次测量实测约 5.51 s/rollout（512-r4：275.40 s / 50）。
-- 完整训练约 `32,552 × 5.51 s ≈ 179,000 s ≈ 49.7 h`；按 5.0–6.5 s/rollout
-  给出 **45–55 h** 训练窗口（不含少量检查点写入）。
+- probe 50 次测量实测约 **5.58 s/rollout**（512-r5：278.96 s / 50）。
+- 完整训练约 `32,552 × 5.58 s ≈ 181,700 s ≈ 50.5 h`；按 5.2–6.0 s/rollout
+  给出 **47–54 h** 训练窗口（不含少量检查点写入）。
 - 512 probe peak 4,521.75 MiB；训练若 OOM：
   - micro 已是 512，不能再按“先降 micro”处理；
   - `S2_ENV_CANDIDATES` 只有 1024/512，**不能静默降到 256**，也不能改物理、
