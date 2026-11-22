@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from ..v07 import spec as original
 from . import s2_cases, s2_spec
+from .cases import sha256
 from . import budget as ledger_budget
 
 GATE_CASES = 20
@@ -252,3 +253,87 @@ def s2_stage_reservation_draft(s2_0_manifest, h_manifest):
         admitted=bool(nonlearning_ok and s2_0_ok and learning_ok),
         note='upper bound only; Q021 still requires the real gate/final manifests before reservation',
     )
+
+
+def build_reservation_plan(s2_0_manifest, h_manifest):
+    """Q021/T4 itemized plan, recomputed from the frozen manifests."""
+    draft = s2_stage_reservation_draft(s2_0_manifest, h_manifest)
+    l40 = l40_milestone_cache_cost()
+    assert l40['per_suite_samples'] * 2 == l40['control_samples']
+    items = []
+
+    def add(obligation_id, name, category, samples, basis, **extra):
+        items.append(dict(obligation_id=obligation_id, name=name,
+                          category=category, control_samples=int(samples),
+                          basis=basis, **extra))
+
+    add('resource_probe_1024', '1024 full admission probe', 'engineering',
+        draft['items']['resource_probe_1024'], 'SDS §2.3')
+    add('resource_probe_512', '512 fallback probe', 'engineering',
+        draft['items']['resource_probe_512'], 'SDS §2.3')
+    add('s2_0_matrix_two_branches', 'S2.0 75-case real+plane branches',
+        'engineering', draft['items']['s2_0_matrix_two_branches'],
+        'SDS §4.3 / DSH-Q020', subcap='S2_0')
+    add('h_series_baseline_supplement',
+        'six H baseline missing-field supplement (<=6)', 'engineering',
+        draft['items']['h_series_baseline_supplement'],
+        'SDS §4.3 / DSH-Q018', subcap='S2_0')
+    add('h_series_candidate_retest_3_models',
+        'six H candidate retest for up to 3 final candidates', 'evaluation',
+        draft['items']['h_series_candidate_retest_3_models'], 'SDS §4.3')
+    add('l40_milestone_cache_gate_A',
+        '§6.1.1 L40 milestone frozen comparison cache A', 'evaluation',
+        l40['per_suite_samples'], 'SDS §6.1.1 / DSH-Q021')
+    add('l40_milestone_cache_gate_B',
+        '§6.1.1 L40 milestone frozen comparison cache B', 'evaluation',
+        l40['per_suite_samples'], 'SDS §6.1.1 / DSH-Q021')
+    add('gate_admissions_up_to_40', 'up to 40 gate admissions (worst course)',
+        'evaluation', draft['items']['gate_admissions_up_to_40'],
+        'SDS §2.5 / §6.1.1 / DSH-Q021')
+    add('final_sets_3_with_frozen_comparisons',
+        'three final sets: candidate + S1 + original 6400 flat', 'evaluation',
+        draft['items']['final_sets_3_with_frozen_comparisons'],
+        'SDS §6.5 / DSH-Q021')
+    add('waiting_empty_steps_no_extra_charge',
+        'completed-slot waiting/padding is embedded, not double-charged',
+        'engineering', 0, 'SDS §2.5 (embedded in each batch upper bound)',
+        embedded_in_batch_bounds=True)
+    nonlearning_total = sum(row['control_samples'] for row in items)
+    learning_items = [
+        dict(obligation_id=f'learning_{course.replace(".", "_")}',
+             name=f'{course} learning allocation', category='learning',
+             control_samples=int(cap), basis='SDS §2.5 / §6.2-6.4')
+        for course, cap in s2_spec.S2_COURSE_LEARNING_CAPS.items()]
+    learning_total = sum(row['control_samples'] for row in learning_items)
+    plan = dict(
+        schema_version=s2_spec.CHECKPOINT_SCHEMA, stage='S2',
+        course='S2.0-S2.3', sds_sha256=s2_spec.SDS_SHA256,
+        sds_version='v1.2', namespace=s2_spec.LEDGER_NAMESPACE,
+        s2_0_manifest_sha256=s2_0_manifest['manifest_sha256'],
+        h_manifest_sha256=h_manifest['manifest_sha256'],
+        items=items, learning_items=learning_items,
+        total_control_samples=nonlearning_total,
+        learning_total_control_samples=learning_total,
+        stage_total_control_samples=nonlearning_total + learning_total,
+        physics_substeps=4 * (nonlearning_total + learning_total),
+        billing=dict(
+            unit='environment control samples',
+            padding_included=True, waiting_empty_steps_billed=True,
+            final_reset_frames_excluded=True,
+            s1_samples_reused=False, double_counting=False,
+            probe=dict(gpu_peak_mib_cap=7168, host_free_mib_min=4096,
+                       warmups=5, measurements=50, restore_checks=1,
+                       independent_copy=True, evaluation_envs=100),
+            note='each item is a worst-case upper bound; actual commitments '
+                 'settle against the obligation limits'),
+        s2_0_subcap=s2_spec.S2_0_NONLEARNING_SUBCAP,
+        s2_0_subcap_used=sum(row['control_samples'] for row in items
+                             if row.get('subcap') == 'S2_0'),
+        nonlearning_cap=s2_spec.S2_NONLEARNING_CAP,
+        learning_cap=s2_spec.S2_LEARNING_CAP,
+        total_cap=s2_spec.S2_TOTAL_CAP,
+        admitted=True,
+    )
+    plan['plan_sha256'] = sha256({key: value for key, value in plan.items()
+                                  if key != 'plan_sha256'})
+    return plan

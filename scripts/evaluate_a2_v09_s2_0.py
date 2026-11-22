@@ -50,8 +50,8 @@ def selected_entries(run_plan, branches):
 
 def dry_run(*, root=ROOT, map_branch='both', max_envs=20, device='cpu',
             output_dir=None):
-    if max_envs <= 0:
-        raise ValueError('--max-envs must be positive')
+    if not 1 <= max_envs <= 20:
+        raise ValueError('--max-envs must be 1..20 (frozen batch upper bound 20)')
     matrix, h_series, run_plan = load_inputs(root)
     branches = BRANCHES[map_branch]
     entries = selected_entries(run_plan, branches)
@@ -73,6 +73,23 @@ def dry_run(*, root=ROOT, map_branch='both', max_envs=20, device='cpu',
     by_task = {}
     for row in entries:
         by_task[row['task']] = by_task.get(row['task'], 0) + 1
+    batch_table = []
+    for branch in branches:
+        branch_rows = [row for row in run_plan['entries']
+                       if row['map_branch'] == branch]
+        groups = {}
+        for row in branch_rows:
+            groups.setdefault(row['group_role_sha256'], []).append(row)
+        for group_sha, rows in sorted(groups.items()):
+            batch_table.append(dict(
+                branch=branch, group_role_sha256=group_sha,
+                task=rows[0]['task'], speed=rows[0]['speed'],
+                platform_width=rows[0]['platform_width'],
+                case_ids=sorted(row['case_id'] for row in rows),
+                batch_size=len(rows),
+                max_hard_timeout_steps=max(row['hard_timeout_steps'] for row in rows),
+                control_samples=len(rows) * max(
+                    row['hard_timeout_steps'] for row in rows)))
     for row in entries:
         if row['case_sha256'] not in adapters:
             raise ValueError('run-plan entry has no frozen case adapter')
@@ -97,6 +114,8 @@ def dry_run(*, root=ROOT, map_branch='both', max_envs=20, device='cpu',
         entries_by_task=by_task,
         max_envs=max_envs,
         env_batches=math.ceil(len(entries) / max_envs),
+        run_plan_batches=len(batch_table),
+        batch_table=batch_table,
         terrain_keys=sorted({row.terrain.terrain_key for row in adapters.values()}),
         h_terrain_keys=sorted({row.terrain.terrain_key for row in h_adapters.values()}),
         evidence_contract_sha256=sha256(contract),
@@ -113,11 +132,14 @@ def dry_run(*, root=ROOT, map_branch='both', max_envs=20, device='cpu',
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--map-branch', choices=sorted(BRANCHES), default='both')
-    parser.add_argument('--max-envs', type=int, default=20)
+    parser.add_argument('--max-envs', type=int, default=20,
+                        help='1..20; frozen S2.0 group batch upper bound is 20')
     parser.add_argument('--device', default='cpu')
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--output-dir', type=Path)
     args = parser.parse_args(argv)
+    if not 1 <= args.max_envs <= 20:
+        parser.error('--max-envs must be between 1 and 20')
     if not args.dry_run:
         raise SystemExit(
             'S2.0 physics execution is gated: the Q021 reservation must be '

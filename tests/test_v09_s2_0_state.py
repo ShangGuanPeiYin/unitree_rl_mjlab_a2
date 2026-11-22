@@ -15,9 +15,10 @@ from src.tasks.velocity.v09 import s2_state as state
 
 
 def frame(route_x, *, first=False, top=False, four=False, failure=False,
-          a_request=None, a_applied=None):
+          v07_success=False, a_request=None, a_applied=None):
     return dict(route_x=route_x, first_step=first, top_arrived=top,
                 four_feet_on_platform=four, failure=failure,
+                v07_success=v07_success,
                 a_request=([0.0] * 12 if a_request is None else a_request),
                 a_applied=([0.0] * 12 if a_applied is None else a_applied))
 
@@ -218,3 +219,34 @@ def test_level_condition_requires_strict_four_foot_true_platform():
                                  feet_xy=[(8.2, 1.5), (8.3, -1.0),
                                           (8.4, 0.0), (8.1, 1.9)],
                                  **wide) is True
+
+
+def test_b_v5_2_legacy_h_uses_v07_success_not_s2_distance():
+    config = state.S2TaskConfig(task='legacy_stairs', speed=0.5,
+                                stair_count=6, initial_route_x=-1.0,
+                                timeout_steps=1301, post_distance=None,
+                                legacy_h=True)
+    machine = state.S2StateMachine(config)
+    machine.step(frame(0.1, first=True))
+    machine.step(frame(1.8, top=True, four=True))
+    # Body only 0.2 m past the 1.8 front edge: v07 success is false.
+    machine.step(frame(2.0, v07_success=False))
+    assert machine.success is False
+    # At 2.6 m the caller reports the v07 support/attitude success.
+    machine.step(frame(2.6, v07_success=True))
+    assert machine.success is True
+    assert machine.terminal is True
+    assert any(event['name'] == 'legacy_v07_success' for event in machine.events)
+
+
+def test_b_v5_2_legacy_helper_and_timeout_identity():
+    assert state.legacy_v07_success(2.0, platform_front_x=1.8) is False
+    assert state.legacy_v07_success(2.6, platform_front_x=1.8) is True
+    assert state.legacy_v07_success(2.6, platform_front_x=1.8,
+                                    supported=False) is False
+    for timeout in (1301, 1302, 1306, 1315, 1318, 1332):
+        config = state.S2TaskConfig(task='legacy_stairs', speed=0.5,
+                                    stair_count=6, initial_route_x=-1.0,
+                                    timeout_steps=timeout, post_distance=None,
+                                    legacy_h=True)
+        assert config.timeout_steps == timeout

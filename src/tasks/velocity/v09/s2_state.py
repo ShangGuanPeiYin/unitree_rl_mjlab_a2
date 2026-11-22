@@ -14,12 +14,13 @@ Semantics implemented here:
 * a same-frame failure wins over top/success/distance;
 * the hard timeout is an input from :mod:`s2_spec`, never recomputed here;
 * ``g_level`` requires the true-terrain four-foot platform condition plus the
-  base being 0.4 m past the platform front edge; it holds 0.5 s then ramps
-  linearly to 1 and resets to 0 when the condition fails.
+  base being strictly more than 0.4 m past the platform front edge; Q027 fixes
+  the whole 0→1 ramp at 0.5 s (25 control intervals), with no extra hold, and
+  resets to 0 when the condition fails.
 
-The 0.5 s g_level *hold* is explicit in §5.2; the ramp duration is not numeric
-there.  ``G_LEVEL_RAMP_STEPS`` is a named provisional constant (0.5 s) so a
-planning ruling can change one value without touching the state machine.
+Q027 timing is authoritative: ``g(t0)=0`` and ``g(t0+k)=min(k/25,1)``.  The
+constant is centralised in ``G_LEVEL_RAMP_STEPS`` and the snapshot version is
+``q027_ramp_total_0p5s``.
 """
 from __future__ import annotations
 
@@ -62,17 +63,19 @@ class S2TaskConfig:
     hold_steps: int = 1000
     completion_steps: int | None = None
     platform_start: bool = False
+    legacy_h: bool = False
 
     @classmethod
     def from_case(cls, case):
         task = case['task']
         if task == 'stairs':
-            return cls(task='stairs_walk', speed=float(case['speed']),
+            return cls(task='legacy_stairs', speed=float(case['speed']),
                        stair_count=int(case['stair_count']),
                        initial_route_x=float(case['spawn']['local_position_xy'][0]),
                        timeout_steps=int(case['hard_timeout_steps']),
-                       post_distance=0.0, stop_mode='none',
-                       completion_steps=None, platform_start=False)
+                       post_distance=None, stop_mode='none',
+                       completion_steps=None, platform_start=False,
+                       legacy_h=True)
         if task not in WALK_TASKS + STOP_TASKS:
             raise ValueError('unknown S2 task')
         command = case.get('command', {})
@@ -230,6 +233,15 @@ class LevelGate:
         return self
 
 
+LEGACY_V07_BODY_MARGIN = 0.8
+
+
+def legacy_v07_success(route_x, *, platform_front_x, supported=True,
+                       body_margin=LEGACY_V07_BODY_MARGIN):
+    """v07 success body condition: real support and body >=0.8 m past edge."""
+    return bool(supported and float(route_x) >= float(platform_front_x) + float(body_margin))
+
+
 def g_level_report(gate, *, four_foot_step=None, four_foot_step_end=None):
     """Four Q027 timestamps and the measured delay from four-foot entry."""
     report = dict(
@@ -342,6 +354,15 @@ class S2StateMachine:
             self.state = 'TOP_TRANSITION'
         if self.state == 'TOP_TRANSITION' and self.four_feet_platform:
             self.state = 'POST_WALK'
+        if self.config.legacy_h:
+            # v07 termination is authoritative for the six H regressions; this
+            # state machine only carries evidence and never applies S2 D_post.
+            if frame.get('v07_success'):
+                self.success = True
+                self.state = 'SUCCESS'
+                self.terminal = True
+                self._event('legacy_v07_success', route_x)
+            return list(self.events)
         if self.state == 'POST_WALK':
             if self.config.task == 'flat_walk':
                 if self.completed_steps >= self.config.completion_steps:

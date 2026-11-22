@@ -4240,3 +4240,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 涉及文件：`doc/sds/reviews/v09_execution_rulings.md`、本日志。
 - 要点：Q028 主窗口复用 §6.5 平台巡航掩码、按控制步归属（末个正巡航步计入、DECEL/HOLD 不计）、N/Σg/平均强度/启用占比四量分列、"完全关闭 g==0"与"未满强度 g<1"两个最长连续时长（×0.02 s，不跨帧/回合/窗口，N=0 记 NA）、归零原因按几何条件实际变化且初次满足不算失效；Q029 四事件各自控制步/仿真时刻/相对延迟，`t0` 时 g=0、`t0+1` 才 >0、`t0+25` 才 =1，同帧仅"四足入台/完整几何"，测试向量 0/0/0.02/0.50 s、Σg=13、占比 25/26、最长关闭 0.02 s、最长未满 0.50 s。
 - 验证：仅文档追加；未跑测试/物理/训练。
+
+
+## 2026-11-22 T4 S2 原子预留能力 + V5 阻断修复
+
+- 目的：把 S2 阶段原子预留做到可独立复核并落地，同时修复 V5 三项阻断。
+- 涉及文件：`src/tasks/velocity/v09/s2_ledger.py`（`reserve_stage(plan)` 原子预留、plan SHA、逐项依据、去重、cap 校验、obligation 结算）、`s2_budget.py`（`build_reservation_plan` 由冻结清单现场重算）、新增 `scripts/reserve_a2_v09_s2.py`（`--dry-run` 不落盘、`--write` 才写、幂等返回 2）、`s2_state.py`（Q027 注释）、`s2_env.py`（H 六例 legacy 路径、`case_record` 配置 SHA）、`scripts/evaluate_a2_v09_s2_0.py`（30 批 dry-run、`--max-envs` 1..20）、新增 `tests/test_v09_s2_0_reserve.py`；文档 `docs/v09_s2_0_implementation_plan_v6.md`。
+- 实现要点：B-V5-1 注释按 Q027 改写；B-V5-2 H 六例改走 `legacy_stairs`（仅接 v07 成功判据、逐例硬时限 1301/1302/1306/1315/1318/1332），回归 2.0 不成功、2.6 成功；B-V5-3 dry-run 输出 30 个冻结批、`--max-envs` 限 1..20；病例记录写入 `config_sha256`/`pairing_sha256`/`shared_identity_sha256`。
+- 预留计划（现场重算，plan SHA `773b53c6…`）：非学习 263,888,370 ≤4 亿；学习 3.2e9 ≤3.6e9；stage 3,463,888,370 ≤4e9；S2.0 429,822 ≤5,000 万；逐项 probe1024 3,709,184、probe512 2,332,928、S2.0 420,390、H 补采 9,432、H 候选复测 28,296、L40 A/B 各 219,220、≤40 门禁 173,940,000、三套终验 83,009,700、等待空步已含批上界不重复。
+- 验证：本机复跑 S2 CPU 套件 **155 passed**（1.29 s）；`reserve_a2_v09_s2.py --dry-run` 实跑打印逐项表且未创建 `logs/a2_v09/s2/ledger.jsonl`；S1 台账未触碰。
+- 未执行：未写正式 S2 台账（`q021_reservation_written=false`）、未跑 GPU/物理、未训练。

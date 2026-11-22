@@ -98,7 +98,8 @@ class S2TaskAdapter:
                 else s2_terrain.spec_from_geometry(case['geometry']))
         config = s2_state.S2TaskConfig.from_case(case)
         platform = None
-        if case['task'].startswith(('stairs_', 'platform_')) or case['task'] == 'stairs':
+        if (case['task'].startswith(('stairs_', 'platform_')) or case['task'] == 'stairs'
+                or case['task'] == 'legacy_stairs'):
             front = float(spec.frame_origin_world[0]) + spec.N * spec.step_depth
             platform = dict(front_x=front, length=float(spec.platform_length),
                             y_half_width=float(spec.platform_width) / 2.0,
@@ -235,9 +236,15 @@ class S2EvidenceRecorder:
 
 
 def case_record(*, case, adapter, recorder, metrics=None, map_evidence=None,
-                state_summary=None, failure_context=None):
+                state_summary=None, failure_context=None, config_sha256=None,
+                pairing_sha256=None, shared_identity_sha256=None):
     """Complete per-case record consumed by group reporting."""
+    from .s2_map_ablation import config_identity
+    config_sha256 = config_sha256 or config_identity()['config_sha256']
     return dict(
+        config_sha256=config_sha256,
+        pairing_sha256=pairing_sha256,
+        shared_identity_sha256=shared_identity_sha256,
         schema_version=EVIDENCE_SCHEMA, sds_sha256=s2_spec.SDS_SHA256,
         case_sha256=case['case_sha256'], case_id=case['case_id'],
         task=case['task'], speed=case['speed'], stair_count=case['stair_count'],

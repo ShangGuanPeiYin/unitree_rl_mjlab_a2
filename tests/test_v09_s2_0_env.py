@@ -64,7 +64,8 @@ def test_adapter_accepts_original_h_geometry():
     adapter = s2_env.S2TaskAdapter.from_case(record['case'])
     assert adapter.terrain.terrain_key.startswith('legacy_H00')
     assert adapter.config.timeout_steps == 1301
-    assert adapter.config.post_distance == 0.0
+    assert adapter.config.post_distance is None
+    assert adapter.config.legacy_h is True
     assert adapter.platform['front_x'] == pytest.approx(1.8)
 
 
@@ -118,6 +119,7 @@ def test_case_record_carries_metrics_and_map_evidence():
     assert record['case_sha256'] == case['case_sha256']
     assert record['metrics']['quality_pass'] is True
     assert record['map_evidence']['branch'] == 'real'
+    assert len(record['config_sha256']) == 64
     assert len(record['evidence_contract_sha256']) == 64
 
 
@@ -152,3 +154,14 @@ def test_branch_prefix_proof_is_elementwise():
         s2_env.assert_branches_identical_until(trace, changed, end_index=4)
     assert s2_env.assert_branches_identical_until(
         trace, changed, end_index=2) == s2_env.pre_intervention_digest(trace, end_index=2)
+
+
+def test_b_v5_2_all_six_h_adapters_keep_original_timeout_and_legacy_mode():
+    records = s2_cases.build_h_series_case0_manifest(ROOT)['records']
+    assert [record['case']['hard_timeout_steps'] for record in records] == [
+        1301, 1302, 1306, 1315, 1318, 1332]
+    for record in records:
+        adapter = s2_env.S2TaskAdapter.from_case(record['case'])
+        assert adapter.config.legacy_h is True
+        assert adapter.config.timeout_steps == record['case']['hard_timeout_steps']
+        assert adapter.config.post_distance is None
