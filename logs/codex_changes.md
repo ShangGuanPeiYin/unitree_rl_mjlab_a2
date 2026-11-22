@@ -4650,3 +4650,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 结果：`reference=s1_l40`、source `s1_least.pt`（`efa9caa8…`）、3 组/60 例、**219,220** 控制样本、20 envs/batch、3 批、obligation `l40_milestone_cache_gate_A`、`physics_started=false`、`ledger_written=false`；manifest `1ea91343…`/文件 `98842a07…`。
 - 6400 口径：实现方文档称"6400 through 40×30 migration"，已提交 DSH-Q034（建议优先复用 S1.0 封存缓存，其次原 6400+旧图重跑，不接受迁移后网络冒充），裁定前 6400 路径禁用。
 - 训练：222 rollouts 正常。
+
+## 2026-11-22 Q034 前暂停 6400 门禁缓存；L40 缓存结构补齐
+
+- 目的：按最新裁定要求只先做 L40 参考缓存；6400 路径在 DSH-Q034 前不得实现/运行。
+- 修改：`build_a2_v09_s2_gate_caches.py` 对 `--cache-kind 6400` 明确拒绝；L40 使用 `s1_least.pt`，`reference_cache.json` + `cases/<sha>.json` + `cache_receipt.json`，含 P10/P50/P90、失败分类、模型/病例/逐例 SHA、预算；拒绝覆盖。
+- 判断：Q010 只覆盖 S1 冻结病例；S1 gate_A 与 S2_GATE_A 的 flat case SHA 交集为 0，不能复用。原始 6400 为 48×32，S2 为 40×30；迁移模型是否等同“原 6400”须 Q034 裁定。
+- dry-run：L40 3 组/60 例/219,220，模型 `efa9caa8…`；门禁 36 组/720 例/1,620,000，L40 义务 219,220 可用；6400/L40 cache 仍 missing（6400 按裁定暂停）。
+- 验证：S2 套件 **253 passed**。
