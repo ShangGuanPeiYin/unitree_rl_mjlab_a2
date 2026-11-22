@@ -81,6 +81,9 @@ B 套替换 suite/manifest/cache/output；每套上界 1,620,000，A/B 3,240,000
 
 ## T14 缓存生成器（训练结束后执行）
 
+**6400 路径暂停**：DSH-Q034 尚待裁定；`--cache-kind 6400` 会明确拒绝，
+不得用 40×30 迁移模型冒充“原 6400”。L40 路径先完成。
+
 统一入口：
 
 ```bash
@@ -92,9 +95,10 @@ B 套替换 suite/manifest/cache/output；每套上界 1,620,000，A/B 3,240,000
 
 - `--cache-kind l40`：模型固定 `s1_least.pt`（SHA `efa9caa8…`），3 组×20 例，
   上界 219,220，义务 `l40_milestone_cache_gate_A/B`。
-- `--cache-kind 6400`：模型固定 6400 源（SHA `30ed23ba…`）的 40×30
-  迁移模型，9 组×20 例，上界 234,180，义务 `gate_admissions_up_to_40`。
-- `--dry-run` 产出计划 JSON；`--execute` 真实运行，写 `cache_receipt.json`；
+- `--cache-kind 6400`：**暂时拒绝**（DSH-Q034 未决），不得用 40×30
+  迁移模型代替原始 6400；接口保留。
+- `--dry-run` 产出计划 JSON；`--execute` 真实运行，L40 写
+  `reference_cache.json`、`cases/<case_sha256>.json`、`cache_receipt.json`；
   已存在缓存拒绝覆盖。
 - 计划字段 `envs_per_batch=20`、`batches=3/9`、`peak_limit_mib=7168`；实际
   执行由冻结 case runner 单进程处理。

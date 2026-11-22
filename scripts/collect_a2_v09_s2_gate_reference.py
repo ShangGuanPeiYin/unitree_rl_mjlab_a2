@@ -13,11 +13,13 @@ import json
 from pathlib import Path
 import sys
 
+import numpy as np
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from a2_v07_bootstrap import activate
 activate(ROOT)
-from src.tasks.velocity.v09 import s2_gate_cases, s2_spec, spec as s1_spec
+from src.tasks.velocity.v09 import s2_env, s2_gate_cases, s2_spec, spec as s1_spec
 
 
 def _sha(path):
@@ -154,7 +156,11 @@ def main(argv=None):
                 failure=bool(env.machine.failure),
                 timeout=bool(env.machine.timeout),
                 steps=steps,
-                route_max=float(env.last.route_x)))
+                route_max=float(env.last.route_x),
+                net_distance=float(env.last.route_x) - float(
+                    case['spawn']['local_position_xy'][0]),
+                termination_reason=getattr(env.last, 'termination_reason', None),
+                trace=s2_env.jsonable(env.evidence(0))))
         except Exception:
             if steps:
                 ledger.commit(obligation, steps, operation_id=f'{op}:commit',
@@ -179,12 +185,43 @@ def main(argv=None):
         groups_out[group['group_id']] = dict(
             cases=len(rows), successes=sum(bool(row['success']) for row in rows),
             rows=rows)
-    cache = dict(schema=cache_schema, suite=manifest['suite'],
-                 manifest_sha256=manifest['manifest_sha256'],
-                 source_sha256=source_sha,
-                 checkpoint=str(checkpoint), groups=groups_out,
-                 generated_at_utc=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
-    path = out / f'{args.reference}_{args.suite}_cache.json'
+    for group in groups:
+        rows = grouped.get(group['group_id'], [])
+        values = np.asarray([row['net_distance'] for row in rows], dtype=float)
+        groups_out[group['group_id']].update(
+            p10=float(np.percentile(values, 10)) if values.size else None,
+            p50=float(np.percentile(values, 50)) if values.size else None,
+            p90=float(np.percentile(values, 90)) if values.size else None,
+            failure_classes={
+                str(name): sum(1 for row in rows
+                               if row.get('termination_reason') == name)
+                for name in {row.get('termination_reason') for row in rows
+                             if row.get('failure')}})
+    if args.reference == 's1_l40':
+        cases_dir = out / 'cases'
+        cases_dir.mkdir(parents=True, exist_ok=True)
+        case_files = []
+        for row in results:
+            path = cases_dir / f"{row['case_sha256']}.json"
+            if path.exists():
+                raise FileExistsError(path)
+            path.write_text(json.dumps(row, ensure_ascii=False, indent=2) + '\n')
+            case_files.append(dict(case_sha256=row['case_sha256'],
+                                   path=str(path), sha256=_sha(path)))
+        cache = dict(schema=cache_schema, suite=manifest['suite'],
+                     manifest_sha256=manifest['manifest_sha256'],
+                     source_sha256=source_sha, model_sha256=source_sha,
+                     checkpoint=str(checkpoint), groups=groups_out,
+                     case_files=case_files,
+                     generated_at_utc=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
+        path = out / 'reference_cache.json'
+    else:
+        cache = dict(schema=cache_schema, suite=manifest['suite'],
+                     manifest_sha256=manifest['manifest_sha256'],
+                     source_sha256=source_sha,
+                     checkpoint=str(checkpoint), groups=groups_out,
+                     generated_at_utc=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
+        path = out / f'{args.reference}_{args.suite}_cache.json'
     if path.exists():
         raise FileExistsError(path)
     path.write_text(json.dumps(cache, ensure_ascii=False, indent=2) + '\n')

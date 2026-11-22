@@ -40,6 +40,10 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not (args.dry_run or args.execute):
         raise SystemExit('use --dry-run or --execute')
+    if args.cache_kind == '6400':
+        raise SystemExit(
+            '6400 gate cache is intentionally disabled pending DSH-Q034; '
+            'do not substitute the 40x30 migrated model for the original 6400')
     manifest_path = args.manifest or (
         ROOT / 'logs/a2_v09/s2/gate_cases/v1' /
         ('S2_GATE_A.json' if args.suite == 'gate_A' else 'S2_GATE_B.json'))
@@ -100,16 +104,24 @@ def main(argv=None):
         '--obligation-id', obligation])
     if rc != 0:
         return rc
-    matches = sorted(args.output_dir.glob(f'{reference}_{manifest["suite"]}_cache.json'))
-    if not matches:
+    cache = (args.output_dir / 'reference_cache.json' if args.cache_kind == 'l40'
+             else args.output_dir / f'{reference}_{manifest["suite"]}_cache.json')
+    if not cache.is_file():
         raise SystemExit('cache file was not produced')
-    cache = matches[-1]
+    payload = json.loads(cache.read_text())
     receipt = dict(
         schema='a2_v09_s2_gate_cache_receipt_v1', plan=plan,
+        model_sha256=payload.get('model_sha256', payload.get('source_sha256')),
+        manifest_sha256=manifest['manifest_sha256'],
+        case_sha256s=[row['case_sha256'] for row in cases],
+        budget=dict(control_samples=cost, envs_per_batch=20,
+                    batches=len(groups), max_batch_samples=45_000),
         cache_path=str(cache), cache_sha256=_sha(cache),
+        case_files=payload.get('case_files', []),
         created_at_utc=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-        note='L40 uses s1_least; 6400 uses the exact 40x30 migration of the '
-             'unique 6400 source; 20 cases per group, single process.')
+        note='L40 uses s1_least.pt; 6400 path intentionally disabled pending '
+             'DSH-Q034. 20 cases per group; execution window must not overlap '
+             'S2.1 training.')
     receipt_path = args.output_dir / 'cache_receipt.json'
     if receipt_path.exists():
         raise FileExistsError(receipt_path)
