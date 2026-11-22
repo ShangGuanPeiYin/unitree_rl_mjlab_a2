@@ -60,7 +60,10 @@ def main(argv=None):
                 three_sets_samples=cost['three_sets_samples'],
                 original_6400_flat_samples=cost['original_6400_flat_samples'],
                 group_list=groups, checkpoint=str(args.checkpoint) if args.checkpoint else None,
-                sealed=True, physics_started=False, ledger_written=False)
+                sealed=True, physics_started=False, ledger_written=False,
+                acceptance=dict(status='pending_final_evidence', accepted=False,
+                                flag='S2_WALK_STOP_ACCEPTED'),
+                h_series='reuse report_a2_v09_s2_0 H logic after final evidence')
     if args.dry_run:
         stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
         out = args.output_dir or (ROOT / 'logs/a2_v09/s2/final_dry_run' / stamp)
