@@ -46,6 +46,10 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not (args.dry_run or args.execute):
         raise SystemExit('use --dry-run or --execute')
+    if args.reference == '6400_flat':
+        raise SystemExit(
+            'DSH-Q034: migrated 40x30 6400 is not the original 6400 reference; '
+            'this bypass is disabled (use the Q034-A original old-map path only)')
     manifest_path = args.manifest or (
         ROOT / 'logs/a2_v09/s2/gate_cases/v1' /
         ('S2_GATE_A.json' if args.suite == 'gate_A' else 'S2_GATE_B.json'))
@@ -112,11 +116,11 @@ def main(argv=None):
         teacher = s2_physics.load_s1_actor(device=args.device)['model']
         source_sha = s2_spec.S1_ENTRY_WEIGHT_SHA256
     else:
-        # The S2 map is 40x30; use the exact migrated 6400 model (the same
-        # two-FC migration used by the S1 diagnostics), not the old 48x32 teacher.
-        teacher = V09ActorCritic.migrate_6400_checkpoint(
-            checkpoint, s1_spec.SOURCE_SHA256, device=args.device)
-        source_sha = s1_spec.SOURCE_SHA256
+        # DSH-Q034: the gate's "original 6400" reference is the original
+        # 48x32 teacher with its native map, not the two-FC migrated student.
+        raise SystemExit(
+            'Q034: 6400_flat cache requires the original 48x32 teacher '
+            'observation path; the migrated model has no standing')
     teacher.eval()
     for parameter in teacher.parameters():
         parameter.requires_grad_(False)

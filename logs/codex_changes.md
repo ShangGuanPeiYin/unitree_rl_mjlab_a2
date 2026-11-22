@@ -4667,3 +4667,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - Q034：复用规则①实测不命中（S1 与 S2 平地 case 交集 0），执行②。6400 必须用原始权重 + 原生 48×32 旧图 + v07 教师观测路径，禁止迁移模型/resize 伪装；A/B 各 234,180、合计 468,360、仅结算实际；最终 9×100 按解封时机同规则。L40 用 `s1_least.pt`，A/B 各 219,220、合计 438,440；逐例保存 case SHA/起点/末有效位置/带符号净距离/成功/失败类别，P10/P50/P90 每套每速度 20 例组统计；不退化门槛、不强加 18/20。
 - V11：冻结病例/门禁 dry-run/检查点 v1 通过；阻断 = 6400 collector 仍走 `migrate_6400_checkpoint` 迁移路径且 gate 未校验 cache 源身份、L40 cache 未生成、文档措辞冲突。
 - 待澄清：门禁 seed 不重叠应理解为命名空间/病例不重用（stream 由 suite 盐隔离），非整数 seed 42 互斥。
+
+
+## 2026-11-22 Q034 旁路封堵：6400 迁移模型禁止作为门禁参考
+
+- 目的：按 DSH-Q034 立即禁止"迁移模型冒充原 6400"的收集路径（V11 阻断）。
+- 涉及文件：`scripts/collect_a2_v09_s2_gate_reference.py`（`--reference 6400_flat --execute` 直接拒绝，说明原 48×32 教师路径尚未实现）。
+- 验证：`--reference 6400_flat --execute` 返回 `Q034: 6400_flat cache requires the original 48x32 teacher observation path; the migrated model has no standing`；`--dry-run` 仍可出计划（无物理、无台账）。
+- 遗留：原 6400 旧图参考路径、gate 读 cache 的源身份校验、L40 向量化仍待实现。
