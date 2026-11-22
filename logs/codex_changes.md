@@ -4632,3 +4632,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - Metadata：entry/teacher `efa9caa8…`、candidate `3a0ebe0c…`、case manifest `fab7372e…`、std 12 维、`ledger_cursor`、`gate_ab_sequence=gate_A`、`gates_passed=[]`、randomization/delay nominal、role counts 103/102/205/51/51=512。
 - 门禁 dry-run：36 组/720 例、1,620,000 样本上界解析通过；`gate_admissions_up_to_40` 与 `l40_milestone_cache_gate_A` 义务可读；**6400 平地缓存与 L40 缓存均缺失**（`missing_requires_*`），已下达 T14 生成器。
 - 训练：206 rollouts 时正常，LR 1e-5、std 缓升。
+
+## 2026-11-22 T14 门禁对照缓存生成器
+
+- 目的：补齐 S2.1 门禁所需 L40/6400 参考缓存，不覆盖冻结病例，不与训练并跑。
+- 新增 `scripts/build_a2_v09_s2_gate_caches.py`（`--cache-kind l40|6400`、`--dry-run/--execute`、`cache_receipt.json`）；`collect_a2_v09_s2_gate_reference.py` 支持 L40 用 `s1_least.pt`、6400 用 6400→40×30 迁移模型。
+- 预算：L40 3×20 上界 219,220/套，义务 `l40_milestone_cache_gate_A/B`；6400 平地 9×20 上界 234,180/套，义务 `gate_admissions_up_to_40`；A/B 总 468,360（6400）+438,440（L40）。
+- Q010 判断：S1.0 6400 缓存绑定 S1 冻结病例；S1 gate_A 与 S2_GATE_A flat case SHA 交集 0（各 180），不能复用；须在 S2 同病例重采。
+- 验证：S2 套件 **253 passed**（新增 T14 dry-run/预算/拒绝测试）；实际 GPU 采集未运行，等训练结束窗口。
+- 说明：计划字段为 20 envs/batch，实际参考 runner 单进程按 case 执行；若验收要求严格 20 并行环境，需在 GPU 窗口前改用向量装配。
