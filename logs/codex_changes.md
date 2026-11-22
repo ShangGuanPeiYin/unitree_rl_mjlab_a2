@@ -4460,3 +4460,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 验证：`pytest -q tests/test_v09_s2_0_*.py tests/test_v09_s2_1_train.py` → **227 passed**；`probe --plan-only` 输出 1024 probe 3,709,184 samples。
 - 未安装：真实 1024-env GPU 装配与真实 probe 执行（`--execute` 不会把 fake 当准入）。
 - 整批：30 flat 完成、0 失败，已进入 stairs。
+
+
+## 2026-11-22 T13 真实 1024-env 训练装配（CPU）
+
+- 目的：交付基于 `V07Env` 的 `S2TrainEnv` 与真实 probe 骨架（evaluation/video 段未接）。
+- 涉及文件：新增 `src/tasks/velocity/v09/s2_train_real.py`；修改 `s2_train.py`、`s2_train_env.py`、`s2_resources.py`、`scripts/train_a2_v09_s2.py`、`scripts/probe_a2_v09_s2_resources.py`、`tests/test_v09_s2_1_train.py`、`docs/v09_s2_1_training_stack.md`。
+- 实现要点：每 env 按角色分配 S2 tile（flat/10/20 级/平台/L40）、自定义 `_sample_tiles` 绕过 v07 role sampler、40×30 地图 10 Hz/5 步刷新、观测 45/5×45/3×40×30/3 + privileged 35（Critic 211）、`assert_v07_contract` 校验频率/动作缩放/关节顺序/网格；`--execute` 在台账/probe admitted/admission 文件缺一时拒绝；probe `--execute` 走 `S2TrainEnv+S2Trainer` 的 5 warmup + 50 measurement + save/load restore。
+- 限制：probe 尚未接 evaluation/video（`evaluation_envs=0`），**不能构成完整 §2.3 admission**；须补齐后才能开训。
+- 验证：S2 套件 **230 passed**；整批 37/156（stairs 进行中，0 失败）。
+- 未执行：GPU probe/训练、台账写入、整批干预。

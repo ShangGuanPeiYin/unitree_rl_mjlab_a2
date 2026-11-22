@@ -26,6 +26,7 @@ def main(argv=None):
     parser.add_argument('--plan-only', action='store_true')
     parser.add_argument('--execute', action='store_true')
     parser.add_argument('--output-dir', type=Path)
+    parser.add_argument('--independent-copy', action='store_true')
     parser.add_argument('--evaluation-timeout-steps', type=int,
                         default=s2_resources.PROBE_EVAL_TIMEOUT_STEPS)
     args = parser.parse_args(argv)
@@ -41,6 +42,10 @@ def main(argv=None):
         path.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + '\n')
         print(json.dumps(dict(plan=plan, path=str(path)), ensure_ascii=False, indent=2))
         return 0
-    raise SystemExit(
-        'real 1024-env probe requires the multi-env training assembly; '
-        'use --plan-only until the GPU window is approved')
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    out = args.output_dir or (ROOT / 'logs/a2_v09/s2/probe' / stamp)
+    report = s2_resources.run_probe(
+        num_envs=args.num_envs, device=args.device, output_dir=out,
+        independent_copy=args.independent_copy)
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0 if report.get('admitted') else 2

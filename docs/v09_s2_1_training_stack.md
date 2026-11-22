@@ -62,3 +62,30 @@ training full:             16,276 rollouts × 49,152 = 800,000,000
 实际显存/时长必须由 probe 实测；单环境实测约 1.5 GiB 不能外推到 1024。
 预留窗口按“probe 1–2 h + 训练 10–20 h + 门禁/检查点余量”申请，
 最终以 probe 报告为准。
+
+## T13 真实装配与 probe（2026-11-22）
+
+- `src/tasks/velocity/v09/s2_train_real.py`：
+  - `build_env_plan(1024)` 角色→S2 terrain/tile/spawn；
+  - `S2TrainEnv` 基于 `V07Env`，注入 S2 terrain patch 与 40×30
+    `v09.map.HeightMap`；每 env 按角色 tile 分配；
+  - 观测合同：`proprio 45 / history 5×45 / heightmap 3×40×30 / route_error 3 /
+    privileged 35 / Critic 211`；
+  - `assert_v07_contract` 校验 control dt / physics dt / decimation /
+    action scale / joints / map grid/refresh。
+- `S2TrainEnv` 的物理构造需要真实 mjlab/warp；CPU 测试只校验静态计划与合同，
+  不构造真实物理。
+- `scripts/probe_a2_v09_s2_resources.py --execute` 已接 `S2TrainEnv` + `S2Trainer`
+  的 5 warmup + 50 measured rollout + restore；当前 probe 报告仍不含
+  evaluation/video 段（`evaluation_envs=0`），因此**不能**把它当作完整 §2.3
+  admission；该段需在 GPU 窗口补齐后再启动训练。
+- `train --execute` 仍要求 probe admitted + independent admission；CPU 用
+  `--fake-backend`。
+
+### 最可能 GPU 首爆点
+
+1. 1024 env 的 terrain/map 更新与 `V07Env` 的 `origins/tile_ids` 同步：首轮
+   reset 在地形 patch 外或 tile 0/自定义 tile 交错处最容易 OOB/错 tile；
+2. 1024×3×40×30 heightmap + history 的显存放大；
+3. PPO 逻辑批 49,152 的 heightmap 拼接（~700 MB）与 5×4 micro 的峰值；
+4. probe 的 evaluation/video 段尚未接入，不能提前报 admitted。

@@ -17,7 +17,7 @@ from a2_v07_bootstrap import activate
 activate(ROOT)
 from src.tasks.velocity.v09 import (s2_checkpoint, s2_ledger, s2_physics,
                                     s2_resources, s2_runner, s2_spec,
-                                    s2_train, s2_train_env)
+                                    s2_train, s2_train_env, s2_train_real)
 from src.tasks.velocity.v09.cases import canonical_json
 
 
@@ -78,16 +78,20 @@ def main(argv=None):
         raise SystemExit('probe report does not admit this num_envs')
     if admission.get('admitted') is not True:
         raise SystemExit('independent admission is not true')
-    if not args.fake_backend:
-        raise SystemExit('real 1024-env S2.1 assembly is not installed; '
-                         'use --fake-backend for CPU stack tests')
+    if not args.fake_backend and args.device == 'cpu':
+        raise SystemExit('real S2.1 training requires a CUDA device or --fake-backend')
     run_id = s2_ledger.read_run_id(args.ledger)
     ledger = s2_ledger.S2Ledger(args.ledger, run_id=run_id)
     matrix_manifest = __import__('src.tasks.velocity.v09.s2_cases', fromlist=['load_frozen_manifest']).load_frozen_manifest(
         ROOT / 'logs/a2_v09/s2_0/cases/S2_DIAG.json', ROOT)
     budget = s2_train.S2LearningBudget(ledger)
     role_plan = s2_train_env.build_role_plan(args.num_envs)
-    env = s2_train_env.S2FakeTrainEnv(num_envs=args.num_envs, role_plan=role_plan)
+    if args.fake_backend:
+        env = s2_train_env.S2FakeTrainEnv(num_envs=args.num_envs,
+                                          role_plan=role_plan)
+    else:
+        env = s2_train_real.S2TrainEnv(num_envs=args.num_envs,
+                                       device=args.device)
     actor_bundle = s2_physics.load_s1_actor(device=args.device)
     model = actor_bundle['model']
     trainer = s2_train.S2Trainer(

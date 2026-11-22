@@ -148,3 +148,41 @@ def test_one_fake_rollout_updates_ppo_and_std():
     assert result['rollouts'] == 1
     assert 0.05 <= min(result['std']) and max(result['std']) <= 1.0
     assert 1e-5 <= result['learning_rate'] <= 1e-4
+
+
+def test_real_env_plan_maps_roles_to_s2_terrain():
+    from src.tasks.velocity.v09 import s2_train_real
+    plan = s2_train_real.build_env_plan(1024)
+    assert len(plan['rows']) == 1024
+    assert set(plan['role_counts']) == set(s2_train_env.ROLE_ORDER)
+    for row in plan['rows']:
+        assert row['geometry']['tile_id'] == row['tile_id']
+        assert row['geometry']['kind'] in ('flat', 's2_stairs')
+        assert row['spawn'][3] in s2_train_env.SPEEDS
+        if row['role'] in ('stairs_walk', 'platform_walk'):
+            assert row['geometry']['platform_length'] == 20.0
+            assert row['geometry']['platform_width'] in (0.8, 4.0)
+    assert plan['observation']['heightmap'] == (3, 40, 30)
+    assert plan['observation']['privileged'] == (35,)
+    assert plan['observation']['critic'] == 211
+    assert plan['map_refresh_steps'] == 5
+
+
+def test_train_execute_refuses_without_probe_admission(tmp_path):
+    import train_a2_v09_s2 as train_cli
+    with pytest.raises(SystemExit):
+        train_cli.main(['--execute', '--num-envs', '1024',
+                        '--fake-backend', '--ledger', str(tmp_path / 'missing.jsonl'),
+                        '--probe-report', str(tmp_path / 'missing_probe.json'),
+                        '--admission-evidence', str(tmp_path / 'missing_admit.json')])
+
+
+def test_probe_plan_cli_is_cpu_only(tmp_path):
+    import probe_a2_v09_s2_resources as probe_cli
+    assert probe_cli.main(['--plan-only', '--num-envs', '1024',
+                           '--output-dir', str(tmp_path)]) == 0
+    doc = json.loads((tmp_path / 'probe_plan.json').read_text())
+    assert doc['warmups'] == 5
+    assert doc['measurements'] == 50
+    assert doc['restore_checks'] == 1
+    assert doc['control_samples'] == 3_709_184

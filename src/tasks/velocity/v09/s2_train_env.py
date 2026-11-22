@@ -80,7 +80,7 @@ def build_role_plan(num_envs=1024):
     for role in ROLE_ORDER:
         count = counts[role]
         if role in ('flat_walk', 'flat_stop'):
-            variants = _flat_variants(role)
+            variants = _balanced(count, _flat_variants(role))
         elif role == 'stairs_walk':
             variants = []
             for offset, levels in enumerate(STAIR_COUNTS):
@@ -100,7 +100,7 @@ def build_role_plan(num_envs=1024):
                                    for width in PLATFORM_WIDTHS for speed in SPEEDS]
                 variants.extend(_balanced(height_count, height_variants))
         else:
-            variants = _l40_variants()
+            variants = _balanced(count, _l40_variants())
         for item in variants:
             plan.append(dict(role=role, **item))
     return dict(num_envs=num_envs, counts=counts, order=list(ROLE_ORDER),

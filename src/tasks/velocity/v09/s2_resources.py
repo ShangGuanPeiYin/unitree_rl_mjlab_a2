@@ -101,3 +101,84 @@ def choose_resource(probes, *, require_1024_failure_evidence=True):
             return dict(selected=result.num_envs, fallback_evidence=evidence)
     return dict(selected=None, fallback_evidence=evidence,
                 reason='both 1024 and 512 failed; stop and report')
+
+
+def run_probe(*, num_envs, device='cuda:0', output_dir=None,
+              independent_copy=True):
+    """Measured §2.3 probe against the real S2TrainEnv (GPU call only).
+
+    Five warmups, fifty measured full 48-step/20-Adam rollouts and one
+    save→load restore.  The caller should run this only in an approved GPU
+    window; no ledger write happens here.
+    """
+    import json
+    import time
+    from pathlib import Path
+    import torch
+    try:
+        import psutil
+        host_free = psutil.virtual_memory().available / 2 ** 20
+    except Exception:
+        host_free = None
+    from . import s2_physics, s2_train, s2_train_real
+    env = s2_train_real.S2TrainEnv(num_envs=num_envs, device=device)
+    actor = s2_physics.load_s1_actor(device=device)
+    trainer = s2_train.S2Trainer(model=actor['model'], env=env, device=device,
+                                 attempt_id=f'probe-{num_envs}')
+    timings = []
+    oom = nonfinite = contact_overflow = False
+    peak_mib = 0.0
+    try:
+        torch.cuda.reset_peak_memory_stats()
+        for _ in range(REQUIREMENTS['warmups']):
+            trainer.train_rollout()
+        for _ in range(REQUIREMENTS['measurements']):
+            started = time.perf_counter()
+            trainer.train_rollout()
+            timings.append(time.perf_counter() - started)
+            peak_mib = max(peak_mib, torch.cuda.max_memory_allocated() / 2 ** 20)
+        import tempfile
+        env.close()
+        env = None
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'probe.pt'
+            trainer.save(path)
+            restored = s2_train.S2Trainer(
+                model=s2_physics.load_s1_actor(device=device)['model'],
+                env=s2_train_real.S2TrainEnv(num_envs=num_envs, device=device),
+                device=device, attempt_id=f'probe-{num_envs}-restore')
+            restored.resume(path, device=device)
+            restored.env.close()
+            restore_checks = 1
+        admitted = (peak_mib <= REQUIREMENTS['gpu_peak_mib']
+                    and (host_free is None or host_free >= REQUIREMENTS['host_free_mib'])
+                    and not oom and not nonfinite and not contact_overflow)
+    except RuntimeError as error:
+        oom = 'out of memory' in str(error).lower()
+        nonfinite = 'nonfinite' in str(error).lower()
+        contact_overflow = 'contact' in str(error).lower()
+        admitted = False
+        restore_checks = 0
+        peak_mib = (torch.cuda.max_memory_allocated() / 2 ** 20
+                    if torch.cuda.is_available() else 0.0)
+    finally:
+        if env is not None:
+            try:
+                env.close()
+            except Exception:
+                pass
+    report = dict(
+        num_envs=num_envs, admitted=bool(admitted), peak_mib=peak_mib,
+        host_free_mib=host_free, oom=oom, nonfinite=nonfinite,
+        contact_overflow=contact_overflow,
+        warmups=REQUIREMENTS['warmups'], measurements=len(timings),
+        restore_checks=restore_checks, independent_copy=bool(independent_copy),
+        evaluation_envs=0,
+        elapsed_s=float(sum(timings)), timings_s=timings,
+        requirements=dict(REQUIREMENTS),
+        note='real S2TrainEnv probe; evaluation/video separate from full training')
+    if output_dir is not None:
+        path = Path(output_dir) / 'probe_report.json'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
+    return report
