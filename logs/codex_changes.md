@@ -4304,3 +4304,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 涉及文件：`src/tasks/velocity/v09/s2_physics.py`（`load_s1_actor` 校验 `s1_least.pt` SHA、`V09ActorCritic` 40×30 逐键 `torch.equal`、eval/无梯度/冻结 normalizer；`contact_pairs` 由真实 `top_forces` 生成；`pd_target`/`a_applied` 用实际 processed actions；`native_sample_id` 绑定刷新索引/仿真时间/Actor 步；`map_valid`/采样时刻真实；`front_foot_top_support` 用真实 `current_platform`；新增 `MjlabHLegacyBackend`；`assembly_contract` 断言频率/动作缩放/关节顺序/地图网格）、`scripts/run_a2_v09_s2_0.py`（smoke 自检与无台账拒绝）、`tests/test_v09_s2_0_physics.py`、文档 `docs/v09_s2_0_implementation_plan_v11.md`。
 - 验证：本机复跑 S2 套件 **182 passed**；CPU 上加载 `s1_least.pt` 并 forward `(2,12)` 通过；`run --execute --smoke` 无台账时报错退出 1。
 - 未执行：真实 GPU smoke、H 六例真实 smoke、训练、正式预留写入。
+
+
+## 2026-11-22 S2 阶段原子预留正式写入（DSH-Q021）
+
+- 目的：在第一步 S2 物理仿真前完成全阶段原子预留。
+- 涉及文件：`docs/v09_s2_atomic_reservation_receipt.md`（回执）、本日志、`logs/a2_v09/s2/ledger.jsonl`（本机，不入库）。
+- 执行：独立验收 V7a 逐项重算一致后，执行 `reserve_a2_v09_s2.py --write`；台账 run_id `a2-v09-s2-q021-r1`，sequence 1 stage_reserve，event SHA `240871fc…`，文件 SHA `2f520b80…`，plan SHA `773b53c6…`，envelope 263,888,370。
+- 内容：非学习 263,888,370 ≤4 亿；学习 3.2e9；阶段合计 3,463,888,370；S2.0 子额度 429,822；10 项义务上限逐项落账，reserved/spent 均为 0（预留非消费）；重复写入拒绝。
+- 验证：`S2Ledger.state()` 读出 envelope/obligations/learning 额度与回执一致；S1 台账未触碰。
+- 未执行：未跑 GPU/物理、未训练。
