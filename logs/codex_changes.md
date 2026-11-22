@@ -4737,3 +4737,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - T16：`s2_gate_cases` 新增 S2.2 33 组/2,061,980、S2.3 51 组/4,348,500 冻结（v2/v3 独立 suite），gate CLI `--course` dry-run。
 - T17：新增 `run_a2_v09_s2_final.py` 27 组/2700/95/3 套计划；execute 仍拒绝，报告骨架 pending。
 - 验证：S2 套件 **270 passed**；冻结文件已生成。
+
+
+## 2026-11-22 第四检查点核验 + S2.2/S2.3/终验实现任务下达
+
+- 第四检查点：`s2_1_000020054016.pt`（SHA 见上），20,054,016 样本 / 818 rollouts，台账一致、std 在区间内。
+- 已下达 T15（S2.2/S2.3 真实训练环境与 stop 状态机）、T16（33/51 组门禁矩阵与执行器）、T17（27 组终验执行器与 S2_WALK_STOP_ACCEPTED 判定骨架），均要求 CPU/fake 测试、dry-run、拒绝路径，GPU 等训练窗口。
