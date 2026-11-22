@@ -4772,3 +4772,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 
 - 文件：`docs/v09_s2_reward_audit_checklist.md`。
 - 用途：重跑准入前逐项核对：调用链、§5.1 总公式、§5.3 20 项两列、g_level（Q027/Q028/Q032）、stable_stand、抬脚面、停车段、c_exec/H 查询/接触来源、−10/+8/+2 与失败优先、分项手算测试、检查点作废与重跑命令。
+
+
+## 2026-11-22 S2 奖励初版实现偏差清单（不可用于重跑）
+
+- 对照 §5 与 `docs/v09_s2_reward_audit_checklist.md`，当前 `_s2_reward` 存在 9 类偏差：c_request=c_exec=sample_command、phase 写死 CRUISE、g_level 无几何条件与 ramp、表面/抬脚硬编码 0.2/0.0、success/top 自造且失败清锁存、stable_stand 恒 False、yaw/v_heading/step_height/joint_vel_prev 非真实量、512×48 逐 env 循环、缺分项手算测试。
+- 结论：不进入重跑；要求把状态量上移到 S2 状态机并向量化，修后先给"S2 vs v07 分项对照"再独审。
