@@ -31,6 +31,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--num-envs', type=int, default=1024,
                         choices=s2_spec.S2_ENV_CANDIDATES)
+    parser.add_argument('--course', default='S2.1',
+                        choices=s2_spec.S2_COURSE_NAMES)
     parser.add_argument('--device', default='cpu')
     parser.add_argument('--fallback-evidence', type=Path)
     parser.add_argument('--dry-run', action='store_true')
@@ -46,10 +48,11 @@ def main(argv=None):
     parser.add_argument('--attempt-id', default='s2.1-r1')
     args = parser.parse_args(argv)
     identity = s2_spec.validate_identity()
-    training_plan = s2_train.rollout_plan(args.num_envs)
+    course_key = s2_spec.course_key(args.course)
+    training_plan = s2_train.rollout_plan(args.num_envs, course=course_key)
     effective_cap = training_plan['max_rollouts'] * training_plan['samples_per_rollout']
-    if effective_cap > s2_spec.S2_COURSE_LEARNING_CAPS['S2_1']:
-        raise SystemExit('training rollout plan exceeds S2.1 learning cap')
+    if effective_cap > s2_spec.S2_COURSE_LEARNING_CAPS[course_key]:
+        raise SystemExit(f'training rollout plan exceeds {args.course} learning cap')
     if args.num_envs == 512:
         evidence = _load_json(args.fallback_evidence, '--fallback-evidence')
         if evidence.get('num_envs') != 1024 or evidence.get('admitted') is not False:
@@ -58,6 +61,7 @@ def main(argv=None):
             raise SystemExit('fallback evidence must record at least one 1024 failure')
     plan = s2_runner.dry_run_plan(num_envs=args.num_envs)
     plan['training_plan'] = training_plan
+    plan['course'] = args.course
     if not (args.dry_run or args.execute):
         raise SystemExit('use --dry-run or --execute')
     if args.dry_run:
@@ -93,31 +97,33 @@ def main(argv=None):
     run_id = s2_ledger.read_run_id(args.ledger)
     ledger = s2_ledger.S2Ledger(args.ledger, run_id=run_id)
     ledger_state = ledger.state()
-    learning = ledger_state.get('learning_obligations', {}).get('learning_S2_1')
+    obligation_id = f'learning_{course_key}'
+    learning = ledger_state.get('learning_obligations', {}).get(obligation_id)
     if learning is None:
-        raise SystemExit('learning_S2_1 obligation missing from S2 ledger')
+        raise SystemExit(f'{obligation_id} obligation missing from S2 ledger')
     if int(learning.get('limit', 0)) < effective_cap:
-        raise SystemExit('learning_S2_1 obligation is smaller than the 512/1024 cap')
+        raise SystemExit(f'{obligation_id} obligation is smaller than the course cap')
     if int(learning.get('reserved', 0)) != 0:
-        raise SystemExit('learning_S2_1 has a pending reservation; release it before '
+        raise SystemExit(f'{obligation_id} has a pending reservation; release it before '
                          'a new/resumed run so the crashed rollout cannot double-charge')
     matrix_manifest = __import__('src.tasks.velocity.v09.s2_cases', fromlist=['load_frozen_manifest']).load_frozen_manifest(
         ROOT / 'logs/a2_v09/s2_0/cases/S2_DIAG.json', ROOT)
     budget = s2_train.S2LearningBudget(
-        ledger, samples_per_rollout=training_plan['samples_per_rollout'])
-    role_plan = s2_train_env.build_role_plan(args.num_envs)
+        ledger, obligation_id=obligation_id,
+        samples_per_rollout=training_plan['samples_per_rollout'])
+    role_plan = s2_train_env.build_role_plan(args.num_envs, course=args.course)
     if args.fake_backend:
         env = s2_train_env.S2FakeTrainEnv(num_envs=args.num_envs,
                                           role_plan=role_plan)
     else:
         env = s2_train_real.S2TrainEnv(num_envs=args.num_envs,
-                                       device=args.device)
+                                       device=args.device, course=args.course)
     actor_bundle = s2_physics.load_s1_actor(device=args.device)
     model = actor_bundle['model']
     trainer = s2_train.S2Trainer(
         model=model, env=env, ledger=ledger, output_dir=args.output_dir,
         device=args.device, attempt_id=args.attempt_id,
-        ledger_run_id=run_id)
+        ledger_run_id=run_id, course=args.course)
     if args.resume is not None:
         trainer.resume(args.resume, device=args.device)
         budget.rollouts = trainer.rollouts
@@ -147,7 +153,7 @@ def main(argv=None):
             break
     print(json.dumps(dict(status='completed', rollouts=trainer.rollouts,
                           learning_samples=trainer.learning_samples,
-                          effective_cap=effective_cap,
+                          course=args.course, effective_cap=effective_cap,
                           samples_per_rollout=training_plan['samples_per_rollout'],
                           learning_rate=trainer.learning_rate,
                           std=trainer.model.std.detach().cpu().tolist()),

@@ -4614,3 +4614,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 冻结：S2_GATE_A/B 各 720 例，manifest `1ea91343…`/`9af3f7c9…`，文件 SHA `98842a07…`/`ecdbf5c4…`，各 1,620,000 控制样本上界；重复冻结被拒绝（append-only）。
 - 执行器：`--dry-run`/`--execute`、只读冻结清单、suite/course/checkpoint 参数、预算义务 `gate_admissions_up_to_40`；待首个 schema 11 检查点后做 dry-run 校验。
 - 训练：62 rollouts 时仍在运行，无检查点（首个在 204）。
+
+## 2026-11-22 S2.1 门禁病例冻结、执行器与课程切换
+
+- 目的：补齐 S2.1 冻结门禁 A/B、执行器/预算/报告、6400 与 L40 对照缓存入口，并实现 `--course` 训练计划切换。
+- 冻结：新增 `s2_gate_cases.py` 与 `freeze_a2_v09_s2_gate_cases.py`，生成 `logs/a2_v09/s2/gate_cases/v1/S2_GATE_A/B.json`，各 36 组×20=720 例；A manifest SHA `1ea91343…`、B `9af3f7c9…`；每套上界 1,620,000，L40 219,220；A/B 病例 SHA 无交集，拒绝覆盖。
+- 门禁：新增 `run_a2_v09_s2_gate.py`（dry-run/execute、schema11 checkpoint、冻结清单校验、逐例 trace/质量、18/20 组判定、`--original-6400-cache`、`--l40-cache`、L40 缓存义务解析、`S2.1_gate_result.json`）；新增 `collect_a2_v09_s2_gate_reference.py`（6400 平地 234,180/套、L40 219,220/套的参考缓存 dry-run/执行入口）。
+- 6400 复用：S1.0/Q010 缓存绑定 S1 冻结病例，与 S2 gate flat 病例 SHA 交集为 0，不能直接复用；需在 S2 gate 同一病例上用 40×30 的 6400 迁移模型重采，A/B 合计 468,360（不含 1.62M 候选/L40 上界）。
+- 课程：`--course S2.1/S2.2/S2.3` 接入训练 CLI、rollout cap、role/geometry 计划、checkpoint course 元数据；S2.2 40 级/复习 10/20/平台 8m，S2.3 stairs_stop/platform_stop+ramp/hold。S2.2/3 的 33/51 组门禁清单与训练后端 stop 状态机仍未接。
+- 验证：S2 套件 **251 passed**；冻结脚本重复执行正确拒绝；门禁 dry-run 使用首个 schema11 checkpoint `s2_1_000005013504.pt` 验证 36 组/720 例/1,620,000/L40 219,220 及两个缓存缺失状态。

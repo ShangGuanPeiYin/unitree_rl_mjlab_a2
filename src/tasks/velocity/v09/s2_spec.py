@@ -79,6 +79,16 @@ S2_LEARNING_CAP = 3_600_000_000
 S2_NONLEARNING_CAP = 400_000_000
 S2_0_NONLEARNING_SUBCAP = 50_000_000  # §4.3: 0.5 亿, deducted from the 4 亿 pool
 S2_COURSE_LEARNING_CAPS = dict(S2_1=800_000_000, S2_2=1_200_000_000, S2_3=1_200_000_000)
+S2_COURSE_NAMES = ('S2.1', 'S2.2', 'S2.3')
+
+
+def course_key(course):
+    """Accept the user-facing dotted name or the internal underscore key."""
+    if course in S2_COURSE_LEARNING_CAPS:
+        return course
+    if isinstance(course, str) and course in S2_COURSE_NAMES:
+        return course.replace('.', '_')
+    raise ValueError(f'unknown S2 course {course!r}')
 LEDGER_NAMESPACE = 'a2-v09-s2-sequential-r2'
 LEDGER_HINT = 'logs/a2_v09/s2/ledger.jsonl'
 

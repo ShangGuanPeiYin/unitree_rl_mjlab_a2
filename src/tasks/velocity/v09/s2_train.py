@@ -21,15 +21,16 @@ S2_1_MAX_ROLLOUTS = s2_spec.complete_rollouts(
 S2_1_CHECKPOINT_ROLLOUTS = math.ceil(CHECKPOINT_EVERY_SAMPLES / S2_1_SAMPLES_PER_ROLLOUT)
 
 
-def rollout_plan(num_envs=1024):
+def rollout_plan(num_envs=1024, course='S2.1'):
+    course = s2_spec.course_key(course)
+    cap = s2_spec.S2_COURSE_LEARNING_CAPS[course]
     samples = num_envs * s2_runner.ROLLOUT_STEPS
     return dict(num_envs=num_envs, rollout_steps=s2_runner.ROLLOUT_STEPS,
                 samples_per_rollout=samples,
-                max_rollouts=s2_spec.complete_rollouts(
-                    s2_spec.S2_COURSE_LEARNING_CAPS['S2_1'], num_envs),
+                max_rollouts=s2_spec.complete_rollouts(cap, num_envs),
                 checkpoint_every_rollouts=math.ceil(
                     CHECKPOINT_EVERY_SAMPLES / samples),
-                learning_cap=s2_spec.S2_COURSE_LEARNING_CAPS['S2_1'])
+                learning_cap=cap)
 
 
 def _state_sha(model):
@@ -87,13 +88,15 @@ class S2Trainer:
     def __init__(self, *, model, env, ledger=None, output_dir=None,
                  device='cpu', attempt_id='s2.1', learning_rate=3e-5,
                  teacher=None, beta_flat=s2_loss.BETA_FLAT,
-                 ledger_run_id=None):
+                 ledger_run_id=None, course='S2.1'):
+        course = s2_spec.course_key(course)
         self.model = model.to(device)
         self.env = env
         self.device = device
         self.ledger = ledger
         self.output_dir = Path(output_dir) if output_dir else None
         self.attempt_id = attempt_id
+        self.course = course.replace('_', '.')
         self.ledger_run_id = ledger_run_id or 's2.1'
         self.teacher = teacher.to(device).eval() if teacher is not None else None
         self.beta_flat = float(beta_flat)
@@ -232,8 +235,8 @@ class S2Trainer:
         code_sha256 = code_sha256 or hashlib.sha256(
             Path(__file__).read_bytes()).hexdigest()
         return dict(
-            stage='S2', course='S2.1',
-            curriculum=dict(role='S2.1', role_counts=self.env.role_plan.get('counts'),
+            stage='S2', course=self.course,
+            curriculum=dict(role=self.course, role_counts=self.env.role_plan.get('counts'),
                             speeds=list(s2_train_env.SPEEDS),
                             platform_widths=list(s2_train_env.PLATFORM_WIDTHS)),
             strength='nominal', model_state=self.model.state_dict(),

@@ -70,7 +70,7 @@ class S2TaskConfig:
     @classmethod
     def from_case(cls, case):
         task = case['task']
-        if task == 'stairs':
+        if task in ('stairs', 'legacy_l40'):
             return cls(task='legacy_stairs', speed=float(case['speed']),
                        stair_count=int(case['stair_count']),
                        initial_route_x=float(case['spawn']['local_position_xy'][0]),

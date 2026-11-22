@@ -18,8 +18,9 @@ MAP_REFRESH_STEPS = 5
 CONTROL_DT = 0.02
 
 
-def _geometry_for(row):
-    if row['role'] == 'flat_walk' or row['role'] == 'flat_stop':
+def _geometry_for(row, course='S2.1'):
+    task = row.get('task', row.get('role'))
+    if task in ('flat_walk', 'flat_stop'):
         return dict(kind='flat', terrain_key='s2_flat_v07_tile0', tile_id=0,
                     lesson_id='FLAT', N=0, h=0.0, step_depth=0.2, width=8.0,
                     tread_thickness=0.01, platform_length=0.0,
@@ -27,9 +28,21 @@ def _geometry_for(row):
                     platform_height=0.0, platform_front_local_x=None,
                     frame_origin_world=[0.0, 0.0, 0.0],
                     valid_bounds_local=[-2.0, 22.0, -4.0, 4.0])
-    if row['role'] == 'stairs_walk':
+    if task in ('stairs_walk', 'stairs_stop', 'legacy_l40'):
         levels = int(row['stair_count'])
-        width = float(row['platform_width'])
+        width = float(row.get('platform_width', 0.8))
+        # S2.1 keeps the historical 20 m L40 review row; S2.2/S2.3 use the
+        # S2 40-level row and the 10/20 review rows.
+        if task == 'legacy_l40' or (course == 'S2.1' and levels == 40):
+            return dict(kind='s2_stairs',
+                        terrain_key='s2_stairs_h0.20_d0.20_w0.80_pw0.8',
+                        tile_id=None, lesson_id='S2_N40_PW0.8',
+                        N=40, h=0.2, step_depth=0.2, width=0.8,
+                        tread_thickness=0.01, platform_length=20.0,
+                        platform_width=0.8, platform_present=True,
+                        platform_height=8.0, platform_front_local_x=8.0,
+                        frame_origin_world=[0.0, 12.0, 0.0],
+                        valid_bounds_local=[-2.0, 28.0, -2.0, 2.0])
         return dict(kind='s2_stairs',
                     terrain_key=f's2_stairs_h0.20_d0.20_w0.80_pw{width:g}',
                     tile_id=None, lesson_id=f'S2_N{levels}_PW{width:g}',
@@ -40,7 +53,7 @@ def _geometry_for(row):
                     platform_front_local_x=levels * 0.2,
                     frame_origin_world=[0.0, 12.0, 0.0],
                     valid_bounds_local=[-2.0, levels * 0.2 + 20.0, -2.0, 2.0])
-    if row['role'] == 'platform_walk':
+    if task in ('platform_walk', 'platform_stop'):
         height = float(row['platform_height'])
         levels = int(round(height / 0.2))
         width = float(row['platform_width'])
@@ -54,7 +67,7 @@ def _geometry_for(row):
                     platform_front_local_x=levels * 0.2,
                     frame_origin_world=[0.0, 12.0, 0.0],
                     valid_bounds_local=[-2.0, levels * 0.2 + 20.0, -2.0, 2.0])
-    # legacy L40 review
+    # historical role fallback
     return dict(kind='s2_stairs',
                 terrain_key='s2_stairs_h0.20_d0.20_w0.80_pw0.8',
                 tile_id=None, lesson_id='S2_N40_PW0.8',
@@ -75,12 +88,12 @@ def apply_train_spawn_z(env, plan):
     return env.robot.data.default_root_state[:, 2]
 
 
-def build_env_plan(num_envs=1024):
-    role_plan = s2_train_env.build_role_plan(num_envs)
+def build_env_plan(num_envs=1024, course='S2.1'):
+    role_plan = s2_train_env.build_role_plan(num_envs, course=course)
     specs = {spec.terrain_key: spec for spec in s2_terrain.terrain_specs()}
     rows = []
     for index, role in enumerate(role_plan['envs']):
-        geometry = _geometry_for(role)
+        geometry = _geometry_for(role, course=course)
         # use the frozen S2 table entry where present
         key = geometry['terrain_key']
         spec = specs.get(key)
@@ -90,7 +103,7 @@ def build_env_plan(num_envs=1024):
         else:
             geometry['tile_id'] = spec.tile_id
         front = geometry.get('platform_front_local_x')
-        if role['role'] == 'platform_walk':
+        if str(role.get('task', '')).startswith('platform_'):
             spawn_x = float(front) + 1.0
             spawn_y = 0.0
             yaw = 0.0
@@ -109,7 +122,7 @@ def build_env_plan(num_envs=1024):
             post_distance=role.get('post_distance'),
             platform_width=role.get('platform_width'),
             stair_count=role.get('stair_count')))
-    return dict(num_envs=num_envs, role_counts=role_plan['counts'],
+    return dict(num_envs=num_envs, course=course, role_counts=role_plan['counts'],
                 rows=rows, observation=OBSERVATION_CONTRACT,
                 map_refresh_steps=MAP_REFRESH_STEPS, control_dt=CONTROL_DT)
 
@@ -136,13 +149,13 @@ def assert_v07_contract(env):
 class S2TrainEnv:
     """Constructed lazily; requires mjlab/warp and a real device."""
 
-    def __init__(self, *, num_envs=1024, device='cuda:0', seed=42):
+    def __init__(self, *, num_envs=1024, device='cuda:0', seed=42, course='S2.1'):
         import torch
         from src.tasks.velocity.v07.env import V07Env
         from .map import HeightMap
-        self.plan = build_env_plan(num_envs)
+        self.plan = build_env_plan(num_envs, course=course)
         self.num_envs = int(num_envs)
-        self.role_plan = dict(num_envs=self.num_envs,
+        self.role_plan = dict(num_envs=self.num_envs, course=course,
                               counts=dict(self.plan['role_counts']),
                               order=list(s2_train_env.ROLE_ORDER))
         self.device = device

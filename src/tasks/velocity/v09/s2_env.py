@@ -158,12 +158,12 @@ class S2TaskAdapter:
     @classmethod
     def from_case(cls, case):
         spec = (s2_terrain.legacy_spec_from_geometry(case['geometry'])
-                if case.get('stage') == 'S1'
+                if case.get('stage') == 'S1' or case.get('task') in ('stairs', 'legacy_l40')
                 else s2_terrain.spec_from_geometry(case['geometry']))
         config = s2_state.S2TaskConfig.from_case(case)
         platform = None
-        if (case['task'].startswith(('stairs_', 'platform_')) or case['task'] == 'stairs'
-                or case['task'] == 'legacy_stairs'):
+        if (case['task'].startswith(('stairs_', 'platform_'))
+                or case['task'] in ('stairs', 'legacy_stairs', 'legacy_l40')):
             front = float(spec.frame_origin_world[0]) + spec.N * spec.step_depth
             platform = dict(front_x=front, length=float(spec.platform_length),
                             y_half_width=float(spec.platform_width) / 2.0,

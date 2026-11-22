@@ -19,6 +19,9 @@ PLATFORM_WIDTHS = (0.8, 4.0)
 STAIR_COUNTS = (10, 20)
 PLATFORM_HEIGHTS = (2.0, 4.0)
 POST_DISTANCE = 5.0
+COURSES = ('S2.1', 'S2.2', 'S2.3')
+COURSE_CAPS = dict(S2_1=800_000_000, S2_2=1_200_000_000,
+                   S2_3=1_200_000_000)
 
 
 def largest_remainder(total, weights=ROLE_WEIGHTS, order=ROLE_ORDER):
@@ -74,7 +77,10 @@ def _l40_variants():
                  post_distance=POST_DISTANCE) for speed in SPEEDS]
 
 
-def build_role_plan(num_envs=1024):
+def build_role_plan(num_envs=1024, course='S2.1'):
+    if course not in COURSES:
+        raise ValueError(f'unknown S2 course {course!r}')
+    course_key = course.replace('.', '_')
     counts = largest_remainder(num_envs)
     plan = []
     for role in ROLE_ORDER:
@@ -83,28 +89,78 @@ def build_role_plan(num_envs=1024):
             variants = _balanced(count, _flat_variants(role))
         elif role == 'stairs_walk':
             variants = []
-            for offset, levels in enumerate(STAIR_COUNTS):
-                level_count = count // 2 + (1 if offset < count % 2 else 0)
-                level_variants = [dict(task='stairs_walk', stair_count=levels,
-                                       platform_width=width, speed=speed,
-                                       post_distance=POST_DISTANCE)
-                                  for width in PLATFORM_WIDTHS for speed in SPEEDS]
-                variants.extend(_balanced(level_count, level_variants))
+            if course_key == 'S2_1':
+                for offset, levels in enumerate(STAIR_COUNTS):
+                    level_count = count // 2 + (1 if offset < count % 2 else 0)
+                    level_variants = [dict(task='stairs_walk', stair_count=levels,
+                                           platform_width=width, speed=speed,
+                                           post_distance=POST_DISTANCE)
+                                      for width in PLATFORM_WIDTHS for speed in SPEEDS]
+                    variants.extend(_balanced(level_count, level_variants))
+            elif course_key == 'S2_2':
+                main = [dict(task='stairs_walk', stair_count=40,
+                             platform_width=width, speed=speed,
+                             post_distance=distance)
+                        for width in PLATFORM_WIDTHS for speed in SPEEDS
+                        for distance in (5.0, 10.0)]
+                variants = _balanced(count, main)
+            else:
+                main = [dict(task='stairs_stop', stair_count=40,
+                             platform_width=width, speed=speed,
+                             post_distance=distance, stop_mode=mode,
+                             ramp_steps=(100 if mode == 'ramp_2s' else 0),
+                             hold_steps=1000)
+                        for width in PLATFORM_WIDTHS for speed in SPEEDS
+                        for mode in ('instant', 'ramp_2s')
+                        for distance in (3.0, 10.0)]
+                variants = _balanced(count, main)
         elif role == 'platform_walk':
             variants = []
-            for offset, height in enumerate(PLATFORM_HEIGHTS):
-                height_count = count // 2 + (1 if offset < count % 2 else 0)
-                height_variants = [dict(task='platform_walk', platform_height=height,
-                                        platform_width=width, speed=speed,
-                                        post_distance=POST_DISTANCE)
-                                   for width in PLATFORM_WIDTHS for speed in SPEEDS]
-                variants.extend(_balanced(height_count, height_variants))
+            if course_key == 'S2_1':
+                for offset, height in enumerate(PLATFORM_HEIGHTS):
+                    height_count = count // 2 + (1 if offset < count % 2 else 0)
+                    height_variants = [dict(task='platform_walk', platform_height=height,
+                                            platform_width=width, speed=speed,
+                                            post_distance=POST_DISTANCE)
+                                       for width in PLATFORM_WIDTHS for speed in SPEEDS]
+                    variants.extend(_balanced(height_count, height_variants))
+            elif course_key == 'S2_2':
+                variants = _balanced(count, [
+                    dict(task='platform_walk', platform_height=8.0,
+                         platform_width=width, speed=speed, post_distance=10.0)
+                    for width in PLATFORM_WIDTHS for speed in SPEEDS])
+            else:
+                variants = _balanced(count, [
+                    dict(task='platform_stop', platform_height=8.0,
+                         platform_width=width, speed=speed,
+                         post_distance=distance, stop_mode=mode,
+                         ramp_steps=(100 if mode == 'ramp_2s' else 0),
+                         hold_steps=1000)
+                    for width in PLATFORM_WIDTHS for speed in SPEEDS
+                    for mode in ('instant', 'ramp_2s')
+                    for distance in (3.0, 10.0)])
         else:
-            variants = _balanced(count, _l40_variants())
+            if course_key == 'S2_1':
+                variants = _balanced(count, _l40_variants())
+            else:
+                variants = _balanced(count, [
+                    dict(task='stairs_walk', stair_count=levels,
+                         platform_width=width, speed=speed,
+                         post_distance=POST_DISTANCE)
+                    for levels in STAIR_COUNTS for width in PLATFORM_WIDTHS
+                    for speed in SPEEDS])
+        if course_key == 'S2_2' and role == 'stairs_walk':
+            rng = np.random.default_rng(42)
+            for item in variants:
+                item['post_distance'] = float(rng.uniform(5.0, 10.0))
+        elif course_key == 'S2_3' and role in ('stairs_walk', 'platform_walk'):
+            rng = np.random.default_rng(42 + (1 if role == 'stairs_walk' else 2))
+            for item in variants:
+                item['post_distance'] = float(rng.uniform(3.0, 10.0))
         for item in variants:
             plan.append(dict(role=role, **item))
-    return dict(num_envs=num_envs, counts=counts, order=list(ROLE_ORDER),
-                envs=plan)
+    return dict(num_envs=num_envs, course=course, counts=counts,
+                order=list(ROLE_ORDER), envs=plan)
 
 
 class S2FakeTrainEnv:
@@ -152,7 +208,9 @@ class S2FakeTrainEnv:
 
 def validate_role_plan(plan):
     if plan.get('num_envs') not in (512, 1024):
-        raise ValueError('S2.1 role plan requires 512/1024 envs')
+        raise ValueError('S2 role plan requires 512/1024 envs')
+    if plan.get('course', 'S2.1') not in COURSES:
+        raise ValueError('unknown S2 course')
     counts = plan['counts']
     if sum(counts.values()) != plan['num_envs']:
         raise ValueError('role counts do not sum to num_envs')

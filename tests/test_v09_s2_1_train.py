@@ -353,3 +353,79 @@ def test_spawn_z_is_applied_on_both_resets_and_training_plan():
     s2_train_real.apply_train_spawn_z(train_env, plan)
     assert torch.all(train_data.default_root_state[:, 2] ==
                      torch.tensor([row['spawn_z'] for row in plan['rows']]))
+
+
+def test_course_rollout_plans_and_512_budget():
+    for course, cap in (('S2.1', 800_000_000), ('S2.2', 1_200_000_000),
+                        ('S2.3', 1_200_000_000)):
+        plan = s2_train.rollout_plan(512, course=course)
+        assert plan['learning_cap'] == cap
+        assert plan['samples_per_rollout'] == 24_576
+        assert plan['max_rollouts'] * 24_576 <= cap
+        assert plan['checkpoint_every_rollouts'] == 204
+    assert s2_train.rollout_plan(512, course='S2.2')['max_rollouts'] == 48_828
+    assert s2_train.rollout_plan(512, course='S2.3')['max_rollouts'] == 48_828
+
+
+def test_course_role_plans_switch_main_and_review():
+    s21 = s2_train_env.build_role_plan(512, course='S2.1')
+    s22 = s2_train_env.build_role_plan(512, course='S2.2')
+    s23 = s2_train_env.build_role_plan(512, course='S2.3')
+    assert {row['stair_count'] for row in s21['envs']
+            if row['role'] == 'stairs_walk'} == {10, 20}
+    assert {row['stair_count'] for row in s22['envs']
+            if row['role'] == 'stairs_walk'} == {40}
+    assert {row['task'] for row in s23['envs']
+            if row['role'] == 'stairs_walk'} == {'stairs_stop'}
+    assert {row['task'] for row in s23['envs']
+            if row['role'] == 'platform_walk'} == {'platform_stop'}
+    assert {row['stair_count'] for row in s22['envs']
+            if row['role'] == 'l40_milestone'} == {10, 20}
+    assert {row['stair_count'] for row in s23['envs']
+            if row['role'] == 'l40_milestone'} == {10, 20}
+    assert {row['stop_mode'] for row in s23['envs']
+            if row['task'] == 'stairs_stop'} == {'instant', 'ramp_2s'}
+    assert all(5.0 <= row['post_distance'] <= 10.0 for row in s22['envs']
+               if row['role'] == 'stairs_walk')
+    assert all(3.0 <= row['post_distance'] <= 10.0 for row in s23['envs']
+               if row['role'] == 'stairs_walk')
+
+
+def test_course_dry_run_switches_cap(tmp_path):
+    import train_a2_v09_s2 as train_cli
+    evidence = tmp_path / 'fail1024.json'
+    evidence.write_text(json.dumps({'num_envs': 1024, 'admitted': False,
+                                    'failure_reasons': ['oom']}))
+    out = tmp_path / 'dry22'
+    assert train_cli.main(['--dry-run', '--num-envs', '512',
+                           '--course', 'S2.2',
+                           '--fallback-evidence', str(evidence),
+                           '--output-dir', str(out)]) == 0
+    doc = json.loads((out / 'train_dry_run_summary.json').read_text())
+    assert doc['plan']['course'] == 'S2.2'
+    assert doc['plan']['training_plan']['max_rollouts'] == 48_828
+    assert doc['plan']['training_plan']['learning_cap'] == 1_200_000_000
+
+
+def test_course_env_plan_geometry_without_simulator():
+    from src.tasks.velocity.v09 import s2_train_real
+    p21 = s2_train_real.build_env_plan(512, course='S2.1')
+    p22 = s2_train_real.build_env_plan(512, course='S2.2')
+    p23 = s2_train_real.build_env_plan(512, course='S2.3')
+    assert all(row['geometry']['platform_length'] == 20.0 for row in p21['rows']
+               if row['role'] == 'l40_milestone')
+    assert all(row['geometry']['platform_length'] == 20.0 for row in p22['rows']
+               if row['task'] == 'stairs_walk' and row['stair_count'] == 40)
+    assert any(row['task'] == 'platform_stop' for row in p23['rows'])
+    assert any(row['task'] == 'stairs_stop' for row in p23['rows'])
+
+
+def test_course_checkpoint_metadata_preserves_course():
+    from src.tasks.velocity.v09.model import V09ActorCritic
+    env = s2_train_env.S2FakeTrainEnv(
+        num_envs=2, role_plan=s2_train_env.build_role_plan(2, course='S2.3'))
+    trainer = s2_train.S2Trainer(model=V09ActorCritic(), env=env, device='cpu',
+                                 course='S2.3')
+    metadata = trainer.checkpoint_metadata()
+    assert metadata['course'] == 'S2.3'
+    assert metadata['curriculum']['role'] == 'S2.3'
