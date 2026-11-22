@@ -4540,3 +4540,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 窄台边缘（platform real 0.8 m，58 帧）：台内格 37,078、台外有效格 32,522、台外无效 0、台外 clip −1 占 **97.68%**；台内高度均值 −0.2749、台外 −0.9832；台内外 age 均值相同；同帧动作差 activation RMS 0.8150/max 1.4434、post RMS 0.9361/max 3.5769，A/A、B/B 噪声 0；宽台 real 15/15 成功、窄台 real 0/15；明确 plane 整幅替换不能单独归因边缘格。
 - 验证：S2 套件 **233 passed**；H 重跑为新增 attempt，旧失败证据保留。
 - 未执行：1024 probe（首次尝试因 `S2TrainEnv._sample_tiles` 签名 bug 崩于 env 初始化，未产生控制步；已释放预留 3,709,184 待修）、训练。
+
+
+## 2026-11-22 V9 全量矩阵独立复核：分组基本通过，4 处需修正
+
+- 目的：归档 S2.0 全量诊断的第三方复核。
+- 涉及文件：`docs/v09_s2_0_full_matrix_independent_review_v09.md`、`logs/a2_v09/s2_0/verification/full_matrix_audit_20261122_r9.json`、本日志。
+- 通过：stairs real w0.8 15/15 失败、route 9.1694–9.3117、top 15/15、15/15 `nose_down_fraction=1.0`；real w4.0 top 0/15、nonfoot 13/posture 1/body 1、route 6.9500–8.1576；plane top 0/30；platform real 0.8 15/15 失败、real 4.0 0/15 失败、plane 30/30 成功；flat 30/30 成功；matrix/H/debug 台账无重复计费。
+- 修正项：top 窗实际 43–55（非 46–55）；H coverage 应按 Q033 全部 `not_verified`（原 5 covered 违规：H00 类别不匹配、e826 为 success）；宽 0.8 与 4.0 的 spawn/case 未配对，7.0 vs 9.2 不能归因平台宽度；两个代表输入 `invalid_cells=0`，"低面回波 vs 无效格分列"只能报 0 并说明覆盖限制。
+- 阻塞：1024 probe 因 `S2TrainEnv._sample_tiles` 签名崩于初始化；probe 预留已释放，训练不得启动。
+- 预算：matrix 130,235、H 3,242、debug 11,905、总 145,382；probe 预留已释放。
