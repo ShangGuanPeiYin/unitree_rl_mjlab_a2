@@ -4596,3 +4596,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - review：`docs/v09_s2_1_admission_independent_review_v10r.md`，SHA256 `97ff418413cf48e851b75b12817f08f0783fd7b5f1be1b8e09a9be2d95834a85`；结论 ADMITTED。
 - admission：`logs/a2_v09/s2/admission/s2_1_512_r1.json`，`num_envs=512`、probe report `bdb02d67…`、review SHA 绑定、entry `efa9caa8…`；`validate_admission` 通过。
 - 训练命令（512，32,552 rollouts × 24,576 = 799,997,952；checkpoint 204）已准备，待启动。
+
+
+## 2026-11-22 S2.1 正式训练启动（512 envs）
+
+- 目的：按 Q033 与 V10' admission 启动 S2.1。
+- 命令：`train_a2_v09_s2.py --execute --num-envs 512 --fallback-evidence 1024-r2 --probe-report 512-r5 --admission-evidence admission/s2_1_512_r1.json --max-rollouts 32552 --checkpoint-every-rollouts 204 --attempt-id s2.1-r1 --output-dir logs/a2_v09/s2/s2_1`。
+- 运行：启动后 8 rollouts 约 50 s（≈6.2 s/rollout），learning_S2_1 spent 221,184 / 800,000,000；LR 在第 1 rollout 即被 KL 下调至下限 1e-5（SDS 允许范围 [1e-5,1e-4]），std 缓慢上升、均在 [0.05,1] 内。
+- 预计：32,552 rollouts ≈ 56 h；每 204 rollouts 保存 schema 11 检查点。
+- 未执行：门禁执行器（仓库尚缺 S2.1 36 组 A/B CLI）、S2.2/S2.3 课程切换实现。
