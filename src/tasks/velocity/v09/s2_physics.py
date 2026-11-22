@@ -243,7 +243,7 @@ class S2PhysicsEnv:
 
     def __init__(self, case, *, backend_factory, device='cpu', num_envs=1,
                  seed=42, map_branch='real', h_legacy=False,
-                 capture_inputs=False):
+                 capture_inputs=False, real_branch_evidence=True):
         if num_envs != 1:
             raise ValueError('S2 physics assembly supports one smoke env per process')
         if map_branch not in ('real', 'plane_diagnostic'):
@@ -254,6 +254,7 @@ class S2PhysicsEnv:
         self.map_branch = map_branch
         self.h_legacy = bool(h_legacy)
         self.capture_inputs = bool(capture_inputs)
+        self.real_branch_evidence = bool(real_branch_evidence)
         self.input_rows = []
         self.task_adapter = s2_env.S2TaskAdapter.from_case(case)
         self.machine = self.task_adapter.state_machine()
@@ -273,7 +274,8 @@ class S2PhysicsEnv:
                       else self.task_adapter.config.task), plane_world_z=plane_z)
         evidence_task = ('stairs_walk' if self.task_adapter.config.task == 'legacy_stairs'
                          else self.task_adapter.config.task)
-        self.real_evidence = s2_map_ablation.S2RealBranchEvidence(task=evidence_task)
+        self.real_evidence = (s2_map_ablation.S2RealBranchEvidence(task=evidence_task)
+                              if self.real_branch_evidence else None)
         self.last = None
         self.steps = 0
         self._observation_cache = None
@@ -410,21 +412,23 @@ class S2PhysicsEnv:
                 front_foot_top_support=frame.front_foot_top_support,
                 consumed=True, terminal=frame.terminal,
                 pairing=None, sample_id=frame.native_sample_id)
-            self.real_evidence.observe(
-                frame_index=self.steps - 1, real_map=real_map,
-                valid=real_valid, refreshed=frame.refreshed,
-                front_foot_top_support=frame.front_foot_top_support,
-                consumed=True, terminal=frame.terminal,
-                sample_id=frame.native_sample_id)
+            if self.real_evidence is not None:
+                self.real_evidence.observe(
+                    frame_index=self.steps - 1, real_map=real_map,
+                    valid=real_valid, refreshed=frame.refreshed,
+                    front_foot_top_support=frame.front_foot_top_support,
+                    consumed=True, terminal=frame.terminal,
+                    sample_id=frame.native_sample_id)
         else:
             map_info = None
-            self.real_evidence.observe(
-                frame_index=self.steps - 1,
-                real_map=real_map,
-                valid=real_valid, refreshed=frame.refreshed,
-                front_foot_top_support=frame.front_foot_top_support,
-                consumed=True, terminal=frame.terminal,
-                sample_id=frame.native_sample_id)
+            if self.real_evidence is not None:
+                self.real_evidence.observe(
+                    frame_index=self.steps - 1,
+                    real_map=real_map,
+                    valid=real_valid, refreshed=frame.refreshed,
+                    front_foot_top_support=frame.front_foot_top_support,
+                    consumed=True, terminal=frame.terminal,
+                    sample_id=frame.native_sample_id)
         v07_success = False
         if self.h_legacy and platform:
             v07_success = bool(frame.v07_success)
@@ -481,7 +485,8 @@ class S2PhysicsEnv:
     def evidence(self, index=0):
         trace = self.recorder.trace()
         trace['map_evidence'] = (self.ablation.summary() if self.ablation
-                                 else self.real_evidence.summary())
+                                 else (self.real_evidence.summary()
+                                       if self.real_evidence is not None else None))
         trace['state_summary'] = self.machine.summary()
         trace['failure_context'] = {'present': self.machine.failure}
         trace['termination_reason'] = self.last.termination_reason
@@ -519,7 +524,7 @@ class S2PhysicsEnv:
 
 def build_s2_env(case, *, device='cuda:0', num_envs=1, seed=42,
                  map_branch='real', h_legacy=False, backend_factory=None,
-                 capture_inputs=False):
+                 capture_inputs=False, real_branch_evidence=True):
     """Construct the S2 env; refuse before GPU allocation if no real backend."""
     if h_legacy and map_branch != 'real':
         raise ValueError('H legacy only supports the real map')
@@ -528,7 +533,8 @@ def build_s2_env(case, *, device='cuda:0', num_envs=1, seed=42,
     report = s2_execute.device_report(device)
     return S2PhysicsEnv(case, backend_factory=backend_factory, device=device,
                         num_envs=num_envs, seed=seed, map_branch=map_branch,
-                        h_legacy=h_legacy, capture_inputs=capture_inputs), report
+                        h_legacy=h_legacy, capture_inputs=capture_inputs,
+                        real_branch_evidence=real_branch_evidence), report
 
 
 # --------------------------------------------------------------- mjlab backend

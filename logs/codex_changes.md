@@ -4852,3 +4852,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 之前 1 case/exit0 的根因未复现；新日志与完成守卫会在 GPU 重跑时明确暴露，未完成非零退出。
 - §5.4 锚定：不再使用 40×30 迁移教师冒充原 6400；训练 CLI 暂置 `teacher=None`，待 Q034 口径的旧图教师适配/规划裁定；anchor CPU 调用测试保留。
 - 验证：279 passed。
+
+
+## 2026-11-22 L40 缓存根因修复 + V13 接收
+
+- L40 失败根因：参考缓存用 `build_s2_env(map_branch='real')` 默认启用了 `S2RealBranchEvidence` 的 Q023 校验，第一例 1554 步处抛 `real map failed Q023 frame proof`。修复：`S2PhysicsEnv`/`build_s2_env` 增加 `real_branch_evidence` 开关，参考缓存关闭该诊断；诊断/门禁默认仍开。另将 collector 的 ledger operation_id 加 run_tag，避免重复。现 L40 gate_A 缓存生成运行中（60 例，约 4.7 h，`l40_milestone_cache_gate_A_rerun` 219,220）。
+- V13：`docs/v09_s2_1_numerical_acceptance_plan_v13.md` + 手算 JSON（SHA `2d1a7679…`），13 用例、容差与代表值；6 项签字阻断（锚定未生效、terminated 未入 GAE、命令链漂移、适配器状态残留、异常计数、r1 拒绝链未代码化）已下达实现组。
+- 台账：`learning_S2_1` 20,299,776/800,000,000；L40 A 已花 1,554（旧义务）、retry 义务 219,220、envelope 269,035,966。

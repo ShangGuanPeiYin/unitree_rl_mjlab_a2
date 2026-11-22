@@ -171,6 +171,7 @@ def main(argv=None):
     for parameter in teacher.parameters():
         parameter.requires_grad_(False)
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    run_tag = f'{obligation}:{stamp}'
     out = args.output_dir or (ROOT / 'logs/a2_v09/s2/gate_reference' /
                               f'{args.reference}-{args.suite}-{stamp}')
     out.mkdir(parents=True, exist_ok=True)
@@ -178,7 +179,7 @@ def main(argv=None):
     suite_reserved = 219_220
     suite_actual = 0
     ledger.reserve(obligation, suite_reserved,
-                   operation_id='ref:s1_l40:suite:reserve',
+                   operation_id=f'ref:s1_l40:{run_tag}:reserve',
                    reason='L40 reference whole-suite atomic reservation')
     print(f'[l40] starting {len(cases)} cases / {len(groups)} groups', flush=True)
     for case_index, case in enumerate(cases):
@@ -234,16 +235,16 @@ def main(argv=None):
                 trace=trace))
         except Exception:
             if steps:
-                ledger.commit(obligation, steps, operation_id=f'{op}:commit',
+                ledger.commit(obligation, steps, operation_id=f'{op}:{run_tag}:commit',
                               reason='gate reference partial')
                 suite_actual += steps
             unused = suite_reserved - suite_actual
             if unused > 0:
                 ledger.release(obligation, unused,
-                               operation_id='ref:s1_l40:suite:release',
+                               operation_id=f'ref:s1_l40:{run_tag}:release',
                                reason='L40 reference failed/unused')
             raise
-        ledger.commit(obligation, steps, operation_id=f'{op}:commit',
+        ledger.commit(obligation, steps, operation_id=f'{op}:{run_tag}:commit',
                       reason='gate reference actual')
         suite_actual += steps
         print(f'[l40] case {case_index + 1}/{len(cases)} done steps={steps} '
@@ -303,7 +304,7 @@ def main(argv=None):
     unused = suite_reserved - suite_actual
     if unused > 0:
         ledger.release(obligation, unused,
-                       operation_id='ref:s1_l40:suite:release',
+                       operation_id=f'ref:s1_l40:{run_tag}:release',
                        reason='L40 reference unused reservation')
     print(json.dumps(dict(path=str(path), receipt=str(receipt_path),
                           groups=len(groups_out), cases=len(results),
