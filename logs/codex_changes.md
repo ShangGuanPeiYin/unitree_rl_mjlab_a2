@@ -4559,3 +4559,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - probe：1024 `S2TrainEnv` 构造已通过；`1024-r2` 在首个 warmup 的 Warp CUDA graph launch OOM（peak 5396.76 MiB，measurements=0），预留已释放，未产生 admission。未再启动正式 probe。
 - 验证：`pytest -q tests/test_v09_s2_0_*.py tests/test_v09_s2_1_train.py` → **233 passed**。
 - 未执行：正式 1024 probe/admission、训练、台账写入；报告仅新增版本化文件。
+
+
+## 2026-11-22 512 资源探测准入通过（1024 OOM 留证）
+
+- 目的：按 §2.3/Q033-8 完成真实 1024 探测、失败后 512 fallback 并取得 admission。
+- 过程：1024 在 Warp CUDA graph launch OOM（peak 5396.76 MiB、0 measurements），留证 `logs/a2_v09/s2/probe/1024-r2/`；修复 `_sample_tiles` 绑定、trainer 设备放置、cuda→numpy 边界与 probe 错误明细后，512 探测通过。
+- 512 报告：peak **4521.75 MiB**、host free 14864 MiB、50 measurements（275.4 s）、evaluation **100 env × 9472 步**、video **1 env × 200 步**、`restore_ok=true`、无 OOM/非有限/接触溢出、`failure_reasons=[]`、`admitted=true`。
+- 台账：probe1024 spent 0；probe512 2,332,928/2,332,928；新增 `probe_512_retry_overage` 261,064（重试部分）；debug 11,905/20,000；总 spent 2,739,374；envelope 264,169,434（≤4 亿）。
+- 估算：512 下 24,576 样本/rollout、约 5.5 s/rollout，S2.1 的 32,552 rollouts 约 50 小时。
+- 未执行：训练（待 V10 独立准入 review SHA 后写 admission 并启动）。
