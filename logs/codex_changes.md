@@ -4195,3 +4195,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 修正：F-V04-1 混合分支 `exact_clip_denominator` 只取替换支 Σvalid（真实支 NA）；`config_identity` 11+7 项声明与校验一致；`missing_reason`/原因码入病例与组汇总；登记双 SHA（内容 5ec1c897…/文件 6f80b6fe…）；`history_index_v2` 改为 register 的只读派生投影。
 - 验证：本机复跑 S2 CPU 套件 8 文件 **113 passed**（0.71 s）；dry-run：75 例、150 条、30 批、env 上限 20、`physics_started=false`；旧冻结件字节未变。
 - 未执行：无 GPU/物理/训练；`g_level` ramp 0.5 s 标为 provisional 并已提交 DSH-Q027；H 六例逐帧足位/接触补采待物理阶段。
+
+
+## 2026-11-22 V4.1 聚焦复核：5 通过 1 阻断（投影可篡改）
+
+- 目的：归档 V4 六项修正的复核结果。
+- 涉及文件：`docs/v09_s2_0_rulings_independent_review_v041.md`、`logs/a2_v09/s2_0/verification/`（本机）、本日志。
+- 结论：F-V04-1 已修（混合 1080/1080=1.0，真实支 NA，仅真实 den=None，仅替换 1080/1.0，两支未暴露 sat/None 且 missing_counts 1/1）；config_identity 11 项声明==强制、逐项缺失 11/11 ValueError；原因码入库并计数；登记双 SHA 均可反查、重复写入不追加；旧件字节未变。
+- 阻断 B-V41-1：`write_history_projection` 不重新从 register 派生，篡改条目并重算自哈希仍可落盘。已令改为写入前现场重算比对或仅 rebuild 可写，并加篡改回归。
+- 其他：register 同一 old→new 对仍有 2 行（历史行 + 升级行），要求版本/迁移标记、历史行保留、投影确定性取最新；`zero_valid_denominator` 作为第三原因码保留并文档化/单列计数。
+- 未执行：未跑 GPU/物理、未训练、未写正式原子预留。
