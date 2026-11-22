@@ -4795,3 +4795,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 修复清单：P0 `collect_rollout` 每轮 reset 改为 episode 连续、GAE last_value、§5.4 平地锚定、异常按实际步结算；P1 S2 状态机/终止替换 v07（含登顶不 reset、L40 例外、单 env 锁存）；P2 真实命令链 c_request→c_exec、真实 phase/g_level/qdot_prev/yaw/腾空等；P3 独立手算数值验收（20 项、+2/+8/−10、门控、动作对齐、v07 差异）。
 - 独立验收：V13 数值验收设计与手算参照（不得用生产函数当期望）。
 - 未执行：重跑（待修复+独审）。
+
+
+## 2026-11-22 S2.1-r2 执行合同
+
+- 文件：`docs/v09_s2_1_r2_execution_contract.md`。
+- 要点：入口 `s1_least`（`efa9caa8…`）、新 Adam/LR 3e-5、std 继承、normalizer 冻结；预算 r1 已消费 20,299,776，r2 31,726 rollouts；拒绝整个 r1 派生链；前置 P0-P2 修复 + 独立手算签字 + 512 准入复核；启动命令与监测节拍。
+- 当前实现状态：`s2_train.py` 正在改 P0（工作区未提交），其训练测试有 1 项暂时失败（WIP），不作为结论。
