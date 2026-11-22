@@ -17,6 +17,8 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from a2_v07_bootstrap import activate
 activate(ROOT)
 from src.tasks.velocity.v09 import (s2_cases, s2_execute, s2_ledger, s2_physics, s2_spec)
+import numpy as np
+import torch
 
 
 def load_inputs(root=ROOT):
@@ -78,28 +80,75 @@ def main(argv=None):
     if args.smoke:
         if args.case is None:
             raise SystemExit('--smoke requires --case')
-        selected = [row for row in matrix['cases'] if row['case_id'] == args.case
+        pool = matrix['cases']
+        selected = [row for row in pool if row['case_id'] == args.case
                     and row['task'] in ('flat_walk', 'stairs_walk', 'platform_walk')]
-        smoke_cases = [selected[0]] if selected else []
-        if not smoke_cases:
+        if args.h_legacy:
+            selected = [row for row in h_series['records']
+                        if row['case']['case_id'] == args.case]
+            selected = [row['case'] for row in selected]
+        if not selected:
             raise SystemExit('smoke case not found')
-        rows = [row for row in batches if row['case_ids'] == [args.case]
-                and row['branch'] == args.branch]
-        if not rows:
-            raise SystemExit('smoke batch not found')
-        driver = s2_execute.S2ExecutionDriver(
-            env_factory=factory, policy=None, ledger=ledger,
-            device=args.device, max_steps=args.steps)
-        report = s2_execute.device_report(args.device)
-        print(json.dumps(dict(device=report, preflight=preflight,
-                              actor_sha256=actor['state_sha256'],
-                              actor_frozen=actor['frozen'], case=args.case,
-                              steps=args.steps, branch=args.branch,
-                              h_legacy=args.h_legacy,
-                              estimated_control_steps=args.steps),
-                         ensure_ascii=False, indent=2))
-        # The smoke body is intentionally not run without an approved GPU window.
-        raise SystemExit('smoke preflight OK; GPU execution window not assigned')
+        case = selected[0]
+        device_report = s2_execute.device_report(args.device)
+        # Actor on the execution device; no optimizer/training state is loaded.
+        actor = s2_physics.load_s1_actor(device=args.device)
+        env, runtime = s2_physics.build_s2_env(
+            case, device=args.device, seed=42, map_branch=args.branch,
+            h_legacy=args.h_legacy)
+        batch = dict(branch=args.branch,
+                     group_role_sha256='smoke',
+                     control_samples=int(args.steps),
+                     case_sha256s=[case['case_sha256']],
+                     case_ids=[case['case_id']], batch_size=1,
+                     max_hard_timeout_steps=int(case['hard_timeout_steps']))
+        gate = s2_execute.ReservationGate(ledger)
+        started = gate.begin_batch(batch, operation_id=f'smoke:{args.case}')
+        summary = dict(device=device_report, preflight=preflight,
+                       actor_sha256=actor['state_sha256'],
+                       actor_frozen=actor['frozen'], case=args.case,
+                       steps=args.steps, branch=args.branch,
+                       h_legacy=args.h_legacy,
+                       estimated_control_steps=args.steps,
+                       physics_started=True)
+        rows = []
+        try:
+            env.reset()
+            for step in range(int(args.steps)):
+                obs = env.observe()
+                tensor_obs = {key: torch.as_tensor(value, device=args.device,
+                                                   dtype=torch.float32)[None]
+                              for key, value in obs.items()
+                              if key in ('proprio', 'history', 'heightmap',
+                                         'route_error')}
+                action = s2_physics.actor_mean(actor, tensor_obs)
+                _, done, info = env.step(action[0].detach().cpu().numpy())
+                rows.append(dict(step=step, done=bool(done[0]),
+                                 g_level=float(info.get('g_level', 0.0)),
+                                 state=info.get('state', {}).get('state')))
+                if done[0]:
+                    break
+            summary.update(control_steps=len(rows), status='completed',
+                           native_sample_id=env.evidence(0)['map_evidence'].get('native_sample_id'))
+        except Exception as error:
+            summary.update(status='failed', error=repr(error),
+                           control_steps=len(rows))
+        finally:
+            settled = gate.finish_batch(batch, operation_id=f'smoke:{args.case}',
+                                        actual_samples=len(rows) or int(args.steps))
+            summary['settled'] = settled
+            output = args.output_dir or (ROOT / 'logs/a2_v09/s2/smoke' /
+                                         f"case{args.case}")
+            output.mkdir(parents=True, exist_ok=True)
+            (output / 'smoke_summary.json').write_text(
+                json.dumps(summary, ensure_ascii=False, indent=2) + '\n')
+            try:
+                if env.recorder.rows:
+                    env.recorder.write(output)
+            except Exception as evidence_error:
+                summary['evidence_error'] = repr(evidence_error)
+        print(json.dumps(summary, ensure_ascii=False, indent=2))
+        return 0 if summary['status'] == 'completed' else 1
     raise SystemExit('full 150-branch execution is gated until the V6 smoke passes')
 
 

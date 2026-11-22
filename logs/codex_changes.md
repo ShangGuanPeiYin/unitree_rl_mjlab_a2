@@ -4314,3 +4314,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 内容：非学习 263,888,370 ≤4 亿；学习 3.2e9；阶段合计 3,463,888,370；S2.0 子额度 429,822；10 项义务上限逐项落账，reserved/spent 均为 0（预留非消费）；重复写入拒绝。
 - 验证：`S2Ledger.state()` 读出 envelope/obligations/learning 额度与回执一致；S1 台账未触碰。
 - 未执行：未跑 GPU/物理、未训练。
+
+
+## 2026-11-22 V7a 四项阻断修复（tile_id/接口/first_step/native_id）
+
+- 目的：解除 GPU smoke 前四项阻断。
+- 涉及文件：`s2_terrain.py`（`schedule_tile_id`/`spec_from_geometry` 按 `(terrain_key,N,platform_width)` 映射到合法 tile id，H legacy 保留原 id）、`s2_physics.py`（`observation()` 别名、单环境 step 兼容、smoke 由 `load_s1_actor` 构造 callable、`first_step` 改为 APPROACH→CLIMB 转移、fake reset 不预推进 + `assert_native_alignment`）、`scripts/run_a2_v09_s2_0.py`、`tests/test_v09_s2_0_physics.py`、文档 `docs/v09_s2_0_implementation_plan_v12.md`。
+- 验证：本机复跑 S2 套件 **184 passed**；正式 S2 台账只读核对 envelope 263,888,370、plan `773b53c6…`、10 项义务、reserved/spent=0，未被修改。
+- 未执行：GPU smoke、训练。

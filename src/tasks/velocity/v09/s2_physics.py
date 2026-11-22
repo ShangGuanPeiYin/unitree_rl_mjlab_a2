@@ -81,21 +81,22 @@ class S2FakeBackend:
         self.route_x = float(self.case['spawn']['local_position_xy'][0])
         self.sim_time = 0.0
         self.terminated = False
-        return self.step()
+        return self._frame(advance=False)
 
     def step(self):
-        return self._step()
+        return self._frame(advance=True)
 
-    def _step(self):
-        idx = self.step_index
-        self.route_x += 0.5
+    def _frame(self, advance=True):
         platform = self.task_adapter.platform
         front = platform['front_x'] if platform else None
+        if advance:
+            self.route_x += 0.5
+            self.step_index += 1
+            self.sim_time += 0.02
         on_platform = bool(platform and self.route_x >= front)
         feet = [[self.route_x, 0.1], [self.route_x, -0.1],
                 [self.route_x - 0.1, 0.1], [self.route_x - 0.1, -0.1]]
-        self.step_index += 1
-        self.sim_time += 0.02
+        actor_step = max(0, self.step_index - 1) if advance else 0
         top = bool(on_platform and self.route_x >= (front + 0.4 if front else 1e9))
         terminal = self.step_index >= self.steps_to_terminal
         return BackendStep(
@@ -110,7 +111,7 @@ class S2FakeBackend:
             pd_target=[0.0] * 12, joint_position=[0.0] * 12,
             joint_velocity=[0.0] * 12,
             map_valid=np.ones((40, 30), dtype=bool),
-            map_base_z=0.4, refreshed=self.step_index % 5 == 1,
+            map_base_z=0.4, refreshed=(self.step_index % 5 == 1),
             terminal=terminal, failure=False, top_arrived=top,
             four_feet_on_platform=on_platform,
             front_foot_top_support=on_platform,
@@ -120,9 +121,9 @@ class S2FakeBackend:
                                 duration_s=0.02, position_xy=list(feet[0]),
                                 surface='tread' if not on_platform else 'platform',
                                 valid=True)],
-            native_sample_id=dict(refresh_index=self.step_index // 5,
+            native_sample_id=dict(refresh_index=actor_step // 5,
                                   sample_sim_time_s=self.sim_time,
-                                  produced_at_actor_step=self.step_index),
+                                  produced_at_actor_step=actor_step),
             sim_time_s=self.sim_time)
 
 
@@ -189,6 +190,21 @@ class S2PhysicsEnv:
                     route_error=route, c_request=last.c_request,
                     c_exec=last.c_exec)
 
+    def observation(self):
+        return self.observe()
+
+    def assert_native_alignment(self):
+        if self.ablation is None:
+            return True
+        sample = self.ablation.native_sample_id
+        consumed = self.ablation.first_consumed_replacement_frame
+        if sample is not None and consumed is not None:
+            if int(sample['produced_at_actor_step']) > int(consumed):
+                raise ValueError('native_sample_id produced after first consumption')
+            if self.ablation.summary()['s_minus_t'] < 0:
+                raise ValueError('negative s-t')
+        return True
+
     def step(self, action):
         if self.last is not None and self.last.terminal:
             raise RuntimeError('physics env cannot advance after terminal')
@@ -231,7 +247,8 @@ class S2PhysicsEnv:
             v07_success = s2_state.legacy_v07_success(
                 frame.route_x, platform_front_x=platform['front_x'],
                 supported=frame.feet_ok)
-        state_frame = dict(route_x=frame.route_x, first_step=frame.top_arrived,
+        first_step = bool(frame.route_x >= 0.0)
+        state_frame = dict(route_x=frame.route_x, first_step=first_step,
                            top_arrived=frame.top_arrived,
                            four_feet_on_platform=frame.four_feet_on_platform,
                            failure=frame.failure, v07_success=v07_success,
@@ -256,6 +273,7 @@ class S2PhysicsEnv:
             map_sample_time_s=frame.sim_time_s,
             native_sample_id=frame.native_sample_id))
         self.last = frame
+        self.assert_native_alignment()
         return self.observe(), [frame.terminal or self.machine.terminal], dict(
             map_info=map_info, geometry_reason=geometry_reason,
             g_level=g_value, state=self.machine.summary())
@@ -490,7 +508,7 @@ class MjlabS2Backend:
             self.last_sample_time = sim_time
             self.last_sample_id = dict(refresh_index=self.refresh_index,
                                        sample_sim_time_s=sim_time,
-                                       produced_at_actor_step=self.steps)
+                                       produced_at_actor_step=self.steps - 1)
         sample_id = self.last_sample_id or dict(
             refresh_index=0, sample_sim_time_s=sim_time,
             produced_at_actor_step=self.steps)

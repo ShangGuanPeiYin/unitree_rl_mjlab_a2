@@ -118,6 +118,38 @@ def terrain_specs(*, stair_counts=STAIR_COUNTS, platform_widths=PLATFORM_WIDTHS)
     return tuple(rows)
 
 
+def _match_table_spec(geometry):
+    for spec in terrain_specs():
+        if spec.kind != ('flat' if geometry.get('kind') == 'flat' else 's2_stairs'):
+            continue
+        if geometry.get('kind') == 'flat':
+            return spec
+        if (int(geometry['N']) == spec.N
+                and abs(float(geometry['platform_width']) - spec.platform_width) < 1e-12
+                and abs(float(geometry['h']) - spec.h) < 1e-12
+                and abs(float(geometry['step_depth']) - spec.step_depth) < 1e-12
+                and abs(float(geometry['platform_length']) - spec.platform_length) < 1e-12):
+            return spec
+    return None
+
+
+def schedule_tile_id(geometry):
+    """Explicit S2 terrain_key -> legal schedule tile id (0..len(table)-1)."""
+    spec = _match_table_spec(geometry)
+    if spec is None:
+        raise ValueError(f'no S2 schedule row for geometry {geometry.get("terrain_key")}')
+    return int(spec.tile_id)
+
+
+def schedule_tile_table():
+    table = {(spec.terrain_key, spec.N, spec.platform_width): int(spec.tile_id)
+             for spec in terrain_specs()}
+    ids = list(table.values())
+    if len(ids) != len(set(ids)):
+        raise ValueError('S2 schedule tile ids are not unique')
+    return table
+
+
 def spec_from_geometry(geometry):
     """Resolve a frozen case geometry dict to the exact S2 collision row."""
     if not isinstance(geometry, dict):
@@ -139,9 +171,11 @@ def spec_from_geometry(geometry):
         raise ValueError('S2 platform length must be 20 m')
     origin = tuple(float(v) for v in geometry['frame_origin_world'])
     bounds = tuple(float(v) for v in geometry['valid_bounds_local'])
+    matched = _match_table_spec(geometry)
+    tile_id = int(matched.tile_id) if matched is not None else schedule_tile_id(geometry)
     return S2TerrainSpec(
         terrain_key=geometry.get('terrain_key', f's2_stairs_N{N}_pw{width:g}'),
-        tile_id=int(geometry.get('tile_id') or -1), kind='s2_stairs', N=N,
+        tile_id=tile_id, kind='s2_stairs', N=N,
         h=float(geometry['h']), step_depth=float(geometry['step_depth']),
         width=float(geometry['width']), tread_thickness=float(geometry['tread_thickness']),
         platform_length=float(geometry['platform_length']),

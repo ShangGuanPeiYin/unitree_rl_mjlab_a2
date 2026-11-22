@@ -149,3 +149,28 @@ def test_h_legacy_backend_is_separate_and_has_original_timeout_contract():
     adapter = s2_env.S2TaskAdapter.from_case(record)
     assert adapter.config.legacy_h is True
     assert adapter.config.timeout_steps == 1301
+
+
+def test_b_v7a_tile_mapping_is_legal_for_every_s2_case():
+    manifest = s2_cases.build_s2_0_manifest()
+    table = s2_physics.s2_terrain.terrain_specs()
+    for case in manifest['cases']:
+        spec = s2_physics.s2_terrain.spec_from_geometry(case['geometry'])
+        assert 0 <= spec.tile_id < len(table)
+        assert s2_physics.s2_terrain.schedule_tile_id(case['geometry']) == spec.tile_id
+    keys = s2_physics.s2_terrain.schedule_tile_table()
+    assert len(keys) == len(set(keys))
+    assert len(set(keys.values())) == len(keys)
+
+
+def test_b_v7a_first_step_precedes_top_and_native_sample_is_not_after_consumption():
+    env = make_env('stairs_walk', branch='plane_diagnostic', steps=40)
+    run(env, 30)
+    names = [event['name'] for event in env.machine.events]
+    assert 'enter_climb' in names
+    assert names.index('enter_climb') < names.index('top_arrived')
+    report = env.evidence(0)['map_evidence']
+    sample = report['native_sample_id']
+    assert sample is not None
+    assert sample['produced_at_actor_step'] <= report['first_replacement_actor_step']
+    assert report['s_minus_t'] >= 0
