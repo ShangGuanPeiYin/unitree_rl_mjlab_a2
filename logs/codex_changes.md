@@ -4432,3 +4432,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - orphan release：matrix 子进程异常后按未结算预留全额 release、`orphan_release` 事件、幂等。
 - 验证：S2 套件 **218 passed**；整批 15/156 完成、0 失败。
 - 未执行：训练；Q031 代表病例采集待整批结束。
+
+
+## 2026-11-22 V8.4 复核：四窗定稿通过，3 项证据/预算修正
+
+- 目的：归档四窗与索引口径复核，并补记未结算诊断步。
+- 涉及文件：`docs/v09_s2_execution_independent_review_v084.md`、`logs/a2_v09/s2_0/verification/execution_audit_20261122_r84.json`、本日志。
+- 通过：四窗独立复算（front 61/−20.065542、four 48/−24.691044、top 45/−25.631117 全低头、s6.5 NA `s6_5_threshold_not_reached`；目标 9.336845 vs 最大 9.265788）；邻帧核对；索引口径（1559/1560、1562/1563 同一次控制更新，无全局 step-1）；`post_reset` 剔除与终止样本保留；matrix 17/156、17,000 步、0 失败、无重复计费。
+- 修正：B-V84-1 pair summary 缺 snapshot 键；B-V84-2 旧 q030 JSON 无 superseded 标记且缺 45 行配对清单、`row_index` 语义需澄清；B-V84-3 `t11-parity-dim4/dim64` 136 步未结算——已补记 debug（台账 seq 109/110；debug 10,176/20,000；总 spent 30,353；reserved 1,001）。
+- 未执行：训练；Q031 代表病例采集待整批结束。
