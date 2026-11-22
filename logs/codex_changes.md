@@ -4529,3 +4529,14 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 涉及文件：`doc/sds/reviews/v09_execution_rulings.md`、本日志。
 - 要点：S2.1 入口仍 `s1_least.pt`（规划方复哈希 `efa9caa8…`，两份同字节）；维持 §6.2 原课程；宽 4 m 楼梯组另列"未确认登顶的登阶失败"（real top 0/15、nonfoot 13/15、posture/body 1、`route_max` 6.95–8.16），不得把 route≥8 当 top、不得混入窄台失稳、不得加前倾惩罚；窄台边缘高度信息列为 S2.1 显式诊断项（真实几何区分台内/台外/无回波，0.8/4 m 分报，无额外阈值）；plane 整幅替换不能单独识别边缘格因果；H 六例 3 completed 为物理失败、3 为 runner failed，coverage 全 `not_verified`，V9 须核退出原因与重跑必要性，失败执行不得充作完成；Q031/V9 照旧，资源预留探测可并行；完整 1024 探测不能以降并行替代；上限 799,997,952，不增预算/门禁。
 - 验证：仅文档追加；未跑测试/物理/训练。
+
+
+## 2026-11-22 H 三条重跑、宽 4m 分类、窄台边缘诊断
+
+- 目的：按 Q033 修 H runner_failed 根因、重跑 H 三条、重分类宽 4 m 组、量化窄台边缘高度。
+- 涉及文件：`s2_physics.py`（H real_map 由零图改为 backend 真实 heightmap、valid 用当前 `map_valid`、base z 用 `last.map_base_z`）、`scripts/report_a2_v09_s2_0.py`、`scripts/analyze_a2_v09_s2_groups.py`、新增 `scripts/analyze_a2_v09_s2_platform_edge.py`、`tests/test_v09_s2_0_physics.py`、报告 `matrix-final-v6`、`group_attribution-v4`、`platform_edge_analysis-v1`。
+- H：三条重跑全部 completed（910 nonfoot / 304 **success** / 274 nonfoot），H 义务 spent 3,242/9,432；六例均 completed，coverage：5 covered、`ca66…` not_covered；`e826…` 为 success（无失败）。
+- 宽 4 m 楼梯组统一记"未确认登顶的登阶失败"：top 0/15、failure 15/15、`route_max` 6.9499–8.1576、nonfoot 13/posture 1/body 1，level 34×7、40×4、35×2、30/37 各 1；未把 route≥8 当 top、未加前倾惩罚。
+- 窄台边缘（platform real 0.8 m，58 帧）：台内格 37,078、台外有效格 32,522、台外无效 0、台外 clip −1 占 **97.68%**；台内高度均值 −0.2749、台外 −0.9832；台内外 age 均值相同；同帧动作差 activation RMS 0.8150/max 1.4434、post RMS 0.9361/max 3.5769，A/A、B/B 噪声 0；宽台 real 15/15 成功、窄台 real 0/15；明确 plane 整幅替换不能单独归因边缘格。
+- 验证：S2 套件 **233 passed**；H 重跑为新增 attempt，旧失败证据保留。
+- 未执行：1024 probe（首次尝试因 `S2TrainEnv._sample_tiles` 签名 bug 崩于 env 初始化，未产生控制步；已释放预留 3,709,184 待修）、训练。

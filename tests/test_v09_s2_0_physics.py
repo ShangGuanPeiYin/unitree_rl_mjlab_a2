@@ -281,3 +281,27 @@ def test_t9_parity_helpers_detect_shape_and_value_differences():
     compared = s2_parity.compare_trace_tables(rows, changed)
     assert compared['fields']['a_applied']['max_abs'] == 1.0
     assert s2_parity.friction_contract()['equal'] is True
+
+
+def test_s2_terrain_specs_expose_v07_episode_fields():
+    from src.tasks.velocity.v09.s2_terrain import terrain_specs
+    for spec in terrain_specs():
+        assert isinstance(spec.lesson_id, str) and spec.lesson_id
+        assert all(hasattr(spec, name) for name in ('N', 'h', 'step_depth'))
+
+
+def test_v85_real_branch_evidence_accepts_valid_invalid_cells():
+    from src.tasks.velocity.v09 import s2_map_ablation
+    evidence = s2_map_ablation.S2RealBranchEvidence(task='stairs_walk')
+    real = np.zeros((3, 40, 30), dtype=np.float64)
+    valid = np.ones((40, 30), dtype=bool)
+    valid[:2, :2] = False
+    real[1] = valid
+    real[2] = (~valid).astype(float)
+    real[0, valid] = -0.2
+    info = evidence.observe(frame_index=0, real_map=real, valid=valid,
+                            refreshed=True, front_foot_top_support=False,
+                            consumed=True, terminal=False, sample_id=None)
+    assert info['frames'] == 1
+    assert evidence.frame_checks == 1
+    assert evidence.frame_check_failures == 0

@@ -352,6 +352,11 @@ class S2PhysicsEnv:
     def step(self, action):
         if self.last is not None and self.last.terminal:
             raise RuntimeError('physics env cannot advance after terminal')
+        input_obs = self.observe()
+        input_real_obs = (self.backend.observation(update=False)
+                          if hasattr(self.backend, 'observation')
+                          else input_obs)
+        input_base_z = float(self.last.map_base_z) if self.last is not None else None
         input_row = None
         if self.capture_inputs:
             obs = self.observe()
@@ -394,19 +399,20 @@ class S2PhysicsEnv:
         geometry_reason = self.failure_tracker.observe(
             step=self.steps - 1, condition=condition,
             feet_ok=frame.feet_ok, body_ok=frame.body_ok)
+        real_map = s2_env.to_numpy(input_real_obs['heightmap']).astype(np.float64)
+        real_valid = np.asarray(frame.map_valid, dtype=bool)
         if self.ablation is not None:
-            real_map = np.zeros((3, 40, 30), dtype=np.float64)
-            real_map[1] = frame.map_valid
             policy_map, map_info = self.ablation.observe(
                 frame_index=self.steps - 1, real_map=real_map,
-                valid=frame.map_valid, base_sample_z=frame.map_base_z,
+                valid=real_valid, base_sample_z=(input_base_z if input_base_z is not None
+                                                 else frame.map_base_z),
                 refreshed=frame.refreshed,
                 front_foot_top_support=frame.front_foot_top_support,
                 consumed=True, terminal=frame.terminal,
                 pairing=None, sample_id=frame.native_sample_id)
             self.real_evidence.observe(
                 frame_index=self.steps - 1, real_map=real_map,
-                valid=frame.map_valid, refreshed=frame.refreshed,
+                valid=real_valid, refreshed=frame.refreshed,
                 front_foot_top_support=frame.front_foot_top_support,
                 consumed=True, terminal=frame.terminal,
                 sample_id=frame.native_sample_id)
@@ -414,8 +420,8 @@ class S2PhysicsEnv:
             map_info = None
             self.real_evidence.observe(
                 frame_index=self.steps - 1,
-                real_map=np.zeros((3, 40, 30), dtype=np.float64),
-                valid=frame.map_valid, refreshed=frame.refreshed,
+                real_map=real_map,
+                valid=real_valid, refreshed=frame.refreshed,
                 front_foot_top_support=frame.front_foot_top_support,
                 consumed=True, terminal=frame.terminal,
                 sample_id=frame.native_sample_id)

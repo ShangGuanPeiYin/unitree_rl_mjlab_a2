@@ -55,18 +55,41 @@ def _trace_for_metrics(rows, summary):
     return valid
 
 
+def _trace_dict(rows):
+    if not rows:
+        return {}
+    keys = set(rows[0])
+    return {key: np.asarray([row[key] for row in rows])
+            for key in keys if key not in ('contact_pairs', 'native_sample_id')}
+
+
 def _platform(summary):
     geometry = summary.get('geometry') or (summary.get('case_meta') or {}).get('geometry')
-    if not geometry or not geometry.get('platform_present'):
+    if not geometry:
         return None
-    return dict(front_x=float(geometry['platform_front_local_x']),
-                length=float(geometry['platform_length']),
-                y_half_width=float(geometry['platform_width']) / 2.0)
+    if geometry.get('platform_present') is False:
+        return None
+    if geometry.get('platform_front_local_x') is not None:
+        front = float(geometry['platform_front_local_x'])
+        width = float(geometry.get('platform_width') or geometry.get('width'))
+        length = float(geometry['platform_length'])
+    else:
+        # H legacy geometry omits the S2 platform convenience fields.
+        if not all(key in geometry for key in ('N', 'step_depth', 'width',
+                                               'platform_length')):
+            return None
+        front = float(geometry.get('frame_origin_world', [0.0])[0]) +             float(geometry['N']) * float(geometry['step_depth'])
+        width = float(geometry['width'])
+        length = float(geometry['platform_length'])
+    if length <= 0 or width <= 0:
+        return None
+    return dict(front_x=front, length=length, y_half_width=width / 2.0)
 
 
 def _termination(summary):
     if summary.get('status') != 'completed':
-        return 'runner_failed'
+        error = str(summary.get('error') or '')
+        return 'q023_frame_proof' if 'Q023' in error else 'runner_failed'
     if summary.get('failure'):
         return 'physical_failure'
     if summary.get('timeout'):
@@ -105,7 +128,7 @@ def _summarize_evidence(summary_path):
         case=case, events=events)
     try:
         metrics = (s2_metrics.summarize_case(
-            _trace_for_metrics(rows, summary), platform=platform,
+            _trace_dict(_trace_for_metrics(rows, summary)), platform=platform,
             zero_anchor='four_feet_platform') if platform else None)
     except Exception as error:
         metrics = None
@@ -128,6 +151,7 @@ def _summarize_evidence(summary_path):
         stair_count=summary.get('stair_count'),
         platform_width=(summary.get('geometry') or {}).get('platform_width'),
         attempt_id=summary.get('attempt_id'), status=summary.get('status'),
+        error=summary.get('error'),
         termination=_termination(summary), failure=bool(summary.get('failure')),
         timeout=bool(summary.get('timeout')), top_arrived=bool(summary.get('top_arrived')),
         termination_reason=summary.get('termination_reason'),
@@ -168,6 +192,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--evidence-root', type=Path,
                         default=ROOT / 'logs/a2_v09/s2_0/matrix')
+    parser.add_argument('--h-evidence-root', type=Path,
+                        default=ROOT / 'logs/a2_v09/s2_0/evidence')
     parser.add_argument('--output-dir', type=Path)
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args(argv)
@@ -179,9 +205,22 @@ def main(argv=None):
             row = dict(status='report_error', error=repr(error),
                        evidence_dir=str(summary_path.parent))
         candidates.append(row)
-    selected = _select_latest(candidates)
+    # H reruns live under the standalone evidence root; include only H there.
+    h_candidates = [row for row in candidates if row.get('suite') == 'H_SERIES']
+    if args.h_evidence_root.exists():
+        for summary_path in sorted(Path(args.h_evidence_root).glob('**/smoke_summary.json')):
+            try:
+                row = _summarize_evidence(summary_path)
+            except Exception as error:
+                row = dict(status='report_error', error=repr(error),
+                           evidence_dir=str(summary_path.parent))
+            if row.get('suite') == 'H_SERIES':
+                h_candidates.append(row)
+    selected = _select_latest([row for row in candidates if row.get('suite') != 'H_SERIES'] + h_candidates)
     s2 = [row for row in selected if row.get('suite') == 'S2_DIAG']
-    h = [row for row in selected if row.get('suite') == 'S1_DIAG']
+    h = [row for row in selected if row.get('suite') == 'H_SERIES'
+         or (row.get('task') == 'stairs'
+             and (row.get('case_id') is not None))]
     run_plan = _load_json(ROOT / 'logs/a2_v09/s2_0/cases/S2_DIAG_run_plan.json')
     h_manifest = _load_json(ROOT / 'logs/a2_v09/s2_0/cases/h_series_case0.json')
     expected_s2 = len(run_plan['entries'])
@@ -190,6 +229,8 @@ def main(argv=None):
     for row in h:
         original = h_by_sha.get(row['case_sha256'], {}).get('original_failure_position')
         row['original_failure_position'] = original
+        if original and 'route_x' not in original and 'terminal_route_x' in original:
+            original = dict(original, route_x=original['terminal_route_x'])
         top = row.get('windows', {}).get('top_arrived') or {}
         row['top_forward_lean'] = (None if top.get('status') != 'ok'
                                    else bool(top.get('nose_down_fraction', 0) > 0.5))
