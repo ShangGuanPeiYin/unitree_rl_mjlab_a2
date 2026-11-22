@@ -4569,3 +4569,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 台账：probe1024 spent 0；probe512 2,332,928/2,332,928；新增 `probe_512_retry_overage` 261,064（重试部分）；debug 11,905/20,000；总 spent 2,739,374；envelope 264,169,434（≤4 亿）。
 - 估算：512 下 24,576 样本/rollout、约 5.5 s/rollout，S2.1 的 32,552 rollouts 约 50 小时。
 - 未执行：训练（待 V10 独立准入 review SHA 后写 admission 并启动）。
+
+
+## 2026-11-22 V10 准入复核：REJECT（3 项未闭合）
+
+- 目的：归档 512 资源准入的第三方复核。
+- 涉及文件：`docs/v09_s2_1_admission_independent_review_v10.md`、`logs/a2_v09/s2_0/verification/admission_audit_20261122_r10.json`、本日志。
+- 通过：512 资源项（50 条 timings 合计 275.397 s、peak 4521.75、host free 14864.24、eval 100×9472、video 1×200、restore_ok、无 OOM/非有限/接触溢出）；1024 OOM 证据合规（peak 5396.76、0 measurements、Warp graph OOM）。
+- 拒绝项：① `independent_copy=false` 而要求 true，`run_probe` 未把该项计入 failure_reasons，`write_admission` 直接信任 `admitted` → 准入链漏洞；② `probe_512_retry_overage` 261,064 与 partial 270,336 的对账未说明（实际：partials 270,336 + 成功 r4 2,323,656 = 2,593,992 = limit 2,332,928 + overage 261,064）；③ 512 训练口径未改（仍 16,276 rollouts/49,152/102），应为 32,552/24,576/204。
+- 结论：`admission_review_sha256=null`，不得写 admission、不得开训。
