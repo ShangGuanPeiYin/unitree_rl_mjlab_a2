@@ -66,3 +66,13 @@ def test_freeze_is_append_only(tmp_path):
     assert json.loads(Path(receipt['a']['path']).read_text())['frozen'] is True
     with pytest.raises(FileExistsError):
         s2_gate_cases.freeze_gate_cases(tmp_path)
+
+
+def test_l40_batch_groups_are_twenty_envs():
+    manifest = s2_gate_cases.build_gate_manifest('gate_A')
+    l40 = [row for row in manifest['cases'] if row['task'] == 'legacy_l40']
+    batches = s2_gate_cases.batch_groups(l40, envs_per_batch=20)
+    assert len(batches) == 3
+    assert all(len(batch['cases']) == 20 for batch in batches)
+    assert {batch['group_id'] for batch in batches} == {
+        'l40/0.3', 'l40/0.5', 'l40/0.6'}

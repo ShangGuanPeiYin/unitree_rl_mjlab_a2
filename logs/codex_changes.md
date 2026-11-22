@@ -4675,3 +4675,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 涉及文件：`scripts/collect_a2_v09_s2_gate_reference.py`（`--reference 6400_flat --execute` 直接拒绝，说明原 48×32 教师路径尚未实现）。
 - 验证：`--reference 6400_flat --execute` 返回 `Q034: 6400_flat cache requires the original 48x32 teacher observation path; the migrated model has no standing`；`--dry-run` 仍可出计划（无物理、无台账）。
 - 遗留：原 6400 旧图参考路径、gate 读 cache 的源身份校验、L40 向量化仍待实现。
+
+## 2026-11-22 Q034-A 原 6400 旧图路径与 6400 旁路封死
+
+- 目的：按 Q034-A 实现原始 6400 的 48×32 旧图参考；封死 40×30 迁移模型旁路。
+- 修改：`collect_a2_v09_s2_gate_reference.py --reference 6400_flat` 仅拒绝（保留 guard）；新增 `collect_a2_v09_s2_gate_original_6400.py`，用 `Frozen6400Teacher` + `V09S1Env` 原生 48×32 旧图、v07 物理/教师观测、S2 平地 9×20 例、20 envs/batch，保留 case 初态/流/命令/停车/超时，记录动作一致性自检；gate 读 6400 cache 校验 source `30ed23ba…`、`model_type=original_6400`、`observation_shape=3×48×32`、`migrated=false`。
+- L40：`s1_least.pt` 3 速度×20 例/套；逐例 case SHA/起点/最后有效终止位置/带符号净距离/成功/失败类别/超时/工程失败/trace；P10/P50/P90 每组；cache receipt/reference_cache/cases 结构；拒绝覆盖。
+- 向量化：原 6400 使用 `V09S1Env` 20 env/batch；L40 当前执行器逐例，batch plan 已定义/测试，真实 20 env 向量装配仍待补。
+- 文档：删除“同一 6400 迁移模型”措辞；写入 seed 42 非流标识、suite 盐派生、A/B 与训练/终验 case SHA 独立。
+- 验证：S2 套件 **256 passed**；6400 迁移直调/错误 source/map/模型类型均拒绝；Q034-A dry-run 9/180/234,180/20 env。

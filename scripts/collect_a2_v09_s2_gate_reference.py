@@ -103,7 +103,6 @@ def main(argv=None):
     if not args.ledger.is_file():
         raise SystemExit('ledger missing')
     from src.tasks.velocity.v09 import s2_ledger
-    from src.tasks.velocity.v09.model import V09ActorCritic
     from src.tasks.velocity.v09 import s2_physics
     ledger = s2_ledger.S2Ledger(
         args.ledger, run_id=s2_ledger.read_run_id(args.ledger))
@@ -112,15 +111,11 @@ def main(argv=None):
         raise SystemExit(f'missing obligation {obligation}')
     if duty['limit'] - duty['spent'] - duty['reserved'] < cost:
         raise SystemExit(f'insufficient {obligation} balance')
-    if args.reference == 's1_l40':
-        teacher = s2_physics.load_s1_actor(device=args.device)['model']
-        source_sha = s2_spec.S1_ENTRY_WEIGHT_SHA256
-    else:
-        # DSH-Q034: the gate's "original 6400" reference is the original
-        # 48x32 teacher with its native map, not the two-FC migrated student.
-        raise SystemExit(
-            'Q034: 6400_flat cache requires the original 48x32 teacher '
-            'observation path; the migrated model has no standing')
+    if args.reference != 's1_l40':
+        raise SystemExit('DSH-Q034: only the s1_least L40 reference path is implemented here')
+    teacher = s2_physics.load_s1_actor(device=args.device)['model']
+    source_sha = s2_spec.S1_ENTRY_WEIGHT_SHA256
+
     teacher.eval()
     for parameter in teacher.parameters():
         parameter.requires_grad_(False)
@@ -154,17 +149,29 @@ def main(argv=None):
                 _, done_list, _ = env.step(action[0].detach().cpu().numpy())
                 steps += 1
                 done = bool(done_list[0])
+            trace = s2_env.jsonable(env.evidence(0))
+            route = np.asarray(trace['route_x'], dtype=float)
+            post_reset = np.asarray(trace.get('post_reset', [False] * len(route)),
+                                    dtype=bool)
+            valid = np.flatnonzero(~post_reset)
+            last_index = int(valid[-1]) if valid.size else 0
+            start_x = float(case['spawn']['local_position_xy'][0])
+            terminal_x = float(route[last_index]) if route.size else start_x
             results.append(dict(
                 group=case['group_id'], case_sha256=case['case_sha256'],
                 success=bool(env.machine.success),
                 failure=bool(env.machine.failure),
                 timeout=bool(env.machine.timeout),
+                physical_failure=bool(env.machine.failure),
+                engineering_failure=False,
                 steps=steps,
-                route_max=float(env.last.route_x),
-                net_distance=float(env.last.route_x) - float(
-                    case['spawn']['local_position_xy'][0]),
+                start_x=start_x, terminal_x=terminal_x,
+                last_valid_index=last_index,
+                terminal_is_post_reset=bool(post_reset[last_index]) if post_reset.size else None,
+                route_max=float(route.max()) if route.size else start_x,
+                net_distance=terminal_x - start_x,
                 termination_reason=getattr(env.last, 'termination_reason', None),
-                trace=s2_env.jsonable(env.evidence(0))))
+                trace=trace))
         except Exception:
             if steps:
                 ledger.commit(obligation, steps, operation_id=f'{op}:commit',
@@ -200,7 +207,9 @@ def main(argv=None):
                 str(name): sum(1 for row in rows
                                if row.get('termination_reason') == name)
                 for name in {row.get('termination_reason') for row in rows
-                             if row.get('failure')}})
+                             if row.get('failure')}},
+            timeouts=sum(bool(row.get('timeout')) for row in rows),
+            engineering_failures=sum(bool(row.get('engineering_failure')) for row in rows))
     if args.reference == 's1_l40':
         cases_dir = out / 'cases'
         cases_dir.mkdir(parents=True, exist_ok=True)

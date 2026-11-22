@@ -333,3 +333,19 @@ def load_gate_manifest(path, *, expected_suite=None, course=COURSE):
     manifest = json.loads(Path(path).read_text())
     validate_gate_manifest(manifest, expected_suite=expected_suite, course=course)
     return manifest
+
+
+def batch_groups(cases, *, envs_per_batch=20):
+    """Group frozen cases by their gate group; each batch must fit the limit."""
+    grouped = {}
+    for case in cases:
+        grouped.setdefault(case['group_id'], []).append(case)
+    batches = []
+    for group_id in sorted(grouped):
+        rows = grouped[group_id]
+        if len(rows) != envs_per_batch:
+            raise ValueError(f'group {group_id} has {len(rows)} cases, '
+                             f'not {envs_per_batch}')
+        batches.append(dict(group_id=group_id, cases=rows,
+                            envs_per_batch=envs_per_batch))
+    return batches

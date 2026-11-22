@@ -40,10 +40,6 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not (args.dry_run or args.execute):
         raise SystemExit('use --dry-run or --execute')
-    if args.cache_kind == '6400':
-        raise SystemExit(
-            '6400 gate cache is intentionally disabled pending DSH-Q034; '
-            'do not substitute the 40x30 migrated model for the original 6400')
     manifest_path = args.manifest or (
         ROOT / 'logs/a2_v09/s2/gate_cases/v1' /
         ('S2_GATE_A.json' if args.suite == 'gate_A' else 'S2_GATE_B.json'))
@@ -59,7 +55,7 @@ def main(argv=None):
         source_path = s2_spec.S1_ENTRY_WEIGHT
         source_sha = s2_spec.S1_ENTRY_WEIGHT_SHA256
     else:
-        reference = '6400_flat'
+        reference = 'original_6400_flat'
         groups = [row for row in manifest['groups']
                   if row['group_id'].startswith('flat/')]
         cases = [row for row in manifest['cases'] if row['task'].startswith('flat_')]
@@ -97,15 +93,22 @@ def main(argv=None):
 
     # Real reference collection is delegated to the frozen-case runner.  It
     # writes no cache on a failed run and refuses overwrite.
-    rc = collector.main([
-        '--reference', reference, '--suite', args.suite, '--execute',
-        '--manifest', str(manifest_path), '--ledger', str(args.ledger),
-        '--device', args.device, '--output-dir', str(args.output_dir),
-        '--obligation-id', obligation])
+    if args.cache_kind == 'l40':
+        rc = collector.main([
+            '--reference', 's1_l40', '--suite', args.suite, '--execute',
+            '--manifest', str(manifest_path), '--ledger', str(args.ledger),
+            '--device', args.device, '--output-dir', str(args.output_dir),
+            '--obligation-id', obligation])
+    else:
+        import collect_a2_v09_s2_gate_original_6400 as original
+        rc = original.main([
+            '--suite', args.suite, '--execute',
+            '--manifest', str(manifest_path), '--ledger', str(args.ledger),
+            '--device', args.device, '--output-dir', str(args.output_dir),
+            '--obligation-id', obligation])
     if rc != 0:
         return rc
-    cache = (args.output_dir / 'reference_cache.json' if args.cache_kind == 'l40'
-             else args.output_dir / f'{reference}_{manifest["suite"]}_cache.json')
+    cache = args.output_dir / 'reference_cache.json'
     if not cache.is_file():
         raise SystemExit('cache file was not produced')
     payload = json.loads(cache.read_text())
@@ -119,9 +122,9 @@ def main(argv=None):
         cache_path=str(cache), cache_sha256=_sha(cache),
         case_files=payload.get('case_files', []),
         created_at_utc=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-        note='L40 uses s1_least.pt; 6400 path intentionally disabled pending '
-             'DSH-Q034. 20 cases per group; execution window must not overlap '
-             'S2.1 training.')
+        note='L40 uses s1_least.pt; 6400 uses the untouched original 6400 '
+             'teacher and native 3x48x32 old map (Q034-A). 20 envs/batch; '
+             'do not overlap S2.1 training if peak would exceed 7168 MiB.')
     receipt_path = args.output_dir / 'cache_receipt.json'
     if receipt_path.exists():
         raise FileExistsError(receipt_path)

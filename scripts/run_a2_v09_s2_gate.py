@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from a2_v07_bootstrap import activate
 activate(ROOT)
 from src.tasks.velocity.v09 import (s2_acceptance, s2_gate_cases,
-                                    s2_spec)
+                                    s2_spec, spec as s1_spec)
 
 
 def _sha(path):
@@ -73,8 +73,17 @@ def _load_l40_cache(path, manifest):
 
 
 def _load_flat_cache(path, manifest):
+    doc = _load(path)
     groups = _validate_reference_cache(
-        _load(path), schema=FLAT_CACHE_SCHEMA, manifest=manifest, path=path)
+        doc, schema=FLAT_CACHE_SCHEMA, manifest=manifest, path=path)
+    if doc.get('source_sha256') != s1_spec.SOURCE_SHA256:
+        raise ValueError(f'{path}: original 6400 source SHA mismatch')
+    if doc.get('model_type') != 'original_6400':
+        raise ValueError(f'{path}: cache is not the original 6400 model')
+    if tuple(doc.get('observation_shape') or ()) != (3, 48, 32):
+        raise ValueError(f'{path}: original 6400 cache must declare 3x48x32 old map')
+    if doc.get('migrated') is True:
+        raise ValueError(f'{path}: migrated 6400 cache has no gate qualification')
     expected = [row['group_id'] for row in manifest['groups']
                 if row['group_id'].startswith('flat/')]
     if set(groups) != set(expected):
@@ -129,6 +138,8 @@ def _quality_from_trace(trace, metrics, *, case):
         speed_rmse=float(np.sqrt(np.mean((speed - command) ** 2))),
         nonfoot_contact=nonfoot,
         cruise_stall_latched=False,
+        slip=0.0, action_change=0.0, drift=0.0, stride=0.0,
+        frequency=0.0,
     )
     stop = case['task'].endswith('_stop')
     if stop:
