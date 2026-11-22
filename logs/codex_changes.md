@@ -4623,3 +4623,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 6400 复用：S1.0/Q010 缓存绑定 S1 冻结病例，与 S2 gate flat 病例 SHA 交集为 0，不能直接复用；需在 S2 gate 同一病例上用 40×30 的 6400 迁移模型重采，A/B 合计 468,360（不含 1.62M 候选/L40 上界）。
 - 课程：`--course S2.1/S2.2/S2.3` 接入训练 CLI、rollout cap、role/geometry 计划、checkpoint course 元数据；S2.2 40 级/复习 10/20/平台 8m，S2.3 stairs_stop/platform_stop+ramp/hold。S2.2/3 的 33/51 组门禁清单与训练后端 stop 状态机仍未接。
 - 验证：S2 套件 **251 passed**；冻结脚本重复执行正确拒绝；门禁 dry-run 使用首个 schema11 checkpoint `s2_1_000005013504.pt` 验证 36 组/720 例/1,620,000/L40 219,220 及两个缓存缺失状态。
+
+
+## 2026-11-22 首个 S2.1 schema 11 检查点核验与门禁 dry-run
+
+- 目的：核验 S2.1 首个检查点，并用它跑门禁 dry-run。
+- 检查点：`logs/a2_v09/s2/s2_1/s2_1_000005013504.pt`，SHA `59cf153d510d605c8f2c718baeb9cb1864dd7d4da89444bfa846c5261d715665`，5,013,504 学习样本 / 204 rollouts。
+- Metadata：entry/teacher `efa9caa8…`、candidate `3a0ebe0c…`、case manifest `fab7372e…`、std 12 维、`ledger_cursor`、`gate_ab_sequence=gate_A`、`gates_passed=[]`、randomization/delay nominal、role counts 103/102/205/51/51=512。
+- 门禁 dry-run：36 组/720 例、1,620,000 样本上界解析通过；`gate_admissions_up_to_40` 与 `l40_milestone_cache_gate_A` 义务可读；**6400 平地缓存与 L40 缓存均缺失**（`missing_requires_*`），已下达 T14 生成器。
+- 训练：206 rollouts 时正常，LR 1e-5、std 缓升。
