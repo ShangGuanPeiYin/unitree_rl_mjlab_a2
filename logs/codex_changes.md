@@ -4883,3 +4883,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 现象：60 例全部执行并逐例 commit（合计 75,179 步），在最终写 `cases/<sha>.json` 时 `TypeError: Object of type ndarray is not JSON serializable`；未写缓存、未 release（实现方把 release 放在写盘之后）。
 - 处置：释放孤儿预留 144,041；修复 collector 对所有 row/cache 使用 `s2_env.jsonable`；新增 `l40_milestone_cache_gate_A_rerun2`（219,220）并重启（`l40-r3`，case 1/60 起步）。
 - 台账：`l40_milestone_cache_gate_A_rerun` spent 75,179/219,220；`..._rerun2` 预留 219,220；envelope 269,723,546。
+
+
+## 2026-11-23 L40 gate_A 参考缓存完成（增量落盘 + 抢救）
+
+- 过程：rerun4 跑完 60/60 并逐例增量写 `cases/<sha>.json`，在最终写 cache 时被作业管理器 SIGTERM；因已增量落盘，60 例证据完整保留。
+- 抢救：从 60 个逐例 JSON 重建 `reference_cache.json` 与 `cache_receipt.json`（`salvaged_from_case_files=true`）；补 `failure_class` 字段（由 success/termination_reason 派生，标注 salvage note）；刷新逐例 SHA。
+- 结果（gate loader 实际接受）：3 组，59/60 成功；L40 0.3：20/20，P10/P50/P90 = 9.784/9.866/9.929；0.5：19/20，9.802/9.879/9.951；0.6：20/20，9.809/9.906/9.962。
+- 台账：rerun3 spent 75,204 / 219,220，unused 144,016 已释放；三次 L40 A 尝试合计按实际步数计费（75,179 + 75,147 + 75,204）。
+- 建议：collector 后续加 `failure_class` 原生字段与增量 cache 更新，避免再依赖抢救。
