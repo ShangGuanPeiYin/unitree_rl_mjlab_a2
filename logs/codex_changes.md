@@ -4259,3 +4259,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 实现要点：主窗口严格 §6.5 巡航掩码；N/Σg/平均强度/启用占比分列并删除无定义 `duty`；"完全关闭 g==0"与"未满强度 g<1"两个最长连续时长分列、`N=0` 记 NA、非空未出现记 0、窗口有效性 N≥50；归零原因四类且仅"曾满足→失效"计事件；首米同函数单列；四事件控制步+仿真时刻+相对延迟+NA 原因+中断重入区间。
 - 验证：本机复跑 S2 CPU 套件 **161 passed**；强制向量 `t0..t0+25` 共 26 条 → 延迟 0/0/0.02/0.50 s、Σg=13、平均 0.5、启用占比 25/26、最长完全关闭 0.02 s、最长未满 0.50 s，测试通过；reserve dry-run 复跑 plan `773b53c6…` 未落盘。
 - 未执行：未写正式 S2 台账、未跑 GPU/物理、未训练。
+
+
+## 2026-11-22 V6 训练栈独立复核：7 项阻断
+
+- 目的：归档 S2.1~S2.3 训练栈、Q028/Q029 与 V5 修复的第三方复核。
+- 涉及文件：`docs/v09_s2_1_stack_independent_review_v06.md`、`logs/a2_v09/s2_0/verification/train_stack_audit_20261122_r6.json`、本日志。
+- 通过：20 项奖励权重两列、dt 一次、I_cruise、停车关前进/腾空、抬脚 0.075/0.22、失败/超时优先；`L_anchor` 精确聚合；runner 参数/LR 调整/std 夹取/加权累积/GAE 规则；resources 门槛与失败证据字段；checkpoint schema 字段覆盖；ledger 命名空间与 cap；acceptance 阈值与停车项；Q027/V5 修复（H legacy、30 批、max-envs、docstring、config SHA）；Q028/Q029 强制向量独立复算一致（0/0/0.02/0.50、Σg=13、25/26、0.02/0.50）。
+- 阻断：B-V6-1 stable_stand 在 c_exec=0.25 仍付 +1；B-V6-2 acceptance 缺站立 roll/pitch/高度/无巡航窗/27×100/6400 保持；B-V6-3 512 可不经 1024 失败直选、probe 缺录像、9472 vs 9471；B-V6-4 operation_id 无去重；B-V6-5 checkpoint 无 loader/跨版本守卫、gates_passed 缺 A/B；B-V6-6 runner 非完整 PPO 训练环；B-V6-7 首米窗缺失、首次满值区间起点取错、旧 duty 字段未删、步号当数组下标。
+- 处置：7 项均按 SDS 原文下达修复，无需新裁定。
+- 未执行：未跑 GPU/物理、未训练、未写正式原子预留。
