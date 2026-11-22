@@ -42,6 +42,22 @@ class S2PhysicsAssemblyError(RuntimeError):
     pass
 
 
+def sim_state_digest(qpos, qvel):
+    """Stable qpos/qvel digest for same-process branch replay evidence."""
+    import hashlib
+    values = []
+    for value in (qpos, qvel):
+        if hasattr(value, 'detach'):
+            value = value.detach().cpu().numpy()
+        values.append(np.ascontiguousarray(np.asarray(value, dtype=np.float64)))
+    digest = hashlib.sha256()
+    for label, value in zip(('qpos', 'qvel'), values):
+        digest.update(label.encode())
+        digest.update(np.asarray(value.shape, dtype=np.int64).tobytes())
+        digest.update(value.tobytes())
+    return digest.hexdigest()
+
+
 @dataclass
 class BackendStep:
     route_x: float
@@ -79,6 +95,8 @@ class BackendStep:
     termination_reason: str = 'running'
     nonfoot_contact: bool = False
     v07_success: bool = False
+    sim_state_sha256: str = ''
+    post_reset: bool = False
 
 
 def aggregate_foot_contacts(top_forces, *, geom_names=None, geom_tiles=None,
@@ -207,7 +225,9 @@ class S2FakeBackend:
             sim_time_s=self.sim_time,
             termination_reason=('success' if top and terminal else 'timeout' if terminal else 'running'),
             v07_success=bool(on_platform and front and
-                             self.route_x >= front + 0.8))
+                             self.route_x >= front + 0.8),
+            sim_state_sha256=sim_state_digest(np.zeros(19), np.zeros(18)),
+            post_reset=terminal)
 
 
 class S2PhysicsEnv:
@@ -369,6 +389,7 @@ class S2PhysicsEnv:
             step=self.steps - 1, route_x=frame.route_x, base_xy=frame.base_xy,
             feet_xy=frame.feet_xy, feet_route_x=frame.feet_route_x,
             feet_z=frame.feet_z, pitch=frame.pitch, foot_on_platform=frame.foot_on_platform,
+            sim_state_sha256=frame.sim_state_sha256, post_reset=frame.post_reset,
             foot_contact=frame.foot_contact, g_level=g_value,
             top_arrived=frame.top_arrived, failure=frame.failure,
             stop_request=self.machine.stop_requested,
@@ -756,7 +777,10 @@ class MjlabS2Backend:
             contact_pairs=contact_pairs, native_sample_id=sample_id,
             sim_time_s=self.steps * 0.02, nonfoot_contact=nonfoot,
             termination_reason=termination_reason,
-            v07_success=(bool(last[0][0]) if last is not None else False))
+            v07_success=(bool(last[0][0]) if last is not None else False),
+            sim_state_sha256=sim_state_digest(self.env.sim.data.qpos[0],
+                                              self.env.sim.data.qvel[0]),
+            post_reset=terminal)
 
 
 def load_s1_actor(path=None, *, expected_sha256=None, device='cpu'):

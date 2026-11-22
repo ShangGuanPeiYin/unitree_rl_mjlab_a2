@@ -83,8 +83,8 @@ event_sha256=36810b1abfe27f863336a21c3a31a2e05c431efc446e8e67a4752da1e0ca8970
 T10 结束时：
 
 ```text
-s2_0_matrix_two_branches: limit 420390, spent 384, available 420006
-s2_0_pipeline_debug:      limit 20000, spent 7682, available 12318
+s2_0_matrix_two_branches: limit 420390, spent 3177（limit-2 real+plane）, available 417213
+s2_0_pipeline_debug:      limit 20000, spent 8066, available 11934
 h_series_baseline_supplement: limit 9432, spent 0, available 9432
 ```
 
@@ -94,18 +94,24 @@ h_series_baseline_supplement: limit 9432, spent 0, available 9432
 
 新增 `scripts/run_a2_v09_s2_parity.py`：从 S2 病例复制 spawn/yaw/streams/command，构造 `V09S1Env` 的 **flat_walk flat tile 0** 代理；S1 与 S2 接收同一 S1 Actor 动作序列，逐帧记录观测 SHA256 与逐键最大差。
 
-flat case 结果（`aee59c5d3a49...`，64 步）：
+flat case 结果（`aee59c5d3a49...`，4 步精确诊断；64 步旧 r6 仅留痕）：
 
 ```text
 s2_case_sha256 = aee59c5d3a49a300c85a0a0067841059d36ea283ce1c0e62589477444e8bcef2
 s1_proxy_case_sha256 = e3887ccdb0503b76f9fac2d4b88ba854b0ec34cbae9426d5be5ed6220b0b9d2e
 spawn = (-1.0858503909, -0.0385040479)
-route 最大差 = 1.788e-7 m
-obs 最大差: proprio 1.746e-4, history 1.746e-4,
-            heightmap 5.96e-8, route_error 1.624e-6
-practical parity (1e-3) = true
-strict (1e-6) = false（GPU float 噪声）
+
+step0: qpos/qvel hash、proprio、history、heightmap、route_error 全一致
+step1: qvel index13 |Δ|=4.768e-7；qpos max |Δ|=7.45e-9
+       proprio dims 27/28/30/32（joint_vel 6/7/9/11）1.2e-7..4.8e-7
+       history dims 207/208/210/212（最新 history 帧的同一组 joint_vel）
+       heightmap/route_error 0；a_request/a_applied 0
+step2/3: 差异仍是 joint_vel 及其 history 副本；heightmap/route_error 0
+parity_ok(1e-6) = false
 ```
+
+结论：不是 q-q0、omega_b/gravity_b 坐标系、last_applied_action、normalizer、
+history 写入时机或 map 采样先出错；第一次差异是物理步后的 qvel index13，随后被状态放大到 1e-4 量级。来源定位在物理状态，不是可修补的观测管线；引擎级非确定性/接触求解尚未定位到可修改代码。旧 r6 的 1e-3 “practical pass” 作废，不再使用放宽容差。
 
 证据：
 
@@ -134,11 +140,20 @@ top_arrived: step 1563, route 8.43270, t=31.26 s
 g_level >0: step 1563; g_level=1: step 1587
 failure: step 1608, reason=body
 末次未 reset 采样: step 1606, route 9.26579, pitch -53.19°
-pitch after top: mean -25.38°, min -53.19°, positive(前倾) 0%
+pitch 后段（step 1563..1606，44 帧，剔除复位行）:
+  mean -25.96°, min -53.19°, max -11.77°
+  nose_down_fraction=1.0, nose_up_fraction=0.0, level_fraction=0.0
 四足每足最大高度约 8.12–8.25 m，四足均完成抬升
 ```
 
-判断：确实上梯并到达平台顶部；平台后没有前倾，而是持续抬头/后仰（pitch 变负），在约 route 9.27 m 处 body failure。
+判断：确实上梯并到达平台顶部；Q030 口径下 pitch<0 是低头/前倾，因此 real 在平台后持续低头（前倾），不是抬头/后仰；约 route 9.27 m 处 body failure。
+
+窗口/事件对照（event step 与 trace row 分别列出；Q030 行配对见重算 JSON）：
+
+| case | 机身首次 route>=8.0 | 四足入台 | top_arrived | §6.5 正式巡航窗 |
+| --- | --- | --- | --- | --- |
+| real-r4 | step 1546 / row 1546 | event 1560 / row 1559 | event 1563 / row 1562 | NA（D_post 5 m 未达到即 failure） |
+| plane-r1 | step 1550 / row 1550 | NA | NA | NA（未 top，nonfoot failure） |
 
 ### 4.2 plane（`t10-stairs-plane-r1`）
 
@@ -155,14 +170,18 @@ s_minus_t=1
 valid_fraction=1.0 (1882800/1882800)
 saturation=0.025 (1200/48000)
 replacement_frames_consumed=40
-pitch after platform: mean +13.36°, max +15.91°, positive 94.7%
+pitch 前缘后（step 1550..1567，18 帧，剔除复位行；首次 route>=8.0 为 step1550）:
+  mean +14.10°, min +12.23°, max +15.91°
+  nose_down_fraction=0.0, nose_up_fraction=1.0, level_fraction=0.0
 ```
 
-plane 在平台前缘附近（约 8.15 m）失败，未锁存 top；平台后呈明显前倾，与 real 的后仰方向相反。
+plane 在平台前缘附近（约 8.15 m）失败，未锁存 top；Q030 口径下 +pitch 是抬头，plane 在平台后持续抬头，real 则是持续低头/前倾。旧 +13.36°/94.7% 含复位行且方向误标，作废。
+
+real-r4 的 `post_reset` 旧 trace 无字段，sidecar 标记 row 1607=true；plane-r1 row 1568=true。新代码已把 `post_reset` 写入每帧。
 
 ### 4.3 分支前缀
 
-normal real/plane 是独立 GPU 进程；同一动作序列 replay（`t10-stairs-plane-replay300`）证明 `a_request`/`a_applied` 逐帧完全一致，但 joint-level 状态在约 step 5 后出现 GPU solver order 数值漂移（route 5e-4 m，feet 4e-3 m，joint velocity 最大 0.73），因此**不能声称跨进程 trace 逐位相同**。这是数值执行限制，不是 map branch 输入不同；详见：
+normal real/plane 是独立 GPU 进程；同一动作序列 replay 证明 `a_request`/`a_applied` 逐帧完全一致，但 qpos/qvel 哈希在 step 2 就不同（同进程顺序重建 env 也一样），说明**病例匹配但物理状态未对齐**，不是 Q016 的同态输入证据。`branch_prefix_sha256` 必须由同一个物理快照/同一采样帧产生；当前跨进程/顺序重建只能声明“动作/命令前缀一致”，不能声明 Q016 满足。详见：
 
 ```text
 logs/a2_v09/s2_0/evidence/t10-stairs-plane-r1/t10_branch_parity.json
@@ -206,6 +225,47 @@ settled committed=1000, released=1
 ```
 
 说明 S2 的 flat 成功仍由 `completion_steps` 在 timeout 前触发，没有被关闭的 v07 success 影响。
+
+## 4.6 Q030 pitch 口径与重算
+
+字段 `pitch` 保留原始值，不重新定义符号。Q030 口径：
+
+```text
+pitch = -asin(2(wy-zx)) = asin((R_WB e_x)_z)
+positive = nose_up（抬头）
+negative = nose_down（低头/前倾）
+zero     = level
+前向轴 +X，世界向上 +Z
+```
+
+证据/报告写入 `pitch_sign_convention`；派生字段改为 `nose_down_fraction`、`nose_up_fraction`、`level_fraction`，零值计入分母。旧 `positive_forward_lean_fraction` 语义错误，旧产物保留不删。
+
+从原始 trace 重算（剔除 auto-reset 出生行，保留终止事件）。固定四窗：
+
+```text
+real-r4:
+  front_edge: 61 帧, step1546..1606, mean -20.0655°, nose_down=0.9344
+  four_feet:  47 帧, step1560..1606, mean -24.9922°, nose_down=1.0
+  top_arrived:44 帧, step1563..1606, mean -25.9595°, nose_down=1.0,
+              min -53.1867°, max -11.7747°
+  s6_5_cruise: NA（四足后净前进 1 m 未达到，即 body failure）
+plane-r1:
+  front_edge: 18 帧, step1550..1567, mean +14.1021°, nose_up=1.0,
+              min +12.2248°, max +15.9076°
+  four_feet/top_arrived/s6_5_cruise: NA（未四足入台、未 top、未巡航）
+```
+
+所有窗口 `post_reset` 行剔除；`step_min/max` 与 `step_row_pairs` 在重算产物中逐条记录。
+
+产物：
+
+```text
+logs/a2_v09/s2_0/evidence/t10-stairs-plane-r1/q030_pitch_recompute.json
+logs/a2_v09/s2_0/evidence/t10-stairs-real-r4/post_reset.json
+logs/a2_v09/s2_0/evidence/t10-stairs-plane-r1/post_reset.json
+```
+
+`step/row` 配对逐条列在 `q030_pitch_recompute.json` 的 `step_row_pairs` 中。
 
 ## 5. 整矩阵命令（150 + H 6）
 
@@ -260,6 +320,88 @@ H 6 cases:             7,874
 total:               427,276
 ```
 
-预算：S2 矩阵义务 available 420,006，419,402 后可余 604；H 义务 9,432，可余 1,558。任何重试/额外 smoke 只能走 `s2_0_pipeline_debug`。
+预算：limit-2 已用 3,177，matrix available 417,213；尚未跑的 148 条上限约 416,225，余量约 988。H 义务 9,432，可余 1,558。任何重试/额外 smoke 只能走 `s2_0_pipeline_debug`，不得挤占 matrix。
 
 显存/分批：`S2PhysicsEnv` 当前是单环境适配器；实测单进程楼梯运行 GPU 约 1.5 GiB（`1501 MiB / 8192 MiB`），远低于 7168 MiB cap。因此**不需要也不应**按 20 env 并行；150+6 条应串行单环境执行。按本次楼梯约 13 steps/s 的实测量级，419k 步预计约 7–9 小时；H 约 5–10 分钟。实际以 job 日志为准。
+
+## 6. T11 同进程配对与可恢复矩阵运行器
+
+### 6.1 同进程配对（`scripts/run_a2_v09_s2_pair.py`）
+
+同一 Python 进程顺序构建 real/plane env，plane 逐帧接收 real 的动作序列，每帧写 `sim_state_sha256 = sha256(qpos,qvel)`。full 验证 attempt：`t11-pair-stairs-full-r1`。
+
+```text
+real_steps=1608
+plane_steps=350（plane 在 trigger 前已 nonfoot 终止）
+prefix_end_frame=350（未到 map 替换；plane map trigger=None）
+prefix_exact=false
+first_state_hash_divergence=step 1
+branch_prefix_sha256.real=61b67a4bb8369e2d9c92d308af060102b34125d448947fe677ad4c7488c3aa30
+branch_prefix_sha256.plane=8646c71250b8d9411c5f448ea2ae24d152b793d986e4a08125f57f57acd9ab0e
+real_actions_sha256=a79da2df...
+```
+
+结论：**病例/动作前缀一致，但 qpos/qvel 从 step1 起不同**。同进程顺序重建 env 也不可复现同一物理状态；因此不能声明 Q016 通过，也不能把 1e-3 类容差当同态证据。mujoco/mjlab 当前未提供可靠的完整状态克隆；仅恢复 qpos/qvel/time/ctrl/qacc_warmstart 后继续运行仍在 step2 分叉（本机实测）。可行替代只有：同一 env 内先跑 prefix、在干预点做完整物理状态快照/恢复（需要引擎状态克隆），或单 env 双输入/双策略的显式 fork；当前实现没有该能力，报告按“仅动作/命令前缀一致”记录。
+
+### 6.1b Q024 状态
+
+Q024 要求同一物理快照、同一采样帧的 real/plane 双输入。T11 pair 在 step1 已 qpos/qvel 分叉，因此当前**不满足 Q024 同态输入**；任何 plane-map 结论只能标为“动作/命令前缀一致 + 不同物理状态下的干预对照”，不能标为“只改输入”。在完整状态克隆/同 env fork 实现前，Q024 记 `not_proven`。
+
+### 6.2 可恢复矩阵运行器（`scripts/run_a2_v09_s2_matrix.py`）
+
+- 156 条：S2_DIAG 150 + H 6，串行单环境；
+- 每例独立 attempt/证据目录；
+- `--resume` 扫描已有 summary，校验 `status=completed + case_sha256 + evidence_files SHA`，通过则跳过；
+- 失败写 progress 并继续；
+- 每例子进程走既有 ledger reserve/commit/release；runner 自身不写 ledger；
+- 每例一行 progress JSONL，结束输出汇总；
+- `--limit/--only-task/--dry-run` 已实现。
+
+验证：
+
+```text
+limit-2 matrix（t11-limit2）:
+  real completed 1609, plane completed 1568, total 3177
+  证据: logs/a2_v09/s2_0/matrix/s2-030-real-0140473c4282/r1
+        logs/a2_v09/s2_0/matrix/s2-031-plane_diagnostic-0140473c4282/r1
+
+resume check（t11-resume-check）:
+  2/2 skipped_completed, total_actual_committed=0, no ledger write
+
+limit-10 dry-run:
+  10 条 = stairs 0.3/0.5 × 宽 0.8 的前 5 对 real+plane,
+  上限步数 66,728
+```
+
+正式剩余预算：
+
+```text
+matrix spent=3177, available=417213
+剩余 150 矩阵中尚未跑的 148 条上限约 416225
+余量 = 988 步
+H 六例 = 7874 / 9432
+```
+
+整批命令见第 5 节；任何重跑只能走 debug 义务，不能挤占 matrix。
+
+### 6.3 `post_reset`
+
+新代码每帧写 `post_reset`；summary 写 `terminal_row_is_post_reset`。旧 r4/plane 证据不修改 trace，原 SHA 保留，另写：
+
+```text
+logs/a2_v09/s2_0/evidence/t10-stairs-real-r4/post_reset.json
+logs/a2_v09/s2_0/evidence/t10-stairs-plane-r1/post_reset.json
+```
+
+r4 仅 row 1607=true；plane 仅 row 1568=true。Q030 重算已剔除这些行。
+
+### 6.4 Q030 报告口径
+
+见第 4.6 节；real-r4 44 帧全低头均值 -25.96°，plane-r1 18 帧全抬头均值 +14.10°。旧的 `positive_forward_lean_fraction` 产物保留但不用于结论。
+
+## 7. 用户观察与分支复现（单例）
+
+- real-r4：40 级爬完、四足入台、top_arrived；平台后持续低头/前倾（Q030: pitch<0），随后 body failure。该阶段和姿态方向与用户观察一致。
+- plane-r1：作为干预对照，在平台前缘附近 nonfoot failure，未 top；表现为抬头（pitch>0）。
+- 当前证据**不支持**“仿真与现场相反”；也**不支持**“地图替换导致摔倒”作为因果结论：plane 与 real 的干预前物理状态未对齐（qpos/qvel step1 即不同），Q016 同态输入尚未成立。
+- 这是单例诊断；未触发奖励、损失、课程或配方变化。

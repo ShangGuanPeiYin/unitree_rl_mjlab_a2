@@ -82,8 +82,14 @@ def validate_policy_observation(observation):
             'Actor observation contract failed: ' + '; '.join(failures)
             + ' | diagnostics=' + canonical_json(jsonable(diagnostics)))
     return diagnostics
+PITCH_SIGN_CONVENTION = dict(
+    positive='nose_up', negative='nose_down', zero='level',
+    formula='pitch = -asin(2(wy-zx)) = asin((R_WB e_x)_z)',
+    forward_axis='+X', world_up='+Z')
+
 TRACE_FIELDS = (
     'step', 'route_x', 'base_xy', 'feet_xy', 'feet_route_x', 'feet_z', 'pitch',
+    'sim_state_sha256', 'post_reset',
     'foot_on_platform', 'foot_contact', 'g_level', 'top_arrived', 'failure',
     'stop_request', 'terminal', 'c_exec', 'c_request', 'a_request', 'a_applied',
     'velocity_route', 'pitch_rate', 'foot_normal_force', 'contact_pairs',
@@ -92,7 +98,7 @@ TRACE_FIELDS = (
 REQUIRED_PER_STEP = set(TRACE_FIELDS)
 SCALAR_FIELDS = {'step', 'route_x', 'pitch', 'g_level', 'c_exec', 'c_request',
                  'velocity_route', 'pitch_rate', 'map_sample_time_s'}
-BOOLEAN_FIELDS = {'top_arrived', 'failure', 'stop_request', 'terminal'}
+BOOLEAN_FIELDS = {'top_arrived', 'failure', 'stop_request', 'terminal', 'post_reset'}
 VECTOR3_FIELDS = {'base_xy'}
 FOOT_FIELDS = {'feet_xy': (4, 2), 'feet_route_x': (4,), 'feet_z': (4,),
                'foot_on_platform': (4,), 'foot_contact': (4,),
@@ -336,7 +342,7 @@ class S2EvidenceRecorder:
             raise ValueError('g_level outside [0,1]')
         return dict(rows=count, fields=len(trace), valid=True)
 
-    def write(self, directory, *, stem=None, attempt_id=None):
+    def write(self, directory, *, stem=None, attempt_id=None, windows=None):
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
         stem = stem or (f'{self.case.get("suite", "S2")}_{self.case["case_id"]:02d}_'
@@ -370,7 +376,10 @@ class S2EvidenceRecorder:
                         terrain_key=self.adapter.terrain.terrain_key,
                         hard_timeout_steps=self.case['hard_timeout_steps'],
                         timeout_steps=self.adapter.config.timeout_steps,
-                        attempt_id=attempt_id, rows=len(self.rows), npz=str(npz),
+                        attempt_id=attempt_id,
+                        pitch_sign_convention=dict(PITCH_SIGN_CONVENTION),
+                        windows=windows,
+                        rows=len(self.rows), npz=str(npz),
                         trace_path=(str(self.trace_path) if self.trace_path else None),
                         trace_json=(str(trace_json) if trace_json else None),
                         npz_sha256=hashlib.sha256(npz.read_bytes()).hexdigest(),
@@ -407,6 +416,7 @@ def case_record(*, case, adapter, recorder, metrics=None, map_evidence=None,
         state=state_summary, failure_context=failure_context,
         g_level_report=g_level_report, termination_reason=termination_reason,
         attempt_id=attempt_id,
+        pitch_sign_convention=dict(PITCH_SIGN_CONVENTION),
         evidence_contract_sha256=sha256(evidence_contract()),
     )
 

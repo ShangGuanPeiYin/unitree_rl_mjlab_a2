@@ -4370,3 +4370,15 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 通过：`pitch = -asin(2(wy-zx))` 与三姿态（水平 0、抬头 +20、低头 −20）一致；前髋 x=+0.25944、前向 +X；real-r4 step1563..1606 共 44 帧全低头均值 −25.9595°、末步 −53.1867°、body failure 1608/失败采样行 1606；plane-r1 首个 route≥8.0 为 step1550，至 1567 共 18 帧全抬头均值 +14.1021°（+12.2248～+15.9076°）、未 top；`nose_down/up_fraction` 零值计分母、旧 `positive_forward_lean_fraction` 已移除、旧 summary 标 superseded；S2 套件 211 passed。
 - 阻断：B-V82-1 主 summary 窗口仍含 reset 行且缺四足入台/§6.5 窗与 NA；B-V82-2 Q024 同态输入未用同一物理快照/采样帧；B-V82-3 parity 1.746e-4 被 1e-3 容差掩盖且被误写为浮点噪声。
 - 未执行：整矩阵、H 六例、训练。
+
+
+## 2026-11-22 Q030 四窗落实 + 同进程配对/矩阵运行器
+
+- 目的：落实 Q030 四窗口径，交付同进程配对与可恢复矩阵运行器，并启动整批。
+- 涉及文件：`s2_env.py`、`s2_physics.py`、`scripts/run_a2_v09_s2_0.py`（四窗、`pitch_sign_convention`、`post_reset`）、新增 `scripts/run_a2_v09_s2_pair.py`、`scripts/run_a2_v09_s2_matrix.py`、`scripts/recompute_a2_v09_s2_q030.py`、新增测试 `test_v09_s2_0_q030.py`、`test_v09_s2_0_matrix_runner.py`、文档 `docs/v09_s2_t10_case_selection_debug_ledger_parity_stairs.md`。
+- 四窗数值：real-r4 front_edge 61 帧 mean −20.0655°（nose_down 0.9344）、four_feet 47 帧 −24.9922°、top_arrived 44 帧 −25.9595°、s6_5_cruise NA；plane-r1 front_edge 18 帧 +14.1021°、其余 NA。旧 `pitch_after_platform/top` 标 superseded。
+- Q016/Q024：同进程配对 `prefix_equal=false`，首个分叉 step1（qvel index13 4.768e-7），状态快照恢复后仍分叉；明确降级为"动作/命令前缀一致"，Q024 记 `not_proven`，不冒充通过。
+- parity：差异首现于物理步后 qvel，随后放大到 1.75e-4；未定位到可修改代码，未用 1e-3 容差掩盖。
+- 验证：S2 套件 **212 passed**；limit-2 矩阵 real 1609 + plane 1568 = 3,177 步；resume 校验 2/2 跳过、无台账写入。
+- 矩阵：已用 `nohup` 启动整批 `matrix-full-r1`（156 条串行、单环境、`cuda:0`、`--resume`）。
+- 未执行：H 六例（矩阵内含）、训练。

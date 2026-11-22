@@ -120,6 +120,9 @@ def _sha256_file(path):
             if path.exists() and path.is_file() else None)
 
 
+PITCH_SIGN_CONVENTION = s2_env.PITCH_SIGN_CONVENTION
+
+
 def _pitch_stats(rows):
     if not rows:
         return None
@@ -128,11 +131,84 @@ def _pitch_stats(rows):
                 mean_deg=float(values.mean()),
                 min_deg=float(values.min()),
                 max_deg=float(values.max()),
-                positive_forward_lean_fraction=float(np.mean(values > 0.0)))
+                pitch_sign_convention=dict(PITCH_SIGN_CONVENTION),
+                nose_down_fraction=float(np.mean(values < 0.0)),
+                nose_up_fraction=float(np.mean(values > 0.0)),
+                level_fraction=float(np.mean(values == 0.0)))
 
 
 def _first_event(events, name):
     return next((event for event in events if event.get('name') == name), None)
+
+
+def _window_stats(rows):
+    if not rows:
+        return dict(status='NA', reason='no_rows')
+    values = np.asarray([float(row['pitch']) for row in rows]) * 180.0 / np.pi
+    return dict(
+        status='ok', frames=len(rows),
+        step_min=int(min(int(row['step']) for row in rows)),
+        step_max=int(max(int(row['step']) for row in rows)),
+        nose_down_fraction=float(np.mean(values < 0.0)),
+        nose_up_fraction=float(np.mean(values > 0.0)),
+        level_fraction=float(np.mean(values == 0.0)),
+        pitch_mean_deg=float(values.mean()),
+        pitch_min_deg=float(values.min()),
+        pitch_max_deg=float(values.max()),
+        pitch_sign_convention=dict(PITCH_SIGN_CONVENTION))
+
+
+def _four_windows(rows, *, platform_front, case):
+    """Q030/V82 fixed windows, excluding auto-reset rows but keeping events."""
+    valid = [row for row in rows
+             if not row.get('post_reset', False)
+             and not (row is rows[-1] and row.get('terminal'))]
+    result = {name: dict(status='NA', reason='window_not_reached')
+              for name in ('front_edge', 'four_feet', 'top_arrived',
+                           's6_5_cruise')}
+    if not valid:
+        return result
+    front = platform_front
+    if front is None:
+        for value in result.values():
+            value['reason'] = 'no_platform'
+        return result
+    starts = {}
+    front_rows = [i for i, row in enumerate(valid) if float(row['route_x']) >= float(front)]
+    if front_rows:
+        starts['front_edge'] = front_rows[0]
+    four_rows = [i for i, row in enumerate(valid)
+                 if all(bool(v) for v in row['foot_on_platform'])]
+    if four_rows:
+        starts['four_feet'] = four_rows[0] + 1
+    top_rows = [i for i, row in enumerate(valid) if bool(row['top_arrived'])]
+    if top_rows:
+        starts['top_arrived'] = top_rows[0] + 1
+    if 'four_feet' in starts:
+        four_route = float(valid[starts['four_feet']]['route_x'])
+        cruise_rows = [i for i in range(starts['four_feet'], len(valid))
+                       if float(valid[i]['route_x']) >= four_route + 1.0]
+        if cruise_rows:
+            starts['s6_5_cruise'] = cruise_rows[0]
+    for name, start in starts.items():
+        end = len(valid) - 1
+        if name == 's6_5_cruise':
+            stop_rows = [i for i in range(start, len(valid))
+                         if bool(valid[i].get('stop_request'))]
+            if stop_rows:
+                end = stop_rows[0]
+        result[name] = _window_stats(valid[start:end + 1])
+        result[name]['row_start'] = start
+        result[name]['row_end'] = end
+    result['window_rule'] = dict(
+        source_rows='trace rows in order',
+        post_reset_rows='excluded; terminal event retained',
+        front_edge='body route_x >= platform_front_local_x',
+        four_feet='all four foot_on_platform XY projections true',
+        top_arrived='top_arrived flag true',
+        s6_5_cruise='after four_feet, body route_x >= four_feet route_x + 1.0 m; '
+                    'until stop_request or last non-reset row')
+    return result
 
 
 def _frame_stats(rows):
@@ -327,6 +403,10 @@ def main(argv=None):
                        steps=steps, requested_steps=requested_steps,
                        steps_clamped=(steps != requested_steps),
                        branch=args.branch, h_legacy=h_legacy,
+                       q024_status=('not_proven_action_command_prefix_only'
+                                    if args.branch == 'plane_diagnostic'
+                                    else 'not_applicable_real_branch'),
+                       pitch_sign_convention=dict(PITCH_SIGN_CONVENTION),
                        attempt_id=attempt_id,
                        obligation_id=args.obligation_id,
                        estimated_control_steps=steps,
@@ -381,6 +461,9 @@ def main(argv=None):
             summary['evidence_frames'] = len(evidence_rows)
             summary['evidence_partial'] = summary.get('evidence_partial', False) or (
                 len(evidence_rows) != summary.get('control_steps', -1))
+            summary['terminal_row_is_post_reset'] = bool(
+                evidence_rows[-1].get('post_reset')) if evidence_rows else None
+            windows = None
             events = s2_env.jsonable(getattr(env.machine, 'events', []))
             summary['termination_reason'] = getattr(env.last, 'termination_reason', None)
             try:
@@ -419,6 +502,8 @@ def main(argv=None):
                                           dtype=bool)
                 geometry = case.get('geometry') or {}
                 front = geometry.get('platform_front_local_x')
+                windows = _four_windows(evidence_rows, platform_front=front, case=case)
+                summary['windows'] = windows
                 step_depth = float(geometry.get('step_depth') or 0.2)
                 stair_count = int(case.get('stair_count') or 0)
                 route_max = float(route.max())
@@ -446,15 +531,8 @@ def main(argv=None):
                     four_feet_platform_frames=int(np.sum(
                         np.all([row['foot_on_platform'] for row in evidence_rows],
                                axis=1))))
-                if front is not None:
-                    crossed = np.where(route >= float(front))[0]
-                    summary['pitch_after_platform'] = (
-                        _pitch_stats(evidence_rows[int(crossed[0]):])
-                        if crossed.size else None)
-                top = _first_event(events, 'top_arrived')
-                summary['pitch_after_top'] = (
-                    _pitch_stats(evidence_rows[int(top['step']):])
-                    if top is not None else None)
+                summary['superseded_fields'] = ['pitch_after_platform',
+                                                'pitch_after_top']
                 state = env.machine.summary()
                 state.pop('command_trace', None)
                 state.pop('events', None)
@@ -489,7 +567,8 @@ def main(argv=None):
             written = None
             try:
                 if env.recorder.rows:
-                    written = env.recorder.write(output, attempt_id=attempt_id)
+                    written = env.recorder.write(output, attempt_id=attempt_id,
+                                                 windows=windows)
             except Exception as evidence_error:
                 summary['evidence_error'] = repr(evidence_error)
                 summary['evidence_partial'] = True
