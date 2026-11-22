@@ -4521,3 +4521,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 缺数据：现有 trace/npz 无 heightmap 通道，无法量化平台处 real/plane 地图差异；需采 `--save-inputs` 代表病例后作同帧双输入。
 - 验证：S2 套件 **232 passed**；整批 72/156、0 失败。
 - 未执行：GPU 采集、训练、台账写入。
+
+
+## 2026-11-22 裁定留档 DSH-Q033（S2.1 入口/失败分层/窄台边缘诊断）
+
+- 目的：记录 S2.0 结论后的执行口径。
+- 涉及文件：`doc/sds/reviews/v09_execution_rulings.md`、本日志。
+- 要点：S2.1 入口仍 `s1_least.pt`（规划方复哈希 `efa9caa8…`，两份同字节）；维持 §6.2 原课程；宽 4 m 楼梯组另列"未确认登顶的登阶失败"（real top 0/15、nonfoot 13/15、posture/body 1、`route_max` 6.95–8.16），不得把 route≥8 当 top、不得混入窄台失稳、不得加前倾惩罚；窄台边缘高度信息列为 S2.1 显式诊断项（真实几何区分台内/台外/无回波，0.8/4 m 分报，无额外阈值）；plane 整幅替换不能单独识别边缘格因果；H 六例 3 completed 为物理失败、3 为 runner failed，coverage 全 `not_verified`，V9 须核退出原因与重跑必要性，失败执行不得充作完成；Q031/V9 照旧，资源预留探测可并行；完整 1024 探测不能以降并行替代；上限 799,997,952，不增预算/门禁。
+- 验证：仅文档追加；未跑测试/物理/训练。
