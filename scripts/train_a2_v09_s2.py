@@ -120,11 +120,10 @@ def main(argv=None):
                                        device=args.device, course=args.course)
     actor_bundle = s2_physics.load_s1_actor(device=args.device)
     model = actor_bundle['model']
+    # Q034: a 40x30 migrated 6400 must not masquerade as the original
+    # 48x32 teacher.  The anchor is intentionally disabled until the planning
+    # ruling defines the teacher observation adapter.
     teacher = None
-    if not args.fake_backend:
-        from src.tasks.velocity.v09.model import V09ActorCritic
-        teacher = V09ActorCritic.migrate_6400_checkpoint(device=args.device)
-        teacher.eval()
     trainer = s2_train.S2Trainer(
         model=model, env=env, ledger=ledger, output_dir=args.output_dir,
         device=args.device, attempt_id=args.attempt_id,

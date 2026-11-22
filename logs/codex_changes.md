@@ -4845,3 +4845,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 台账：`l40_milestone_cache_gate_A` spent 1,554 / 219,220，reserved 0（实际消耗已记）。
 - 已下达：定位静默早停、逐 case 进度日志、未完成非零退出、完整落盘；重跑前 dry-run 复核 60 例/219,220。
 - 另：§5.4 锚定 teacher 当前用 40×30 迁移模型，需按 Q034 改为原始 6400+3×48×32 旧图（或提交规划裁定）。
+
+## 2026-11-22 L40 collector 进度/完整性守卫；锚定教师身份暂停
+
+- L40 collector 增加逐 case 进度日志、`len(results)==len(cases)` 完整性守卫、先写 cache/receipt 再 release；直接执行也写 `cache_receipt.json`。
+- 之前 1 case/exit0 的根因未复现；新日志与完成守卫会在 GPU 重跑时明确暴露，未完成非零退出。
+- §5.4 锚定：不再使用 40×30 迁移教师冒充原 6400；训练 CLI 暂置 `teacher=None`，待 Q034 口径的旧图教师适配/规划裁定；anchor CPU 调用测试保留。
+- 验证：279 passed。

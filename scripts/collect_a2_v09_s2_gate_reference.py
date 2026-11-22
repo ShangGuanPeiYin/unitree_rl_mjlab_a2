@@ -180,11 +180,13 @@ def main(argv=None):
     ledger.reserve(obligation, suite_reserved,
                    operation_id='ref:s1_l40:suite:reserve',
                    reason='L40 reference whole-suite atomic reservation')
-    for case in cases:
+    print(f'[l40] starting {len(cases)} cases / {len(groups)} groups', flush=True)
+    for case_index, case in enumerate(cases):
+        print(f'[l40] case {case_index + 1}/{len(cases)} {case["case_sha256"][:12]}', flush=True)
         h_legacy = case['task'] == 'legacy_l40'
         env, _ = s2_physics.build_s2_env(
             case, device=args.device, seed=s2_spec.SEED, map_branch='real',
-            h_legacy=h_legacy)
+            h_legacy=h_legacy, real_branch_evidence=False)
         timeout = int(case['hard_timeout_steps'])
         op = f'ref:{args.reference}:{case["case_sha256"][:12]}'
         steps = 0
@@ -244,12 +246,12 @@ def main(argv=None):
         ledger.commit(obligation, steps, operation_id=f'{op}:commit',
                       reason='gate reference actual')
         suite_actual += steps
+        print(f'[l40] case {case_index + 1}/{len(cases)} done steps={steps} '
+              f'success={bool(results[-1]["success"])} '
+              f'failure={bool(results[-1]["failure"])}', flush=True)
+    if len(results) != len(cases):
+        raise RuntimeError(f'L40 cache incomplete: {len(results)}/{len(cases)} cases')
     settlement = suite_settlement(results)
-    unused = suite_reserved - suite_actual
-    if unused > 0:
-        ledger.release(obligation, unused,
-                       operation_id='ref:s1_l40:suite:release',
-                       reason='L40 reference unused reservation')
     groups_out = group_statistics(groups, results)
 
     if args.reference == 's1_l40':
@@ -283,9 +285,29 @@ def main(argv=None):
     if path.exists():
         raise FileExistsError(path)
     path.write_text(json.dumps(cache, ensure_ascii=False, indent=2) + '\n')
-    print(json.dumps(dict(path=str(path), groups=len(groups_out),
-                          cases=len(results), cost=cost), ensure_ascii=False,
-                     indent=2))
+    receipt = dict(
+        schema='a2_v09_s2_gate_cache_receipt_v1',
+        model_sha256=source_sha, source_sha256=source_sha,
+        manifest_sha256=manifest['manifest_sha256'],
+        suite=manifest['suite'], case_sha256s=[row['case_sha256'] for row in results],
+        budget=dict(control_samples=cost, actual_samples=suite_actual,
+                    unused_samples=settlement['unused'], envs_per_batch=1,
+                    batches=len(cases), estimated_seconds=4.7 * 3600),
+        cache_path=str(path), cache_sha256=_sha(path),
+        case_files=cache.get('case_files', []),
+        generated_at_utc=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
+    receipt_path = out / 'cache_receipt.json'
+    if receipt_path.exists():
+        raise FileExistsError(receipt_path)
+    receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + '\n')
+    unused = suite_reserved - suite_actual
+    if unused > 0:
+        ledger.release(obligation, unused,
+                       operation_id='ref:s1_l40:suite:release',
+                       reason='L40 reference unused reservation')
+    print(json.dumps(dict(path=str(path), receipt=str(receipt_path),
+                          groups=len(groups_out), cases=len(results),
+                          cost=cost), ensure_ascii=False, indent=2))
     return 0
 
 

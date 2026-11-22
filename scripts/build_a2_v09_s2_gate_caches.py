@@ -134,8 +134,10 @@ def main(argv=None):
              'do not overlap S2.1 training if peak would exceed 7168 MiB.')
     receipt_path = args.output_dir / 'cache_receipt.json'
     if receipt_path.exists():
-        raise FileExistsError(receipt_path)
-    receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + '\n')
+        # Direct collector already wrote the authoritative receipt.
+        receipt = json.loads(receipt_path.read_text())
+    else:
+        receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + '\n')
     print(json.dumps(receipt, ensure_ascii=False, indent=2))
     return 0
 
