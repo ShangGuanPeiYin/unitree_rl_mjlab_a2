@@ -4802,3 +4802,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 文件：`docs/v09_s2_1_r2_execution_contract.md`。
 - 要点：入口 `s1_least`（`efa9caa8…`）、新 Adam/LR 3e-5、std 继承、normalizer 冻结；预算 r1 已消费 20,299,776，r2 31,726 rollouts；拒绝整个 r1 派生链；前置 P0-P2 修复 + 独立手算签字 + 512 准入复核；启动命令与监测节拍。
 - 当前实现状态：`s2_train.py` 正在改 P0（工作区未提交），其训练测试有 1 项暂时失败（WIP），不作为结论。
+
+
+## 2026-11-22 P0 新版 collect_rollout 审计：3 处残留错
+
+- 已修：episode 跨 rollout 连续（`self._obs` 保留）。
+- 残留：① `sampling_boundary=ones` 应在仅最后一步为 True；② `old_logs` 仍 env-major [N,T]，与 time-major flat_obs/flat_actions 错位；③ `done=terminated|truncated` 语义需分离并保存失败分类。
+- 另核：§5.4 平地锚定是否实际入 loss、异常按实际步结算（测试仍红）。
