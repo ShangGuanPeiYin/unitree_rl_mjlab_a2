@@ -4588,3 +4588,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 台账对账：partials 270,336 + r4 2,323,656 + r5 2,323,656；probe512 2,332,928 + overage 261,064 + independent_copy 2,323,656；另有主对话误加未用 `probe_512_rerun` 2,323,656（spent 0，已加说明事件 seq 623）；envelope 268,816,746 ≤4 亿；总 spent 5,063,030。
 - 512 计划：`max_rollouts=32,552`、`samples_per_rollout=24,576`、`checkpoint_every_rollouts=204`、`learning_cap=800,000,000`，32,552×24,576=799,997,952。
 - 验证：训练套件 19 passed；待 V10' 复核后写 admission 并开训。
+
+
+## 2026-11-22 S2.1 admission 写入（V10' ADMITTED）
+
+- 目的：V10' 复核通过后写入 512 训练准入。
+- review：`docs/v09_s2_1_admission_independent_review_v10r.md`，SHA256 `97ff418413cf48e851b75b12817f08f0783fd7b5f1be1b8e09a9be2d95834a85`；结论 ADMITTED。
+- admission：`logs/a2_v09/s2/admission/s2_1_512_r1.json`，`num_envs=512`、probe report `bdb02d67…`、review SHA 绑定、entry `efa9caa8…`；`validate_admission` 通过。
+- 训练命令（512，32,552 rollouts × 24,576 = 799,997,952；checkpoint 204）已准备，待启动。
