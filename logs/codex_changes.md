@@ -4400,3 +4400,14 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 验证：S2 套件 **216 passed**；现有四个代表目录均缺 `inputs.npz`（缺口清单 `logs/a2_v09/s2_0/evidence/q031_input_coverage.json`），真实 GPU 采集待整批结束后进行。
 - 整批进度：156 条中已完成 7 条（flat 系列），台账与截止时间见 `matrix-full-r1`。
 - 未执行：训练；Q016/Q024 仍 `not_proven`。
+
+
+## 2026-11-22 V8.3 复核：四窗/parity 归因/pair 证据/pair 计费
+
+- 目的：归档执行链路与 Q030 四窗的第三次复核，并补记未结算物理步。
+- 涉及文件：`docs/v09_s2_execution_independent_review_v083.md`、`logs/a2_v09/s2_0/verification/execution_audit_20261122_r83.json`、本日志。
+- 通过：四窗数值（front 61/−20.065542、four 47/−24.992196、top 44/−25.959547、cruise NA；plane front 18/+14.102130、其余 NA）与父会话一致；matrix resume/失败继续/commit-release 实现；flat 用例证据 SHA 绑定完整、`post_reset` 全 false；matrix 未见重复计费。
+- 阻断：B-V83-1 pair 摘要无 snapshot/restore 证据且 full pair 未到触发；B-V83-2 parity 4.65e-6 与旧 1.75e-4 不可互证、1e-3 practical pass 无效、归因未闭合；B-V83-3 pair 1,958 步与 t11-dim 16 步未结算。
+- 处置：已补记 1,974 步到 debug（台账 seq 83/84；debug 10,040/20,000、总 spent 22,217、reserved 1,001）；已下达补齐 Q031 输入（c_request/normalizer 身份/同帧 runner/A-A 噪声控制、排除 terminal-reset 行）、删除未证实自述、补 orphan release 路径。
+- 待裁定：DSH-Q032 四窗起点（首帧为真 1559/1562 vs 锁存 1560/1563；回执 `01a2024c-f6c4-7bb2-91c4-2f0b8c1f3840`）。
+- 未执行：整批仍在运行（8/156 时快照）；训练未启动。
