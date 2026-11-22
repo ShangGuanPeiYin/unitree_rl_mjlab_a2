@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import copy
 
-from . import s2_physics, s2_spec, s2_terrain, s2_train_env
+from . import s2_physics, s2_rewards, s2_spec, s2_terrain, s2_train_env
 
 
 OBSERVATION_CONTRACT = dict(
@@ -162,6 +162,9 @@ class S2TrainEnv:
         self.seed = int(seed)
         self._tile_by_env = [row['tile_id'] for row in self.plan['rows']]
         self._role_by_env = [row['role'] for row in self.plan['rows']]
+        self._s2_top_latched = None
+        self._s2_success_latched = None
+        self._s2_plan_tensors = None
         self._patch = s2_physics._s2_patch_context(s2_terrain.terrain_specs())
         self._patch.__enter__()
         try:
@@ -181,11 +184,182 @@ class S2TrainEnv:
                     device=device)
             self.env._sample_tiles = types.MethodType(_sample_tiles, self.env)
             self.env.roles = list(self._role_by_env)
+            def _s2_reward(_env, state, previous_action):
+                return self._s2_reward(_env, state, previous_action)
+            self.env._reward = _s2_reward
             self.env.reset()
             assert_v07_contract(self.env)
         except Exception:
             self._patch.__exit__(None, None, None)
             raise
+
+    def _s2_reward(self, env, state, previous_action):
+        """Vectorized S2 §5 reward; never the v07 RewardComputer."""
+        import torch
+        n = int(env.num_envs)
+        if self._s2_plan_tensors is None:
+            rows = self.plan['rows']
+            device = env.device
+            self._s2_front = torch.tensor(
+                [float(r['geometry'].get('platform_front_local_x') or 0.0)
+                 for r in rows], dtype=torch.float32, device=device)
+            self._s2_post = torch.tensor(
+                [float(r.get('post_distance') or 5.0) for r in rows],
+                dtype=torch.float32, device=device)
+            self._s2_h = torch.tensor(
+                [float(r['geometry'].get('h') or 0.0) for r in rows],
+                dtype=torch.float32, device=device)
+            self._s2_stairs = torch.tensor(
+                ['stairs' in str(r.get('task', '')) for r in rows],
+                dtype=torch.bool, device=device)
+            self._s2_stop = torch.tensor(
+                [str(r.get('task', '')).endswith('_stop') for r in rows],
+                dtype=torch.bool, device=device)
+            self._s2_ramp = torch.tensor(
+                [str(r.get('stop_mode', 'none')) == 'ramp_2s' for r in rows],
+                dtype=torch.bool, device=device)
+            self._s2_plan_tensors = True
+        if self._s2_top_latched is None:
+            device = env.device
+            z = lambda *shape, dtype=torch.float32: torch.zeros(
+                *shape, dtype=dtype, device=device)
+            self._s2_top_latched = z(n, dtype=torch.bool)
+            self._s2_success_latched = z(n, dtype=torch.bool)
+            self._s2_air_time = z(n, 4)
+            self._s2_prev_contact = z(n, 4, dtype=torch.bool)
+            self._s2_contacted = z(n, 4, dtype=torch.bool)
+            self._s2_prev_qdot = z(n, 12)
+            self._s2_stop_requested = z(n, dtype=torch.bool)
+            self._s2_stop_step = torch.full((n,), -1, dtype=torch.long,
+                                            device=device)
+            self._s2_hold_step = torch.full((n,), -1, dtype=torch.long,
+                                            device=device)
+            self._s2_g_step = torch.full((n,), -1, dtype=torch.long,
+                                         device=device)
+            self._s2_g_level = z(n)
+            self._s2_steps = torch.zeros(n, dtype=torch.long, device=device)
+        data = env.robot.data
+        local = data.root_link_pos_w - env.origins[env.tile_ids]
+        feet_local = data.site_pos_w[:, env.foot_ids] - env.origins[env.tile_ids, None]
+        feet_xy = data.site_pos_w[:, env.foot_ids, :2]
+        surface_z, surface_valid = s2_terrain.query_surface(
+            data.root_link_pos_w[:, :2], env.tile_ids)
+        surface_z = torch.where(surface_valid, surface_z,
+                                torch.zeros_like(surface_z))
+        foot_h, _ = env._foot_heights()
+        contact = env.contacts.filtered.bool()
+        foot_vel = data.site_lin_vel_w[:, env.foot_ids, :2]
+        failure = state.failure | state.timeout
+        # §5.3/§4: g_level t0 from four-foot support + body margin; 0.5 s ramp.
+        support = env.climb.current_support.bool()
+        g_ready = (support.all(-1) & (local[:, 0] > self._s2_front + 0.4)
+                   & ~failure)
+        t0 = self._s2_g_step
+        t0 = torch.where(g_ready & (t0 < 0), self._s2_steps, t0)
+        t0 = torch.where(~g_ready, torch.full_like(t0, -1), t0)
+        self._s2_g_step = t0
+        g_level = torch.where(
+            t0 < 0, torch.zeros_like(self._s2_g_level),
+            ((self._s2_steps - t0).float() / 25.0).clamp(0.0, 1.0))
+        self._s2_g_level = g_level
+        # Command chain: request is external speed; c_exec is the post-ramp
+        # command actually consumed next. S2.1 has no stop.
+        speed = env.sample_command[:, 0]
+        dpost = local[:, 0] - self._s2_front
+        request_stop = self._s2_stop & ~self._s2_stop_requested & (dpost >= self._s2_post) & ~failure
+        self._s2_stop_requested |= request_stop
+        self._s2_stop_step = torch.where(
+            request_stop, self._s2_steps, self._s2_stop_step)
+        instant_zero = self._s2_stop_requested & ~self._s2_ramp & (self._s2_hold_step < 0)
+        ramp_elapsed = (self._s2_steps - self._s2_stop_step).clamp_min(0).float()
+        ramp_exec = speed * (1.0 - ramp_elapsed / 100.0).clamp(0.0, 1.0)
+        c_exec = torch.where(self._s2_stop_requested,
+                             torch.where(instant_zero, torch.zeros_like(speed), ramp_exec),
+                             speed)
+        c_exec = torch.where(c_exec <= 1e-12, torch.zeros_like(c_exec), c_exec)
+        first_zero = self._s2_stop_requested & (self._s2_hold_step < 0) & (c_exec <= 1e-12)
+        self._s2_hold_step = torch.where(first_zero, self._s2_steps,
+                                         self._s2_hold_step)
+        phase = torch.where(
+            self._s2_stop_requested & (c_exec > 1e-7), torch.ones_like(self._s2_steps),
+            torch.where(self._s2_hold_step >= 0, torch.full_like(self._s2_steps, 2),
+                        torch.zeros_like(self._s2_steps)))
+        # phase codes: 0 APPROACH/CLIMB/POST_WALK, 1 DECEL, 2 HOLD
+        # top comes from the v07 climb event; success from distance/stop contract.
+        top_now = state.success & ~self._s2_top_latched
+        self._s2_top_latched |= top_now
+        if self._s2_stop.any():
+            hold_ok = ((self._s2_hold_step >= 0)
+                       & ((self._s2_steps - self._s2_hold_step) >= 1000))
+            success_now = self._s2_stop & hold_ok
+        else:
+            success_now = (~self._s2_stop) & self._s2_top_latched & (dpost >= self._s2_post)
+        success_now &= ~self._s2_success_latched & ~failure
+        self._s2_success_latched |= success_now
+        # air-time accumulated from filtered contacts
+        self._s2_contacted |= contact
+        landing = contact & ~self._s2_prev_contact & self._s2_contacted & (self._s2_air_time > 0)
+        air_bonus = (landing.float() * (self._s2_air_time - 0.10)).sum(-1)
+        self._s2_air_time = torch.where(
+            contact, torch.zeros_like(self._s2_air_time),
+            torch.where(self._s2_contacted, self._s2_air_time + 0.02,
+                        self._s2_air_time))
+        self._s2_prev_contact = contact
+        # target clearance by real surface and per-row h; platform/ground 0.075.
+        on_platform = feet_local[:, :, 0] >= self._s2_front[:, None]
+        targets = torch.where(
+            on_platform, torch.full_like(foot_h, 0.075),
+            torch.where(self._s2_stairs[:, None],
+                        torch.maximum(torch.full_like(foot_h, 0.17),
+                                      self._s2_h[:, None] + 0.02),
+                        torch.full_like(foot_h, 0.075)))
+        qdot = data.joint_vel[:, env.joint_ids]
+        route_error = env.route_error()
+        yaw_error = torch.atan2(route_error[:, 1], route_error[:, 2])
+        phase_names = ['DECEL' if p.item() == 1 else 'HOLD' if p.item() == 2
+                       else 'POST_WALK' for p in phase]
+        frame = dict(
+            c_request=speed.detach().cpu().numpy(),
+            c_exec=c_exec.detach().cpu().numpy(),
+            phase=phase_names,
+            gravity_b=data.projected_gravity_b.detach().cpu().numpy(),
+            velocity_b=data.root_link_lin_vel_b.detach().cpu().numpy(),
+            omega_b=data.root_link_ang_vel_b.detach().cpu().numpy(),
+            joint_position=data.joint_pos[:, env.joint_ids].detach().cpu().numpy(),
+            default_joint_position=data.default_joint_pos[:, env.joint_ids].detach().cpu().numpy(),
+            joint_velocity=qdot.detach().cpu().numpy(),
+            joint_velocity_prev=self._s2_prev_qdot.detach().cpu().numpy(),
+            action=env.action_manager.action.detach().cpu().numpy(),
+            previous_action=previous_action.detach().cpu().numpy(),
+            q_target_applied=env.action_term._processed_actions.detach().cpu().numpy(),
+            contact_filtered=contact.float().detach().cpu().numpy(),
+            foot_velocity_xy=foot_vel.detach().cpu().numpy(),
+            foot_height=foot_h.detach().cpu().numpy(),
+            target_clearance=targets.detach().cpu().numpy(),
+            g_level=g_level.detach().cpu().numpy(),
+            base_height=data.root_link_pos_w[:, 2].detach().cpu().numpy(),
+            surface_height=surface_z.detach().cpu().numpy(),
+            air_time_reward=air_bonus.detach().cpu().numpy(),
+            local_y=local[:, 1].detach().cpu().numpy(),
+            yaw_error=yaw_error.detach().cpu().numpy(),
+            joint_limit_violation=torch.zeros(n, device=env.device).cpu().numpy(),
+            v_heading=data.root_link_lin_vel_w[:, 0].detach().cpu().numpy(),
+            dx=(local[:, 0] - env._local_x_prev).detach().cpu().numpy(),
+            failure=failure.detach().cpu().numpy(),
+            timeout=state.timeout.detach().cpu().numpy(),
+            top_once=(top_now & ~failure).detach().cpu().numpy(),
+            success_once=success_now.detach().cpu().numpy(),
+            stable_stand=((phase > 0) & (c_exec <= 1e-7)).detach().cpu().numpy())
+        result = s2_rewards.compute_reward_batch(frame)
+        totals = torch.as_tensor(result['total'], dtype=torch.float32,
+                                 device=env.device)
+        self._s2_prev_qdot = qdot.detach().clone()
+        self._s2_steps = self._s2_steps + 1
+        # Actor consumes c_exec on the next control step.
+        env.command[:, 0] = c_exec.detach()
+        self.step_reward_tensors = {'reward_total': totals}
+        self.reward_terms = {'total': float(totals.mean().detach().cpu())}
+        return totals
 
     def __getattr__(self, name):
         return getattr(self.env, name)

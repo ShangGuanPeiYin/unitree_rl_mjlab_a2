@@ -162,3 +162,80 @@ def compute_reward(frame):
         total=total, cruise=cruise, decel=result['decel'],
         clear_air_accumulator=result['clear_air_accumulator'],
         target_clearance=result['target_clearance'])
+
+
+def compute_reward_batch(frame):
+    """Vectorized §5 reward for N envs; same terms/columns as compute_reward."""
+    c_request = np.asarray(frame['c_request'], dtype=float)
+    c_exec = np.asarray(frame['c_exec'], dtype=float)
+    n = c_request.shape[0]
+    phase = list(frame.get('phase', ['CRUISE'] * n))
+    cruise = np.array([is_cruise(c_request=c_request[i], c_exec=c_exec[i],
+                                 phase=phase[i]) for i in range(n)], dtype=bool)
+    decel = np.array([p in ('DECEL', 'HOLD') for p in phase], dtype=bool)
+    col = np.where(decel, 1, 0)
+    g = np.asarray(frame['gravity_b'], dtype=float)
+    v = np.asarray(frame['velocity_b'], dtype=float)
+    omega = np.asarray(frame['omega_b'], dtype=float)
+    q = np.asarray(frame['joint_position'], dtype=float)
+    q0 = np.asarray(frame['default_joint_position'], dtype=float)
+    qdot = np.asarray(frame['joint_velocity'], dtype=float)
+    qdot_prev = np.asarray(frame['joint_velocity_prev'], dtype=float)
+    action = np.asarray(frame['action'], dtype=float)
+    action_prev = np.asarray(frame['previous_action'], dtype=float)
+    q_target = np.asarray(frame['q_target_applied'], dtype=float)
+    contact = np.asarray(frame['contact_filtered'], dtype=float)
+    foot_v = np.asarray(frame['foot_velocity_xy'], dtype=float).reshape(n, 4, 2)
+    foot_h = np.asarray(frame['foot_height'], dtype=float)
+    targets = np.asarray(frame['target_clearance'], dtype=float)
+    g_level = np.asarray(frame['g_level'], dtype=float)
+    terms = {}
+    terms['tracking_lin_vel'] = np.exp(-(((v[:, 0] - c_exec) ** 2 + v[:, 1] ** 2) / 0.25))
+    terms['tracking_ang_vel'] = np.exp(-(omega[:, 2] ** 2) / 0.25)
+    terms['lin_vel_z'] = np.maximum(np.abs(v[:, 2]) - 0.15, 0.0) ** 2
+    terms['orientation_roll'] = g[:, 1] ** 2
+    terms['orientation_pitch_level'] = g_level * g[:, 0] ** 2
+    terms['base_height'] = (np.asarray(frame['base_height'], dtype=float)
+                            - np.asarray(frame['surface_height'], dtype=float)
+                            - 0.40) ** 2
+    terms['action_rate'] = np.sum((action - action_prev) ** 2, axis=1)
+    terms['similar_to_default'] = np.sum(np.abs(q - q0), axis=1)
+    terms['dof_acc'] = np.sum(((qdot - qdot_prev) / DT) ** 2, axis=1)
+    terms['dof_vel'] = np.sum(qdot ** 2, axis=1)
+    terms['ang_vel_xy'] = omega[:, 0] ** 2 + omega[:, 1] ** 2
+    terms['feet_air_time'] = np.asarray(frame['air_time_reward'], dtype=float)
+    terms['foot_slip'] = np.sum(contact * np.sum(foot_v ** 2, axis=2), axis=1)
+    terms['foot_clearance'] = np.sum(
+        (1.0 - contact) * (foot_h - targets) ** 2
+        * np.linalg.norm(foot_v, axis=2), axis=1)
+    terms['joint_tracking'] = np.sum((q_target - q) ** 2, axis=1)
+    terms['center'] = np.minimum((np.asarray(frame.get('local_y', np.zeros(n))) / 0.20) ** 2, 4.0)
+    terms['heading'] = 1.0 - np.cos(np.asarray(frame.get('yaw_error', np.zeros(n))))
+    terms['joint_limits'] = np.asarray(frame.get('joint_limit_violation', np.zeros(n)))
+    terms['horizontal_overspeed'] = g_level * np.maximum(
+        np.asarray(frame.get('v_heading', v[:, 0])) - c_exec - 0.15, 0.0) ** 2
+    stable = (decel & (np.abs(c_exec) <= 1e-7)
+              & np.asarray(frame.get('stable_stand', np.zeros(n, dtype=bool)), dtype=bool))
+    terms['stable_stand'] = stable.astype(float)
+    terms['feet_air_time'] = np.where(decel, 0.0, terms['feet_air_time'])
+    weights = {name: np.asarray([WEIGHTS[name][int(c)] for c in col])
+               for name in WEIGHTS}
+    continuous = 0.02 * sum(weights[name] * terms[name] for name in WEIGHTS)
+    dx = np.asarray(frame.get('dx', np.zeros(n)), dtype=float)
+    forward = np.where(cruise & ~decel, FORWARD_PROGRESS_PER_M * dx, 0.0)
+    failure = (np.asarray(frame.get('failure', np.zeros(n, dtype=bool)), dtype=bool)
+               | np.asarray(frame.get('timeout', np.zeros(n, dtype=bool)), dtype=bool))
+    top = np.asarray(frame.get('top_once', np.zeros(n, dtype=bool)), dtype=bool) & ~failure
+    success = np.asarray(frame.get('success_once', np.zeros(n, dtype=bool)), dtype=bool) & ~failure
+    total = continuous + forward + 2.0 * top + 8.0 * success - 10.0 * failure
+    return dict(terms=terms, weights=weights, column=col, cruise=cruise,
+                decel=decel, continuous=continuous, forward_progress=forward,
+                top=top, success=success, failure=failure, total=total,
+                clear_air_accumulator=decel)
+
+
+def g_level_at(step, t0, *, ramp_steps=25):
+    """Q027/Q028 ramp: t0=0, t0+1=1/ramp_steps, t0+ramp_steps=1."""
+    if t0 < 0 or step < t0:
+        return 0.0
+    return min(1.0, (int(step) - int(t0)) / float(ramp_steps))

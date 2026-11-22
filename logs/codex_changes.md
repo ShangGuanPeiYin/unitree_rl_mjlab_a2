@@ -4778,3 +4778,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 
 - 对照 §5 与 `docs/v09_s2_reward_audit_checklist.md`，当前 `_s2_reward` 存在 9 类偏差：c_request=c_exec=sample_command、phase 写死 CRUISE、g_level 无几何条件与 ramp、表面/抬脚硬编码 0.2/0.0、success/top 自造且失败清锁存、stable_stand 恒 False、yaw/v_heading/step_height/joint_vel_prev 非真实量、512×48 逐 env 循环、缺分项手算测试。
 - 结论：不进入重跑；要求把状态量上移到 S2 状态机并向量化，修后先给"S2 vs v07 分项对照"再独审。
+
+## 2026-11-22 S2 奖励接入修复（进行中）
+
+- 目的：替换 V07 RewardComputer，接入 `s2_rewards`。
+- 修改：`S2TrainEnv._reward` 覆盖为向量化 S2 组装，调用 `s2_rewards.compute_reward_batch`；新增批量接口、20 项/停车/g_level 测试；同一构造状态 S2 vs v07 对照写入 `logs/a2_v09/s2/reward_compare_v1.json`（S2 0.086 vs v07 -0.4464）。
+- 已实现：c_request/c_exec 分离、S2.3 stop ramp/hold、g_level 0/0.04/1 ramp、真实 base/foot 高度查询、surface target、air-time、stable_stand、失败优先、top/success latch、向量化。
+- 未闭合：真实 V07 的 success 在登顶即 done，S2 5m 成功/质量判据仍无法在该后端发生；S2.3 真实 V07 状态注入/终止合同未完成；yaw/v_heading 仍为近似。**不可据此重跑。**
+- 验证：277 passed；仅 CPU/fake，无 GPU/台账。
