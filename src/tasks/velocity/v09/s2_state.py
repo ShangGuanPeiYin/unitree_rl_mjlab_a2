@@ -27,6 +27,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 import math
 
+import numpy as np
+
 from . import s2_spec
 
 STATE_ORDER = ('APPROACH', 'CLIMB', 'TOP_TRANSITION', 'POST_WALK', 'DECEL',
@@ -199,10 +201,6 @@ class LevelGate:
                 self.first_full_step = step_index
         return self.value
 
-    @property
-    def duty_cycle(self):
-        return (self.on_steps / self.total_steps) if self.total_steps else None
-
     def state_dict(self):
         return dict(version=G_LEVEL_SNAPSHOT_VERSION, flat=self.flat,
                     started=self.started, k=self.k, value=self.value,
@@ -251,7 +249,7 @@ def g_level_report(gate, *, four_foot_step=None, four_foot_step_end=None):
         first_g_full_step=gate.first_full_step,
         delay_seconds_from_four_foot=None,
         interruptions=gate.interruptions, restarts=gate.restarts,
-        duty_cycle=gate.duty_cycle, max_off_run_steps=gate.max_off_run,
+        max_off_run_steps=gate.max_off_run,
         ever_full=gate.ever_full,
         interruptions_detail=list(gate.interruption_log),
         restarts_detail=list(gate.restart_log),
@@ -436,3 +434,218 @@ class S2StateMachine:
                     timeout=self.timeout, terminal=self.terminal,
                     c_request=self.c_request, c_exec=self.c_exec,
                     events=list(self.events), command_trace=self.command_trace())
+
+
+# ---------------------------------------------------- Q028/Q029 evidence
+G_LEVEL_GEOMETRY_REASONS = ('feet_not_platform', 'body_before_margin',
+                            'both', 'other')
+G_LEVEL_MIN_WINDOW_SAMPLES = 50  # 1 s at 50 Hz
+
+
+def cruise_window_mask(route_x, *, platform_start, four_foot_step,
+                       decel_step=None, terminal_step=None, valid_mask=None,
+                       offset_m=1.0):
+    """§6.5 cruise mask: zero+1 m to the last positive cruise sample."""
+    route = np.asarray(route_x, dtype=np.float64)
+    if route.ndim != 1:
+        raise ValueError('route_x must be 1-D')
+    n = len(route)
+    valid = (np.ones(n, dtype=bool) if valid_mask is None
+             else np.asarray(valid_mask, dtype=bool))
+    if valid.shape != (n,):
+        raise ValueError('valid_mask length mismatch')
+    base = 0 if platform_start else four_foot_step
+    end = n - 1 if terminal_step is None else int(terminal_step)
+    if decel_step is not None:
+        end = min(end, int(decel_step) - 1)
+    mask = np.zeros(n, dtype=bool)
+    if base is None or base < 0 or base > end:
+        return mask
+    target = route[base] + float(offset_m)
+    start = None
+    for index in range(base, end + 1):
+        if valid[index] and route[index] >= target:
+            start = index
+            break
+    if start is None:
+        return mask
+    mask[start:end + 1] = valid[start:end + 1]
+    return mask
+
+
+class GeometryFailureTracker:
+    """Count geometry-failure transitions once, not repeated zero frames."""
+
+    def __init__(self):
+        self.previous_condition = None
+        self.events = []
+
+    def observe(self, *, step, condition, feet_ok, body_ok):
+        reason = None
+        if not feet_ok and not body_ok:
+            reason = 'both'
+        elif not feet_ok:
+            reason = 'feet_not_platform'
+        elif not body_ok:
+            reason = 'body_before_margin'
+        else:
+            reason = 'other'
+        if self.previous_condition is True and not condition:
+            self.events.append(dict(step=step, reason=reason))
+        self.previous_condition = bool(condition)
+        return reason
+
+    def counts(self):
+        return {reason: sum(1 for event in self.events if event['reason'] == reason)
+                for reason in G_LEVEL_GEOMETRY_REASONS}
+
+
+def _longest_run(values, mask, predicate):
+    longest = 0
+    current = 0
+    for value, active in zip(values, mask):
+        if active and predicate(value):
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 0
+    return longest
+
+
+def _intervals(values, steps):
+    intervals = []
+    start = None
+    last = None
+    for value, step in zip(values, steps):
+        if value > 0:
+            if start is None:
+                start = step
+            last = step
+        elif start is not None:
+            intervals.append(dict(start=start, end=last))
+            start = None
+            last = None
+    if start is not None:
+        intervals.append(dict(start=start, end=last))
+    return intervals
+
+
+def g_level_window_report(g_values, steps, *, window_mask,
+                          sim_times=None, four_foot_step=None,
+                          full_geometry_step=None, geometry_events=None,
+                          first_meter=False):
+    """Q028 window metrics plus Q029 four event times/delays.
+
+    ``g_values``/``steps`` cover the full episode; ``window_mask`` is the §6.5
+    cruise window.  Q027 discrete values are used directly (no float tolerance).
+    """
+    g = np.asarray(g_values, dtype=np.float64)
+    step_values = np.asarray(steps, dtype=np.int64)
+    mask = np.asarray(window_mask, dtype=bool)
+    if not (g.shape == step_values.shape == mask.shape) or g.ndim != 1:
+        raise ValueError('g/steps/window_mask must be equal 1-D arrays')
+    if np.any(g < 0) or np.any(g > 1):
+        raise ValueError('g_level outside [0,1]')
+    sim = (step_values.astype(np.float64) * DT if sim_times is None
+           else np.asarray(sim_times, dtype=np.float64))
+    if sim.shape != g.shape:
+        raise ValueError('sim_times length mismatch')
+    n = int(mask.sum())
+    report = dict(
+        N=n, sum_g=(float(np.sum(g[mask])) if n else None),
+        average_intensity=(float(np.mean(g[mask])) if n else None),
+        enabled_fraction=(float(np.mean(g[mask] > 0)) if n else None),
+        enabled_frames=int(np.sum(g[mask] > 0)),
+        longest_disabled_seconds=(
+            _longest_run(g, mask, lambda value: value == 0) * DT if n else None),
+        longest_below_full_seconds=(
+            _longest_run(g, mask, lambda value: value < 1) * DT if n else None),
+        window_valid=n >= G_LEVEL_MIN_WINDOW_SAMPLES,
+        insufficient_window=n < G_LEVEL_MIN_WINDOW_SAMPLES,
+        first_meter_window=bool(first_meter),
+        events={}, delays={}, na_reasons=[],
+        geometry_failures=(geometry_events or []),
+        geometry_failure_counts={reason: sum(
+            1 for event in (geometry_events or []) if event['reason'] == reason)
+            for reason in G_LEVEL_GEOMETRY_REASONS},
+    )
+    names = (('four_foot_entry', four_foot_step),
+             ('full_geometry', full_geometry_step),
+             ('g_positive', None), ('g_full', None))
+    for name, value in names:
+        if name == 'g_positive':
+            hits = np.flatnonzero(g > 0)
+            index = int(hits[0]) if hits.size else None
+        elif name == 'g_full':
+            hits = np.flatnonzero(g >= 1)
+            index = int(hits[0]) if hits.size else None
+        else:
+            index = None if value is None else int(value)
+        if index is None:
+            report['events'][name] = dict(step=None, sim_time_s=None, present=False)
+            report['na_reasons'].append(f'{name}_not_reached')
+        else:
+            report['events'][name] = dict(
+                step=int(step_values[index]), sim_time_s=float(sim[index]),
+                present=True)
+    reference = report['events']['four_foot_entry']
+    for name, event in report['events'].items():
+        if not event['present'] or not reference['present']:
+            report['delays'][name] = dict(seconds=None, reason='event_missing')
+        else:
+            report['delays'][name] = dict(
+                seconds=float(event['sim_time_s'] - reference['sim_time_s']),
+                reason=None)
+    if reference['present']:
+        report['delays']['four_foot_entry'] = dict(seconds=0.0, reason=None)
+    # First full interval start (Q029) and positive intervals.
+    positive = _intervals(g, step_values)
+    report['positive_intervals'] = positive
+    full_intervals = []
+    start = None
+    last = None
+    first_full_step = report['events']['g_full']['step']
+    for value, step in zip(g, step_values):
+        if value >= 1:
+            if start is None:
+                start = step
+            last = step
+        elif start is not None:
+            full_intervals.append(dict(start=start, end=last))
+            start = None
+            last = None
+    if start is not None:
+        full_intervals.append(dict(start=start, end=last))
+    report['full_intervals'] = full_intervals
+    report['first_full_interval_start'] = None
+    if first_full_step is not None:
+        containing = [row for row in positive
+                      if row['start'] <= first_full_step <= row['end']]
+        report['first_full_interval_start'] = (containing[0]['start']
+                                               if containing else None)
+    return report
+
+
+def summarize_g_level(reports):
+    if not reports:
+        raise ValueError('nonempty g_level reports required')
+    valid = [row for row in reports if row['window_valid']]
+    return dict(cases=len(reports), valid_windows=len(valid),
+                missing_windows=len(reports) - len(valid),
+                early_termination=sum(1 for row in reports
+                                      if not row['window_valid']),
+                sum_g=sum(row['sum_g'] for row in valid if row['sum_g'] is not None),
+                N=sum(row['N'] for row in valid),
+                average_intensity=(sum(row['sum_g'] for row in valid
+                                       if row['sum_g'] is not None)
+                                   / sum(row['N'] for row in valid)
+                                   if sum(row['N'] for row in valid) else None),
+                longest_disabled_seconds_max=max(
+                    (row['longest_disabled_seconds'] for row in valid
+                     if row['longest_disabled_seconds'] is not None), default=None),
+                longest_below_full_seconds_max=max(
+                    (row['longest_below_full_seconds'] for row in valid
+                     if row['longest_below_full_seconds'] is not None), default=None),
+                geometry_failure_counts={reason: sum(
+                    row['geometry_failure_counts'][reason] for row in reports)
+                    for reason in G_LEVEL_GEOMETRY_REASONS})

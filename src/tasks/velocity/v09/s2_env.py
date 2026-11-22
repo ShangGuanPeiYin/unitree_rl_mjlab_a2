@@ -237,7 +237,8 @@ class S2EvidenceRecorder:
 
 def case_record(*, case, adapter, recorder, metrics=None, map_evidence=None,
                 state_summary=None, failure_context=None, config_sha256=None,
-                pairing_sha256=None, shared_identity_sha256=None):
+                pairing_sha256=None, shared_identity_sha256=None,
+                g_level_report=None):
     """Complete per-case record consumed by group reporting."""
     from .s2_map_ablation import config_identity
     config_sha256 = config_sha256 or config_identity()['config_sha256']
@@ -253,6 +254,7 @@ def case_record(*, case, adapter, recorder, metrics=None, map_evidence=None,
         evidence_rows=len(recorder.rows),
         metrics=metrics, map_evidence=map_evidence,
         state=state_summary, failure_context=failure_context,
+        g_level_report=g_level_report,
         evidence_contract_sha256=sha256(evidence_contract()),
     )
 

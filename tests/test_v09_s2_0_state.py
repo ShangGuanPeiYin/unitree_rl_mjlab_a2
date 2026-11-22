@@ -250,3 +250,95 @@ def test_b_v5_2_legacy_helper_and_timeout_identity():
                                     timeout_steps=timeout, post_distance=None,
                                     legacy_h=True)
         assert config.timeout_steps == timeout
+
+
+def test_q028_q029_forced_vector_t0_to_t25():
+    g = [0.0] + [k / 25.0 for k in range(1, 26)]
+    steps = list(range(26))
+    mask = [True] * 26
+    report = state.g_level_window_report(
+        g, steps, window_mask=mask, four_foot_step=0,
+        full_geometry_step=0)
+    assert report['N'] == 26
+    assert report['sum_g'] == pytest.approx(13.0)
+    assert report['average_intensity'] == pytest.approx(0.5)
+    assert report['enabled_frames'] == 25
+    assert report['enabled_fraction'] == pytest.approx(25 / 26)
+    assert report['longest_disabled_seconds'] == pytest.approx(0.02)
+    assert report['longest_below_full_seconds'] == pytest.approx(0.50)
+    assert report['delays']['four_foot_entry']['seconds'] == pytest.approx(0.0)
+    assert report['delays']['full_geometry']['seconds'] == pytest.approx(0.0)
+    assert report['delays']['g_positive']['seconds'] == pytest.approx(0.02)
+    assert report['delays']['g_full']['seconds'] == pytest.approx(0.50)
+    assert report['first_full_interval_start'] == 1
+    assert report['window_valid'] is False  # 26 samples < 1 s, metrics still reported
+
+
+def test_q028_empty_window_is_na_and_first_meter_is_flag_only():
+    report = state.g_level_window_report(
+        [0.0, 1.0], [0, 1], window_mask=[False, False],
+        four_foot_step=0, full_geometry_step=0)
+    assert report['N'] == 0
+    assert report['sum_g'] is None
+    assert report['average_intensity'] is None
+    assert report['enabled_fraction'] is None
+    assert report['longest_disabled_seconds'] is None
+    assert report['longest_below_full_seconds'] is None
+    assert report['window_valid'] is False
+    first = state.g_level_window_report(
+        [0.0, 1.0], [0, 1], window_mask=[True, True],
+        four_foot_step=0, full_geometry_step=0, first_meter=True)
+    assert first['first_meter_window'] is True
+
+
+def test_q028_cruise_mask_last_positive_and_decel_excluded():
+    route = [0.0, 0.5, 1.0, 1.5, 2.0, 2.5]
+    mask = state.cruise_window_mask(route, platform_start=True,
+                                    four_foot_step=0, decel_step=4,
+                                    terminal_step=5, offset_m=1.0)
+    assert mask.tolist() == [False, False, True, True, False, False]
+    mask = state.cruise_window_mask(route, platform_start=False,
+                                    four_foot_step=0, decel_step=None,
+                                    terminal_step=4, offset_m=1.0)
+    assert mask.tolist() == [False, False, True, True, True, False]
+
+
+def test_q028_geometry_failure_events_are_transition_only():
+    tracker = state.GeometryFailureTracker()
+    tracker.observe(step=0, condition=False, feet_ok=False, body_ok=False)
+    assert tracker.events == []                 # initial not a failure
+    tracker.observe(step=1, condition=True, feet_ok=True, body_ok=True)
+    tracker.observe(step=2, condition=True, feet_ok=True, body_ok=True)
+    tracker.observe(step=3, condition=False, feet_ok=False, body_ok=True)
+    tracker.observe(step=4, condition=False, feet_ok=False, body_ok=True)
+    tracker.observe(step=5, condition=True, feet_ok=True, body_ok=True)
+    tracker.observe(step=6, condition=False, feet_ok=False, body_ok=False)
+    assert [event['reason'] for event in tracker.events] == [
+        'feet_not_platform', 'both']
+    assert tracker.counts()['feet_not_platform'] == 1
+
+
+def test_q029_interruption_keeps_intervals_and_first_full_start():
+    g = [0.0, 0.5, 1.0, 0.0, 0.0, 0.5, 1.0]
+    steps = list(range(7))
+    report = state.g_level_window_report(
+        g, steps, window_mask=[True] * 7, four_foot_step=0,
+        full_geometry_step=0)
+    assert report['positive_intervals'] == [
+        dict(start=1, end=2), dict(start=5, end=6)]
+    assert report['first_full_interval_start'] == 1
+    assert report['events']['g_full']['step'] == 2
+
+
+def test_q028_group_summary_and_platform_birth_interaction():
+    g = [0.0, 0.04, 1.0]
+    report = state.g_level_window_report(
+        g, [0, 1, 2], window_mask=[True, True, True],
+        four_foot_step=0, full_geometry_step=0)
+    summary = state.summarize_g_level([report])
+    assert summary['cases'] == 1
+    assert summary['valid_windows'] == 0
+    assert summary['missing_windows'] == 1
+    assert summary['N'] == 0
+    assert summary['average_intensity'] is None
+    assert summary['geometry_failure_counts']['feet_not_platform'] == 0

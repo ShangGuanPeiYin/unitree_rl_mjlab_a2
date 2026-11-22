@@ -4250,3 +4250,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 预留计划（现场重算，plan SHA `773b53c6…`）：非学习 263,888,370 ≤4 亿；学习 3.2e9 ≤3.6e9；stage 3,463,888,370 ≤4e9；S2.0 429,822 ≤5,000 万；逐项 probe1024 3,709,184、probe512 2,332,928、S2.0 420,390、H 补采 9,432、H 候选复测 28,296、L40 A/B 各 219,220、≤40 门禁 173,940,000、三套终验 83,009,700、等待空步已含批上界不重复。
 - 验证：本机复跑 S2 CPU 套件 **155 passed**（1.29 s）；`reserve_a2_v09_s2.py --dry-run` 实跑打印逐项表且未创建 `logs/a2_v09/s2/ledger.jsonl`；S1 台账未触碰。
 - 未执行：未写正式 S2 台账（`q021_reservation_written=false`）、未跑 GPU/物理、未训练。
+
+
+## 2026-11-22 Q028/Q029 g_level 证据字段落地
+
+- 目的：按 DSH-Q028/Q029 落地 g_level 证据口径并加强制测试向量。
+- 涉及文件：`src/tasks/velocity/v09/s2_state.py`（`g_level_window_report`、`cruise_window_mask`、`GeometryFailureTracker`、四事件与区间字段）、`s2_env.py`（`case_record` 带 `g_level_report` 与配置 SHA）、`tests/test_v09_s2_0_state.py`（新增 `test_q028_q029_forced_vector_t0_to_t25`）、`docs/v09_s2_0_implementation_plan_v7.md`。
+- 实现要点：主窗口严格 §6.5 巡航掩码；N/Σg/平均强度/启用占比分列并删除无定义 `duty`；"完全关闭 g==0"与"未满强度 g<1"两个最长连续时长分列、`N=0` 记 NA、非空未出现记 0、窗口有效性 N≥50；归零原因四类且仅"曾满足→失效"计事件；首米同函数单列；四事件控制步+仿真时刻+相对延迟+NA 原因+中断重入区间。
+- 验证：本机复跑 S2 CPU 套件 **161 passed**；强制向量 `t0..t0+25` 共 26 条 → 延迟 0/0/0.02/0.50 s、Σg=13、平均 0.5、启用占比 25/26、最长完全关闭 0.02 s、最长未满 0.50 s，测试通过；reserve dry-run 复跑 plan `773b53c6…` 未落盘。
+- 未执行：未写正式 S2 台账、未跑 GPU/物理、未训练。
