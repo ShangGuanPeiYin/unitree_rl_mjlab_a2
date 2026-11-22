@@ -4149,3 +4149,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 过程发现：实现方 14:07:03→14:08:51 覆盖过 H 冻结件（旧字节未隔离），已要求清单只追加不覆盖、修正另起版本号并记录 supersedes。另发现 suite 命名 `S2_0` 与裁定文字 `S2_DIAG` 不一致，已按裁定口径要求改名前另存旧件。
 - 未决：Q016 的 valid_fraction/saturation 定义、同帧刷新语义、平台 5m 是否含首米、命名确认；已提交规划 DSH-Q022～Q025（`codex queue` 回执 `01a201e3-bd8f-71a2-92b8-eb1dd3fc7830`）。
 - 未执行：未跑 GPU/物理、未训练、未写 S2 原子预留。
+
+
+## 2026-11-22 S2 裁定留档 DSH-Q022～Q025
+
+- 目的：记录 suite 命名、Q016 证据字段、同帧刷新语义、平台 5 m 含首米四项正式裁定，接续 Q021。
+- 涉及文件：`doc/sds/reviews/v09_execution_rulings.md`、本日志。
+- 要点：suite 统一 `S2_DIAG`（stage=S2），旧 `5efda5ab…` 清单保留为"零物理、已替代"；`valid_fraction`/`saturation`/`exact_clip_fraction` 以 Actor 实际消费帧为分母；替换图从严格大于事件步的首个新采样步起被消费，触发帧不补刷；平台 5 m 含首米、`x_spawn+1m` 开窗、`x_spawn+5m` 终点。
+- 验证：本次仅文档追加；未跑测试、未跑物理、未训练。
