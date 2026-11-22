@@ -4441,3 +4441,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 通过：四窗独立复算（front 61/−20.065542、four 48/−24.691044、top 45/−25.631117 全低头、s6.5 NA `s6_5_threshold_not_reached`；目标 9.336845 vs 最大 9.265788）；邻帧核对；索引口径（1559/1560、1562/1563 同一次控制更新，无全局 step-1）；`post_reset` 剔除与终止样本保留；matrix 17/156、17,000 步、0 失败、无重复计费。
 - 修正：B-V84-1 pair summary 缺 snapshot 键；B-V84-2 旧 q030 JSON 无 superseded 标记且缺 45 行配对清单、`row_index` 语义需澄清；B-V84-3 `t11-parity-dim4/dim64` 136 步未结算——已补记 debug（台账 seq 109/110；debug 10,176/20,000；总 spent 30,353；reserved 1,001）。
 - 未执行：训练；Q031 代表病例采集待整批结束。
+
+
+## 2026-11-22 V8.4 三项证据修正落实
+
+- 目的：落实 pair summary 字段、q030 superseded 标记与 45 行配对清单、row_index/raw_trace_row 定义。
+- 涉及文件：`pair_summary.json`/`snapshot_status.json`（t11-pair-stairs-full-r1）、新增 `logs/a2_v09/s2_0/evidence/t10-stairs-plane-r1/q032_pitch_recompute.json`（real-r4 45 行 `trace_step/raw_trace_row/latched_event_step/event_completed_steps`）、旧 `q030_pitch_recompute.json` 加 `superseded_by`、四个 `windows.json` 重生成。
+- 口径：`row_index`=post_reset 过滤后下标；`raw_trace_row`=原始 trace 行号；window_rule 写明；四窗数值不变（front 61、four 48 −24.6910°、top 45 −25.6311°、s6.5 NA；plane front 18 +14.1021°）。
+- 纪律：原始 trace/npz 只读；派生摘要版本化并可标 superseded。
+- 验证：S2 套件 **218 passed**；整批 19/156、0 失败；未重跑物理、未改整批。
