@@ -4816,3 +4816,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 更正：`s2_runner.gae` 仅在 t==n-1 读取 `boundary[t]`，其余步用 `v[t+1]*non_terminal`，故 `sampling_boundary=ones` 与仅末步 True 等价，不是 bug；已向实现组撤回该条。
 - 仍成立：`old_logs` 用 stack(dim=1) 得 [N,T] 与 time-major flat 样本错位，需改 stack(dim=0)；done 需分离 terminated/truncated/failure_class。
 - 状态：训练测试 24 passed（异常结算已绿）；§5.4 锚定已入 loss 参数，待补实际反传测试。
+
+
+## 2026-11-22 P0 完成核验，P1 下达
+
+- P0：`old_logs` 改 [T,N] 对齐、transitions 分离 terminated/truncated/failure_class、异常结算测试转绿；训练套件 24 passed。更正：`sampling_boundary=ones` 经查 GAE 仅在末步使用，非 bug（已撤回）。
+- P1 已下达：S2 任务状态机/终止替换 v07（登顶不 reset、5 m 成功、L40 例外）、终止优先级与 bootstrap 掩码、单 env reset 隔离、真实 c_request→c_exec 延迟链、真实观测量，及对应测试。
+- V13 数值验收设计再次催办（独立手算参照、PPO 存储对齐、动作对齐、签字清单）。
