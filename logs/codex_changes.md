@@ -4658,3 +4658,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 判断：Q010 只覆盖 S1 冻结病例；S1 gate_A 与 S2_GATE_A 的 flat case SHA 交集为 0，不能复用。原始 6400 为 48×32，S2 为 40×30；迁移模型是否等同“原 6400”须 Q034 裁定。
 - dry-run：L40 3 组/60 例/219,220，模型 `efa9caa8…`；门禁 36 组/720 例/1,620,000，L40 义务 219,220 可用；6400/L40 cache 仍 missing（6400 按裁定暂停）。
 - 验证：S2 套件 **253 passed**。
+
+
+## 2026-11-22 裁定留档 DSH-Q034 与 V11 复核
+
+- 目的：记录门禁对照缓存 6400/L40 口径与 V11 复核结论。
+- 涉及文件：`doc/sds/reviews/v09_execution_rulings.md`、`docs/v09_s2_1_gate_preflight_independent_review_v11.md`、`logs/a2_v09/s2_0/verification/gate_preflight_audit_20261122_r11.json`、本日志。
+- Q034：复用规则①实测不命中（S1 与 S2 平地 case 交集 0），执行②。6400 必须用原始权重 + 原生 48×32 旧图 + v07 教师观测路径，禁止迁移模型/resize 伪装；A/B 各 234,180、合计 468,360、仅结算实际；最终 9×100 按解封时机同规则。L40 用 `s1_least.pt`，A/B 各 219,220、合计 438,440；逐例保存 case SHA/起点/末有效位置/带符号净距离/成功/失败类别，P10/P50/P90 每套每速度 20 例组统计；不退化门槛、不强加 18/20。
+- V11：冻结病例/门禁 dry-run/检查点 v1 通过；阻断 = 6400 collector 仍走 `migrate_6400_checkpoint` 迁移路径且 gate 未校验 cache 源身份、L40 cache 未生成、文档措辞冲突。
+- 待澄清：门禁 seed 不重叠应理解为命名空间/病例不重用（stream 由 suite 盐隔离），非整数 seed 42 互斥。
