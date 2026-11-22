@@ -4361,3 +4361,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 涉及文件：`doc/sds/reviews/v09_execution_rulings.md`、本日志。
 - 要点：raw pitch 保留；机头抬起为正、下俯为负；`pitch = -asin(2(wy-zx)) = asin((R_WB e_x)_z)`；记录 `pitch_sign_convention` 并用水平/抬头/低头三姿态独立复核；`positive_forward_lean_fraction` 语义更正并从原始轨迹重算（旧产物留痕）；`nose_down_fraction=pitch<0`、`nose_up_fraction=pitch>0`、零值计入分母；real-r4 44 帧（step≥1563 至末未复位行）全低头均值 −25.96°、末步 1606 −53.19°、body failure 1608；plane-r1 未 top，route≥8.0 起 18 帧全抬头均值 +14.10°（+12.23～+15.91°），旧 94.7%/+13.36° 含复位行且误标；报告分列前缘/四足入台/top_arrived/§6.5 巡航窗并剔除跨 episode 出生帧；单列"用户观察与分支复现"，不支持"仿真与现场相反"；跨进程漂移注明病例匹配但物理状态未对齐；1.75e-4 另查。
 - 验证：仅文档追加；未跑测试/物理/训练。
+
+
+## 2026-11-22 V8.2 Q030 复核：符号/数值/派生字段通过，3 项阻断
+
+- 目的：归档俯仰符号与 T10 派生报告的第三方复核。
+- 涉及文件：`docs/v09_s2_execution_independent_review_v082.md`、`logs/a2_v09/s2_0/verification/execution_audit_20261122_r82.json`、本日志。
+- 通过：`pitch = -asin(2(wy-zx))` 与三姿态（水平 0、抬头 +20、低头 −20）一致；前髋 x=+0.25944、前向 +X；real-r4 step1563..1606 共 44 帧全低头均值 −25.9595°、末步 −53.1867°、body failure 1608/失败采样行 1606；plane-r1 首个 route≥8.0 为 step1550，至 1567 共 18 帧全抬头均值 +14.1021°（+12.2248～+15.9076°）、未 top；`nose_down/up_fraction` 零值计分母、旧 `positive_forward_lean_fraction` 已移除、旧 summary 标 superseded；S2 套件 211 passed。
+- 阻断：B-V82-1 主 summary 窗口仍含 reset 行且缺四足入台/§6.5 窗与 NA；B-V82-2 Q024 同态输入未用同一物理快照/采样帧；B-V82-3 parity 1.746e-4 被 1e-3 容差掩盖且被误写为浮点噪声。
+- 未执行：整矩阵、H 六例、训练。
