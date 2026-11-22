@@ -4809,3 +4809,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 已修：episode 跨 rollout 连续（`self._obs` 保留）。
 - 残留：① `sampling_boundary=ones` 应在仅最后一步为 True；② `old_logs` 仍 env-major [N,T]，与 time-major flat_obs/flat_actions 错位；③ `done=terminated|truncated` 语义需分离并保存失败分类。
 - 另核：§5.4 平地锚定是否实际入 loss、异常按实际步结算（测试仍红）。
+
+
+## 2026-11-22 P0 审计更正：sampling_boundary 全 True 无影响
+
+- 更正：`s2_runner.gae` 仅在 t==n-1 读取 `boundary[t]`，其余步用 `v[t+1]*non_terminal`，故 `sampling_boundary=ones` 与仅末步 True 等价，不是 bug；已向实现组撤回该条。
+- 仍成立：`old_logs` 用 stack(dim=1) 得 [N,T] 与 time-major flat 样本错位，需改 stack(dim=0)；done 需分离 terminated/truncated/failure_class。
+- 状态：训练测试 24 passed（异常结算已绿）；§5.4 锚定已入 loss 参数，待补实际反传测试。
