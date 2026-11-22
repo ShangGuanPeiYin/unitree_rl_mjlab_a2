@@ -4605,3 +4605,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 运行：启动后 8 rollouts 约 50 s（≈6.2 s/rollout），learning_S2_1 spent 221,184 / 800,000,000；LR 在第 1 rollout 即被 KL 下调至下限 1e-5（SDS 允许范围 [1e-5,1e-4]），std 缓慢上升、均在 [0.05,1] 内。
 - 预计：32,552 rollouts ≈ 56 h；每 204 rollouts 保存 schema 11 检查点。
 - 未执行：门禁执行器（仓库尚缺 S2.1 36 组 A/B CLI）、S2.2/S2.3 课程切换实现。
+
+
+## 2026-11-22 S2.1 门禁病例冻结 v1 + 门禁执行器
+
+- 目的：按 §2.2/§6.1.1 冻结 S2.1 A/B 门禁病例并交付执行器。
+- 涉及文件：`src/tasks/velocity/v09/s2_gate_cases.py`、`scripts/freeze_a2_v09_s2_gate_cases.py`、`scripts/run_a2_v09_s2_gate.py`、`docs/v09_s2_gate_v1_frozen.md`。
+- 冻结：S2_GATE_A/B 各 720 例，manifest `1ea91343…`/`9af3f7c9…`，文件 SHA `98842a07…`/`ecdbf5c4…`，各 1,620,000 控制样本上界；重复冻结被拒绝（append-only）。
+- 执行器：`--dry-run`/`--execute`、只读冻结清单、suite/course/checkpoint 参数、预算义务 `gate_admissions_up_to_40`；待首个 schema 11 检查点后做 dry-run 校验。
+- 训练：62 rollouts 时仍在运行，无检查点（首个在 204）。
