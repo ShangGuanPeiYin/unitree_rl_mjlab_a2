@@ -47,6 +47,37 @@ def test_rollout_and_checkpoint_cadence():
     assert plan['max_rollouts'] == 16_276
     assert plan['checkpoint_every_rollouts'] == 102
     assert s2_spec.complete_rollouts(800_000_000, 1024) == 16_276
+    plan512 = s2_train.rollout_plan(512)
+    assert plan512['samples_per_rollout'] == 24_576
+    assert plan512['max_rollouts'] == 32_552
+    assert plan512['checkpoint_every_rollouts'] == 204
+    assert s2_spec.complete_rollouts(800_000_000, 512) == 32_552
+    assert 32_552 * 24_576 <= 800_000_000
+    assert 16_276 * 49_152 <= 800_000_000
+
+
+def test_512_learning_budget_uses_512_rollout_size():
+    class Ledger:
+        def __init__(self):
+            self.calls = []
+
+        def reserve(self, obligation_id, samples, *, operation_id, reason):
+            self.calls.append(('reserve', samples, operation_id))
+
+        def commit(self, obligation_id, samples, *, operation_id, reason):
+            self.calls.append(('commit', samples, operation_id))
+
+        def release(self, obligation_id, samples, *, operation_id, reason):
+            self.calls.append(('release', samples, operation_id))
+
+    ledger = Ledger()
+    budget = s2_train.S2LearningBudget(
+        ledger, samples_per_rollout=s2_train.rollout_plan(512)['samples_per_rollout'])
+    budget.begin('s2.1-r1')
+    budget.finish('s2.1-r1', 512 * 48)
+    assert ledger.calls[0] == ('reserve', 24_576, 's2.1-r1:rollout0:reserve')
+    assert ledger.calls[1] == ('commit', 24_576, 's2.1-r1:rollout0:commit')
+    assert not [row for row in ledger.calls if row[0] == 'release']
 
 
 def test_kl_lr_std_and_loss_contracts():
@@ -94,6 +125,38 @@ def test_learning_budget_reserve_commit(tmp_path):
     state = ledger.state()
     assert state['learning_obligations']['learning_S2_1']['spent'] == 49_152
     assert state['learning_obligations']['learning_S2_1']['reserved'] == 0
+
+
+def test_learning_budget_releases_on_rollout_exception():
+    class Ledger:
+        def __init__(self):
+            self.calls = []
+
+        def reserve(self, obligation_id, samples, *, operation_id, reason):
+            self.calls.append(('reserve', samples, operation_id))
+
+        def commit(self, obligation_id, samples, *, operation_id, reason):
+            self.calls.append(('commit', samples, operation_id))
+
+        def release(self, obligation_id, samples, *, operation_id, reason):
+            self.calls.append(('release', samples, operation_id))
+
+    class CrashingTrainer(s2_train.S2Trainer):
+        def __init__(self):
+            self.attempt_id = 'crash'
+            self.rollouts = 0
+
+        def collect_rollout(self):
+            raise RuntimeError('injected rollout failure')
+
+    ledger = Ledger()
+    budget = s2_train.S2LearningBudget(ledger, samples_per_rollout=24_576)
+    with pytest.raises(RuntimeError, match='injected'):
+        CrashingTrainer().train_rollout(budget=budget)
+    assert ledger.calls == [
+        ('reserve', 24_576, 'crash:rollout0:reserve'),
+        ('release', 24_576, 'crash:rollout0:release'),
+    ]
 
 
 def test_checkpoint_roundtrip_and_resume_keeps_lr_std(tmp_path):
@@ -170,6 +233,21 @@ def test_real_env_plan_maps_roles_to_s2_terrain():
     assert plan['map_refresh_steps'] == 5
 
 
+def test_512_dry_run_uses_512_rollout_plan(tmp_path):
+    import train_a2_v09_s2 as train_cli
+    evidence = tmp_path / 'fail1024.json'
+    evidence.write_text(json.dumps({'num_envs': 1024, 'admitted': False,
+                                    'failure_reasons': ['oom']}))
+    out = tmp_path / 'dry'
+    assert train_cli.main(['--dry-run', '--num-envs', '512',
+                           '--fallback-evidence', str(evidence),
+                           '--output-dir', str(out)]) == 0
+    doc = json.loads((out / 'train_dry_run_summary.json').read_text())
+    assert doc['plan']['training_plan']['samples_per_rollout'] == 24_576
+    assert doc['plan']['training_plan']['max_rollouts'] == 32_552
+    assert doc['plan']['training_plan']['checkpoint_every_rollouts'] == 204
+
+
 def test_train_execute_refuses_without_probe_admission(tmp_path):
     import train_a2_v09_s2 as train_cli
     with pytest.raises(SystemExit):
@@ -190,12 +268,30 @@ def test_probe_plan_cli_is_cpu_only(tmp_path):
     assert doc['control_samples'] == 3_709_184
 
 
-def test_admission_binds_probe_sha_and_review(tmp_path):
+def _admitted_probe_report(*, num_envs=512, **overrides):
+    report = dict(
+        num_envs=num_envs, admitted=True, peak_mib=6000, host_free_mib=8192,
+        oom=False, nonfinite=False, contact_overflow=False,
+        warmups=5, measurements=50, timings_s=[5.0] * 50,
+        restore_checks=1, restore_ok=True, independent_copy=True,
+        independent_copy_requested=True,
+        entry_source_unchanged=True,
+        entry_source_sha256_before='a' * 64,
+        entry_source_sha256_after='a' * 64,
+        entry_probe_copy_sha256='a' * 64,
+        entry_actor_state_sha256_before='b' * 64,
+        entry_actor_state_sha256_after_reload='b' * 64,
+        process=dict(pid=123, ppid=1, independent_process=True),
+        evaluation_envs=100, evaluation_steps=9472,
+        video_envs=1, video_steps=200, failure_reasons=[])
+    report.update(overrides)
+    return report
+
+
+def test_admission_binds_probe_sha_and_reviews_all_requirements(tmp_path):
     from src.tasks.velocity.v09 import s2_resources
     probe = tmp_path / 'probe.json'
-    report = dict(num_envs=1024, admitted=True, evaluation_envs=100,
-                  evaluation_steps=9472, video_envs=1, video_steps=200,
-                  restore_ok=True, peak_mib=6000, host_free_mib=8192)
+    report = _admitted_probe_report(num_envs=1024)
     probe.write_text(json.dumps(report))
     admission = s2_resources.write_admission(
         tmp_path / 'admission.json', probe_report=report, probe_path=probe,
@@ -206,6 +302,35 @@ def test_admission_binds_probe_sha_and_review(tmp_path):
     with pytest.raises(ValueError, match='probe SHA'):
         s2_resources.validate_admission(admission, probe_path=probe,
                                         num_envs=1024)
+
+
+def test_admission_rejects_independent_copy_false(tmp_path):
+    from src.tasks.velocity.v09 import s2_resources
+    probe = tmp_path / 'probe.json'
+    report = _admitted_probe_report(independent_copy=False,
+                                    failure_reasons=[])
+    probe.write_text(json.dumps(report))
+    with pytest.raises(ValueError, match='independent_copy'):
+        s2_resources.write_admission(
+            tmp_path / 'admission.json', probe_report=report, probe_path=probe,
+            num_envs=512, independent_review_sha256='a' * 64)
+
+
+def test_admission_rejects_tampered_entry_or_probe_requirements(tmp_path):
+    from src.tasks.velocity.v09 import s2_resources
+    probe = tmp_path / 'probe.json'
+    report = _admitted_probe_report(entry_source_sha256_after='c' * 64)
+    probe.write_text(json.dumps(report))
+    with pytest.raises(ValueError, match='entry_source_sha256'):
+        s2_resources.write_admission(
+            tmp_path / 'admission.json', probe_report=report, probe_path=probe,
+            num_envs=512, independent_review_sha256='a' * 64)
+    report = _admitted_probe_report(evaluation_steps=9471)
+    probe.write_text(json.dumps(report))
+    with pytest.raises(ValueError, match='evaluation_steps'):
+        s2_resources.write_admission(
+            tmp_path / 'admission2.json', probe_report=report, probe_path=probe,
+            num_envs=512, independent_review_sha256='a' * 64)
 
 
 def test_spawn_z_is_applied_on_both_resets_and_training_plan():

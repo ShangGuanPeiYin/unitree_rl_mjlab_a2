@@ -46,11 +46,18 @@ def main(argv=None):
     parser.add_argument('--attempt-id', default='s2.1-r1')
     args = parser.parse_args(argv)
     identity = s2_spec.validate_identity()
+    training_plan = s2_train.rollout_plan(args.num_envs)
+    effective_cap = training_plan['max_rollouts'] * training_plan['samples_per_rollout']
+    if effective_cap > s2_spec.S2_COURSE_LEARNING_CAPS['S2_1']:
+        raise SystemExit('training rollout plan exceeds S2.1 learning cap')
     if args.num_envs == 512:
         evidence = _load_json(args.fallback_evidence, '--fallback-evidence')
         if evidence.get('num_envs') != 1024 or evidence.get('admitted') is not False:
             raise SystemExit('fallback evidence must show 1024 admitted=false')
+        if not evidence.get('failure_reasons'):
+            raise SystemExit('fallback evidence must record at least one 1024 failure')
     plan = s2_runner.dry_run_plan(num_envs=args.num_envs)
+    plan['training_plan'] = training_plan
     if not (args.dry_run or args.execute):
         raise SystemExit('use --dry-run or --execute')
     if args.dry_run:
@@ -68,9 +75,9 @@ def main(argv=None):
 
     if not args.ledger.exists():
         raise SystemExit('S2 ledger missing')
-    if not args.probe_report.exists():
+    if args.probe_report is None or not args.probe_report.exists():
         raise SystemExit('--probe-report is required before GPU allocation')
-    if not args.admission_evidence.exists():
+    if args.admission_evidence is None or not args.admission_evidence.exists():
         raise SystemExit('--admission-evidence is required before GPU allocation')
     probe = _load_json(args.probe_report, '--probe-report')
     admission = _load_json(args.admission_evidence, '--admission-evidence')
@@ -85,9 +92,19 @@ def main(argv=None):
         raise SystemExit('real S2.1 training requires a CUDA device or --fake-backend')
     run_id = s2_ledger.read_run_id(args.ledger)
     ledger = s2_ledger.S2Ledger(args.ledger, run_id=run_id)
+    ledger_state = ledger.state()
+    learning = ledger_state.get('learning_obligations', {}).get('learning_S2_1')
+    if learning is None:
+        raise SystemExit('learning_S2_1 obligation missing from S2 ledger')
+    if int(learning.get('limit', 0)) < effective_cap:
+        raise SystemExit('learning_S2_1 obligation is smaller than the 512/1024 cap')
+    if int(learning.get('reserved', 0)) != 0:
+        raise SystemExit('learning_S2_1 has a pending reservation; release it before '
+                         'a new/resumed run so the crashed rollout cannot double-charge')
     matrix_manifest = __import__('src.tasks.velocity.v09.s2_cases', fromlist=['load_frozen_manifest']).load_frozen_manifest(
         ROOT / 'logs/a2_v09/s2_0/cases/S2_DIAG.json', ROOT)
-    budget = s2_train.S2LearningBudget(ledger)
+    budget = s2_train.S2LearningBudget(
+        ledger, samples_per_rollout=training_plan['samples_per_rollout'])
     role_plan = s2_train_env.build_role_plan(args.num_envs)
     if args.fake_backend:
         env = s2_train_env.S2FakeTrainEnv(num_envs=args.num_envs,
@@ -104,14 +121,21 @@ def main(argv=None):
     if args.resume is not None:
         trainer.resume(args.resume, device=args.device)
         budget.rollouts = trainer.rollouts
-    max_rollouts = args.max_rollouts or s2_train.S2_1_MAX_ROLLOUTS
-    checkpoint_every = args.checkpoint_every_rollouts or \
-        s2_train.S2_1_CHECKPOINT_ROLLOUTS
+    max_rollouts = min(args.max_rollouts or training_plan['max_rollouts'],
+                       training_plan['max_rollouts'])
+    checkpoint_every = (args.checkpoint_every_rollouts
+                        or training_plan['checkpoint_every_rollouts'])
+    if max_rollouts <= 0 or checkpoint_every <= 0:
+        raise SystemExit('max_rollouts and checkpoint_every_rollouts must be positive')
     output = args.output_dir or (ROOT / 'logs/a2_v09/s2/train' / args.attempt_id)
     output.mkdir(parents=True, exist_ok=True)
     for rollout in range(max_rollouts):
+        if trainer.learning_samples >= effective_cap:
+            break
         result = trainer.train_rollout(budget=budget)
-        if trainer.rollouts % checkpoint_every == 0 or rollout == max_rollouts - 1:
+        if (trainer.rollouts % checkpoint_every == 0
+                or rollout == max_rollouts - 1
+                or trainer.learning_samples >= effective_cap):
             path = output / f's2_1_{trainer.learning_samples:012d}.pt'
             sha = trainer.save(path, case_manifest_sha256=matrix_manifest['manifest_sha256'],
                                manifest_sha256=matrix_manifest['manifest_sha256'])
@@ -119,11 +143,12 @@ def main(argv=None):
             result['checkpoint_sha256'] = sha
         print(json.dumps(dict(rollout=trainer.rollouts, **result),
                          ensure_ascii=False), flush=True)
-        if trainer.learning_samples >= s2_train.S2_1_SAMPLES_PER_ROLLOUT * \
-                s2_train.S2_1_MAX_ROLLOUTS:
+        if trainer.learning_samples >= effective_cap:
             break
     print(json.dumps(dict(status='completed', rollouts=trainer.rollouts,
                           learning_samples=trainer.learning_samples,
+                          effective_cap=effective_cap,
+                          samples_per_rollout=training_plan['samples_per_rollout'],
                           learning_rate=trainer.learning_rate,
                           std=trainer.model.std.detach().cpu().tolist()),
                      ensure_ascii=False, indent=2))

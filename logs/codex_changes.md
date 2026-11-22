@@ -4578,3 +4578,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 通过：512 资源项（50 条 timings 合计 275.397 s、peak 4521.75、host free 14864.24、eval 100×9472、video 1×200、restore_ok、无 OOM/非有限/接触溢出）；1024 OOM 证据合规（peak 5396.76、0 measurements、Warp graph OOM）。
 - 拒绝项：① `independent_copy=false` 而要求 true，`run_probe` 未把该项计入 failure_reasons，`write_admission` 直接信任 `admitted` → 准入链漏洞；② `probe_512_retry_overage` 261,064 与 partial 270,336 的对账未说明（实际：partials 270,336 + 成功 r4 2,323,656 = 2,593,992 = limit 2,332,928 + overage 261,064）；③ 512 训练口径未改（仍 16,276 rollouts/49,152/102），应为 32,552/24,576/204。
 - 结论：`admission_review_sha256=null`，不得写 admission、不得开训。
+
+
+## 2026-11-22 V10 修复：独立副本探测、overage 对账、512 训练口径
+
+- 目的：闭合 V10 三项阻断。
+- 涉及文件：`scripts/probe_a2_v09_s2_resources.py`（`--execute` 强制 `--independent-copy`）、`s2_resources.py`（真实独立副本：入口权重复制到临时目录并校验 source before/after 与 probe copy SHA、模型 state before/after_reload 相同；independent_copy 不符计入 failure_reasons；write_admission 重核全部 requirements）、`s2_train.py`/`scripts/train_a2_v09_s2.py`（512：32,552 rollouts、24,576 样本、204 checkpoint 间隔）、`tests/test_v09_s2_1_train.py`。
+- 新 512 独立副本 probe：`logs/a2_v09/s2/probe/512-r5/probe_report.json` SHA `bdb02d67…`；admitted=true、independent_copy=true、process 独立、entry source 前后 `efa9caa8…` 未变、probe copy 同 SHA、entry state `7ac07230…` before=after、peak 4521.75、50 测量、eval 100×9472、video 1×200、restore ok、failure_reasons=[]。
+- 台账对账：partials 270,336 + r4 2,323,656 + r5 2,323,656；probe512 2,332,928 + overage 261,064 + independent_copy 2,323,656；另有主对话误加未用 `probe_512_rerun` 2,323,656（spent 0，已加说明事件 seq 623）；envelope 268,816,746 ≤4 亿；总 spent 5,063,030。
+- 512 计划：`max_rollouts=32,552`、`samples_per_rollout=24,576`、`checkpoint_every_rollouts=204`、`learning_cap=800,000,000`，32,552×24,576=799,997,952。
+- 验证：训练套件 19 passed；待 V10' 复核后写 admission 并开训。

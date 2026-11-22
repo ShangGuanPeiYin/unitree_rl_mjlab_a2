@@ -35,6 +35,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not (args.plan_only or args.execute):
         raise SystemExit('use --plan-only or --execute')
+    if args.execute and not args.independent_copy:
+        raise SystemExit('--execute requires --independent-copy')
     plan = s2_resources.probe_plan(
         args.num_envs, evaluation_timeout_steps=args.evaluation_timeout_steps)
     if args.plan_only:
