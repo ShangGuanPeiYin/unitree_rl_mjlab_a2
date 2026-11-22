@@ -48,6 +48,7 @@ class BackendStep:
     base_xy: tuple[float, float]
     feet_xy: list
     feet_route_x: list
+    feet_z: list
     foot_on_platform: list
     foot_contact: list
     foot_normal_force: list
@@ -77,6 +78,7 @@ class BackendStep:
     sim_time_s: float
     termination_reason: str = 'running'
     nonfoot_contact: bool = False
+    v07_success: bool = False
 
 
 def aggregate_foot_contacts(top_forces, *, geom_names=None, geom_tiles=None,
@@ -179,6 +181,7 @@ class S2FakeBackend:
         return BackendStep(
             route_x=self.route_x, base_xy=(self.route_x, 0.0), feet_xy=feet,
             feet_route_x=[f[0] for f in feet],
+            feet_z=[0.0, 0.0, 0.0, 0.0],
             foot_on_platform=[on_platform] * 4,
             foot_contact=[True, True, True, True],
             foot_normal_force=[10.0] * 4, pitch=0.0,
@@ -202,7 +205,9 @@ class S2FakeBackend:
                                   sample_sim_time_s=self.sim_time,
                                   produced_at_actor_step=actor_step),
             sim_time_s=self.sim_time,
-            termination_reason=('success' if top and terminal else 'timeout' if terminal else 'running'))
+            termination_reason=('success' if top and terminal else 'timeout' if terminal else 'running'),
+            v07_success=bool(on_platform and front and
+                             self.route_x >= front + 0.8))
 
 
 class S2PhysicsEnv:
@@ -352,9 +357,7 @@ class S2PhysicsEnv:
                 sample_id=frame.native_sample_id)
         v07_success = False
         if self.h_legacy and platform:
-            v07_success = s2_state.legacy_v07_success(
-                frame.route_x, platform_front_x=platform['front_x'],
-                supported=frame.feet_ok)
+            v07_success = bool(frame.v07_success)
         first_step = bool(frame.route_x >= 0.0)
         state_frame = dict(route_x=frame.route_x, first_step=first_step,
                            top_arrived=frame.top_arrived,
@@ -365,7 +368,7 @@ class S2PhysicsEnv:
         self.recorder.append(dict(
             step=self.steps - 1, route_x=frame.route_x, base_xy=frame.base_xy,
             feet_xy=frame.feet_xy, feet_route_x=frame.feet_route_x,
-            pitch=frame.pitch, foot_on_platform=frame.foot_on_platform,
+            feet_z=frame.feet_z, pitch=frame.pitch, foot_on_platform=frame.foot_on_platform,
             foot_contact=frame.foot_contact, g_level=g_value,
             top_arrived=frame.top_arrived, failure=frame.failure,
             stop_request=self.machine.stop_requested,
@@ -471,6 +474,7 @@ def _s2_patch_context(specs):
         originals = {name: getattr(v07terrain, name) for name in
                      ('build_terrain_specs', 'tile_boxes', 'query_surface')}
         original_events_table = getattr(v07events, 'build_terrain_specs', None)
+        original_evaluate = getattr(v07events, 'evaluate', None)
         original_cfg_gen = getattr(v07cfg, 'terrain_generator_cfg', None)
         original_validate = getattr(v07env, '_validate_frontier_tile', None)
         original_check = getattr(v07env, '_check_schedule_frontier', None)
@@ -498,6 +502,20 @@ def _s2_patch_context(specs):
             v07terrain.query_surface = query
             v07events.build_terrain_specs = lambda: tuple(specs)
             v07events._TABLE_CACHE.clear()
+            if original_evaluate is not None:
+                from dataclasses import replace as _replace
+
+                def evaluate_without_v07_success(**kwargs):
+                    # S2 sequential tasks own success (top_arrived/D_post); the
+                    # original v07 success condition would auto-reset at the
+                    # platform edge before the S2 state machine can latch top.
+                    result = original_evaluate(**kwargs)
+                    if bool(result.success.any()):
+                        result = _replace(result,
+                                          success=torch.zeros_like(result.success))
+                    return result
+
+                v07events.evaluate = evaluate_without_v07_success
             def generator_cfg(seed=42):
                 from mjlab.terrains.terrain_generator import (
                     SubTerrainCfg, TerrainGeneratorCfg, TerrainGeometry, TerrainOutput)
@@ -536,6 +554,8 @@ def _s2_patch_context(specs):
                 setattr(v07terrain, name, value)
             if original_events_table is not None:
                 v07events.build_terrain_specs = original_events_table
+            if original_evaluate is not None:
+                v07events.evaluate = original_evaluate
             v07events._TABLE_CACHE.clear()
             if original_cfg_gen is not None:
                 v07cfg.terrain_generator_cfg = original_cfg_gen
@@ -659,9 +679,18 @@ class MjlabS2Backend:
         local = data.root_link_pos_w[0] - origin
         feet = data.site_pos_w[0, self.env.foot_ids]
         contact = self.env.contacts.raw[0].bool()
-        platform = self.env.current_platform[0].bool()
-        front = float(self.spec.platform_front_local_x)
-        body_ok = bool(local[0] > front + 0.4)
+        # SDS 5.3: four-foot entry is the first frame with all four foot XY
+        # projections inside the top platform; it is not contact/support.
+        feet_local = feet[:, :2] - origin[:2]
+        if self.spec.kind == 's2_stairs':
+            front = float(self.spec.platform_front_local_x)
+            platform = ((feet_local[:, 0] >= front)
+                        & (feet_local[:, 0] <= front + float(self.spec.platform_length))
+                        & (feet_local[:, 1].abs() <= float(self.spec.platform_width) / 2.0))
+        else:
+            front = None
+            platform = torch.zeros(4, dtype=torch.bool, device=feet.device)
+        body_ok = bool(front is not None and local[0] > front + 0.4)
         feet_ok = bool(platform.all())
         map_valid = self.env.map_cache.map[0, 1].bool().cpu().numpy()
         refreshed = int(self.env.map_cache.steps[0]) == 0
@@ -682,11 +711,12 @@ class MjlabS2Backend:
         geom_tiles = self.env.contacts.inner.tile_by_geom.detach().cpu().numpy().tolist()
         foot_normal_force, contact_pairs = aggregate_foot_contacts(
             top_forces, geom_names=geom_names, geom_tiles=geom_tiles,
-            platform='platform' if feet_ok else 'tread',
+            platform='platform' if bool(platform.any()) else 'tread',
             feet_xy=feet[:, :2].detach().cpu().numpy().tolist())
         nonfoot = nonfoot_contact_from_links(
             self.env.contacts.link_force[0], self.env.contacts.inner.link_names)
         termination_reason = 'running'
+        last = None
         try:
             from src.tasks.velocity.v07 import events as v07events
             last = getattr(self.env, 'last_termination', None)
@@ -699,6 +729,7 @@ class MjlabS2Backend:
             route_x=float(local[0]), base_xy=(float(local[0]), float(local[1])),
             feet_xy=feet[:, :2].detach().cpu().numpy().tolist(),
             feet_route_x=(feet[:, 0] - origin[0]).detach().cpu().numpy().tolist(),
+            feet_z=feet[:, 2].detach().cpu().numpy().tolist(),
             foot_on_platform=platform.detach().cpu().numpy().tolist(),
             foot_contact=contact.detach().cpu().numpy().tolist(),
             foot_normal_force=foot_normal_force.detach().cpu().tolist(),
@@ -716,15 +747,16 @@ class MjlabS2Backend:
             joint_velocity=data.joint_vel[0, self.env.joint_ids].detach().cpu().numpy().tolist(),
             map_valid=map_valid, map_base_z=float(data.root_link_pos_w[0, 2]),
             refreshed=refreshed,
-            terminal=terminal, failure=bool(self.env._physical_failure[0])
-            if hasattr(self.env, '_physical_failure') else False,
+            terminal=terminal,
+            failure=(bool(last[1][0]) if last is not None else False),
             top_arrived=feet_ok and body_ok,
             four_feet_on_platform=feet_ok,
-            front_foot_top_support=bool(platform[0] or platform[1]),
+            front_foot_top_support=bool((platform[:2] & contact[:2]).any()),
             feet_ok=feet_ok, body_ok=body_ok,
             contact_pairs=contact_pairs, native_sample_id=sample_id,
             sim_time_s=self.steps * 0.02, nonfoot_contact=nonfoot,
-            termination_reason=termination_reason)
+            termination_reason=termination_reason,
+            v07_success=(bool(last[0][0]) if last is not None else False))
 
 
 def load_s1_actor(path=None, *, expected_sha256=None, device='cpu'):

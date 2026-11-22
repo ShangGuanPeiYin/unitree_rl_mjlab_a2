@@ -4342,3 +4342,14 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 阻断：B-V8-1 smoke 病例选择按下标（15 个 case_id=0）且与自述不符；B-V8-2 smoke/parity 384 步记在 `s2_0_matrix_two_branches`，整矩阵会超义务，需单列工程义务；B-V8-3 S1 参考与 S2 非同病例（spawn 差 0.0836 m、streams 不同），观测差 4.77e-7 只限同观测重放；B-V8-4 trace SHA 未绑定进 summary/元数据。
 - 处置：已下达按 case_sha 选例、`stage_extend` 增列 `s2_0_pipeline_debug` 义务、用 S2 病例构造 S1 参考、证据 SHA 绑定；随后跑真实楼梯 case（40 级 0.3 m/s）。
 - 未执行：整矩阵、H 六例、训练。
+
+
+## 2026-11-22 B-V8 四项修复 + 真实楼梯 T10
+
+- 目的：修 V8 阻断（病例选择、调试义务、同病例 parity、证据 SHA 绑定），并首次实跑 40 级楼梯。
+- 涉及文件：`s2_ledger.py`（`extend_stage`）、`s2_env.py`、`s2_physics.py`、`s2_terrain.py`、`scripts/run_a2_v09_s2_0.py`（`--suite/--case-sha/--task/--speed/--platform-width` 与证据 SHA 绑定）、新增 `scripts/extend_a2_v09_s2.py`、`scripts/run_a2_v09_s2_parity.py`、新增测试 `test_v09_s2_0_run_cli.py`、文档 `docs/v09_s2_t10_case_selection_debug_ledger_parity_stairs.md`。
+- 台账：追加 seq 23 `s2_0_pipeline_debug` limit 20,000，envelope 263,888,370→263,908,370（= 义务上限之和，仍 ≤4 亿）；`s2_0_matrix_two_branches` limit/spent 不变（420,390 / 384）。当前 total spent 8,066（其中 debug 7,682）。
+- T10 real（`t10-stairs-real-r4`）：1,608 步；enter_climb step 174、四足入台 step 1560、`top_arrived` step 1563、g_level=1 step 1587、body failure step 1608，失败前 pitch −53.19°（后仰），route 9.27 m。plan/plane（`t10-stairs-plane-r1`）：1,569 步、未到 top、nonfoot failure、平台后 pitch +13.4°（前倾 94.7%）、`s−t=1`、valid_fraction 1.0、saturation 0.025。
+- 未通过项：real/plane 独立进程的 trace 前缀存在求解器级数值漂移（route 5e-4 m、关节速度 0.73），不能声称逐位一致；需改为同进程配对。
+- 验证：S2 套件 **206 passed**；台账独立复算 envelope/义务/spent 一致。
+- 未执行：整矩阵 150 条、H 六例、训练。

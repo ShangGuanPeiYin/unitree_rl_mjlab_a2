@@ -16,6 +16,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 
 import numpy as np
@@ -24,8 +25,65 @@ from . import s2_spec, s2_state, s2_terrain
 from .cases import canonical_json, sha256
 
 EVIDENCE_SCHEMA = 1
+OBSERVATION_SHAPES = {'proprio': (45,), 'history': (5, 45),
+                      'heightmap': (3, 40, 30), 'route_error': (3,)}
+
+
+class ObservationContractError(ValueError):
+    """Detailed Actor observation contract failure."""
+
+
+def observation_diagnostics(observation):
+    diagnostics = {}
+    for key, expected in OBSERVATION_SHAPES.items():
+        if key not in observation:
+            diagnostics[key] = dict(present=False, expected_shape=list(expected))
+            continue
+        value = observation[key]
+        array = np.asarray(to_numpy(value))
+        finite = np.isfinite(array)
+        diagnostics[key] = dict(
+            present=True, dtype=str(array.dtype),
+            device=str(getattr(value, 'device', 'cpu')),
+            shape=list(array.shape), expected_shape=list(expected),
+            shape_ok=tuple(array.shape) == expected,
+            min=(float(np.min(array[finite])) if finite.any() else None),
+            max=(float(np.max(array[finite])) if finite.any() else None),
+            nan_count=int(np.isnan(array).sum()),
+            inf_count=int(np.isinf(array).sum()),
+            nonfinite_indices=np.argwhere(~finite).tolist()[:20])
+        if key in ('proprio', 'route_error') and array.ndim == 1:
+            # One reset frame: min/max at each dimension equal its value; keep
+            # both lists for a stable schema when later aggregated over frames.
+            diagnostics[key]['per_dim_values'] = [
+                float(v) if np.isfinite(v) else None for v in array]
+            diagnostics[key]['per_dim_min'] = [
+                float(v) if np.isfinite(v) else None for v in array]
+            diagnostics[key]['per_dim_max'] = [
+                float(v) if np.isfinite(v) else None for v in array]
+    return diagnostics
+
+
+def validate_policy_observation(observation):
+    diagnostics = observation_diagnostics(observation)
+    failures = []
+    for key, expected in OBSERVATION_SHAPES.items():
+        info = diagnostics[key]
+        if not info.get('present'):
+            failures.append(f'{key}: missing')
+        elif not info['shape_ok']:
+            failures.append(f"{key}: shape {info['shape']} != {list(expected)}")
+        elif info['nan_count'] or info['inf_count']:
+            failures.append(f"{key}: nonfinite indices {info['nonfinite_indices']}")
+        elif info['dtype'] != 'float32':
+            failures.append(f"{key}: dtype {info['dtype']} != float32")
+    if failures:
+        raise ObservationContractError(
+            'Actor observation contract failed: ' + '; '.join(failures)
+            + ' | diagnostics=' + canonical_json(jsonable(diagnostics)))
+    return diagnostics
 TRACE_FIELDS = (
-    'step', 'route_x', 'base_xy', 'feet_xy', 'feet_route_x', 'pitch',
+    'step', 'route_x', 'base_xy', 'feet_xy', 'feet_route_x', 'feet_z', 'pitch',
     'foot_on_platform', 'foot_contact', 'g_level', 'top_arrived', 'failure',
     'stop_request', 'terminal', 'c_exec', 'c_request', 'a_request', 'a_applied',
     'velocity_route', 'pitch_rate', 'foot_normal_force', 'contact_pairs',
@@ -36,7 +94,7 @@ SCALAR_FIELDS = {'step', 'route_x', 'pitch', 'g_level', 'c_exec', 'c_request',
                  'velocity_route', 'pitch_rate', 'map_sample_time_s'}
 BOOLEAN_FIELDS = {'top_arrived', 'failure', 'stop_request', 'terminal'}
 VECTOR3_FIELDS = {'base_xy'}
-FOOT_FIELDS = {'feet_xy': (4, 2), 'feet_route_x': (4,),
+FOOT_FIELDS = {'feet_xy': (4, 2), 'feet_route_x': (4,), 'feet_z': (4,),
                'foot_on_platform': (4,), 'foot_contact': (4,),
                'foot_normal_force': (4,)}
 JOINT_FIELDS = {'a_request': (12,), 'a_applied': (12,), 'pd_target': (12,),
@@ -46,7 +104,7 @@ CONTACT_PAIR_FIELDS = ('foot', 'geom', 'normal_force', 'duration_s',
 
 
 def _as_float_array(value, name, shape):
-    array = np.asarray(value, dtype=np.float64)
+    array = np.asarray(to_numpy(value), dtype=np.float64)
     if array.shape != shape:
         raise ValueError(f'{name} shape {array.shape} != {shape}')
     if not np.all(np.isfinite(array)):
@@ -55,7 +113,7 @@ def _as_float_array(value, name, shape):
 
 
 def _as_bool_array(value, name, shape):
-    array = np.asarray(value, dtype=bool)
+    array = np.asarray(to_numpy(value), dtype=bool)
     if array.shape != shape:
         raise ValueError(f'{name} shape {array.shape} != {shape}')
     return array
@@ -129,6 +187,61 @@ class S2TaskAdapter:
                 if self.config.platform_start else None)
 
 
+def to_numpy(value):
+    """Host numpy at every evidence boundary; preserve GPU tensors for Actor."""
+    if value is None:
+        return None
+    if hasattr(value, 'detach'):
+        return value.detach().cpu().numpy()
+    if hasattr(value, 'numpy') and not isinstance(value, (str, bytes)):
+        try:
+            return np.asarray(value.numpy())
+        except Exception:
+            pass
+    if isinstance(value, (np.ndarray, np.generic, list, tuple, int, float, bool)):
+        return np.asarray(value) if not isinstance(value, np.ndarray) else value
+    return np.asarray(value)
+
+
+def jsonable(value, _path='$'):
+    """Single recursive serialization boundary for all S2 evidence/reports."""
+    if value is None or isinstance(value, (str, bool, int, float)):
+        return value
+    if isinstance(value, np.generic):
+        return value.item()
+    if hasattr(value, 'detach'):
+        value = value.detach().cpu()
+        if getattr(value, 'ndim', 0) == 0:
+            return value.item()
+        return value.numpy().tolist()
+    if hasattr(value, 'cpu') and hasattr(value, 'numpy'):
+        try:
+            value = value.cpu()
+            if getattr(value, 'ndim', 0) == 0:
+                return value.item()
+            return np.asarray(value.numpy()).tolist()
+        except Exception as error:
+            raise TypeError(f'cannot jsonable {_path} ({type(value).__name__}): {error}') from None
+    if isinstance(value, np.ndarray):
+        if value.ndim == 0:
+            return value.item()
+        return value.tolist()
+    if isinstance(value, dict):
+        return {str(key): jsonable(item, f'{_path}.{key}')
+                for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [jsonable(item, f'{_path}[{index}]')
+                for index, item in enumerate(value)]
+    raise TypeError(f'cannot jsonable {_path}: {type(value).__name__}')
+
+
+# Backward-compatible alias for existing internal callers.
+_jsonable = jsonable
+
+
+RAGGED_TRACE_FIELDS = ('contact_pairs', 'native_sample_id')
+
+
 class S2EvidenceRecorder:
     """Accumulate pre-reset control-step evidence for one case/branch."""
 
@@ -140,6 +253,7 @@ class S2EvidenceRecorder:
         self.map_branch = 'plane_ablation' if map_branch == 'plane_ablation' else map_branch
         self.rows = []
         self.native_samples = []
+        self.trace_path = None
 
     def append(self, frame):
         missing = REQUIRED_PER_STEP - set(frame)
@@ -180,14 +294,32 @@ class S2EvidenceRecorder:
             if not isinstance(pair, dict) or set(pair) != set(CONTACT_PAIR_FIELDS):
                 raise ValueError(f'contact pair requires {CONTACT_PAIR_FIELDS}')
         self.rows.append(row)
+        if self.trace_path is not None:
+            with open(self.trace_path, 'a', encoding='utf-8') as handle:
+                handle.write(canonical_json(_jsonable(row)) + '\n')
+                handle.flush()
+                os.fsync(handle.fileno())
         return row
+
+    def attach_trace(self, path):
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists():
+            raise FileExistsError(f'refusing to overwrite trace {path}')
+        path.write_text('', encoding='utf-8')
+        self.trace_path = path
+        return path
 
     def trace(self):
         if not self.rows:
             raise ValueError('no evidence rows')
-        trace = {key: np.asarray([row[key] for row in self.rows]) for key in TRACE_FIELDS}
-        for key in ('base_xy',):
-            trace[key] = np.asarray(trace[key], dtype=np.float64)
+        trace = {}
+        for key in TRACE_FIELDS:
+            values = [to_numpy(row[key]) for row in self.rows]
+            if key in RAGGED_TRACE_FIELDS:
+                trace[key] = np.asarray(values, dtype=object)
+            else:
+                trace[key] = np.asarray(values)
         return trace
 
     def validate(self):
@@ -204,41 +336,60 @@ class S2EvidenceRecorder:
             raise ValueError('g_level outside [0,1]')
         return dict(rows=count, fields=len(trace), valid=True)
 
-    def write(self, directory, *, stem=None):
+    def write(self, directory, *, stem=None, attempt_id=None):
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
-        stem = stem or f'{self.case["case_id"]:02d}_{self.case["task"]}_{self.map_branch}'
+        stem = stem or (f'{self.case.get("suite", "S2")}_{self.case["case_id"]:02d}_'
+                        f'{self.case["task"]}_{self.case["case_sha256"][:12]}_'
+                        f'{self.map_branch}')
         npz = directory / f'{stem}.npz'
         if npz.exists():
             raise FileExistsError(f'refusing to overwrite evidence {npz}')
         trace = self.trace()
         payload = {}
         for key, value in trace.items():
-            payload[key] = (np.asarray(value, dtype=object) if key in (
-                'contact_pairs', 'native_sample_id') else value)
+            payload[key] = (np.asarray(value, dtype=object) if key in
+                            RAGGED_TRACE_FIELDS else value)
         np.savez_compressed(npz, **payload)
+        trace_json = None
+        if self.trace_path is not None:
+            trace_json = directory / f'{stem}_trace.jsonl'
+            if trace_json.exists():
+                raise FileExistsError(f'refusing to overwrite trace {trace_json}')
+            text = ''.join(canonical_json(_jsonable(row)) + '\n' for row in self.rows)
+            trace_json.write_text(text, encoding='utf-8')
+        trace_json_sha256 = (hashlib.sha256(trace_json.read_bytes()).hexdigest()
+                             if trace_json is not None else None)
         metadata = dict(schema_version=EVIDENCE_SCHEMA, sds_sha256=s2_spec.SDS_SHA256,
                         case_sha256=self.case['case_sha256'],
-                        case_id=self.case['case_id'], task=self.case['task'],
+                        case_id=self.case['case_id'],
+                        suite=self.case.get('suite'), task=self.case['task'],
+                        stair_count=self.case.get('stair_count'),
                         speed=self.case['speed'], map_branch=self.map_branch,
+                        geometry=self.case.get('geometry'),
                         terrain_key=self.adapter.terrain.terrain_key,
+                        hard_timeout_steps=self.case['hard_timeout_steps'],
                         timeout_steps=self.adapter.config.timeout_steps,
-                        rows=len(self.rows), npz=str(npz),
+                        attempt_id=attempt_id, rows=len(self.rows), npz=str(npz),
+                        trace_path=(str(self.trace_path) if self.trace_path else None),
+                        trace_json=(str(trace_json) if trace_json else None),
                         npz_sha256=hashlib.sha256(npz.read_bytes()).hexdigest(),
+                        trace_sha256=trace_json_sha256,
                         native_samples=self.native_samples,
                         contract=evidence_contract())
         meta_path = directory / f'{stem}.json'
         if meta_path.exists():
             raise FileExistsError(f'refusing to overwrite evidence metadata {meta_path}')
         meta_path.write_text(canonical_json(metadata) + '\n', encoding='utf-8')
-        return dict(npz=npz, metadata=meta_path, **{k: metadata[k] for k in (
-            'rows', 'npz_sha256')})
+        return dict(npz=npz, metadata=meta_path, trace_json=trace_json,
+                    **{k: metadata[k] for k in (
+                        'rows', 'npz_sha256', 'trace_sha256')})
 
 
 def case_record(*, case, adapter, recorder, metrics=None, map_evidence=None,
                 state_summary=None, failure_context=None, config_sha256=None,
                 pairing_sha256=None, shared_identity_sha256=None,
-                g_level_report=None):
+                g_level_report=None, termination_reason=None, attempt_id=None):
     """Complete per-case record consumed by group reporting."""
     from .s2_map_ablation import config_identity
     config_sha256 = config_sha256 or config_identity()['config_sha256']
@@ -254,7 +405,8 @@ def case_record(*, case, adapter, recorder, metrics=None, map_evidence=None,
         evidence_rows=len(recorder.rows),
         metrics=metrics, map_evidence=map_evidence,
         state=state_summary, failure_context=failure_context,
-        g_level_report=g_level_report,
+        g_level_report=g_level_report, termination_reason=termination_reason,
+        attempt_id=attempt_id,
         evidence_contract_sha256=sha256(evidence_contract()),
     )
 

@@ -103,6 +103,20 @@ def validate_plan(plan):
     return True
 
 
+def read_run_id(path):
+    """Read the immutable run_id from a ledger header without writing it."""
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(path)
+    lines = path.read_text(encoding='utf-8').splitlines()
+    if not lines:
+        raise ValueError('empty S2 ledger')
+    header = json.loads(lines[0])
+    if header.get('kind') != 'header' or not header.get('run_id'):
+        raise ValueError('S2 ledger header/run_id missing')
+    return header['run_id']
+
+
 class S2Ledger:
     def __init__(self, path, *, run_id):
         if not isinstance(run_id, str) or not run_id:
@@ -180,12 +194,30 @@ class S2Ledger:
                     state['obligations'][item['obligation_id']] = dict(
                         name=item['name'], category=item['category'],
                         limit=int(item['control_samples']), spent=0, reserved=0,
-                        basis=item['basis'], closed=False)
+                        basis=item['basis'], subcap=item.get('subcap'),
+                        closed=False)
                 for item in plan['learning_items']:
                     state['learning_obligations'][item['obligation_id']] = dict(
                         name=item['name'], category='learning',
                         limit=int(item['control_samples']), spent=0, reserved=0,
                         basis=item['basis'], closed=False)
+            elif kind == 'stage_extend':
+                operation_id = row.get('operation_id')
+                if not operation_id or operation_id in state['operations']:
+                    raise ValueError('operation_id must be unique / nonempty')
+                item = row.get('item')
+                samples = self.validate_extension_item(item, state)
+                if item['obligation_id'] in state['obligations']:
+                    raise ValueError('extension obligation_id already exists')
+                if item['name'] in {value['name'] for value in state['obligations'].values()}:
+                    raise ValueError('extension obligation name already exists')
+                state['envelope'] += samples
+                state['obligations'][item['obligation_id']] = dict(
+                    name=item['name'], category=item['category'],
+                    limit=samples, spent=0, reserved=0, basis=item['basis'],
+                    subcap=item.get('subcap'), closed=False)
+                state['operations'][operation_id] = dict(
+                    kind='stage_extend', obligation_id=item['obligation_id'])
             elif kind == 'obligation_reserve':
                 operation_id = row.get('operation_id')
                 if not operation_id or operation_id in state['operations']:
@@ -214,11 +246,92 @@ class S2Ledger:
                 obligation['spent'] += samples
                 state['reserved'][obligation['category']] -= samples
                 state['spent'][obligation['category']] += samples
+            elif kind == 'obligation_release':
+                operation_id = row.get('operation_id')
+                if not operation_id or operation_id in state['operations']:
+                    raise ValueError('operation_id must be unique / nonempty')
+                obligation = self._obligation(state, row['obligation_id'])
+                samples = int(row['samples'])
+                if samples <= 0 or obligation['reserved'] < samples:
+                    raise ValueError('release exceeds reserved samples')
+                obligation['reserved'] -= samples
+                state['reserved'][obligation['category']] -= samples
+                state['operations'][operation_id] = dict(kind='release',
+                                                         obligation_id=row['obligation_id'])
+            elif kind == 'obligation_refund':
+                operation_id = row.get('operation_id')
+                if not operation_id or operation_id in state['operations']:
+                    raise ValueError('operation_id must be unique / nonempty')
+                obligation = self._obligation(state, row['obligation_id'])
+                samples = int(row['samples'])
+                if samples <= 0 or obligation['spent'] < samples:
+                    raise ValueError('refund exceeds spent samples')
+                obligation['spent'] -= samples
+                state['spent'][obligation['category']] -= samples
+                state['operations'][operation_id] = dict(kind='refund',
+                                                         obligation_id=row['obligation_id'])
             elif kind == 'event':
                 state['items'].append(dict(row))
             else:
                 raise ValueError(f'unknown S2 ledger event {kind}')
         return state
+
+    @staticmethod
+    def validate_extension_item(item, state):
+        """Append-only engineering extension with the frozen global guards."""
+        if not isinstance(item, dict):
+            raise ValueError('stage_extend item must be a mapping')
+        required = ('obligation_id', 'name', 'category', 'control_samples', 'basis')
+        missing = [key for key in required if key not in item]
+        if missing:
+            raise ValueError(f'stage_extend item missing {missing}')
+        samples = item['control_samples']
+        if isinstance(samples, bool) or not isinstance(samples, int) or samples <= 0:
+            raise ValueError('stage_extend control_samples must be a positive integer')
+        if item['category'] != 'engineering':
+            raise ValueError('stage_extend category must be engineering')
+        if item.get('subcap') not in (None, 'S2_0'):
+            raise ValueError('stage_extend subcap must be S2_0 or absent')
+        if not item['obligation_id'] or not item['name'] or not item['basis']:
+            raise ValueError('stage_extend id/name/basis must be nonempty')
+        if not state['envelope']:
+            raise ValueError('stage_extend requires an existing stage reservation')
+        new_envelope = int(state['envelope']) + samples
+        if new_envelope > s2_spec.S2_NONLEARNING_CAP:
+            raise ValueError('stage_extend exceeds nonlearning cap')
+        if new_envelope + int(state['learning_total']) > s2_spec.S2_TOTAL_CAP:
+            raise ValueError('stage_extend exceeds total cap')
+        subcap_used = sum(obligation['limit']
+                          for obligation in state['obligations'].values()
+                          if obligation.get('subcap') == 'S2_0')
+        if item.get('subcap') == 'S2_0':
+            subcap_used += samples
+        if subcap_used > s2_spec.S2_0_NONLEARNING_SUBCAP:
+            raise ValueError('stage_extend exceeds S2.0 sub-cap')
+        return samples
+
+    def extend_stage(self, item, *, operation_id, reason):
+        """Append a new engineering obligation without changing past events."""
+        if not operation_id or not reason:
+            raise ValueError('stage_extend requires operation_id and reason')
+        with self._locked() as handle:
+            events = self._read(handle)
+            state = self._state(events)
+            samples = self.validate_extension_item(item, state)
+            if item['obligation_id'] in state['obligations']:
+                raise ValueError('extension obligation_id already exists')
+            if item['name'] in {value['name']
+                                for value in state['obligations'].values()}:
+                raise ValueError('extension obligation name already exists')
+            event = self._append(handle, events, dict(
+                kind='stage_extend', stage='S2', item=dict(item),
+                samples=samples, operation_id=operation_id, reason=reason))
+            return dict(sequence=event['sequence'],
+                        event_sha256=event['event_sha256'],
+                        ledger_file_sha256=_file_sha(self.path),
+                        envelope=state['envelope'] + samples,
+                        obligation_id=item['obligation_id'],
+                        samples=samples)
 
     @staticmethod
     def _obligation(state, obligation_id):
@@ -281,6 +394,30 @@ class S2Ledger:
             self._state(events)
             event = self._append(handle, events, dict(
                 kind='obligation_commit', stage='S2',
+                obligation_id=obligation_id, samples=int(samples),
+                operation_id=operation_id, reason=reason))
+            return dict(sequence=event['sequence'], event_sha256=event['event_sha256'])
+
+    def release(self, obligation_id, samples, *, operation_id, reason):
+        if not operation_id or not reason:
+            raise ValueError('release requires operation_id and reason')
+        with self._locked() as handle:
+            events = self._read(handle)
+            self._state(events)
+            event = self._append(handle, events, dict(
+                kind='obligation_release', stage='S2',
+                obligation_id=obligation_id, samples=int(samples),
+                operation_id=operation_id, reason=reason))
+            return dict(sequence=event['sequence'], event_sha256=event['event_sha256'])
+
+    def refund(self, obligation_id, samples, *, operation_id, reason):
+        if not operation_id or not reason:
+            raise ValueError('refund requires operation_id and reason')
+        with self._locked() as handle:
+            events = self._read(handle)
+            self._state(events)
+            event = self._append(handle, events, dict(
+                kind='obligation_refund', stage='S2',
                 obligation_id=obligation_id, samples=int(samples),
                 operation_id=operation_id, reason=reason))
             return dict(sequence=event['sequence'], event_sha256=event['event_sha256'])

@@ -63,6 +63,7 @@ class S2TerrainSpec:
     platform_width: float
     frame_origin_world: tuple[float, float, float]
     valid_bounds_local: tuple[float, float, float, float]
+    lesson_id: str = 'S2'
 
     @property
     def platform_height(self):
@@ -92,6 +93,7 @@ def terrain_specs(*, stair_counts=STAIR_COUNTS, platform_widths=PLATFORM_WIDTHS)
         raise ValueError('platform widths must be 0.8 or 4.0')
     flat = S2TerrainSpec(
         terrain_key='s2_flat_v07_tile0', tile_id=FLAT_TILE_ID, kind='flat',
+        lesson_id='FLAT',
         N=0, h=0.0, step_depth=s2_spec.STAIR_DEPTH, width=8.0,
         tread_thickness=0.01, platform_length=0.0, platform_width=8.0,
         frame_origin_world=(0.0, 0.0, 0.0),
@@ -109,6 +111,7 @@ def terrain_specs(*, stair_counts=STAIR_COUNTS, platform_widths=PLATFORM_WIDTHS)
         rows.append(S2TerrainSpec(
             terrain_key=f's2_stairs_h0.20_d0.20_w0.80_pw{width:g}',
             tile_id=1 + index, kind='s2_stairs', N=count,
+            lesson_id=f'S2_N{count}_PW{width:g}',
             h=s2_spec.STAIR_HEIGHT, step_depth=s2_spec.STAIR_DEPTH,
             width=s2_spec.STAIR_WIDTH, tread_thickness=0.01,
             platform_length=s2_spec.PLATFORM_LENGTH, platform_width=width,
@@ -176,6 +179,7 @@ def spec_from_geometry(geometry):
     return S2TerrainSpec(
         terrain_key=geometry.get('terrain_key', f's2_stairs_N{N}_pw{width:g}'),
         tile_id=tile_id, kind='s2_stairs', N=N,
+        lesson_id=geometry.get('lesson_id', f'S2_N{N}_PW{width:g}'),
         h=float(geometry['h']), step_depth=float(geometry['step_depth']),
         width=float(geometry['width']), tread_thickness=float(geometry['tread_thickness']),
         platform_length=float(geometry['platform_length']),
@@ -197,6 +201,7 @@ def legacy_spec_from_geometry(geometry):
     return S2TerrainSpec(
         terrain_key=f"legacy_{geometry.get('lesson_id', 'unknown')}",
         tile_id=int(geometry.get('tile_id') or -1), kind='s2_stairs', N=N, h=h,
+        lesson_id=str(geometry.get('lesson_id', 'unknown')),
         step_depth=d, width=width, tread_thickness=float(geometry['tread_thickness']),
         platform_length=platform_length, platform_width=width,
         frame_origin_world=origin, valid_bounds_local=bounds)
