@@ -4411,3 +4411,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 处置：已补记 1,974 步到 debug（台账 seq 83/84；debug 10,040/20,000、总 spent 22,217、reserved 1,001）；已下达补齐 Q031 输入（c_request/normalizer 身份/同帧 runner/A-A 噪声控制、排除 terminal-reset 行）、删除未证实自述、补 orphan release 路径。
 - 待裁定：DSH-Q032 四窗起点（首帧为真 1559/1562 vs 锁存 1560/1563；回执 `01a2024c-f6c4-7bb2-91c4-2f0b8c1f3840`）。
 - 未执行：整批仍在运行（8/156 时快照）；训练未启动。
+
+
+## 2026-11-22 裁定留档 DSH-Q032（四窗起点与索引口径）
+
+- 目的：记录四窗从"首个满足条件的有效物理采样帧"起算及索引口径。
+- 涉及文件：`doc/sds/reviews/v09_execution_rulings.md`、本日志。
+- 要点：不用 `event.step` 直接当 row_start；`s2_physics step=self.steps-1` 与 `s2_state` 先 `completed_steps+=1` 再写事件同指一次控制更新，1559/1560、1562/1563 不构成 20 ms 延迟证据；不为跨路径统一减一；四窗定义与首米/后段分界（阈值帧归后段）；real-r4 定稿 front 61/four 48（−24.6910°）/top 45（−25.6311°，全低头）/§6.5 NA；旧 44 帧 −25.96° 保留为被替代统计；报告区分 trace step/row_index/event.completed_steps；整批不重跑。
+- 验证：仅文档追加；未跑测试/物理/训练。
