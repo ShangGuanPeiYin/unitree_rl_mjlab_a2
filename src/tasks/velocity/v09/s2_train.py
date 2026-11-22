@@ -135,12 +135,12 @@ class S2Trainer:
     def collect_rollout(self):
         # Episodes persist across rollout boundaries.  The env resets only the
         # environments whose episode terminates, not the whole batch.
+        self._rollout_steps = 0
         if self._obs is None:
             self._obs = self.env.reset()
         obs = self._obs
         transitions = []
         n = self.env.num_envs
-        self._rollout_steps = 0
         for _ in range(s2_runner.ROLLOUT_STEPS):
             item = {key: value for key, value in obs.items()}
             dist = self.model.action_distribution(item)
@@ -164,13 +164,26 @@ class S2Trainer:
                                     timeout_mask=(info.get('timeout_mask')
                                                   if hasattr(info, 'get') else None),
                                     failure_class=(info.get('failure_class')
-                                                   if hasattr(info, 'get') else None)))
+                                                   if hasattr(info, 'get') else None),
+                                    teacher_obs=(info.get('teacher_observation')
+                                                 if hasattr(info, 'get') else None)))
             obs = next_obs
             self._rollout_steps += 1
         self._obs = obs
         rewards = torch.stack([row['reward'] for row in transitions], 1)
         values = torch.stack([row['values'] for row in transitions], 1)
         done = torch.stack([row['done'] for row in transitions], 1)
+        def _mask(name, fallback):
+            rows = [row.get(name) for row in transitions]
+            if any(value is None for value in rows):
+                return fallback
+            return torch.stack([value if torch.is_tensor(value)
+                                else torch.as_tensor(value, device=self.device)
+                                for value in rows], 1).to(self.device)
+        terminated = _mask('terminated_mask', torch.zeros_like(done))
+        truncated = _mask('truncated_mask', torch.zeros_like(done))
+        failure = _mask('failure_mask', torch.zeros_like(done))
+        timeout = _mask('timeout_mask', torch.zeros_like(done))
         # Non-terminal sampling boundary bootstraps from V(next_obs); terminal
         # rows keep the zero bootstrap in GAE.
         with torch.no_grad():
@@ -181,8 +194,8 @@ class S2Trainer:
             a, r = s2_runner.gae(
                 rewards[index].detach().cpu().numpy(),
                 values[index].detach().cpu().numpy(),
-                terminated=np.zeros(len(transitions), dtype=bool),
-                timeout=done[index].cpu().numpy(),
+                terminated=terminated[index].cpu().numpy(),
+                timeout=(truncated[index] | failure[index] | timeout[index]).cpu().numpy(),
                 sampling_boundary=np.ones(len(transitions), dtype=bool),
                 last_value=(0.0 if bool(done[index, -1]) else
                             float(next_values[index].detach().cpu())))
@@ -198,15 +211,23 @@ class S2Trainer:
         # flatten logical rollout; keep one logical batch for KL/LR
         n = self.env.num_envs
         role_rows = (getattr(self.env, 'role_plan', {}) or {}).get('envs') or []
-        clean_env = torch.tensor(
-            [str(row.get('task', '')).startswith('flat_') for row in role_rows]
-            if len(role_rows) == n else [False] * n,
-            dtype=torch.bool, device=self.device)
+        flat = [str(row.get('task', '')).startswith('flat_') for row in role_rows]
+        if len(flat) != n:
+            flat = [False] * n
+        clean = s2_loss.clean_flat_mask(dict(
+            ordinary_flat=flat, nominal_dynamics=[True] * n,
+            no_noise=[True] * n, no_delay=[True] * n, no_force=[True] * n))
+        clean_env = torch.tensor(clean, dtype=torch.bool, device=self.device)
         for epoch in range(s2_runner.EPOCHS):
             # deterministic logical minibatches over flattened samples
             flat_obs = {}
             for key in transitions[0]['obs']:
                 flat_obs[key] = torch.cat([row['obs'][key] for row in transitions], 0)
+            flat_teacher = {}
+            if self.teacher is not None and transitions[0].get('teacher_obs') is not None:
+                for key in transitions[0]['teacher_obs']:
+                    flat_teacher[key] = torch.cat(
+                        [row['teacher_obs'][key] for row in transitions], 0)
             flat_actions = torch.stack([row['actions'] for row in transitions], 0).reshape(-1, 12)
             flat_old = old_logs
             flat_adv = advantages.reshape(-1)
@@ -255,9 +276,12 @@ class S2Trainer:
                         if len(clean_micro):
                             clean_item = {key: value[clean_micro]
                                           for key, value in flat_obs.items()}
+                            teacher_item = ({key: value[clean_micro]
+                                             for key, value in flat_teacher.items()}
+                                            if flat_teacher else clean_item)
                             mu_student = self.model(clean_item)
                             with torch.no_grad():
-                                mu_teacher = self.teacher(clean_item).detach()
+                                mu_teacher = self.teacher(teacher_item).detach()
                             anchor = torch.sum((mu_student - mu_teacher) ** 2) / (12.0 * n_clean)
                             scaled_loss = scaled_loss + self.beta_flat * anchor
                     scaled_loss.backward()
@@ -332,6 +356,8 @@ class S2Trainer:
             path, self.model.state_dict(), self.optimizer.state_dict(), metadata)
 
     def resume(self, path, *, device='cpu'):
+        from . import s2_r1
+        s2_r1.reject_invalid_checkpoint(path)
         payload = s2_checkpoint.load_checkpoint(path, device=device)
         self.model.load_state_dict(payload['model'])
         self.optimizer.load_state_dict(payload['optimizer'])

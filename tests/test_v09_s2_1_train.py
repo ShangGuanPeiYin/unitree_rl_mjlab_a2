@@ -459,3 +459,19 @@ def test_flat_anchor_is_called_during_update():
                                  teacher=Teacher(), device='cpu')
     trainer.train_rollout()
     assert trainer.teacher.calls > 0
+
+
+def test_r1_attempt_and_checkpoint_are_rejected(tmp_path):
+    from src.tasks.velocity.v09 import s2_r1
+    with pytest.raises(ValueError, match='s2.1-r1'):
+        s2_r1.reject_invalid_attempt('s2.1-r1')
+    r1 = ROOT / 'logs/a2_v09/s2/s2_1/s2_1_000005013504.pt'
+    if r1.exists():
+        with pytest.raises(ValueError, match='invalidated'):
+            s2_r1.reject_invalid_checkpoint(r1)
+    import train_a2_v09_s2 as train_cli
+    with pytest.raises(SystemExit, match='s2.1-r1'):
+        train_cli.main(['--dry-run', '--num-envs', '512',
+                        '--attempt-id', 's2.1-r1',
+                        '--fallback-evidence', str(tmp_path / 'x'),
+                        '--output-dir', str(tmp_path / 'out')])

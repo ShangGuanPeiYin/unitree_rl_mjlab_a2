@@ -229,3 +229,14 @@ def test_gate_course_dry_run_s22_s23(tmp_path):
         assert plan['groups'] == groups
         assert plan['cases'] == cases
         assert plan['control_samples'] == cost
+
+
+def test_gate_rejects_r1_checkpoint(tmp_path):
+    import run_a2_v09_s2_gate as cli
+    r1 = ROOT / 'logs/a2_v09/s2/s2_1/s2_1_000005013504.pt'
+    if not r1.exists():
+        pytest.skip('r1 checkpoint absent')
+    with pytest.raises(SystemExit, match='invalidated'):
+        cli.main(['--course', 'S2.1', '--suite', 'gate_A', '--dry-run',
+                  '--checkpoint', str(r1),
+                  '--output-dir', str(tmp_path / 'out')])

@@ -4859,3 +4859,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - L40 失败根因：参考缓存用 `build_s2_env(map_branch='real')` 默认启用了 `S2RealBranchEvidence` 的 Q023 校验，第一例 1554 步处抛 `real map failed Q023 frame proof`。修复：`S2PhysicsEnv`/`build_s2_env` 增加 `real_branch_evidence` 开关，参考缓存关闭该诊断；诊断/门禁默认仍开。另将 collector 的 ledger operation_id 加 run_tag，避免重复。现 L40 gate_A 缓存生成运行中（60 例，约 4.7 h，`l40_milestone_cache_gate_A_rerun` 219,220）。
 - V13：`docs/v09_s2_1_numerical_acceptance_plan_v13.md` + 手算 JSON（SHA `2d1a7679…`），13 用例、容差与代表值；6 项签字阻断（锚定未生效、terminated 未入 GAE、命令链漂移、适配器状态残留、异常计数、r1 拒绝链未代码化）已下达实现组。
 - 台账：`learning_S2_1` 20,299,776/800,000,000；L40 A 已花 1,554（旧义务）、retry 义务 219,220、envelope 269,035,966。
+
+## 2026-11-22 V13 阻断修复：锚定教师/GAE masks/命令链/reset/r1
+
+- 锚定：`role_plan` 增加 envs；clean 使用 `s2_loss.clean_flat_mask`；S2TrainEnv 新增原生 3×48×32 teacher map；CLI 使用 `Frozen6400Teacher`；update 的 teacher 输入用 48×32 旧图，学生 40×30；β/n_clean/分子聚合修正。
+- GAE：传真实 terminated/truncated/failure/timeout masks；transitions 保留 per-env masks。
+- 命令链：`c_request` 独立保存，`c_exec` 只由 stop/ramp 产生，避免 sample_command 二次衰减。
+- reset：单 env 首帧清 stop/hold/g/air/contact/qdot/steps/c_request/c_exec。
+- 异常：`_rollout_steps` 在 reset 前归零。
+- r1：新增 `s2_r1.py`，train/gate/resume 拒绝四个 r1 SHA 与 s2.1-r1 attempt；默认 attempt 改 s2.1-r2。
+- 验证：**281 passed**；未跑 GPU/训练。

@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from a2_v07_bootstrap import activate
 activate(ROOT)
-from src.tasks.velocity.v09 import (s2_acceptance, s2_gate_cases,
+from src.tasks.velocity.v09 import (s2_acceptance, s2_gate_cases, s2_r1,
                                     s2_spec, spec as s1_spec)
 
 
@@ -355,6 +355,10 @@ def main(argv=None):
         raise SystemExit('use --dry-run or --execute')
     if not args.checkpoint.is_file():
         raise SystemExit(f'checkpoint missing: {args.checkpoint}')
+    try:
+        s2_r1.reject_invalid_checkpoint(args.checkpoint)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     version = args.version or ({'S2.1': 'v1', 'S2.2': 'v2',
                                 'S2.3': 'v3'}[args.course])
     suffix = {'v1': '', 'v2': '_V2', 'v3': '_V3'}[version]

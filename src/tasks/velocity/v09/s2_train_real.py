@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 
 from . import s2_physics, s2_rewards, s2_spec, s2_terrain, s2_train_env
+from .map import _SampleFrameMap
 
 
 OBSERVATION_CONTRACT = dict(
@@ -157,7 +158,8 @@ class S2TrainEnv:
         self.num_envs = int(num_envs)
         self.role_plan = dict(num_envs=self.num_envs, course=course,
                               counts=dict(self.plan['role_counts']),
-                              order=list(s2_train_env.ROLE_ORDER))
+                              order=list(s2_train_env.ROLE_ORDER),
+                              envs=list(self.plan['rows']))
         self.device = device
         self.seed = int(seed)
         self._tile_by_env = [row['tile_id'] for row in self.plan['rows']]
@@ -192,6 +194,10 @@ class S2TrainEnv:
                 return self._s2_reward(_env, state, previous_action)
             self.env._reward = _s2_reward
             self.env.reset()
+            self._teacher_map = _SampleFrameMap(
+                self.num_envs, device, (3, 48, 32), -0.8, -0.8,
+                s2_terrain.query_surface)
+            self._update_teacher_map()
             assert_v07_contract(self.env)
         except Exception:
             self._patch.__exit__(None, None, None)
@@ -224,10 +230,41 @@ class S2TrainEnv:
             self._s2_platform = torch.tensor(
                 [str(r.get('task', '')).startswith('platform_') for r in self.plan['rows']],
                 dtype=torch.bool, device=env.device)
+            self._s2_speed = torch.tensor(
+                [float(r.get('speed') or 0.5) for r in self.plan['rows']],
+                dtype=torch.float32, device=env.device)
+            self._s2_stop = torch.tensor(
+                [str(r.get('task', '')).endswith('_stop') for r in self.plan['rows']],
+                dtype=torch.bool, device=env.device)
+            self._s2_c_request = self._s2_speed.clone()
+            self._s2_c_exec = self._s2_speed.clone()
+        if not hasattr(self, '_s2_stop_requested'):
+            z = lambda *shape, dtype=torch.float32: torch.zeros(
+                *shape, dtype=dtype, device=env.device)
+            self._s2_stop_requested = z(n, dtype=torch.bool)
+            self._s2_stop_step = torch.full((n,), -1, dtype=torch.long, device=env.device)
+            self._s2_hold_step = torch.full((n,), -1, dtype=torch.long, device=env.device)
+            self._s2_g_step = torch.full((n,), -1, dtype=torch.long, device=env.device)
+            self._s2_air_time = z(n, 4)
+            self._s2_prev_contact = z(n, 4, dtype=torch.bool)
+            self._s2_contacted = z(n, 4, dtype=torch.bool)
+            self._s2_prev_qdot = z(n, 12)
+            self._s2_steps = z(n, dtype=torch.long)
         first = env.episode_length_buf <= 1
         self._s2_top_latched[first] = False
         self._s2_success_latched[first] = False
         self._s2_top_event[first] = False
+        self._s2_stop_requested[first] = False
+        self._s2_stop_step[first] = -1
+        self._s2_hold_step[first] = -1
+        self._s2_g_step[first] = -1
+        self._s2_air_time[first] = 0
+        self._s2_prev_contact[first] = False
+        self._s2_contacted[first] = False
+        self._s2_prev_qdot[first] = 0
+        self._s2_steps[first] = 0
+        self._s2_c_request[first] = self._s2_speed[first]
+        self._s2_c_exec[first] = self._s2_speed[first]
         original_success = state.success.clone()
         top_now = original_success & ~self._s2_top_latched
         self._s2_top_event = top_now
@@ -239,6 +276,10 @@ class S2TrainEnv:
                               torch.where(self._s2_platform,
                                           (local - self._s2_spawn_x) >= self._s2_post,
                                           self._s2_top_latched & (dpost >= self._s2_post)))
+        if hasattr(self, '_s2_hold_step'):
+            hold_ok = ((self._s2_hold_step >= 0)
+                       & ((self._s2_steps - self._s2_hold_step) >= 1000))
+            success = torch.where(self._s2_stop, hold_ok, success)
         success = success & ~state.failure & ~state.timeout
         state.success = success
         # S2 success is a policy quality/terminal event, not a v07 timeout.
@@ -316,7 +357,7 @@ class S2TrainEnv:
         self._s2_g_level = g_level
         # Command chain: request is external speed; c_exec is the post-ramp
         # command actually consumed next. S2.1 has no stop.
-        speed = env.sample_command[:, 0]
+        speed = self._s2_c_request
         dpost = local[:, 0] - self._s2_front
         request_stop = self._s2_stop & ~self._s2_stop_requested & (dpost >= self._s2_post) & ~failure
         self._s2_stop_requested |= request_stop
@@ -329,6 +370,7 @@ class S2TrainEnv:
                              torch.where(instant_zero, torch.zeros_like(speed), ramp_exec),
                              speed)
         c_exec = torch.where(c_exec <= 1e-12, torch.zeros_like(c_exec), c_exec)
+        self._s2_c_exec = c_exec
         first_zero = self._s2_stop_requested & (self._s2_hold_step < 0) & (c_exec <= 1e-12)
         self._s2_hold_step = torch.where(first_zero, self._s2_steps,
                                          self._s2_hold_step)
@@ -416,8 +458,24 @@ class S2TrainEnv:
     def __getattr__(self, name):
         return getattr(self.env, name)
 
+    def _update_teacher_map(self):
+        from src.tasks.velocity.v07.events import euler_heading
+        data = self.env.robot.data
+        yaw = euler_heading(data.root_link_quat_w)[2]
+        self._teacher_map.update(data.root_link_pos_w, yaw, self.env.tile_ids)
+
+    def teacher_observation(self):
+        self._update_teacher_map()
+        raw = self.env._observations(update=False)
+        return dict(proprio=raw['proprio'].clone(),
+                    history=raw['history'].clone(),
+                    heightmap=self._teacher_map.map.clone(),
+                    route_error=raw['route_error'].clone(),
+                    privileged=raw['privileged'].clone())
+
     def reset(self):
         obs, _info = self.env.reset()
+        self._update_teacher_map()
         return obs
 
     def step(self, actions):
@@ -436,7 +494,8 @@ class S2TrainEnv:
             truncated_mask=truncated.detach().clone() if hasattr(truncated, 'detach') else truncated,
             failure_mask=failure_mask,
             timeout_mask=timeout_mask,
-            failure_class='failure' if failure else 'timeout' if timeout else None)
+            failure_class='failure' if failure else 'timeout' if timeout else None,
+            teacher_observation=self.teacher_observation())
         return obs, reward, terminated | truncated, info
 
     def close(self):

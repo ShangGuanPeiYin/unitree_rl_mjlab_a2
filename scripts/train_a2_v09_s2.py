@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from a2_v07_bootstrap import activate
 activate(ROOT)
 from src.tasks.velocity.v09 import (s2_checkpoint, s2_ledger, s2_physics,
-                                    s2_resources, s2_runner, s2_spec,
+                                    s2_r1, s2_resources, s2_runner, s2_spec,
                                     s2_train, s2_train_env, s2_train_real)
 from src.tasks.velocity.v09.cases import canonical_json
 
@@ -45,8 +45,12 @@ def main(argv=None):
     parser.add_argument('--fake-backend', action='store_true')
     parser.add_argument('--max-rollouts', type=int)
     parser.add_argument('--checkpoint-every-rollouts', type=int)
-    parser.add_argument('--attempt-id', default='s2.1-r1')
+    parser.add_argument('--attempt-id', default='s2.1-r2')
     args = parser.parse_args(argv)
+    try:
+        s2_r1.reject_invalid_attempt(args.attempt_id)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     identity = s2_spec.validate_identity()
     course_key = s2_spec.course_key(args.course)
     training_plan = s2_train.rollout_plan(args.num_envs, course=course_key)
@@ -120,15 +124,20 @@ def main(argv=None):
                                        device=args.device, course=args.course)
     actor_bundle = s2_physics.load_s1_actor(device=args.device)
     model = actor_bundle['model']
-    # Q034: a 40x30 migrated 6400 must not masquerade as the original
-    # 48x32 teacher.  The anchor is intentionally disabled until the planning
-    # ruling defines the teacher observation adapter.
     teacher = None
+    if not args.fake_backend:
+        from src.tasks.velocity.v09.model import Frozen6400Teacher
+        teacher = Frozen6400Teacher.from_6400_checkpoint(device=args.device)
+        teacher.eval()
     trainer = s2_train.S2Trainer(
         model=model, env=env, ledger=ledger, output_dir=args.output_dir,
         device=args.device, attempt_id=args.attempt_id,
         ledger_run_id=run_id, course=args.course, teacher=teacher)
     if args.resume is not None:
+        try:
+            s2_r1.reject_invalid_checkpoint(args.resume)
+        except ValueError as error:
+            raise SystemExit(str(error)) from error
         trainer.resume(args.resume, device=args.device)
         budget.rollouts = trainer.rollouts
     max_rollouts = min(args.max_rollouts or training_plan['max_rollouts'],
@@ -138,6 +147,8 @@ def main(argv=None):
     if max_rollouts <= 0 or checkpoint_every <= 0:
         raise SystemExit('max_rollouts and checkpoint_every_rollouts must be positive')
     output = args.output_dir or (ROOT / 'logs/a2_v09/s2/train' / args.attempt_id)
+    if Path(output).resolve() == (ROOT / 'logs/a2_v09/s2/s2_1').resolve():
+        raise SystemExit('refusing invalidated s2.1-r1 output directory; use a new directory')
     output.mkdir(parents=True, exist_ok=True)
     for rollout in range(max_rollouts):
         if trainer.learning_samples >= effective_cap:
