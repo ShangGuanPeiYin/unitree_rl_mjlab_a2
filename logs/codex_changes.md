@@ -4501,3 +4501,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 只读 `smoke_summary.json`/`trace.jsonl`/`windows.json`/`evidence_files`，不改原始证据。
 - 验证：S2 套件 **231 passed**；`--dry-run` 当前覆盖 observed_s2=71、observed_h=0（矩阵未完成）；平地在无平台时四窗 NA 正确。
 - 未执行：全量报告（待矩阵完成）、GPU、训练。
+
+
+## 2026-11-22 V8.5 复核：spawn_z 修复通过，2 项证据/测试缺项
+
+- 目的：归档平台 spawn_z 修复、平台单例与 r2 resume 的第三方复核。
+- 涉及文件：`docs/v09_s2_execution_independent_review_v085.md`、`logs/a2_v09/s2_0/verification/execution_audit_20261122_r85.json`、本日志。
+- 通过：`MjlabS2Backend.reset()` 每次先设 `default_root_state[:,2]=spawn_z` 再 reset；1024 plan 平台 51×2.4 + 51×4.4、其余 0.4、坏行 0；平台单例 spawn z=8.4、首帧 feet_z≈8.023–8.048、接触均值 1.898、动作非零 58/59、59 步 posture failure；r2 未重跑 completed、无重复计费；r1 platform 每条 reserve 2167/commit 1/release 2166 对齐；`s2-040` 92 步 nonfoot failure 同源。
+- 关键发现：同 case 的 plane 分支可走完 5 m（785–790 步 success），real 分支 39–95 步失稳——**不能只归因权重**，需 Q031 同帧双输入区分地图输入与状态；平台为平面，real/plane 本应几乎一致，若差异显著则可能暴露平台处地图采样/一致性问题的真实诊断线索。
+- 缺项：B-V85-1 缺 backend 连续 reset / `S2TrainEnv` default state / flat·stairs 0.4 回归测试；R-V85-1 summary/trace 未保存 `spawn_z`/root z。
+- 预算（17:00）：matrix 62,700/420,390、debug 10,235、H 0、无活跃预留。
