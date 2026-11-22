@@ -86,9 +86,14 @@ def main(argv=None):
                          indent=2))
         return 0
 
-    checkpoint = args.checkpoint or s1_spec.SOURCE_PATH
-    if _sha(checkpoint) != s1_spec.SOURCE_SHA256:
-        raise SystemExit('reference checkpoint is not the unique 6400 source')
+    if args.reference == 's1_l40':
+        checkpoint = args.checkpoint or s2_spec.S1_ENTRY_WEIGHT
+        if _sha(checkpoint) != s2_spec.S1_ENTRY_WEIGHT_SHA256:
+            raise SystemExit('L40 reference checkpoint is not s1_least.pt')
+    else:
+        checkpoint = args.checkpoint or s1_spec.SOURCE_PATH
+        if _sha(checkpoint) != s1_spec.SOURCE_SHA256:
+            raise SystemExit('reference checkpoint is not the unique 6400 source')
     if not args.ledger.is_file():
         raise SystemExit('ledger missing')
     from src.tasks.velocity.v09 import s2_ledger
@@ -101,10 +106,15 @@ def main(argv=None):
         raise SystemExit(f'missing obligation {obligation}')
     if duty['limit'] - duty['spent'] - duty['reserved'] < cost:
         raise SystemExit(f'insufficient {obligation} balance')
-    # The S2 map is 40x30; use the exact migrated 6400 model (the same
-    # two-FC migration used by the S1 diagnostics), not the old 48x32 teacher.
-    teacher = V09ActorCritic.migrate_6400_checkpoint(
-        checkpoint, s1_spec.SOURCE_SHA256, device=args.device)
+    if args.reference == 's1_l40':
+        teacher = s2_physics.load_s1_actor(device=args.device)['model']
+        source_sha = s2_spec.S1_ENTRY_WEIGHT_SHA256
+    else:
+        # The S2 map is 40x30; use the exact migrated 6400 model (the same
+        # two-FC migration used by the S1 diagnostics), not the old 48x32 teacher.
+        teacher = V09ActorCritic.migrate_6400_checkpoint(
+            checkpoint, s1_spec.SOURCE_SHA256, device=args.device)
+        source_sha = s1_spec.SOURCE_SHA256
     teacher.eval()
     for parameter in teacher.parameters():
         parameter.requires_grad_(False)
@@ -171,7 +181,7 @@ def main(argv=None):
             rows=rows)
     cache = dict(schema=cache_schema, suite=manifest['suite'],
                  manifest_sha256=manifest['manifest_sha256'],
-                 source_sha256=s1_spec.SOURCE_SHA256,
+                 source_sha256=source_sha,
                  checkpoint=str(checkpoint), groups=groups_out,
                  generated_at_utc=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
     path = out / f'{args.reference}_{args.suite}_cache.json'

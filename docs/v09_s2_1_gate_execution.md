@@ -78,3 +78,23 @@ B 套替换 suite/manifest/cache/output；每套上界 1,620,000，A/B 3,240,000
   S2.3 的 51 组冻结清单和执行器尚未实现。
 - 6400/L40 cache 采集器已实现 dry-run；真实采集需 GPU 和台账预留，本次
   未运行。
+
+## T14 缓存生成器（训练结束后执行）
+
+统一入口：
+
+```bash
+/home/xxs/anaconda3/envs/a2/bin/python scripts/build_a2_v09_s2_gate_caches.py \
+  --suite gate_A --cache-kind l40 --device cuda:0 \
+  --ledger logs/a2_v09/s2/ledger.jsonl \
+  --output-dir logs/a2_v09/s2/gate_caches/gate_A/
+```
+
+- `--cache-kind l40`：模型固定 `s1_least.pt`（SHA `efa9caa8…`），3 组×20 例，
+  上界 219,220，义务 `l40_milestone_cache_gate_A/B`。
+- `--cache-kind 6400`：模型固定 6400 源（SHA `30ed23ba…`）的 40×30
+  迁移模型，9 组×20 例，上界 234,180，义务 `gate_admissions_up_to_40`。
+- `--dry-run` 产出计划 JSON；`--execute` 真实运行，写 `cache_receipt.json`；
+  已存在缓存拒绝覆盖。
+- 计划字段 `envs_per_batch=20`、`batches=3/9`、`peak_limit_mib=7168`；实际
+  执行由冻结 case runner 单进程处理。

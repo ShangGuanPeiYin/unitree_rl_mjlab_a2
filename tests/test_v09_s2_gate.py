@@ -69,3 +69,34 @@ def test_reference_collector_dry_run_budgets(tmp_path):
     plan2 = json.loads((out2 / 's1_l40_gate_A_plan.json').read_text())
     assert plan2['control_samples'] == 219_220
     assert plan2['obligation_id'] == 'l40_milestone_cache_gate_A'
+
+
+def test_t14_cache_builder_dry_run_and_source_model(tmp_path):
+    import build_a2_v09_s2_gate_caches as cli
+    manifest = s2_gate_cases.build_gate_manifest('gate_A')
+    manifest_path = tmp_path / 'S2_GATE_A.json'
+    manifest_path.write_text(json.dumps(manifest))
+    out_l40 = tmp_path / 'l40'
+    assert cli.main([
+        '--suite', 'gate_A', '--cache-kind', 'l40', '--dry-run',
+        '--manifest', str(manifest_path), '--output-dir', str(out_l40)]) == 0
+    plan = json.loads((out_l40 / 'l40_gate_A_plan.json').read_text())
+    assert plan['control_samples'] == 219_220
+    assert plan['source_sha256'] == 'efa9caa8ce99e2cdff967212063e198b7ae68a6415727083b1db027f615ead24'
+    assert plan['reference'] == 's1_l40'
+    out_6400 = tmp_path / '6400'
+    assert cli.main([
+        '--suite', 'gate_A', '--cache-kind', '6400', '--dry-run',
+        '--manifest', str(manifest_path), '--output-dir', str(out_6400)]) == 0
+    plan = json.loads((out_6400 / '6400_gate_A_plan.json').read_text())
+    assert plan['control_samples'] == 234_180
+    assert plan['source_sha256'] == (
+        '30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2')
+    assert plan['reference'] == '6400_flat'
+
+
+def test_t14_cache_builder_refuses_unknown_mode(tmp_path):
+    import build_a2_v09_s2_gate_caches as cli
+    with pytest.raises(SystemExit):
+        cli.main(['--suite', 'gate_A', '--cache-kind', 'l40',
+                  '--output-dir', str(tmp_path)])
