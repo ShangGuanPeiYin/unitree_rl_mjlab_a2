@@ -4830,3 +4830,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - P0.3：update 接入 clean-flat 锚定（β=0.1、全局 n_clean、微批分子累计、无 clean 为 0），训练 CLI 加载 40×30 的 6400 迁移教师（仅锚定）。
 - P1：`S2TrainEnv._task_state` 覆写，top 只作事件不 reset；stairs/platform 等到 post 距离 success；L40 legacy 例外；单 env 首帧清锁存。`_s2_reward` 向量化 20 项/stop/g_level/真实高度；但真实 S2.3 状态机/终止/质量仍不完整。
 - 验证：279 passed；未跑 GPU/训练。
+
+
+## 2026-11-22 L40 gate_A 参考缓存开始生成（空闲 GPU）
+
+- 训练已停、GPU 空闲（free 6466 MiB），并发闸允许；启动 `collect_a2_v09_s2_gate_reference.py --reference s1_l40 --suite gate_A --execute`。
+- 预算：`l40_milestone_cache_gate_A` 219,220 原子预留，逐例按实际步数 commit；串行约 4.7 h。
+- 目的：门禁 A 的 L40 里程碑对照缓存（s1_least，原生 3×40×30），Q034-B 口径。
