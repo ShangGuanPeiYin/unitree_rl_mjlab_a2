@@ -63,12 +63,38 @@ def _validate_reference_cache(doc, *, schema, manifest, path):
 
 
 def _load_l40_cache(path, manifest):
+    doc = _load(path)
     groups = _validate_reference_cache(
-        _load(path), schema=L40_CACHE_SCHEMA, manifest=manifest, path=path)
+        doc, schema=L40_CACHE_SCHEMA, manifest=manifest, path=path)
+    if doc.get('source_sha256') != s2_spec.S1_ENTRY_WEIGHT_SHA256:
+        raise ValueError(f'{path}: L40 cache source is not s1_least')
     expected = [row['group_id'] for row in manifest['groups']
                 if row['task'] == 'legacy_l40']
     if set(groups) != set(expected):
         raise ValueError(f'{path}: L40 cache groups differ')
+    case_files = doc.get('case_files')
+    if not isinstance(case_files, list) or len(case_files) != 60:
+        raise ValueError(f'{path}: L40 cache requires 60 per-case files')
+    seen = {}
+    for entry in case_files:
+        case_path = Path(entry['path'])
+        if not case_path.is_file():
+            raise ValueError(f'{path}: missing L40 case file {case_path}')
+        if entry.get('sha256') and entry['sha256'] != _sha(case_path):
+            raise ValueError(f'{path}: L40 case file SHA mismatch {case_path}')
+        case = _load(case_path)
+        for key in ('start', 'last_valid_terminal', 'net_distance',
+                    'success', 'failure_class', 'timeout',
+                    'engineering_failure', 'case_sha256', 'group'):
+            if key not in case:
+                raise ValueError(f'{case_path}: L40 missing {key}')
+        seen.setdefault(case['group'], []).append(case)
+    for name, group in groups.items():
+        for key in ('p10', 'p50', 'p90'):
+            if group.get(key) is None:
+                raise ValueError(f'{path}: L40 {name} missing {key}')
+        if len(seen.get(name, [])) != 20:
+            raise ValueError(f'{path}: L40 {name} does not have 20 cases')
     return groups
 
 

@@ -34,11 +34,14 @@ Q034-A 规定使用：
 
 ```bash
 cd /home/xxs/dog/unitree_rl_mjlab_a2
-/home/xxs/anaconda3/envs/a2/bin/python scripts/build_a2_v09_s2_gate_caches.py \
-  --suite gate_A --cache-kind 6400 --device cuda:0 \
+/home/xxs/anaconda3/envs/a2/bin/python scripts/collect_a2_v09_s2_gate_original_6400.py \
+  --suite gate_A --execute --device cuda:0 \
   --ledger logs/a2_v09/s2/ledger.jsonl \
   --output-dir logs/a2_v09/s2/gate_caches/6400_gate_A
 ```
+
+`build_a2_v09_s2_gate_caches.py --cache-kind 6400` 仍拒绝，因为它不是
+Q034-A 的原始旧图实现；统一入口不用于 6400。
 
 B 套替换 `--suite gate_B`。缓存 `reference_cache.json` 必须声明
 `source_sha256=30ed23ba…`、`model_type=original_6400`、`migrated=false`、
@@ -101,3 +104,20 @@ GPU。不得为降显存改物理/地图/网络。
 - `run_a2_v09_s2_gate.py` 的 `--course` 只有 S2.1；S2.2 33 组、S2.3 51 组
   冻结清单和门禁矩阵尚未实现。
 - S2.3 的 stop 状态机/奖励列在真实 V07 训练后端尚未接入。
+
+
+## 并发安全闸
+
+`collect_a2_v09_s2_gate_original_6400.py` 与 L40 collector 在 `--execute`
+前调用 `s2_concurrency.require_safe_window`：
+
+- 扫描 `/proc/*/cmdline`，发现 `train_a2_v09_s2.py --execute` 即视为训练
+  正在运行；
+- 读取当前 GPU `free_mib`，要求 ≥ 20 env 估算 2048 MiB + 安全余量
+  1024 MiB = **3072 MiB**；
+- 默认拒绝并提示 `wait for training window`；
+- 只有显式 `--allow-concurrent` 且实测 free_mib 足够才放行，cache/receipt
+  记录 `concurrent_with_training`、`gpu_free_mib`、`gpu_total_mib`、
+  `estimate_mib`、`safety_margin_mib`；
+- 不允许通过改物理/地图/网络或静默降并行来凑显存；降 4 env 仍需显式规则
+  与实测。

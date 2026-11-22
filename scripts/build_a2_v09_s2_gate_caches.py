@@ -37,6 +37,7 @@ def main(argv=None):
     parser.add_argument('--obligation-id')
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--execute', action='store_true')
+    parser.add_argument('--allow-concurrent', action='store_true')
     args = parser.parse_args(argv)
     if not (args.dry_run or args.execute):
         raise SystemExit('use --dry-run or --execute')
@@ -98,14 +99,16 @@ def main(argv=None):
             '--reference', 's1_l40', '--suite', args.suite, '--execute',
             '--manifest', str(manifest_path), '--ledger', str(args.ledger),
             '--device', args.device, '--output-dir', str(args.output_dir),
-            '--obligation-id', obligation])
+            '--obligation-id', obligation]
+            + (['--allow-concurrent'] if args.allow_concurrent else []))
     else:
         import collect_a2_v09_s2_gate_original_6400 as original
         rc = original.main([
             '--suite', args.suite, '--execute',
             '--manifest', str(manifest_path), '--ledger', str(args.ledger),
             '--device', args.device, '--output-dir', str(args.output_dir),
-            '--obligation-id', obligation])
+            '--obligation-id', obligation]
+            + (['--allow-concurrent'] if args.allow_concurrent else []))
     if rc != 0:
         return rc
     cache = args.output_dir / 'reference_cache.json'
@@ -115,6 +118,7 @@ def main(argv=None):
     receipt = dict(
         schema='a2_v09_s2_gate_cache_receipt_v1', plan=plan,
         model_sha256=payload.get('model_sha256', payload.get('source_sha256')),
+        concurrency=payload.get('concurrency'),
         manifest_sha256=manifest['manifest_sha256'],
         case_sha256s=[row['case_sha256'] for row in cases],
         budget=dict(control_samples=cost, envs_per_batch=20,

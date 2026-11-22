@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from a2_v07_bootstrap import activate
 activate(ROOT)
-from src.tasks.velocity.v09 import s2_env, s2_gate_cases, s2_spec, spec as s1_spec
+from src.tasks.velocity.v09 import s2_concurrency, s2_env, s2_gate_cases, s2_spec, spec as s1_spec
 
 
 def _sha(path):
@@ -43,6 +43,7 @@ def main(argv=None):
     parser.add_argument('--output-dir', type=Path)
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--execute', action='store_true')
+    parser.add_argument('--allow-concurrent', action='store_true')
     args = parser.parse_args(argv)
     if not (args.dry_run or args.execute):
         raise SystemExit('use --dry-run or --execute')
@@ -100,6 +101,11 @@ def main(argv=None):
         checkpoint = args.checkpoint or s1_spec.SOURCE_PATH
         if _sha(checkpoint) != s1_spec.SOURCE_SHA256:
             raise SystemExit('reference checkpoint is not the unique 6400 source')
+    try:
+        window = s2_concurrency.require_safe_window(
+            device=args.device, allow_concurrent=args.allow_concurrent)
+    except s2_concurrency.ConcurrencyError as error:
+        raise SystemExit(str(error)) from error
     if not args.ledger.is_file():
         raise SystemExit('ledger missing')
     from src.tasks.velocity.v09 import s2_ledger
@@ -165,12 +171,21 @@ def main(argv=None):
                 physical_failure=bool(env.machine.failure),
                 engineering_failure=False,
                 steps=steps,
+                start=dict(x=start_x,
+                           local_position_xy=list(case['spawn']['local_position_xy'])),
                 start_x=start_x, terminal_x=terminal_x,
+                last_valid_terminal=dict(x=terminal_x, index=last_index,
+                                         post_reset=bool(post_reset[last_index])
+                                         if post_reset.size else None),
                 last_valid_index=last_index,
                 terminal_is_post_reset=bool(post_reset[last_index]) if post_reset.size else None,
                 route_max=float(route.max()) if route.size else start_x,
                 net_distance=terminal_x - start_x,
                 termination_reason=getattr(env.last, 'termination_reason', None),
+                failure_classes=dict(
+                    physical=bool(env.machine.failure),
+                    timeout=bool(env.machine.timeout),
+                    engineering=False),
                 trace=trace))
         except Exception:
             if steps:
@@ -208,6 +223,7 @@ def main(argv=None):
                                if row.get('termination_reason') == name)
                 for name in {row.get('termination_reason') for row in rows
                              if row.get('failure')}},
+            physical_failures=sum(bool(row.get('failure')) for row in rows),
             timeouts=sum(bool(row.get('timeout')) for row in rows),
             engineering_failures=sum(bool(row.get('engineering_failure')) for row in rows))
     if args.reference == 's1_l40':
@@ -225,6 +241,7 @@ def main(argv=None):
                      manifest_sha256=manifest['manifest_sha256'],
                      source_sha256=source_sha, model_sha256=source_sha,
                      checkpoint=str(checkpoint), groups=groups_out,
+                     concurrency=window,
                      case_files=case_files,
                      generated_at_utc=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
         path = out / 'reference_cache.json'
@@ -232,7 +249,7 @@ def main(argv=None):
         cache = dict(schema=cache_schema, suite=manifest['suite'],
                      manifest_sha256=manifest['manifest_sha256'],
                      source_sha256=source_sha,
-                     checkpoint=str(checkpoint), groups=groups_out,
+                     checkpoint=str(checkpoint), groups=groups_out, concurrency=window,
                      generated_at_utc=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
         path = out / f'{args.reference}_{args.suite}_cache.json'
     if path.exists():

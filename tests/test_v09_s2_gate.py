@@ -142,3 +142,49 @@ def test_q034a_original_6400_dry_run_and_old_map_contract(tmp_path):
         '30ed23ba16f7e490afca001fbbecadb4a11ff4b11733a5ae7ac7d0c841f9a8b2')
     assert plan['envs_per_batch'] == 20
     assert plan['physics_started'] is False
+
+
+def test_q034a_teacher_old_map_shape_guard_cpu():
+    import torch
+    import collect_a2_v09_s2_gate_original_6400 as cli
+    good = {'heightmap': torch.zeros(20, 3, 48, 32)}
+    assert cli.validate_teacher_observation(good, batch=20) == (20, 3, 48, 32)
+    with pytest.raises(ValueError, match='3,48,32'):
+        cli.validate_teacher_observation(
+            {'heightmap': torch.zeros(20, 3, 40, 30)}, batch=20)
+
+
+def test_gate_validates_l40_cache_source_fields_and_percentiles(tmp_path):
+    import run_a2_v09_s2_gate as cli
+    manifest = s2_gate_cases.build_gate_manifest('gate_A')
+    names = [row['group_id'] for row in manifest['groups']
+             if row['task'] == 'legacy_l40']
+    case_files = []
+    for name in names:
+        for index in range(20):
+            sha = f'{name}-{index}'.replace('/', '_')
+            case = dict(case_sha256=sha, group=name, start={'x': -1.0},
+                        last_valid_terminal={'x': 1.0}, net_distance=2.0,
+                        success=True, failure_class=None, timeout=False,
+                        engineering_failure=False)
+            path = tmp_path / f'{sha}.json'
+            path.write_text(json.dumps(case))
+            case_files.append(dict(case_sha256=sha, path=str(path), sha256=None))
+    groups = {name: dict(p10=0.0, p50=1.0, p90=2.0) for name in names}
+    doc = dict(schema='a2_v09_s2_gate_l40_cache_v1', suite='S2_GATE_A',
+               manifest_sha256=manifest['manifest_sha256'],
+               source_sha256='efa9caa8ce99e2cdff967212063e198b7ae68a6415727083b1db027f615ead24',
+               groups=groups, case_files=case_files)
+    path = tmp_path / 'l40.json'
+    path.write_text(json.dumps(doc))
+    assert cli._load_l40_cache(path, manifest) == groups
+    bad = json.loads(json.dumps(doc))
+    bad['source_sha256'] = '0' * 64
+    path.write_text(json.dumps(bad))
+    with pytest.raises(ValueError, match='s1_least'):
+        cli._load_l40_cache(path, manifest)
+    bad = json.loads(json.dumps(doc))
+    del bad['groups'][names[0]]['p50']
+    path.write_text(json.dumps(bad))
+    with pytest.raises(ValueError, match='p50'):
+        cli._load_l40_cache(path, manifest)

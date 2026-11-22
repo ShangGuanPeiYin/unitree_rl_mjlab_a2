@@ -14,12 +14,13 @@ from pathlib import Path
 import sys
 
 import numpy as np
+import torch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from a2_v07_bootstrap import activate
 activate(ROOT)
-from src.tasks.velocity.v09 import s2_env, s2_gate_cases, spec as s1_spec
+from src.tasks.velocity.v09 import s2_concurrency, s2_env, s2_gate_cases, spec as s1_spec
 
 
 def _sha(path):
@@ -28,6 +29,13 @@ def _sha(path):
 
 def _load(path):
     return json.loads(Path(path).read_text())
+
+
+def validate_teacher_observation(obs, *, batch=20):
+    shape = tuple(obs['heightmap'].shape)
+    if shape != (int(batch), 3, 48, 32):
+        raise ValueError(f'teacher old-map shape must be [{batch},3,48,32], got {shape}')
+    return shape
 
 
 def _s1_case(case):
@@ -48,6 +56,7 @@ def main(argv=None):
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--execute', action='store_true')
+    parser.add_argument('--allow-concurrent', action='store_true')
     args = parser.parse_args(argv)
     if not (args.dry_run or args.execute):
         raise SystemExit('use --dry-run or --execute')
@@ -82,6 +91,11 @@ def main(argv=None):
                          indent=2))
         return 0
 
+    try:
+        window = s2_concurrency.require_safe_window(
+            device=args.device, allow_concurrent=args.allow_concurrent)
+    except s2_concurrency.ConcurrencyError as error:
+        raise SystemExit(str(error)) from error
     if not args.ledger.is_file():
         raise SystemExit('ledger missing')
     from src.tasks.velocity.v09 import s2_ledger
@@ -97,52 +111,53 @@ def main(argv=None):
     teacher = Frozen6400Teacher.from_6400_checkpoint(
         s1_spec.SOURCE_PATH, s1_spec.SOURCE_SHA256, device=args.device)
     teacher.eval()
-    # Action consistency: same native 3x48x32 old-map input, same original
-    # teacher path, compared against a fresh reload of the identical source.
-    teacher2 = Frozen6400Teacher.from_6400_checkpoint(
-        s1_spec.SOURCE_PATH, s1_spec.SOURCE_SHA256, device=args.device)
-    import torch
-    probe = dict(
-        proprio=torch.zeros(2, 45, device=args.device),
-        history=torch.zeros(2, 5, 45, device=args.device),
-        heightmap=torch.zeros(2, 3, 48, 32, device=args.device),
-        route_error=torch.zeros(2, 3, device=args.device))
-    with torch.no_grad():
-        a1 = teacher(probe)
-        a2 = teacher2(probe)
-    delta = float((a1 - a2).abs().max().item())
-    consistency = dict(check='same_old_map_action_original_teacher_reload',
-                       passed=bool(torch.equal(a1, a2)), max_abs_delta=delta,
-                       note='3x48x32 input, no migrated model')
-    if not consistency['passed']:
-        raise SystemExit('original 6400 action consistency self-check failed')
+    # Action consistency is checked on the first real old-map observation below.
+    consistency = None
+
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     out = args.output_dir
     out.mkdir(parents=True, exist_ok=True)
     cases_dir = out / 'cases'
     cases_dir.mkdir(parents=True, exist_ok=True)
     rows = []
+    group_actual = {}
+    suite_committed = 0
+    suite_reserved = 234_180
+    ledger.reserve(args.obligation_id, suite_reserved,
+                   operation_id=f'q034a:{manifest["suite"]}:suite:reserve',
+                   reason='Q034-A original 6400 flat cache whole suite')
     for group in groups:
         batch = [case for case in cases if case['group_id'] == group['group_id']]
         if len(batch) != 20:
             raise SystemExit('gate group must have 20 cases')
         env = V09S1Env([_s1_case(case) for case in batch], device=args.device,
                        seed=42, course='S1.2')
-        reserved = int(group['hard_timeout_steps']) * 20
+        teacher_obs = env.teacher_observation
+        try:
+            validate_teacher_observation(teacher_obs, batch=20)
+        except ValueError as error:
+            raise SystemExit(str(error)) from error
+        if consistency is None:
+            teacher2 = Frozen6400Teacher.from_6400_checkpoint(
+                s1_spec.SOURCE_PATH, s1_spec.SOURCE_SHA256, device=args.device)
+            with torch.no_grad():
+                a1 = teacher(teacher_obs)
+                a2 = teacher2(teacher_obs)
+            consistency = dict(
+                check='same_real_old_map_observation_original_teacher_reload',
+                shape=list(teacher_obs['heightmap'].shape),
+                passed=bool(torch.equal(a1, a2)),
+                max_abs_delta=float((a1 - a2).abs().max().item()),
+                note='real 3x48x32 input, no zero stub, no migrated model')
+            if not consistency['passed']:
+                raise SystemExit('original 6400 action consistency self-check failed')
         op = f'q034a:{manifest["suite"]}:{group["group_id"]}'
-        ledger.reserve(args.obligation_id, reserved,
-                       operation_id=f'{op}:reserve',
-                       reason='Q034-A original 6400 flat cache')
         steps = 0
         try:
             done = False
             while not done and steps < int(group['hard_timeout_steps']):
-                obs = env._observations(update=True)
-                tensor_obs = {key: value for key, value in obs.items()
-                              if key in ('proprio', 'history', 'heightmap',
-                                         'route_error')}
                 with torch.no_grad():
-                    action = teacher(tensor_obs)
+                    action = teacher(env.teacher_observation)
                 _, _, terminated, _, info = env.step(action)
                 steps += 1
                 done = bool(terminated.all())
@@ -174,25 +189,30 @@ def main(argv=None):
                                            indent=2) + '\n')
             env.close()
         except Exception:
-            if steps:
-                ledger.commit(args.obligation_id, steps * 20,
+            partial = steps * 20
+            if partial:
+                ledger.commit(args.obligation_id, partial,
                               operation_id=f'{op}:commit',
                               reason='Q034-A original 6400 partial')
-            unused = reserved - steps * 20
+            unused = suite_reserved - suite_committed - partial
             if unused > 0:
                 ledger.release(args.obligation_id, unused,
                                operation_id=f'{op}:release',
-                               reason='Q034-A original 6400 failed')
+                               reason='Q034-A original 6400 failed/unused')
             raise
         actual = steps * 20
-        ledger.commit(args.obligation_id, actual,
-                      operation_id=f'{op}:commit',
+        group_actual[group['group_id']] = actual
+        suite_committed += actual
+    suite_actual = sum(group_actual.values())
+    if suite_actual:
+        ledger.commit(args.obligation_id, suite_actual,
+                      operation_id=f'q034a:{manifest["suite"]}:suite:commit',
                       reason='Q034-A original 6400 actual')
-        unused = reserved - actual
-        if unused:
-            ledger.release(args.obligation_id, unused,
-                           operation_id=f'{op}:release',
-                           reason='Q034-A original 6400 unused')
+    unused = suite_reserved - suite_actual
+    if unused > 0:
+        ledger.release(args.obligation_id, unused,
+                       operation_id=f'q034a:{manifest["suite"]}:suite:release',
+                       reason='Q034-A original 6400 unused')
     grouped = {}
     for row in rows:
         grouped.setdefault(row['group'], []).append(row)
@@ -221,6 +241,7 @@ def main(argv=None):
                  model_type='original_6400', migrated=False,
                  observation_shape=[3, 48, 32], map='native_v07_48x32',
                  action_consistency=consistency,
+                 concurrency=window,
                  groups=groups_out,
                  case_files=[dict(case_sha256=row['case_sha256'],
                                   path=str(cases_dir / f"{row['case_sha256']}.json"))
