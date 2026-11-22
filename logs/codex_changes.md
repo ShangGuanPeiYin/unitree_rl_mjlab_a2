@@ -4752,3 +4752,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 核验（本机 dry-run）：S2.2 gate 33/660/2,061,980；S2.3 gate 51/1020/4,348,500；终验 27 组/2,700 例/阈值 95/三套 83,009,700；均 `physics_started=false`。
 - 训练：818 rollouts / 第四检查点 `16a06ea3…`（20,054,016 样本），台账一致。
 - 未完成：S2.3 真实 V07Env stop 注入（当前为 CPU 状态机+fake）、T16/T17 真实 GPU execute、终验集冻结/解封流程、L40/6400 cache（等训练窗口）。
+
+
+## 2026-11-22 严重实现错误：S2.1 训练误用 v07 奖励，已停训
+
+- 发现：`S2TrainEnv` 继承 `V07Env` 未覆写 `_reward`，训练实际调用 v07 `reward_computer`（旧 17 项），`s2_rewards.compute_reward` 根本未接入；已跑 825 rollouts / 20,275,200 学习样本的梯度基于错误奖励，S2.1 训练作废。
+- 处置：SIGINT 停止训练（PID 1931607），释放 in-flight 预留 24,576；台账 learning_S2_1 spent **20,275,200 / 800,000,000**，reserved 0（消耗保留，不退还）。S2.0 诊断不受影响（推理无奖励）。
+- 已下达：覆写 S2 奖励（§5.1/§5.3 全 20 项、g_level、停车列、成功/失败/登顶、dt 一次），加奖励分项测试；排查其他缺失覆写；修复后从 `s1_least.pt` 重跑 S2.1（attempt `s2.1-r2`，剩余 31,727 rollouts）。
