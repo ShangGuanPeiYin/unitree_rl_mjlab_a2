@@ -4691,3 +4691,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 第二检查点：`s2_1_000010027008.pt`，SHA `429384de…`，10,027,008 样本 / 408 rollouts，`ledger_cursor` 与台账一致（台账 10,051,584），std 0.1754–0.2510，schema11 通过。
 - V11''：6400 旁路封堵与 gate cache 身份校验（source `30ed23ba…`、`original_6400`、`3×48×32`、非 migrated）通过；**新阻断** = original-6400 collector 用 student 40×30 观测喂 teacher（`ObservationError: heightmap must be [B,3,48,32]`）、预留粒度按 group 而非整套、L40 collector 字段缺失（start/last_valid_terminal/failure_class）、gate 不校验 L40 cache、文档 6400 命令指向被拒入口。
 - 处置：已下达实现组按 1-5 修复；GPU 生成等训练结束后窗口。
+
+
+## 2026-11-22 S2.1 门禁执行手册
+
+- 目的：固化 Q034 口径下的缓存生成与门禁执行顺序、命令、预算与晋级条件。
+- 文件：`docs/v09_s2_1_gate_runbook.md`。
+- 内容：L40（s1_least，3×40×30，A/B 各 219,220）与 original 6400（30ed23ba…，3×48×32 旧图，A/B 各 234,180）缓存生成；门禁 A/B 命令与 cache 身份要求；≥18/20、平地绝对+相对、L40 不退化；晋级 S2.2 条件。
