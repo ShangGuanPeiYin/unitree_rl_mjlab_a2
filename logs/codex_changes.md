@@ -4482,3 +4482,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 限制：`independent_copy` 仅记录参数，GPU 上待确认。
 - 验证：S2 套件 **231 passed**；整批 39/156（flat 30 + stairs 9），0 失败，41,033 步。
 - 未执行：GPU probe/训练、台账写入。
+
+
+## 2026-11-22 platform_walk spawn_z 根因修复
+
+- 目的：修复平台直接起步首步即失败（`policy_not_applied` 误报）。
+- 根因：`V07Env._reset_ids` 只用 spawn 的 x/y/yaw，root z 固定 0.4；S2 平台病例 spawn 在顶平台（`platform_front 8.0`、spawn x=9.0、`platform_height 8.0`、应 z=8.4），却被放到 z=0.4，首步 fall、v07 auto-reset 清空 action，trace 出现 `a_request=0`。
+- 修复：`MjlabS2Backend` 保存 `spawn_z` 并在每次 reset 前设 `default_root_state[:,2]=spawn_z`；`S2TrainEnv` 平台角色用 `platform_height+0.4`；新增 plan 断言。
+- 验证：S2 套件 **231 passed**；GPU 单例平台复测（case `b128038d…`、0.5 m/s、宽 0.8）→ spawn z 8.4、四足接触 1.9、首帧动作非零、59 步后 failure 终止（`terminal/failure/post_reset` 均记录），不再误报 `policy_not_applied`。
+- 台账：debug 义务 +59 步；整批此前 20 条 platform failed（各 1 步）保留，resume 将重跑。

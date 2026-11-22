@@ -107,3 +107,35 @@ training full:             16,276 rollouts × 49,152 = 800,000,000
 `run_probe` 已包含 evaluation 100、video 1、save/load/restore；但
 `independent_copy` 只记录调用参数，evaluation 使用的是同进程新 env，尚需
 在 GPU 窗口确认独立的探测副本语义。
+
+## platform_walk 首步失败修复（2026-11-22）
+
+根因：`V07Env._reset_ids` 只用 spawn 的 x/y/yaw，root z 取
+`default_root_state[:,2]=0.4`。`platform_walk` 的 S2 spawn 在顶平台
+（例：front 8.0，spawn x=9.0，顶高 8.0，应 z=8.4），实际被放在 z=0.4，
+首步即 fall；v07 自动 reset 又把 action_manager 清零，于是 trace 出现
+`a_request=0`、`a_applied` 为 reset 前默认动作，smoke 误判
+`policy_not_applied`。
+
+修复：
+
+- `MjlabS2Backend` 保存 `spawn_z = spawn.local_position[2]`，每次 reset 前设置
+  `default_root_state[:,2] = spawn_z`；
+- `S2TrainEnv` 的 platform 角色 `spawn_z = platform_height + 0.4`，同样写入
+  `default_root_state`，再 reset；
+- 新增 plan 测试：platform row 的 `spawn_z == platform_height + 0.4`。
+
+验证命令（debug 义务，须由主会话执行；不得挤占 matrix）：
+
+```bash
+python scripts/run_a2_v09_s2_0.py \
+  --execute --smoke --suite S2_DIAG \
+  --case-sha b128038d454c9f150ddeeed6c5ecf1fcf5e5f8035953e5b075205f9dfd92fd6d \
+  --branch real --steps 1500 --device cuda:0 \
+  --attempt-id q032-platform-spawn-r1 \
+  --obligation-id s2_0_pipeline_debug \
+  --ledger logs/a2_v09/s2/ledger.jsonl
+```
+
+预期：spawn z=8.4、feet_z≈8.03、contact_feet>0、首帧 `a_request` 非零；
+失败/超时不得由 `policy_not_applied` 伪判。

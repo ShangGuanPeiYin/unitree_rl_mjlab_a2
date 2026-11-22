@@ -162,6 +162,8 @@ def test_real_env_plan_maps_roles_to_s2_terrain():
         if row['role'] in ('stairs_walk', 'platform_walk'):
             assert row['geometry']['platform_length'] == 20.0
             assert row['geometry']['platform_width'] in (0.8, 4.0)
+        if row['role'] == 'platform_walk':
+            assert row['spawn_z'] == row['geometry']['platform_height'] + 0.4
     assert plan['observation']['heightmap'] == (3, 40, 30)
     assert plan['observation']['privileged'] == (35,)
     assert plan['observation']['critic'] == 211

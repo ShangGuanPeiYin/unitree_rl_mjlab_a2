@@ -681,6 +681,7 @@ class MjlabS2Backend:
         except Exception:
             self._patches.__exit__(None, None, None)
             raise
+        self.spawn_z = float(spawn['local_position'][2]) if len(spawn.get('local_position', ())) > 2 else 0.4
         self.steps = 0
         self.refresh_index = 0
         self.last_sample_id = None
@@ -711,6 +712,8 @@ class MjlabS2Backend:
         return self._store_observation(obs)
 
     def reset(self):
+        if hasattr(self, 'spawn_z'):
+            self.env.robot.data.default_root_state[:, 2] = self.spawn_z
         obs, _ = self.env.reset()
         self._store_observation(obs)
         self.steps = 0

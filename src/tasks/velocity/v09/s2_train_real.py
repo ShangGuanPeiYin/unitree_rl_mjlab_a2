@@ -85,14 +85,17 @@ def build_env_plan(num_envs=1024):
             spawn_x = float(front) + 1.0
             spawn_y = 0.0
             yaw = 0.0
+            spawn_z = float(geometry['platform_height']) + 0.4
         else:
             spawn_x = -1.0
             spawn_y = 0.0
             yaw = 0.0
+            spawn_z = 0.4
         rows.append(dict(
             env_index=index, role=role['role'], speed=float(role['speed']),
             geometry=geometry, tile_id=int(spec.tile_id),
             spawn=[spawn_x, spawn_y, yaw, float(role['speed'])],
+            spawn_z=spawn_z,
             task=role['task'],
             post_distance=role.get('post_distance'),
             platform_width=role.get('platform_width'),
@@ -146,6 +149,9 @@ class S2TrainEnv:
                 initial_cases=[row['spawn'] for row in self.plan['rows']],
                 frontier_tile_id=0, evaluation=False)
             self.env.map_cache = HeightMap(self.num_envs, device)
+            self.env.robot.data.default_root_state[:, 2] = torch.tensor(
+                [row['spawn_z'] for row in self.plan['rows']],
+                dtype=self.env.robot.data.default_root_state.dtype, device=device)
             import types
             tile_by = list(self._tile_by_env)
             def _sample_tiles(ids):
