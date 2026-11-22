@@ -4322,3 +4322,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 涉及文件：`s2_terrain.py`（`schedule_tile_id`/`spec_from_geometry` 按 `(terrain_key,N,platform_width)` 映射到合法 tile id，H legacy 保留原 id）、`s2_physics.py`（`observation()` 别名、单环境 step 兼容、smoke 由 `load_s1_actor` 构造 callable、`first_step` 改为 APPROACH→CLIMB 转移、fake reset 不预推进 + `assert_native_alignment`）、`scripts/run_a2_v09_s2_0.py`、`tests/test_v09_s2_0_physics.py`、文档 `docs/v09_s2_0_implementation_plan_v12.md`。
 - 验证：本机复跑 S2 套件 **184 passed**；正式 S2 台账只读核对 envelope 263,888,370、plan `773b53c6…`、10 项义务、reserved/spent=0，未被修改。
 - 未执行：GPU smoke、训练。
+
+
+## 2026-11-22 GPU smoke 打通（动作传递/观测相位修复）
+
+- 目的：修复 S2 执行链路中"动作未传给后端"与"每步重复更新观测 FIFO/高程图"两处根因，使 S2 与 S1 观测等价。
+- 涉及文件：`src/tasks/velocity/v09/s2_physics.py`（backend 缓存 `env.reset()/step()` 返回观测，`S2PhysicsEnv` 以 `update=False` 读取；动作真实下发）、`scripts/run_a2_v09_s2_0.py`（policy 自检字段与失败判定）、`tests/test_v09_s2_0_physics.py`、文档 `docs/v09_s2_0_implementation_plan_v22.md`。
+- 验证（我独立复核 smoke-r9）：64 帧、`a_request` 非零 64/64、`route_x` −1.0849→−0.7066（**+0.3784 m**）、`velocity_route` 均值 **0.2983 m/s**、无终止/失败、四足接触均值 2.56；trace SHA `3c06e549759773af…`；台账 `s2_0` spent 384/420,390、reserved 0。
+- S1/S2 观测对照（同初态同动作）：`proprio`/`history` 最大差 4.77e-7、`heightmap`/`route_error` 差 0。
+- 作废证据：r4（零观测）、r5/r6（未推进）、r7（动作恒零）、r8（history 双更新）保留文件，不进入结论。
+- 未执行：S2.0 150 分支正式矩阵、H 六例、训练。

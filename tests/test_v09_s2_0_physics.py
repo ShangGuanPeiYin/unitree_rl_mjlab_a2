@@ -174,3 +174,110 @@ def test_b_v7a_first_step_precedes_top_and_native_sample_is_not_after_consumptio
     assert sample is not None
     assert sample['produced_at_actor_step'] <= report['first_replacement_actor_step']
     assert report['s_minus_t'] >= 0
+
+
+class TorchArrayLike:
+    def __init__(self, value): self.value = value
+    def item(self): return self.value
+
+
+def test_torcharray_time_scalar_and_termination_contract():
+    assert s2_physics._scalar(TorchArrayLike(12.5), 0.0) == 12.5
+    assert s2_physics._scalar(np.array([3.0, 4.0]), 0.0) == 3.0
+    contract = s2_physics.termination_contract(object())
+    assert contract['contract_ok'] is True
+    assert set(s2_physics.TERMINATION_REQUIRED) <= set(contract['failure_categories'])
+
+
+def test_preflight_rejects_missing_ledger_before_gpu(tmp_path, capsys):
+    import run_a2_v09_s2_0 as run_cli
+    with pytest.raises(SystemExit):
+        run_cli.main(['--preflight', '--case', '0',
+                      '--ledger', str(tmp_path / 'missing.jsonl')])
+
+
+def test_v7a_foot_contact_aggregation_and_nonfoot_classification():
+    import torch
+    forces = torch.zeros(4, 207)
+    total, pairs = s2_physics.aggregate_foot_contacts(forces)
+    assert total.shape == (4,)
+    assert pairs == []
+    forces[1, 3] = 5.0
+    forces[1, 5] = 7.0
+    forces[0, 9] = 2.0
+    total, pairs = s2_physics.aggregate_foot_contacts(
+        forces, geom_names=[f'g{i}' for i in range(207)])
+    assert total.tolist() == [2.0, 12.0, 0.0, 0.0]
+    assert all(pair['foot'] in (0, 1) for pair in pairs)
+    assert len(pairs) == 3
+    links = torch.zeros(6, 3)
+    names = ['FL_foot', 'FR_foot', 'RL_foot', 'RR_foot', 'base_link', 'head']
+    assert s2_physics.nonfoot_contact_from_links(links, names) is False
+    links[4, 0] = 11.0
+    assert s2_physics.nonfoot_contact_from_links(links, names) is True
+    links[4, 0] = 0.0
+    links[0, 0] = 50.0
+    assert s2_physics.nonfoot_contact_from_links(links, names) is False
+
+
+def test_policy_observation_comes_from_backend_not_hardcoded_zeros():
+    class MarkerBackend(s2_physics.S2FakeBackend):
+        def observation(self, update=True):
+            return dict(proprio=np.full(45, 7.0, dtype=np.float32),
+                        history=np.full((5, 45), 8.0, dtype=np.float32),
+                        heightmap=np.full((3, 40, 30), 9.0, dtype=np.float32),
+                        route_error=np.array([1.0, 2.0, 3.0], dtype=np.float32))
+    env = s2_physics.S2PhysicsEnv(
+        case('flat_walk'), backend_factory=MarkerBackend, device='cpu')
+    obs = env.observe()
+    assert obs['proprio'][0] == 7.0
+    assert obs['history'][0, 0] == 8.0
+    assert obs['heightmap'][0, 0, 0] == 9.0
+    assert obs['route_error'].tolist() == [1.0, 2.0, 3.0]
+
+
+def test_policy_action_is_forwarded_to_backend_step():
+    class RecordingBackend(s2_physics.S2FakeBackend):
+        def step(self, action=None):
+            self.seen_action = (None if action is None
+                                else np.asarray(action, dtype=np.float32).copy())
+            return super().step(action)
+    env = s2_physics.S2PhysicsEnv(
+        case('flat_walk'), backend_factory=RecordingBackend, device='cpu')
+    action = np.arange(12, dtype=np.float32) / 10.0
+    env.reset()
+    env.step(action)
+    assert env.backend.seen_action is not None
+    assert np.array_equal(env.backend.seen_action, action)
+
+
+def test_policy_observation_reader_never_advances_history_or_map():
+    class RecordingBackend(s2_physics.S2FakeBackend):
+        def observation(self, update=True):
+            self.update_calls.append(update)
+            return super().observation(update=update)
+        def reset(self):
+            self.update_calls = []
+            return super().reset()
+    env = s2_physics.S2PhysicsEnv(
+        case('flat_walk'), backend_factory=RecordingBackend, device='cpu')
+    env.reset()
+    env.step(np.zeros(12, dtype=np.float32))
+    assert env.backend.update_calls
+    assert env.backend.update_calls == [False] * len(env.backend.update_calls)
+
+
+def test_t9_parity_helpers_detect_shape_and_value_differences():
+    from src.tasks.velocity.v09 import s2_parity
+    left = dict(proprio=np.zeros(45), history=np.zeros((5, 45)),
+                heightmap=np.zeros((3, 40, 30)), route_error=np.zeros(3))
+    right = dict(left, proprio=np.ones(45))
+    result = s2_parity.compare_observation(left, right)
+    assert result['proprio']['max_abs'] == 1.0
+    assert result['history']['max_abs'] == 0.0
+    rows = [dict(left, a_request=np.zeros(12), a_applied=np.zeros(12),
+                 pd_target=np.zeros(12), c_exec=0.3)]
+    changed = [dict(rows[0], a_applied=np.ones(12))]
+    compared = s2_parity.compare_trace_tables(rows, changed)
+    assert compared['fields']['a_applied']['max_abs'] == 1.0
+    assert s2_parity.friction_contract()['equal'] is True

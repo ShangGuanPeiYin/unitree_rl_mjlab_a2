@@ -20,6 +20,24 @@ from . import s2_env, s2_map_ablation, s2_state, s2_terrain
 from . import s2_execute
 
 
+def _scalar(value, default=0.0):
+    """Convert TorchArray/tensor/array scalar (possibly per-env) to float."""
+    if value is None:
+        return float(default)
+    try:
+        return float(value.item())
+    except Exception:
+        pass
+    try:
+        if hasattr(value, 'detach'):
+            value = value.detach().cpu().reshape(-1)
+            return float(value[0].item()) if value.numel() else float(default)
+        array = np.asarray(value).reshape(-1)
+        return float(array[0]) if array.size else float(default)
+    except Exception:
+        return float(default)
+
+
 class S2PhysicsAssemblyError(RuntimeError):
     pass
 
@@ -57,6 +75,56 @@ class BackendStep:
     contact_pairs: list
     native_sample_id: dict
     sim_time_s: float
+    termination_reason: str = 'running'
+    nonfoot_contact: bool = False
+
+
+def aggregate_foot_contacts(top_forces, *, geom_names=None, geom_tiles=None,
+                            platform=None, contact_duration=0.02, feet_xy=None):
+    """Aggregate per-geom top forces to four feet and build real contact pairs.
+
+    v07 ``contacts.top_forces`` is [4, ngeom] (already foot-indexed); a foot may
+    touch several terrain geoms, so the foot normal force is the sum over the
+    geom axis.  Nonzero geom pairs only; no privileged contact slots are used.
+    """
+    import torch
+    forces = torch.as_tensor(top_forces)
+    if forces.ndim != 2 or forces.shape[0] != 4:
+        raise ValueError(f'foot top_forces must be [4,ngeom], got {tuple(forces.shape)}')
+    if not torch.isfinite(forces).all():
+        raise ValueError('non-finite foot contact force')
+    total = forces.sum(dim=-1)
+    pairs = []
+    for foot in range(4):
+        for geom in range(forces.shape[1]):
+            value = float(forces[foot, geom])
+            if value <= 0:
+                continue
+            name = (geom_names[geom] if geom_names is not None and geom < len(geom_names)
+                    else f'geom_{geom}')
+            tile = (geom_tiles[geom] if geom_tiles is not None
+                    and geom < len(geom_tiles) else None)
+            surface = platform if platform is not None else ('terrain' if tile is not None else 'unknown')
+            pairs.append(dict(foot=foot, geom=str(name), normal_force=value,
+                              duration_s=float(contact_duration),
+                              position_xy=(list(feet_xy[foot]) if feet_xy is not None
+                                           else [0.0, 0.0]), surface=surface,
+                              valid=True))
+    return total, pairs
+
+
+def nonfoot_contact_from_links(link_force, link_names, *, threshold=10.0):
+    """Any non-foot body link over the v07 nonfoot threshold."""
+    import torch
+    forces = torch.as_tensor(link_force)
+    if forces.ndim != 2 or len(link_names) != forces.shape[0]:
+        raise ValueError('link force/name shape mismatch')
+    for index, name in enumerate(link_names):
+        if any(str(name).startswith(foot) for foot in ('FL', 'FR', 'RL', 'RR')):
+            continue
+        if float(forces[index].norm()) > threshold:
+            return True
+    return False
 
 
 class S2FakeBackend:
@@ -83,7 +151,16 @@ class S2FakeBackend:
         self.terminated = False
         return self._frame(advance=False)
 
-    def step(self):
+    def observation(self, update=True):
+        h = self.step_index
+        proprio = np.zeros(45, dtype=np.float32)
+        proprio[6:9] = [0.3, 0.0, 0.0]
+        return dict(proprio=proprio,
+                    history=np.tile(proprio, (5, 1)),
+                    heightmap=np.zeros((3, 40, 30), dtype=np.float32),
+                    route_error=np.zeros(3, dtype=np.float32))
+
+    def step(self, action=None):
         return self._frame(advance=True)
 
     def _frame(self, advance=True):
@@ -124,7 +201,8 @@ class S2FakeBackend:
             native_sample_id=dict(refresh_index=actor_step // 5,
                                   sample_sim_time_s=self.sim_time,
                                   produced_at_actor_step=actor_step),
-            sim_time_s=self.sim_time)
+            sim_time_s=self.sim_time,
+            termination_reason=('success' if top and terminal else 'timeout' if terminal else 'running'))
 
 
 class S2PhysicsEnv:
@@ -146,6 +224,9 @@ class S2PhysicsEnv:
         self.gate = self.task_adapter.level_gate()
         self.backend = backend_factory(case, device=device, seed=seed,
                                        branch=map_branch, h_legacy=h_legacy)
+        self.termination = (assert_termination_contract(self.backend.env)
+                            if hasattr(self.backend, 'env')
+                            else dict(contract_ok=True, fake=True))
         self.recorder = s2_env.S2EvidenceRecorder(case=case, adapter=self.task_adapter,
                                                   map_branch=map_branch)
         self.ablation = None
@@ -159,36 +240,61 @@ class S2PhysicsEnv:
         self.real_evidence = s2_map_ablation.S2RealBranchEvidence(task=evidence_task)
         self.last = None
         self.steps = 0
+        self._observation_cache = None
         self.geometry_events = []
         self.failure_tracker = s2_state.GeometryFailureTracker()
         self._reset_backend()
 
     def _reset_backend(self):
-        self.backend.reset()
+        self.last = self.backend.reset()
         self.steps = 0
-        self.last = None
+        # Backend reset already produced the initial physical snapshot; reading
+        # it without update preserves the same FIFO/map phase as S1.
+        self._observation_cache = self._policy_observation(update=False)
 
     def reset(self, case_state=None):
         self._reset_backend()
         return self.observe()
 
-    def observe(self):
+    def _policy_observation(self, update=True):
         last = self.last
-        if last is None:
-            last = self.backend.reset()
-            self.last = last
-        h = last.route_x
-        proprio = np.zeros(45, dtype=np.float32)
-        proprio[0:3] = last.omega_b
-        proprio[3:6] = [0, 0, -1]
-        proprio[6:9] = [last.c_request, 0.0, 0.0]
-        history = np.tile(proprio, (5, 1))
-        route = np.zeros(3, dtype=np.float32)
-        heightmap = np.zeros((3, 40, 30), dtype=np.float32)
-        heightmap[1] = 1.0
-        return dict(proprio=proprio, history=history, heightmap=heightmap,
-                    route_error=route, c_request=last.c_request,
-                    c_exec=last.c_exec)
+        raw = (self.backend.observation(update=update)
+               if hasattr(self.backend, 'observation')
+               else dict(proprio=np.zeros(45, dtype=np.float32),
+                         history=np.zeros((5, 45), dtype=np.float32),
+                         heightmap=np.zeros((3, 40, 30), dtype=np.float32),
+                         route_error=np.zeros(3, dtype=np.float32)))
+        import torch
+        def strip_batch(value):
+            if hasattr(value, 'shape') and len(value.shape) > 0 and value.shape[0] == 1:
+                return value[0]
+            return value
+        def policy_value(value):
+            value = strip_batch(value)
+            if isinstance(value, torch.Tensor):
+                return value
+            return torch.as_tensor(value, dtype=torch.float32, device=self.device)
+        heightmap = raw['heightmap']
+        if self.ablation is not None and self.ablation.policy_cache is not None:
+            heightmap = self.ablation.policy_cache
+        result = dict(proprio=policy_value(raw['proprio']),
+                      history=policy_value(raw['history']),
+                      heightmap=policy_value(heightmap),
+                      route_error=policy_value(raw['route_error']),
+                      c_request=float(last.c_request),
+                      c_exec=float(last.c_exec))
+        s2_env.validate_policy_observation(result)
+        return result
+
+    def observe(self):
+        if self.last is None:
+            self.last = self.backend.reset()
+        if self._observation_cache is None:
+            self._observation_cache = self._policy_observation(update=False)
+        import torch
+        return {key: (value.clone() if isinstance(value, torch.Tensor)
+                      else (value.copy() if hasattr(value, 'copy') else value))
+                for key, value in self._observation_cache.items()}
 
     def observation(self):
         return self.observe()
@@ -198,7 +304,9 @@ class S2PhysicsEnv:
             return True
         sample = self.ablation.native_sample_id
         consumed = self.ablation.first_consumed_replacement_frame
-        if sample is not None and consumed is not None:
+        if consumed is None:
+            return True  # construction/pre-consumption frame has no s-t yet
+        if sample is not None:
             if int(sample['produced_at_actor_step']) > int(consumed):
                 raise ValueError('native_sample_id produced after first consumption')
             if self.ablation.summary()['s_minus_t'] < 0:
@@ -208,7 +316,7 @@ class S2PhysicsEnv:
     def step(self, action):
         if self.last is not None and self.last.terminal:
             raise RuntimeError('physics env cannot advance after terminal')
-        frame = (self.backend.step() if hasattr(self.backend, 'step')
+        frame = (self.backend.step(action) if hasattr(self.backend, 'step')
                  else self.backend._step())
         self.steps += 1
         platform = self.task_adapter.platform
@@ -274,21 +382,27 @@ class S2PhysicsEnv:
             native_sample_id=frame.native_sample_id))
         self.last = frame
         self.assert_native_alignment()
+        # ``backend.step`` already advanced history/map exactly once; read that
+        # snapshot instead of calling ``_observations(update=True)`` again.
+        self._observation_cache = self._policy_observation(update=False)
         return self.observe(), [frame.terminal or self.machine.terminal], dict(
             map_info=map_info, geometry_reason=geometry_reason,
             g_level=g_value, state=self.machine.summary())
 
     def diagnostics(self):
         frame = self.last
-        return dict(feet_xy=frame.feet_xy, foot_contact=frame.foot_contact,
-                    foot_normal_force=frame.foot_normal_force,
+        from .s2_env import to_numpy
+        return dict(feet_xy=to_numpy(frame.feet_xy),
+                    foot_contact=to_numpy(frame.foot_contact),
+                    foot_normal_force=to_numpy(frame.foot_normal_force),
                     contact_pairs=frame.contact_pairs,
-                    pd_target=frame.pd_target,
-                    joint_position=frame.joint_position,
-                    map_valid=frame.map_valid,
-                    map_sample_time_s=frame.sim_time_s,
+                    pd_target=to_numpy(frame.pd_target),
+                    joint_position=to_numpy(frame.joint_position),
+                    map_valid=to_numpy(frame.map_valid),
+                    map_sample_time_s=float(frame.sim_time_s),
                     native_sample_id=frame.native_sample_id,
-                    g_level=self.gate.value)
+                    nonfoot_contact=bool(frame.nonfoot_contact),
+                    g_level=float(self.gate.value))
 
     def evidence(self, index=0):
         trace = self.recorder.trace()
@@ -296,6 +410,8 @@ class S2PhysicsEnv:
                                  else self.real_evidence.summary())
         trace['state_summary'] = self.machine.summary()
         trace['failure_context'] = {'present': self.machine.failure}
+        trace['termination_reason'] = self.last.termination_reason
+        trace['nonfoot_contact'] = self.last.nonfoot_contact
         trace['g_level_report'] = s2_state.g_level_window_report(
             [self.gate.value], [self.steps - 1],
             window_mask=[True], four_foot_step=None,
@@ -430,6 +546,30 @@ def _s2_patch_context(specs):
     return patches()
 
 
+TERMINATION_REQUIRED = ('body', 'nonfoot', 'posture', 'fall', 'bounds',
+                        'contact_overflow', 'nonfinite')
+MANAGER_TERMS_EXPECTED = ()  # v07 owns termination in events.evaluate, not managers
+
+
+def termination_contract(env):
+    from src.tasks.velocity.v07 import events as v07events
+    manager = getattr(env, 'termination_manager', None)
+    names = tuple(str(term) for term in getattr(manager, '_term_cfgs', ()))         if manager is not None else ()
+    categories = tuple(v07events.FAILURE_NAMES)
+    missing = [name for name in TERMINATION_REQUIRED if name not in categories]
+    return dict(manager_terms=list(names), manager_count=len(names),
+                failure_categories=list(categories), missing=missing,
+                contract_ok=not missing and tuple(names) == MANAGER_TERMS_EXPECTED)
+
+
+def assert_termination_contract(env):
+    contract = termination_contract(env)
+    if not contract['contract_ok']:
+        raise S2PhysicsAssemblyError(
+            f'v07/S2 termination contract missing/differs: {contract}')
+    return contract
+
+
 class MjlabS2Backend:
     """v09/mjlab assembly using s2_terrain boxes; single environment."""
 
@@ -467,12 +607,34 @@ class MjlabS2Backend:
         self.refresh_index = 0
         self.last_sample_id = None
         self.last_sample_time = 0.0
+        self._last_observation = None
 
     def close(self):
         self._patches.__exit__(None, None, None)
 
+    def _store_observation(self, obs):
+        def squeeze(value):
+            if hasattr(value, 'shape') and len(value.shape) > 0 and value.shape[0] == 1:
+                return value[0]
+            return value
+        self._last_observation = dict(
+            proprio=squeeze(obs['proprio']).clone(),
+            history=squeeze(obs['history']).clone(),
+            heightmap=squeeze(obs['heightmap']).clone(),
+            route_error=squeeze(obs['route_error']).clone())
+        return {key: value.clone()
+                for key, value in self._last_observation.items()}
+
+    def observation(self, update=True):
+        if not update and self._last_observation is not None:
+            return {key: value.clone()
+                    for key, value in self._last_observation.items()}
+        obs = self.env._observations(update=update)
+        return self._store_observation(obs)
+
     def reset(self):
-        self.env.reset()
+        obs, _ = self.env.reset()
+        self._store_observation(obs)
         self.steps = 0
         self.refresh_index = 0
         self.last_sample_id = None
@@ -485,7 +647,8 @@ class MjlabS2Backend:
             action = torch.zeros(1, 12, device=self.device)
         action = torch.as_tensor(action, dtype=torch.float32,
                                  device=self.device).reshape(1, 12)
-        _, _, terminated, truncated, _ = self.env.step(action)
+        obs, _, terminated, truncated, _ = self.env.step(action)
+        self._store_observation(obs)
         self.steps += 1
         return self._frame(terminal=bool(terminated[0] or truncated[0]))
 
@@ -502,34 +665,43 @@ class MjlabS2Backend:
         feet_ok = bool(platform.all())
         map_valid = self.env.map_cache.map[0, 1].bool().cpu().numpy()
         refreshed = int(self.env.map_cache.steps[0]) == 0
-        sim_time = float(getattr(self.env.sim.data, 'time', self.steps * 0.02))
+        sim_time = _scalar(getattr(self.env.sim.data, 'time', None),
+                           self.steps * 0.02)
         if refreshed:
             self.refresh_index += 1
             self.last_sample_time = sim_time
             self.last_sample_id = dict(refresh_index=self.refresh_index,
                                        sample_sim_time_s=sim_time,
-                                       produced_at_actor_step=self.steps - 1)
+                                       produced_at_actor_step=max(0, int(self.steps) - 1))
         sample_id = self.last_sample_id or dict(
             refresh_index=0, sample_sim_time_s=sim_time,
-            produced_at_actor_step=self.steps)
+            produced_at_actor_step=max(0, int(self.steps) - 1))
         top_forces = self.env.contacts.top_forces[0]
-        contact_pairs = []
-        for foot in range(4):
-            forces = top_forces[foot]
-            if float(forces.max()) <= 0:
-                continue
-            geom = int(forces.argmax())
-            contact_pairs.append(dict(
-                foot=foot, geom=f'geom_{geom}', normal_force=float(forces[geom]),
-                duration_s=0.02, position_xy=list(feet[foot, :2].detach().cpu().numpy()),
-                surface='platform' if feet_ok else 'tread', valid=True))
+        geom_names = [self.env.sim.mj_model.geom(i).name
+                      for i in range(self.env.sim.mj_model.ngeom)]
+        geom_tiles = self.env.contacts.inner.tile_by_geom.detach().cpu().numpy().tolist()
+        foot_normal_force, contact_pairs = aggregate_foot_contacts(
+            top_forces, geom_names=geom_names, geom_tiles=geom_tiles,
+            platform='platform' if feet_ok else 'tread',
+            feet_xy=feet[:, :2].detach().cpu().numpy().tolist())
+        nonfoot = nonfoot_contact_from_links(
+            self.env.contacts.link_force[0], self.env.contacts.inner.link_names)
+        termination_reason = 'running'
+        try:
+            from src.tasks.velocity.v07 import events as v07events
+            last = getattr(self.env, 'last_termination', None)
+            if last is not None:
+                code = int(last[3][0])
+                termination_reason = v07events.REASON_NAMES[code]
+        except Exception:
+            termination_reason = 'unknown'
         return BackendStep(
             route_x=float(local[0]), base_xy=(float(local[0]), float(local[1])),
             feet_xy=feet[:, :2].detach().cpu().numpy().tolist(),
             feet_route_x=(feet[:, 0] - origin[0]).detach().cpu().numpy().tolist(),
             foot_on_platform=platform.detach().cpu().numpy().tolist(),
             foot_contact=contact.detach().cpu().numpy().tolist(),
-            foot_normal_force=self.env.contacts.top_forces[0].detach().cpu().numpy().tolist(),
+            foot_normal_force=foot_normal_force.detach().cpu().tolist(),
             pitch=float(__import__('src.tasks.velocity.v07.events', fromlist=['euler_heading'])
                         .euler_heading(data.root_link_quat_w[0:1])[1][0]),
             velocity_b=data.root_link_lin_vel_b[0].detach().cpu().numpy().tolist(),
@@ -551,7 +723,8 @@ class MjlabS2Backend:
             front_foot_top_support=bool(platform[0] or platform[1]),
             feet_ok=feet_ok, body_ok=body_ok,
             contact_pairs=contact_pairs, native_sample_id=sample_id,
-            sim_time_s=self.steps * 0.02)
+            sim_time_s=self.steps * 0.02, nonfoot_contact=nonfoot,
+            termination_reason=termination_reason)
 
 
 def load_s1_actor(path=None, *, expected_sha256=None, device='cpu'):
@@ -671,6 +844,7 @@ class MjlabHLegacyBackend(MjlabS2Backend):
         self.refresh_index = 0
         self.last_sample_id = None
         self.last_sample_time = 0.0
+        self._last_observation = None
 
     def close(self):
         pass
