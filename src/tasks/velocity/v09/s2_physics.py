@@ -234,7 +234,8 @@ class S2PhysicsEnv:
     """Full S2 env contract used by s2_execute and CPU tests."""
 
     def __init__(self, case, *, backend_factory, device='cpu', num_envs=1,
-                 seed=42, map_branch='real', h_legacy=False):
+                 seed=42, map_branch='real', h_legacy=False,
+                 capture_inputs=False):
         if num_envs != 1:
             raise ValueError('S2 physics assembly supports one smoke env per process')
         if map_branch not in ('real', 'plane_diagnostic'):
@@ -244,6 +245,8 @@ class S2PhysicsEnv:
         self.seed = int(seed)
         self.map_branch = map_branch
         self.h_legacy = bool(h_legacy)
+        self.capture_inputs = bool(capture_inputs)
+        self.input_rows = []
         self.task_adapter = s2_env.S2TaskAdapter.from_case(case)
         self.machine = self.task_adapter.state_machine()
         self.gate = self.task_adapter.level_gate()
@@ -341,8 +344,38 @@ class S2PhysicsEnv:
     def step(self, action):
         if self.last is not None and self.last.terminal:
             raise RuntimeError('physics env cannot advance after terminal')
+        input_row = None
+        if self.capture_inputs:
+            obs = self.observe()
+            last = self.last
+            input_row = dict(
+                step=int(self.steps),
+                case_sha256=self.case['case_sha256'],
+                task=self.case['task'],
+                weight_sha256=s2_env.s2_spec.S1_ENTRY_WEIGHT_SHA256,
+                proprio=s2_env.to_numpy(obs['proprio']).copy(),
+                history=s2_env.to_numpy(obs['history']).copy(),
+                heightmap=s2_env.to_numpy(obs['heightmap']).copy(),
+                route_error=s2_env.to_numpy(obs['route_error']).copy(),
+                c_exec=float(obs['c_exec']),
+                refresh_index=(int(last.native_sample_id['refresh_index'])
+                               if last and last.native_sample_id else None),
+                sample_sim_time_s=(float(last.native_sample_id['sample_sim_time_s'])
+                                   if last and last.native_sample_id else None),
+                produced_at_actor_step=(int(last.native_sample_id['produced_at_actor_step'])
+                                        if last and last.native_sample_id else None),
+                base_sample_z=(float(last.map_base_z) if last else None),
+                plane_world_z=(float(self.task_adapter.platform['top_height'])
+                               if self.task_adapter.platform else None),
+                refreshed=bool(last.refreshed) if last else False,
+                front_foot_top_support=(bool(last.front_foot_top_support)
+                                        if last else False),
+                a_request=s2_env.to_numpy(action).reshape(-1).tolist())
         frame = (self.backend.step(action) if hasattr(self.backend, 'step')
                  else self.backend._step())
+        if input_row is not None:
+            input_row['recorded_action'] = list(frame.a_request)
+            self.input_rows.append(input_row)
         self.steps += 1
         platform = self.task_adapter.platform
         condition = bool(platform and frame.feet_ok and frame.body_ok)
@@ -468,7 +501,8 @@ class S2PhysicsEnv:
 
 
 def build_s2_env(case, *, device='cuda:0', num_envs=1, seed=42,
-                 map_branch='real', h_legacy=False, backend_factory=None):
+                 map_branch='real', h_legacy=False, backend_factory=None,
+                 capture_inputs=False):
     """Construct the S2 env; refuse before GPU allocation if no real backend."""
     if h_legacy and map_branch != 'real':
         raise ValueError('H legacy only supports the real map')
@@ -477,7 +511,7 @@ def build_s2_env(case, *, device='cuda:0', num_envs=1, seed=42,
     report = s2_execute.device_report(device)
     return S2PhysicsEnv(case, backend_factory=backend_factory, device=device,
                         num_envs=num_envs, seed=seed, map_branch=map_branch,
-                        h_legacy=h_legacy), report
+                        h_legacy=h_legacy, capture_inputs=capture_inputs), report
 
 
 # --------------------------------------------------------------- mjlab backend

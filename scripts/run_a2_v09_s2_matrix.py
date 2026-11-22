@@ -93,6 +93,8 @@ def command(entry, attempt, output, args):
             '--device', args.device, '--attempt-id', attempt,
             '--obligation-id', entry['obligation'], '--ledger', str(args.ledger),
             '--output-dir', str(output)]
+    if args.save_inputs and entry['branch'] == 'real':
+        argv.append('--save-inputs')
     return argv
 
 
@@ -102,6 +104,8 @@ def main(argv=None):
     parser.add_argument('--only-task')
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--save-inputs', action='store_true',
+                        help='persist full Actor inputs for each real-branch case')
     parser.add_argument('--device', default='cuda:0')
     parser.add_argument('--ledger', type=Path, default=ROOT / s2_spec.LEDGER_HINT)
     parser.add_argument('--output-root', type=Path,

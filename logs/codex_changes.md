@@ -4390,3 +4390,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 涉及文件：`doc/sds/reviews/v09_execution_rulings.md`、本日志。
 - 要点：批准②＋①；以 real Actor 实际消费的不可变输入为准（case/权重 SHA/Actor 步/原生刷新帧/参考平面与 base z），从同份输入派生 plane 并走正式替换逻辑；事件后首次正常刷新切换、valid/age 逐步一致、生效前逐元素相同、生效后仅有效格 height 可变；同一权重与内部状态算两份确定性动作均值，live 仅 real 推进、离线均不推进；给样本数/动作差 RMS/最大绝对差/单位/裁剪位置与数值底噪；同帧输入替换/时序在独立复核前记 `pending`，通过后仅覆盖病例记 `verified`，严格物理配对仍 `not_proven`；不得据此推断改图导致摔倒；不阻塞 S2.1。
 - 验证：仅文档追加；未跑测试/物理/训练。整批 156 条诊断继续运行。
+
+
+## 2026-11-22 Q031 同帧双输入反事实实现
+
+- 目的：按 DSH-Q031 实现"同一 real 输入派生 plane 输入 + 双输入动作敏感度"的离线证据链。
+- 涉及文件：新增 `src/tasks/velocity/v09/s2_counterfactual.py`、`scripts/run_a2_v09_s2_counterfactual.py`、`tests/test_v09_s2_0_counterfactual.py`；修改 `s2_physics.py`（`--save-inputs` 采集完整输入、`post_reset`、`sim_state`）、`s2_env.py`（pitch convention、四窗、`post_reset`）、`run_a2_v09_s2_0.py`（四窗、`--save-inputs`）、`run_a2_v09_s2_matrix.py`（转发 `--save-inputs`）。
+- 实现要点：每控制步保存 `proprio/history/heightmap/route_error/c_exec/recorded_action/a_request/step/refresh_index/sample_sim_time_s/produced_at_actor_step/base_sample_z/plane_world_z/refreshed/front_foot_top_support/case_sha256/weight_sha256`，写入 `inputs.npz`+`inputs_metadata.json`（不含 reset 出生帧）；plane 由同一输入经正式 `S2PlaneAblation` 派生，生效前逐元素相同、生效后仅有效格 height 变、valid/age 不变、替换值核验；四阶段 `pre_trigger/activation_refresh/post_activation/not_triggered` 报 `n`、动作差 RMS/最大绝对差、real→real 噪声底、单位与裁剪位置；证据固定 `evidence_grade=pending`、`physical_trajectory=not_proven`。
+- 验证：S2 套件 **216 passed**；现有四个代表目录均缺 `inputs.npz`（缺口清单 `logs/a2_v09/s2_0/evidence/q031_input_coverage.json`），真实 GPU 采集待整批结束后进行。
+- 整批进度：156 条中已完成 7 条（flat 系列），台账与截止时间见 `matrix-full-r1`。
+- 未执行：训练；Q016/Q024 仍 `not_proven`。

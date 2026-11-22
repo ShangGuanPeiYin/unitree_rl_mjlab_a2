@@ -123,6 +123,55 @@ def _sha256_file(path):
 PITCH_SIGN_CONVENTION = s2_env.PITCH_SIGN_CONVENTION
 
 
+def _write_inputs(output, env, *, attempt_id):
+    """Write every consumed real-branch Actor input plus immutable metadata."""
+    rows = list(getattr(env, 'input_rows', []))
+    if not rows:
+        return None
+    arrays = {
+        'proprio': np.asarray([row['proprio'] for row in rows], dtype=np.float32),
+        'history': np.asarray([row['history'] for row in rows], dtype=np.float32),
+        'heightmap': np.asarray([row['heightmap'] for row in rows], dtype=np.float32),
+        'route_error': np.asarray([row['route_error'] for row in rows], dtype=np.float32),
+        'c_exec': np.asarray([row['c_exec'] for row in rows], dtype=np.float32),
+        'recorded_action': np.asarray([row['recorded_action'] for row in rows],
+                                      dtype=np.float32),
+        'a_request': np.asarray([row['a_request'] for row in rows], dtype=np.float32),
+        'step': np.asarray([row['step'] for row in rows], dtype=np.int64),
+        'refresh_index': np.asarray([row['refresh_index'] if row['refresh_index'] is not None else -1
+                                     for row in rows], dtype=np.int64),
+        'sample_sim_time_s': np.asarray([row['sample_sim_time_s'] if row['sample_sim_time_s'] is not None else np.nan
+                                         for row in rows], dtype=np.float64),
+        'produced_at_actor_step': np.asarray([row['produced_at_actor_step'] if row['produced_at_actor_step'] is not None else -1
+                                              for row in rows], dtype=np.int64),
+        'base_sample_z': np.asarray([row['base_sample_z'] if row['base_sample_z'] is not None else np.nan
+                                     for row in rows], dtype=np.float64),
+        'plane_world_z': np.asarray([row['plane_world_z'] if row['plane_world_z'] is not None else np.nan
+                                     for row in rows], dtype=np.float64),
+        'refreshed': np.asarray([bool(row['refreshed']) for row in rows], dtype=bool),
+        'front_foot_top_support': np.asarray([bool(row['front_foot_top_support']) for row in rows], dtype=bool),
+    }
+    path = output / 'inputs.npz'
+    if path.exists():
+        raise FileExistsError(f'refusing to overwrite {path}')
+    np.savez_compressed(path, **arrays)
+    metadata = dict(
+        attempt_id=attempt_id, case_sha256=rows[0]['case_sha256'],
+        task=rows[0].get('task'),
+        weight_sha256=rows[0]['weight_sha256'],
+        frames=len(rows), keys=sorted(arrays),
+        input_step_definition='Actor input consumed before the same-index control step',
+        post_reset_excluded=True,
+        fields=dict(proprio=[45], history=[5, 45], heightmap=[3, 40, 30],
+                    route_error=[3], c_exec=[], recorded_action=[12],
+                    refresh_triplet=['refresh_index', 'sample_sim_time_s',
+                                     'produced_at_actor_step']))
+    meta_path = output / 'inputs_metadata.json'
+    meta_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + '\n')
+    return dict(path=str(path), sha256=_sha256_file(path),
+                metadata=str(meta_path), frames=len(rows))
+
+
 def _pitch_stats(rows):
     if not rows:
         return None
@@ -238,6 +287,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--preflight', action='store_true')
     parser.add_argument('--dump-observation', action='store_true')
+    parser.add_argument('--save-inputs', action='store_true',
+                        help='save the full real-branch Actor input each control step')
     parser.add_argument('--execute', action='store_true')
     parser.add_argument('--smoke', action='store_true')
     parser.add_argument('--suite', choices=('S2_DIAG', 'H_SERIES'),
@@ -304,7 +355,7 @@ def main(argv=None):
         steps = min(requested_steps, int(case['hard_timeout_steps']))
         env, report = s2_physics.build_s2_env(
             case, device=args.device, seed=42, map_branch=args.branch,
-            h_legacy=h_legacy)
+            h_legacy=h_legacy, capture_inputs=args.save_inputs)
         backend_env = getattr(env.backend, 'env', None)
         obs = env.observe()
         peak = float(torch.cuda.max_memory_allocated() / 2 ** 20) if torch.cuda.is_available() else 0.0
@@ -337,7 +388,7 @@ def main(argv=None):
             raise SystemExit(str(error))
         env, report = s2_physics.build_s2_env(
             case, device=args.device, seed=42, map_branch=args.branch,
-            h_legacy=h_legacy)
+            h_legacy=h_legacy, capture_inputs=args.save_inputs)
         output = args.output_dir or (ROOT / 'logs/a2_v09/s2_0/evidence' / attempt_id)
         output.mkdir(parents=True, exist_ok=True)
         try:
@@ -386,7 +437,7 @@ def main(argv=None):
         actor = s2_physics.load_s1_actor(device=args.device)
         env, runtime = s2_physics.build_s2_env(
             case, device=args.device, seed=42, map_branch=args.branch,
-            h_legacy=h_legacy)
+            h_legacy=h_legacy, capture_inputs=args.save_inputs)
         batch = dict(branch=args.branch,
                      group_role_sha256='smoke',
                      control_samples=int(steps),
@@ -564,6 +615,15 @@ def main(argv=None):
             summary['peak_mib'] = (float(torch.cuda.max_memory_allocated() / 2 ** 20)
                                    if torch.cuda.is_available() else 0.0)
             summary['trace_sha256'] = _sha256_file(trace_path)
+            if args.save_inputs:
+                try:
+                    inputs = _write_inputs(output, env, attempt_id=attempt_id)
+                    summary['inputs'] = inputs
+                    if inputs:
+                        summary['input_frames'] = inputs['frames']
+                        summary['inputs_sha256'] = inputs['sha256']
+                except Exception as input_error:
+                    summary['input_error'] = repr(input_error)
             written = None
             try:
                 if env.recorder.rows:
