@@ -4876,3 +4876,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 文件：`docs/v09_s2_execution_status_20261122.md`。
 - 汇总：已完成（S2.0 诊断、H 六例、Q031、资源准入、门禁/终验框架、L40 缓存进行中）、已作废（s2.1-r1 20,299,776 样本与四检查点）、未完成（P1 状态机、V13 证据、缓存、r2 训练、后续课程与终验）、账本、恢复入口。
 - V13 六项修复已由实现组推进（锚定 3×48×32 旧图、GAE masks、命令链、reset 清理、异常结算、r1 拒绝），测试 246 passed；仍未签字。
+
+
+## 2026-11-23 L40 A 缓存 60/60 完成但最终写盘崩溃（ndarray JSON）
+
+- 现象：60 例全部执行并逐例 commit（合计 75,179 步），在最终写 `cases/<sha>.json` 时 `TypeError: Object of type ndarray is not JSON serializable`；未写缓存、未 release（实现方把 release 放在写盘之后）。
+- 处置：释放孤儿预留 144,041；修复 collector 对所有 row/cache 使用 `s2_env.jsonable`；新增 `l40_milestone_cache_gate_A_rerun2`（219,220）并重启（`l40-r3`，case 1/60 起步）。
+- 台账：`l40_milestone_cache_gate_A_rerun` spent 75,179/219,220；`..._rerun2` 预留 219,220；envelope 269,723,546。

@@ -263,7 +263,7 @@ def main(argv=None):
             path = cases_dir / f"{row['case_sha256']}.json"
             if path.exists():
                 raise FileExistsError(path)
-            path.write_text(json.dumps(row, ensure_ascii=False, indent=2) + '\n')
+            path.write_text(json.dumps(s2_env.jsonable(row), ensure_ascii=False, indent=2) + '\n')
             case_files.append(dict(case_sha256=row['case_sha256'],
                                    path=str(path), sha256=_sha(path)))
         cache = dict(schema=cache_schema, suite=manifest['suite'],
@@ -285,7 +285,7 @@ def main(argv=None):
         path = out / f'{args.reference}_{args.suite}_cache.json'
     if path.exists():
         raise FileExistsError(path)
-    path.write_text(json.dumps(cache, ensure_ascii=False, indent=2) + '\n')
+    path.write_text(json.dumps(s2_env.jsonable(cache), ensure_ascii=False, indent=2) + '\n')
     receipt = dict(
         schema='a2_v09_s2_gate_cache_receipt_v1',
         model_sha256=source_sha, source_sha256=source_sha,
