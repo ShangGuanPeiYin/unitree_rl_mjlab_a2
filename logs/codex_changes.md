@@ -4185,3 +4185,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 阻断 F-V04-1：混合真实+替换记录时 `exact_clip_denominator` 取两支之和（2160，应为替换支 1080），会稀释分数。另 `config_identity` 声明 9 项与实际强制 11 项不一致，`missing_reason` 未入记录。
 - 处置：已令实现方修分母口径、清单一致性、missing_reason/原因码入库、登记双 SHA（内容+文件）、`history_index_v2` 只能由 register 只读派生；验收方做 V4.1 聚焦复核。
 - 未执行：未跑 GPU/物理、未训练、未写正式原子预留。
+
+
+## 2026-11-22 S2.0 可执行栈（T2）交付与 V4 修正
+
+- 目的：补齐 S2.0 诊断所需的真实地形、任务适配、状态机、证据导出与执行 CLI，并修 V4 阻断。
+- 涉及文件：新增 `src/tasks/velocity/v09/s2_terrain.py`、`s2_state.py`、`s2_env.py`；新增 `scripts/evaluate_a2_v09_s2_0.py`、`scripts/rebuild_a2_v09_s2_0_history_projection.py`；新增 `tests/test_v09_s2_0_{terrain,state,env,evaluate_cli}.py`；文档 `docs/v09_s2_0_implementation_plan_v4.md`。
+- 实现要点：S2 碰撞盒（0.20/0.20/0.80、平台长 20 m、宽 0.8/4 m、10/20/40 级）与解析 H 查询；六任务适配与 S2 状态机（top 单次锁存、步末距离触发、双零点 D_post、g_level）；逐帧证据（足位/接触/法向力/contact pairs/PD 目标与实际/map valid/native_sample_id/命令链）；75 对分支配对与干预前缀摘要；CLI `--dry-run` 校验、非 dry-run 在未预留时拒绝。
+- 修正：F-V04-1 混合分支 `exact_clip_denominator` 只取替换支 Σvalid（真实支 NA）；`config_identity` 11+7 项声明与校验一致；`missing_reason`/原因码入病例与组汇总；登记双 SHA（内容 5ec1c897…/文件 6f80b6fe…）；`history_index_v2` 改为 register 的只读派生投影。
+- 验证：本机复跑 S2 CPU 套件 8 文件 **113 passed**（0.71 s）；dry-run：75 例、150 条、30 批、env 上限 20、`physics_started=false`；旧冻结件字节未变。
+- 未执行：无 GPU/物理/训练；`g_level` ramp 0.5 s 标为 provisional 并已提交 DSH-Q027；H 六例逐帧足位/接触补采待物理阶段。
