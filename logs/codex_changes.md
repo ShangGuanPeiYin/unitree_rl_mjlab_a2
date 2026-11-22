@@ -4786,3 +4786,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 已实现：c_request/c_exec 分离、S2.3 stop ramp/hold、g_level 0/0.04/1 ramp、真实 base/foot 高度查询、surface target、air-time、stable_stand、失败优先、top/success latch、向量化。
 - 未闭合：真实 V07 的 success 在登顶即 done，S2 5m 成功/质量判据仍无法在该后端发生；S2.3 真实 V07 状态注入/终止合同未完成；yaw/v_heading 仍为近似。**不可据此重跑。**
 - 验证：277 passed；仅 CPU/fake，无 GPU/台账。
+
+
+## 2026-11-22 Q035 处置：在途保守结算 + 训练链路修复清单
+
+- 目的：按 Q035 结算在途 rollout、登记 r1 无效、下发训练链路 P0-P3 修复。
+- 台账：learning_S2_1 追加 24,576（在途无法确证步数，按 §2.5 保守全额），spent **20,299,776**、reserved 0、剩余 779,700,224 → 31,726 完整 rollouts（余 2,048）。
+- 修复清单：P0 `collect_rollout` 每轮 reset 改为 episode 连续、GAE last_value、§5.4 平地锚定、异常按实际步结算；P1 S2 状态机/终止替换 v07（含登顶不 reset、L40 例外、单 env 锁存）；P2 真实命令链 c_request→c_exec、真实 phase/g_level/qdot_prev/yaw/腾空等；P3 独立手算数值验收（20 项、+2/+8/−10、门控、动作对齐、v07 差异）。
+- 独立验收：V13 数值验收设计与手算参照（不得用生产函数当期望）。
+- 未执行：重跑（待修复+独审）。
