@@ -4278,3 +4278,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 实现要点：`stable_stand` 仅 DECEL/HOLD 且 `|c_exec|≤1e-7`；acceptance 补有效巡航窗、站立 roll/pitch≤10°、高度≥0.30、严格 27×100、9 平地组 6400 保持；512 需 1024 失败证据且 CLI 需 `--fallback-evidence`；probe 加视频项、统一 9472；台账 operation_id 全局唯一；checkpoint loader/跨版本拒绝/A-B 序列/teacher-entry SHA；runner 补 entropy、approx KL、先 KL 定 LR 再一次 Adam、教师 eval 与 normalizer 冻结；Q028/Q029 首米窗与区间起点修正、去旧 duty 字段、事件按控制步号映射。
 - 验证：本机复跑 S2 套件 **173 passed**；`run_a2_v09_s2_0.py --plan-only` 输出 30 批；预留 plan 仍 `773b53c6…`、未写 S2 台账。
 - 未执行：无 GPU/物理/训练；GPU smoke 仍缺 `s2_physics.build_s2_env`。
+
+
+## 2026-11-22 T6 S2 物理接口（fake backend）交付
+
+- 目的：交付 S2.0 执行所需的物理接口与 CPU 桩，真实 mjlab backend 另行实现。
+- 涉及文件：新增 `src/tasks/velocity/v09/s2_physics.py`（`S2PhysicsEnv`、`S2FakeBackend`、`build_s2_env`）、`tests/test_v09_s2_0_physics.py`；文档 `docs/v09_s2_0_implementation_plan_v9.md`。
+- 接口：`reset/step/observe`；`observe` 返回 `proprio(45)/history(5,45)/heightmap(3,40,30)/route_error(3)/c_request/c_exec`；`four_feet_on_platform`/`front_foot_top_support`；`diagnostics()` 足位/接触/法向力/contact pairs/PD/地图 valid/采样时刻/`native_sample_id`/`g_level`；`evidence()` trace+map_evidence+state_summary+failure_context+g_level_report；缺真实 backend 时在 GPU 分配前报错。
+- 验证：本机复跑 S2 套件 **178 passed**；fake backend 覆盖 reset→step→observe、两分支前缀、Q016 `s−t`、H legacy、无 backend 拒绝。
+- 未执行：真实 mjlab 物理、GPU smoke、训练；`q021_reservation_written=false`。
