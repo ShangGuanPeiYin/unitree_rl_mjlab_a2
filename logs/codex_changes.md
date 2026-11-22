@@ -4869,3 +4869,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 异常：`_rollout_steps` 在 reset 前归零。
 - r1：新增 `s2_r1.py`，train/gate/resume 拒绝四个 r1 SHA 与 s2.1-r1 attempt；默认 attempt 改 s2.1-r2。
 - 验证：**281 passed**；未跑 GPU/训练。
+
+
+## 2026-11-22 S2 执行状态与交接文档
+
+- 文件：`docs/v09_s2_execution_status_20261122.md`。
+- 汇总：已完成（S2.0 诊断、H 六例、Q031、资源准入、门禁/终验框架、L40 缓存进行中）、已作废（s2.1-r1 20,299,776 样本与四检查点）、未完成（P1 状态机、V13 证据、缓存、r2 训练、后续课程与终验）、账本、恢复入口。
+- V13 六项修复已由实现组推进（锚定 3×48×32 旧图、GAE masks、命令链、reset 清理、异常结算、r1 拒绝），测试 246 passed；仍未签字。
