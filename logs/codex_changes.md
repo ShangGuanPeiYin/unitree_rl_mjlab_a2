@@ -4823,3 +4823,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - P0：`old_logs` 改 [T,N] 对齐、transitions 分离 terminated/truncated/failure_class、异常结算测试转绿；训练套件 24 passed。更正：`sampling_boundary=ones` 经查 GAE 仅在末步使用，非 bug（已撤回）。
 - P1 已下达：S2 任务状态机/终止替换 v07（登顶不 reset、5 m 成功、L40 例外）、终止优先级与 bootstrap 掩码、单 env reset 隔离、真实 c_request→c_exec 延迟链、真实观测量，及对应测试。
 - V13 数值验收设计再次催办（独立手算参照、PPO 存储对齐、动作对齐、签字清单）。
+
+## 2026-11-22 P0/P1 训练循环、锚定与 S2 success 时序
+
+- P0：collect_rollout 不再每 rollout reset；保存 `_obs` 连续 episode；GAE 非终止边界 `V(next_obs)`；adv/returns 转 time-major；old_logs stack(dim=0)；异常按实际物理步结算；transitions 保存 terminated/truncated/failure masks。
+- P0.3：update 接入 clean-flat 锚定（β=0.1、全局 n_clean、微批分子累计、无 clean 为 0），训练 CLI 加载 40×30 的 6400 迁移教师（仅锚定）。
+- P1：`S2TrainEnv._task_state` 覆写，top 只作事件不 reset；stairs/platform 等到 post 距离 success；L40 legacy 例外；单 env 首帧清锁存。`_s2_reward` 向量化 20 项/stop/g_level/真实高度；但真实 S2.3 状态机/终止/质量仍不完整。
+- 验证：279 passed；未跑 GPU/训练。

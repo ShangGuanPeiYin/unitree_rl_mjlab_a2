@@ -42,6 +42,10 @@ def _state_sha(model):
     return digest.hexdigest()
 
 
+def flatten_time_major_old_logs(transitions):
+    return torch.stack([row['log_probs'] for row in transitions], 0).reshape(-1)
+
+
 def _obs_batch(obs, index, device):
     return {key: torch.as_tensor(value[index:index + 1], dtype=torch.float32,
                                  device=device) for key, value in obs.items()}
@@ -120,6 +124,8 @@ class S2Trainer:
         self.final_uses = 0
         self.engineering_rerun_reasons = []
         self.random_state = None
+        self._obs = None
+        self._rollout_steps = 0
         if self.teacher is not None:
             self.teacher.requires_grad_(False)
 
@@ -127,9 +133,14 @@ class S2Trainer:
         return _obs_batch(obs, index, self.device)
 
     def collect_rollout(self):
-        obs = self.env.reset()
+        # Episodes persist across rollout boundaries.  The env resets only the
+        # environments whose episode terminates, not the whole batch.
+        if self._obs is None:
+            self._obs = self.env.reset()
+        obs = self._obs
         transitions = []
         n = self.env.num_envs
+        self._rollout_steps = 0
         for _ in range(s2_runner.ROLLOUT_STEPS):
             item = {key: value for key, value in obs.items()}
             dist = self.model.action_distribution(item)
@@ -139,12 +150,32 @@ class S2Trainer:
             next_obs, reward, done, info = self.env.step(actions.detach())
             transitions.append(dict(obs=obs, actions=actions,
                                     log_probs=log_probs, values=values,
-                                    reward=reward, done=done))
+                                    reward=reward, done=done,
+                                    terminated=bool(info.get('terminated', False))
+                                    if hasattr(info, 'get') else False,
+                                    truncated=bool(info.get('truncated', False))
+                                    if hasattr(info, 'get') else False,
+                                    terminated_mask=(info.get('terminated_mask')
+                                                     if hasattr(info, 'get') else None),
+                                    truncated_mask=(info.get('truncated_mask')
+                                                    if hasattr(info, 'get') else None),
+                                    failure_mask=(info.get('failure_mask')
+                                                  if hasattr(info, 'get') else None),
+                                    timeout_mask=(info.get('timeout_mask')
+                                                  if hasattr(info, 'get') else None),
+                                    failure_class=(info.get('failure_class')
+                                                   if hasattr(info, 'get') else None)))
             obs = next_obs
-        # sampling-boundary bootstrap only
+            self._rollout_steps += 1
+        self._obs = obs
         rewards = torch.stack([row['reward'] for row in transitions], 1)
         values = torch.stack([row['values'] for row in transitions], 1)
         done = torch.stack([row['done'] for row in transitions], 1)
+        # Non-terminal sampling boundary bootstraps from V(next_obs); terminal
+        # rows keep the zero bootstrap in GAE.
+        with torch.no_grad():
+            next_values = self.model.evaluate(
+                {key: value for key, value in self._obs.items()}).squeeze(-1)
         adv, returns = [], []
         for index in range(n):
             a, r = s2_runner.gae(
@@ -152,22 +183,32 @@ class S2Trainer:
                 values[index].detach().cpu().numpy(),
                 terminated=np.zeros(len(transitions), dtype=bool),
                 timeout=done[index].cpu().numpy(),
-                sampling_boundary=np.ones(len(transitions), dtype=bool))
+                sampling_boundary=np.ones(len(transitions), dtype=bool),
+                last_value=(0.0 if bool(done[index, -1]) else
+                            float(next_values[index].detach().cpu())))
             adv.append(torch.as_tensor(a, dtype=torch.float32, device=self.device))
             returns.append(torch.as_tensor(r, dtype=torch.float32, device=self.device))
-        return transitions, torch.stack(adv, 1), torch.stack(returns, 1)
+        # [N,T] -> [T,N] so flattening matches time-major transitions.
+        return (transitions,
+                torch.stack(adv, 1).transpose(0, 1).contiguous(),
+                torch.stack(returns, 1).transpose(0, 1).contiguous())
 
     def update(self, transitions, advantages, returns):
-        old_logs = torch.stack([row['log_probs'] for row in transitions], 1)
+        old_logs = flatten_time_major_old_logs(transitions)
         # flatten logical rollout; keep one logical batch for KL/LR
         n = self.env.num_envs
+        role_rows = (getattr(self.env, 'role_plan', {}) or {}).get('envs') or []
+        clean_env = torch.tensor(
+            [str(row.get('task', '')).startswith('flat_') for row in role_rows]
+            if len(role_rows) == n else [False] * n,
+            dtype=torch.bool, device=self.device)
         for epoch in range(s2_runner.EPOCHS):
             # deterministic logical minibatches over flattened samples
             flat_obs = {}
             for key in transitions[0]['obs']:
                 flat_obs[key] = torch.cat([row['obs'][key] for row in transitions], 0)
             flat_actions = torch.stack([row['actions'] for row in transitions], 0).reshape(-1, 12)
-            flat_old = old_logs.reshape(-1)
+            flat_old = old_logs
             flat_adv = advantages.reshape(-1)
             flat_ret = returns.reshape(-1)
             # complete logical minibatch determines lr before gradient.
@@ -184,6 +225,9 @@ class S2Trainer:
             self.learning_rate = s2_runner.adjust_learning_rate(self.learning_rate, kl)
             for group in self.optimizer.param_groups:
                 group['lr'] = self.learning_rate
+            flat_clean = clean_env.unsqueeze(0).expand(
+                len(transitions), n).reshape(-1)
+            n_clean = int(flat_clean.sum())
             order = torch.arange(flat_actions.shape[0], device=self.device)
             per = math.ceil(len(order) / s2_runner.MINIBATCHES)
             for start in range(0, len(order), per):
@@ -205,7 +249,18 @@ class S2Trainer:
                     entropy = dist.entropy().sum(-1).mean()
                     loss = policy_loss + s2_runner.VALUE_COEF * value_loss \
                         - s2_runner.ENTROPY_COEF * entropy
-                    (loss * (len(micro) / len(index))).backward()
+                    scaled_loss = loss * (len(micro) / len(index))
+                    if self.teacher is not None and n_clean:
+                        clean_micro = micro[flat_clean[micro]]
+                        if len(clean_micro):
+                            clean_item = {key: value[clean_micro]
+                                          for key, value in flat_obs.items()}
+                            mu_student = self.model(clean_item)
+                            with torch.no_grad():
+                                mu_teacher = self.teacher(clean_item).detach()
+                            anchor = torch.sum((mu_student - mu_teacher) ** 2) / (12.0 * n_clean)
+                            scaled_loss = scaled_loss + self.beta_flat * anchor
+                    scaled_loss.backward()
                 nn.utils.clip_grad_norm_(self.model.parameters(),
                                           s2_runner.GRAD_CLIP)
                 self.optimizer.step()
@@ -227,7 +282,10 @@ class S2Trainer:
             return result
         except Exception:
             if budget is not None:
-                budget.finish(self.attempt_id, 0)
+                env = getattr(self, 'env', None)
+                actual = (int(getattr(env, 'num_envs', 0))
+                          * int(getattr(self, '_rollout_steps', 0)))
+                budget.finish(self.attempt_id, actual)
             raise
 
     def checkpoint_metadata(self, *, case_manifest_sha256='0' * 64,

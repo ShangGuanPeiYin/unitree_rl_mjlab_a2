@@ -429,3 +429,33 @@ def test_course_checkpoint_metadata_preserves_course():
     metadata = trainer.checkpoint_metadata()
     assert metadata['course'] == 'S2.3'
     assert metadata['curriculum']['role'] == 'S2.3'
+
+
+def test_old_log_flatten_is_time_major():
+    import torch
+    transitions = [
+        dict(log_probs=torch.tensor([0.0, 10.0, 20.0])),
+        dict(log_probs=torch.tensor([1.0, 11.0, 21.0])),
+    ]
+    flat = s2_train.flatten_time_major_old_logs(transitions)
+    assert flat.tolist() == [0.0, 10.0, 20.0, 1.0, 11.0, 21.0]
+    env_major = torch.stack([row['log_probs'] for row in transitions], 1).reshape(-1)
+    assert env_major.tolist() != flat.tolist()
+
+
+def test_flat_anchor_is_called_during_update():
+    from src.tasks.velocity.v09.model import V09ActorCritic
+    import torch
+    class Teacher(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.calls = 0
+        def forward(self, obs):
+            self.calls += 1
+            return torch.zeros(obs['proprio'].shape[0], 12)
+    env = s2_train_env.S2FakeTrainEnv(
+        num_envs=2, role_plan=s2_train_env.build_role_plan(2))
+    trainer = s2_train.S2Trainer(model=V09ActorCritic(), env=env,
+                                 teacher=Teacher(), device='cpu')
+    trainer.train_rollout()
+    assert trainer.teacher.calls > 0

@@ -184,6 +184,10 @@ class S2TrainEnv:
                     device=device)
             self.env._sample_tiles = types.MethodType(_sample_tiles, self.env)
             self.env.roles = list(self._role_by_env)
+            self._v07_task_state = self.env._task_state
+            def _s2_task_state(_env):
+                return self._s2_task_state(_env)
+            self.env._task_state = _s2_task_state
             def _s2_reward(_env, state, previous_action):
                 return self._s2_reward(_env, state, previous_action)
             self.env._reward = _s2_reward
@@ -192,6 +196,54 @@ class S2TrainEnv:
         except Exception:
             self._patch.__exit__(None, None, None)
             raise
+
+    def _s2_task_state(self, env):
+        """S2 termination: top is an event; success waits for post distance."""
+        import torch
+        state = self._v07_task_state()
+        n = int(env.num_envs)
+        if not hasattr(self, '_s2_top_event') or self._s2_top_event is None:
+            self._s2_top_event = torch.zeros(n, dtype=torch.bool, device=env.device)
+            self._s2_top_latched = torch.zeros(n, dtype=torch.bool, device=env.device)
+            self._s2_success_latched = torch.zeros(n, dtype=torch.bool, device=env.device)
+            self._s2_spawn_x = torch.tensor(
+                [float(r['spawn'][0]) for r in self.plan['rows']],
+                dtype=torch.float32, device=env.device)
+            self._s2_front = torch.tensor(
+                [float(r['geometry'].get('platform_front_local_x') or 0.0)
+                 for r in self.plan['rows']], dtype=torch.float32, device=env.device)
+            self._s2_post = torch.tensor(
+                [float(r.get('post_distance') or 5.0) for r in self.plan['rows']],
+                dtype=torch.float32, device=env.device)
+            self._s2_legacy = torch.tensor(
+                [str(r.get('task', '')) == 'legacy_l40' for r in self.plan['rows']],
+                dtype=torch.bool, device=env.device)
+            self._s2_stairs = torch.tensor(
+                ['stairs' in str(r.get('task', '')) for r in self.plan['rows']],
+                dtype=torch.bool, device=env.device)
+            self._s2_platform = torch.tensor(
+                [str(r.get('task', '')).startswith('platform_') for r in self.plan['rows']],
+                dtype=torch.bool, device=env.device)
+        first = env.episode_length_buf <= 1
+        self._s2_top_latched[first] = False
+        self._s2_success_latched[first] = False
+        self._s2_top_event[first] = False
+        original_success = state.success.clone()
+        top_now = original_success & ~self._s2_top_latched
+        self._s2_top_event = top_now
+        self._s2_top_latched |= top_now
+        local = state.local[:, 0]
+        dpost = local - self._s2_front
+        # L40 review is the explicit exception: top is success immediately.
+        success = torch.where(self._s2_legacy, original_success,
+                              torch.where(self._s2_platform,
+                                          (local - self._s2_spawn_x) >= self._s2_post,
+                                          self._s2_top_latched & (dpost >= self._s2_post)))
+        success = success & ~state.failure & ~state.timeout
+        state.success = success
+        # S2 success is a policy quality/terminal event, not a v07 timeout.
+        state.failure = state.failure | (success & False)
+        return state
 
     def _s2_reward(self, env, state, previous_action):
         """Vectorized S2 §5 reward; never the v07 RewardComputer."""
@@ -286,14 +338,14 @@ class S2TrainEnv:
                         torch.zeros_like(self._s2_steps)))
         # phase codes: 0 APPROACH/CLIMB/POST_WALK, 1 DECEL, 2 HOLD
         # top comes from the v07 climb event; success from distance/stop contract.
-        top_now = state.success & ~self._s2_top_latched
-        self._s2_top_latched |= top_now
+        top_now = self._s2_top_event
         if self._s2_stop.any():
             hold_ok = ((self._s2_hold_step >= 0)
                        & ((self._s2_steps - self._s2_hold_step) >= 1000))
             success_now = self._s2_stop & hold_ok
         else:
-            success_now = (~self._s2_stop) & self._s2_top_latched & (dpost >= self._s2_post)
+            success_now = ((~self._s2_stop) & state.success
+                           & ~self._s2_success_latched)
         success_now &= ~self._s2_success_latched & ~failure
         self._s2_success_latched |= success_now
         # air-time accumulated from filtered contacts
@@ -370,6 +422,21 @@ class S2TrainEnv:
 
     def step(self, actions):
         obs, reward, terminated, truncated, info = self.env.step(actions)
+        info = dict(info)
+        failure = info.get('failure', False)
+        timeout = info.get('timeout', False)
+        failure = bool(failure.any()) if hasattr(failure, 'any') else bool(failure)
+        timeout = bool(timeout.any()) if hasattr(timeout, 'any') else bool(timeout)
+        failure_mask = info.get('failure', False)
+        timeout_mask = info.get('timeout', False)
+        info.update(
+            terminated=bool(terminated.any()) if hasattr(terminated, 'any') else bool(terminated),
+            truncated=bool(truncated.any()) if hasattr(truncated, 'any') else bool(truncated),
+            terminated_mask=terminated.detach().clone() if hasattr(terminated, 'detach') else terminated,
+            truncated_mask=truncated.detach().clone() if hasattr(truncated, 'detach') else truncated,
+            failure_mask=failure_mask,
+            timeout_mask=timeout_mask,
+            failure_class='failure' if failure else 'timeout' if timeout else None)
         return obs, reward, terminated | truncated, info
 
     def close(self):
