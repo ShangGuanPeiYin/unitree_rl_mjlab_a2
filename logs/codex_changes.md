@@ -4353,3 +4353,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 未通过项：real/plane 独立进程的 trace 前缀存在求解器级数值漂移（route 5e-4 m、关节速度 0.73），不能声称逐位一致；需改为同进程配对。
 - 验证：S2 套件 **206 passed**；台账独立复算 envelope/义务/spent 一致。
 - 未执行：整矩阵 150 条、H 六例、训练。
+
+
+## 2026-11-22 裁定留档 DSH-Q030（俯仰符号与派生报告口径）
+
+- 目的：记录 pitch 语义、前倾/后仰报告口径与 T10 两分支复算结论。
+- 涉及文件：`doc/sds/reviews/v09_execution_rulings.md`、本日志。
+- 要点：raw pitch 保留；机头抬起为正、下俯为负；`pitch = -asin(2(wy-zx)) = asin((R_WB e_x)_z)`；记录 `pitch_sign_convention` 并用水平/抬头/低头三姿态独立复核；`positive_forward_lean_fraction` 语义更正并从原始轨迹重算（旧产物留痕）；`nose_down_fraction=pitch<0`、`nose_up_fraction=pitch>0`、零值计入分母；real-r4 44 帧（step≥1563 至末未复位行）全低头均值 −25.96°、末步 1606 −53.19°、body failure 1608；plane-r1 未 top，route≥8.0 起 18 帧全抬头均值 +14.10°（+12.23～+15.91°），旧 94.7%/+13.36° 含复位行且误标；报告分列前缘/四足入台/top_arrived/§6.5 巡航窗并剔除跨 episode 出生帧；单列"用户观察与分支复现"，不支持"仿真与现场相反"；跨进程漂移注明病例匹配但物理状态未对齐；1.75e-4 另查。
+- 验证：仅文档追加；未跑测试/物理/训练。
