@@ -4450,3 +4450,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 口径：`row_index`=post_reset 过滤后下标；`raw_trace_row`=原始 trace 行号；window_rule 写明；四窗数值不变（front 61、four 48 −24.6910°、top 45 −25.6311°、s6.5 NA；plane front 18 +14.1021°）。
 - 纪律：原始 trace/npz 只读；派生摘要版本化并可标 superseded。
 - 验证：S2 套件 **218 passed**；整批 19/156、0 失败；未重跑物理、未改整批。
+
+
+## 2026-11-22 T12 S2.1 训练执行栈（CPU/fake）
+
+- 目的：交付可测试的 S2.1 训练栈骨架（真实 1024-env GPU 装配仍未安装）。
+- 涉及文件：新增 `src/tasks/velocity/v09/s2_train.py`、`s2_train_env.py`、`scripts/probe_a2_v09_s2_resources.py`；修改 `scripts/train_a2_v09_s2.py`；新增 `tests/test_v09_s2_1_train.py`；文档 `docs/v09_s2_1_training_stack.md`。
+- 实现要点：1024 角色分配 flat_walk 205 / flat_stop 205 / stairs_walk 410（10/20 各 205）/ platform_walk 102 / l40_milestone 102；每 rollout 49,152 样本；5 epoch×4 逻辑 minibatch、micro 512、先 KL 定 LR 再一次 Adam；LR 3e-5、std 解冻投影 [0.05,1]、S2.1 新 Adam、教师/normalizer 冻结；检查点 schema 11 每 102 rollouts（≈5,013,504 样本）；`S2LearningBudget` reserve→commit→release；S2.1 上限 16,276 rollouts；门禁 36 组 A/B、18/20。
+- 验证：`pytest -q tests/test_v09_s2_0_*.py tests/test_v09_s2_1_train.py` → **227 passed**；`probe --plan-only` 输出 1024 probe 3,709,184 samples。
+- 未安装：真实 1024-env GPU 装配与真实 probe 执行（`--execute` 不会把 fake 当准入）。
+- 整批：30 flat 完成、0 失败，已进入 stairs。
