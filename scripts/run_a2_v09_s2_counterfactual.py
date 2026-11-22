@@ -32,7 +32,8 @@ def main(argv=None):
     report = s2_counterfactual.analyze(
         rows, policy=policy, task=task,
         case_sha256=metadata.get('case_sha256'),
-        weight_sha256=metadata.get('weight_sha256'))
+        weight_sha256=metadata.get('weight_sha256'),
+        identity=s2_counterfactual.actor_identity(actor))
     output = args.output or (args.inputs.parent / 'counterfactual_report.json')
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     print(json.dumps(report, ensure_ascii=False, indent=2))

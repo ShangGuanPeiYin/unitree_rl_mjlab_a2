@@ -9,9 +9,11 @@ GPU/device discipline.  It never starts training or updates a weight.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 import json
 import math
 from pathlib import Path
+import secrets
 import time
 
 import numpy as np
@@ -20,6 +22,9 @@ from . import s2_env, s2_spec
 from .cases import canonical_json, sha256
 
 GPU_PEAK_MIB = 7168
+
+def new_attempt_id():
+    return datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + secrets.token_hex(3)
 SMOKE_DEFAULT_STEPS = 64
 
 
@@ -72,7 +77,7 @@ class ReservationGate:
     """One stage reservation; each batch reserves then commits actual steps."""
 
     def __init__(self, ledger, *, obligation_id='s2_0_matrix_two_branches',
-                 run_id='s2-0-execute'):
+                 run_id=None):
         self.ledger = ledger
         self.obligation_id = obligation_id
         self.run_id = run_id
@@ -101,14 +106,20 @@ class ReservationGate:
         reserved = int(batch['control_samples'])
         if actual < 0 or actual > reserved:
             raise ReservationError('actual samples outside the batch upper bound')
-        # The frozen batch upper bound includes completed-slot waiting/padding;
-        # commit that full bound, never under-bill the physical advance.
-        self.ledger.commit(
-            self.obligation_id, reserved,
-            operation_id=f'{operation_id}:commit',
-            reason=f"S2.0 batch billed upper bound {batch['branch']}")
-        return dict(committed=reserved, actual_samples=actual,
-                    waiting_padding=reserved - actual)
+        # §2.5: bill actual advanced samples; release the unused reservation.
+        if actual:
+            self.ledger.commit(
+                self.obligation_id, actual,
+                operation_id=f'{operation_id}:commit',
+                reason=f"S2.0 batch actual {batch['branch']}")
+        unused = reserved - actual
+        if unused:
+            self.ledger.release(
+                self.obligation_id, unused,
+                operation_id=f'{operation_id}:release',
+                reason=f"S2.0 batch unused reservation {batch['branch']}")
+        return dict(committed=actual, released=unused, actual_samples=actual,
+                    waiting_padding=0)
 
 
 def _write_jsonl(path, rows):
@@ -126,7 +137,8 @@ class S2ExecutionDriver:
     """Generic batch driver; the env factory provides real physics."""
 
     def __init__(self, *, env_factory, policy, ledger, output_dir,
-                 device='cuda:0', reservation_gate=None, max_steps=None):
+                 device='cuda:0', reservation_gate=None, max_steps=None,
+                 attempt_id=None):
         if not callable(env_factory) or not callable(policy):
             raise ValueError('env_factory and policy must be callable')
         self.env_factory = env_factory
@@ -136,12 +148,16 @@ class S2ExecutionDriver:
         self.device = device
         self.gate = reservation_gate or ReservationGate(ledger)
         self.max_steps = max_steps
+        self.attempt_id = attempt_id or new_attempt_id()
+        if not self.attempt_id or any(ch in self.attempt_id for ch in ': /'):
+            raise ValueError('attempt_id must be nonempty without : or /')
 
     def run_batch(self, batch, cases, *, branch, operation_id):
         self.gate.require_stage()
         started = time.time()
         reserved = self.gate.begin_batch(batch, operation_id=operation_id)
         completed = 0
+        steps = 0
         records, traces, terminals = [], {}, {}
         try:
             env = self.env_factory(cases, device=self.device, branch=branch)
@@ -165,6 +181,7 @@ class S2ExecutionDriver:
                             failure_context=trace.pop('failure_context', None),
                             g_level_report=trace.pop('g_level_report', None))
                         metrics['trace_rows'] = len(trace.get('step', []))
+                        metrics['attempt_id'] = self.attempt_id
                         records.append(metrics)
                         traces[index] = trace
                 if all(terminals.get(i, False) for i in range(len(cases))):
@@ -179,15 +196,22 @@ class S2ExecutionDriver:
                         reserved=reserved, settled=settled,
                         elapsed_s=time.time() - started)
         except Exception:
-            # A failed/partial batch still settles the reserved worst-case cost:
-            # never erase the already-advanced physical samples.
+            # Bill only the actually advanced controls and release the rest,
+            # even when the batch fails mid-way.
+            advanced = len(cases) * steps
+            try:
+                self.gate.finish_batch(batch, operation_id=operation_id,
+                                       actual_samples=advanced)
+            except Exception:
+                pass
             raise
 
     def run(self, batches, case_index):
         rows = []
         for sequence, batch in enumerate(batches):
             cases = [case_index[sha] for sha in batch['case_sha256s']]
-            operation_id = f"{batch['branch']}:{batch['group_role_sha256']}:{sequence:02d}"
+            operation_id = (f"{batch['branch']}:{batch['group_role_sha256']}:"
+                            f"{sequence:02d}:{self.attempt_id}")
             rows.append(self.run_batch(batch, cases, branch=batch['branch'],
                                        operation_id=operation_id))
         return rows

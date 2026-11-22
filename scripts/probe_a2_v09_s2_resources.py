@@ -60,3 +60,7 @@ def main(argv=None):
             independent_review_path=args.independent_review_path)
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report.get('admitted') else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

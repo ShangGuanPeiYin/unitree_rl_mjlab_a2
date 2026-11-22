@@ -69,13 +69,20 @@ def test_v82_four_windows_exclude_post_reset_and_start_after_events():
         dict(step=5, route_x=1.8, pitch=0.5, foot_on_platform=[True]*4,
              top_arrived=True, terminal=True, post_reset=True),
     ]
-    windows = run_cli._four_windows(rows, platform_front=1.0, case={})
+    windows = run_cli._four_windows(
+        rows, platform_front=1.0, case={},
+        events=[dict(name='four_feet_platform', step=3),
+                dict(name='top_arrived', step=4)])
     assert windows['front_edge']['frames'] == 4
     assert windows['front_edge']['step_min'] == 1
     assert windows['front_edge']['step_max'] == 4
-    assert windows['four_feet']['step_min'] == 3
-    assert windows['four_feet']['frames'] == 2
-    assert windows['top_arrived']['step_min'] == 4
-    assert windows['top_arrived']['frames'] == 1
+    assert windows['four_feet']['step_min'] == 2
+    assert windows['four_feet']['frames'] == 3
+    assert windows['top_arrived']['step_min'] == 3
+    assert windows['top_arrived']['frames'] == 2
+    assert windows['four_feet']['first_true_step'] == 2
+    assert windows['four_feet']['latched_event_step'] == 3
+    assert windows['top_arrived']['first_true_step'] == 3
+    assert windows['top_arrived']['latched_event_step'] == 4
     assert windows['top_arrived']['nose_down_fraction'] == 1.0
     assert windows['s6_5_cruise']['status'] == 'NA'

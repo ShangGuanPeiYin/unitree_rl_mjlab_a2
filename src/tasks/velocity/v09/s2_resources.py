@@ -134,6 +134,7 @@ def run_probe(*, num_envs, device='cuda:0', output_dir=None,
     video_envs = 0
     video_steps = 0
     failure_reasons = []
+    error_detail = None
     try:
         torch.cuda.reset_peak_memory_stats()
         for _ in range(REQUIREMENTS['warmups']):
@@ -196,6 +197,8 @@ def run_probe(*, num_envs, device='cuda:0', output_dir=None,
             failure_reasons.append('restore')
         admitted = not failure_reasons
     except RuntimeError as error:
+        import traceback
+        error_detail = traceback.format_exc()
         oom = 'out of memory' in str(error).lower()
         nonfinite = 'nonfinite' in str(error).lower()
         contact_overflow = 'contact' in str(error).lower()
@@ -228,6 +231,8 @@ def run_probe(*, num_envs, device='cuda:0', output_dir=None,
         elapsed_s=float(sum(timings)), timings_s=timings,
         evaluation_s=eval_timing, video_s=video_timing,
         failure_reasons=failure_reasons, requirements=dict(REQUIREMENTS),
+        error=str(error_detail).splitlines()[-1] if error_detail else None,
+        error_detail=error_detail,
         note='real S2TrainEnv probe including evaluation 100 and video 1')
     if output_dir is not None:
         path = Path(output_dir) / 'probe_report.json'

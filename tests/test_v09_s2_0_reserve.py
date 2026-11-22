@@ -16,6 +16,7 @@ a2_v07_bootstrap.activate(ROOT)
 from src.tasks.velocity.v09 import s2_budget, s2_cases, s2_ledger
 from src.tasks.velocity.v09.cases import sha256
 import reserve_a2_v09_s2 as reserve_cli
+import run_a2_v09_s2_0 as run_cli
 
 
 @pytest.fixture(scope='module')
@@ -129,3 +130,61 @@ def test_s2_ledger_path_never_points_at_s1():
     from src.tasks.velocity.v09 import s2_spec
     assert '/s1_' not in s2_spec.LEDGER_HINT
     assert '/s2/' in s2_spec.LEDGER_HINT
+
+
+def test_read_run_id_and_execution_rejects_mismatch_before_physics(tmp_path):
+    cases = ROOT / 'logs/a2_v09/s2_0/cases'
+    matrix = s2_cases.load_frozen_manifest(cases / 'S2_DIAG.json', ROOT)
+    h_series = s2_cases.load_frozen_manifest(cases / 'h_series_case0.json', ROOT)
+    plan = s2_budget.build_reservation_plan(matrix, h_series)
+    target = tmp_path / 'ledger.jsonl'
+    ledger = s2_ledger.S2Ledger(target, run_id='reserved-run')
+    ledger.reserve_stage(plan)
+    assert s2_ledger.read_run_id(target) == 'reserved-run'
+    with pytest.raises(SystemExit):
+        run_cli.main(['--execute', '--smoke', '--case', '0',
+                     '--ledger', str(target), '--run-id', 'wrong-run'])
+    assert not (tmp_path / 'smoke').exists()
+
+
+def test_stage_extend_appends_debug_obligation_without_changing_history(tmp_path, plan):
+    target = tmp_path / 'ledger.jsonl'
+    ledger = s2_ledger.S2Ledger(target, run_id='r')
+    ledger.reserve_stage(plan)
+    before = ledger.state()
+    before_limits = {key: value['limit'] for key, value in before['obligations'].items()}
+    item = dict(obligation_id='s2_0_pipeline_debug',
+                name='S2.0 pipeline/debug smoke, parity and retries',
+                category='engineering', subcap='S2_0', control_samples=20_000,
+                basis='SDS §4.3 / DSH-V8-2')
+    receipt = ledger.extend_stage(item, operation_id='extend:debug',
+                                  reason='separate debug from matrix')
+    after = ledger.state()
+    assert receipt['samples'] == 20_000
+    assert after['envelope'] == before['envelope'] + 20_000
+    assert {key: value['limit'] for key, value in after['obligations'].items()
+            if key != 's2_0_pipeline_debug'} == before_limits
+    assert after['obligations']['s2_0_pipeline_debug']['limit'] == 20_000
+    ledger.reserve('s2_0_pipeline_debug', 2000, operation_id='debug:reserve',
+                   reason='stairs smoke')
+    ledger.commit('s2_0_pipeline_debug', 2000, operation_id='debug:commit',
+                  reason='stairs smoke')
+    state = ledger.state()
+    assert state['obligations']['s2_0_pipeline_debug']['spent'] == 2000
+    assert state['obligations']['s2_0_matrix_two_branches']['spent'] == 0
+    with pytest.raises(ValueError):
+        ledger.extend_stage(item, operation_id='extend:debug:duplicate',
+                            reason='must refuse duplicate')
+
+
+def test_stage_extend_guards_total_and_s2_0_subcap(tmp_path, plan):
+    ledger = s2_ledger.S2Ledger(tmp_path / 'ledger.jsonl', run_id='r')
+    ledger.reserve_stage(plan)
+    over_total = dict(obligation_id='x', name='x', category='engineering',
+                      control_samples=400_000_000, basis='x')
+    with pytest.raises(ValueError, match='nonlearning cap'):
+        ledger.extend_stage(over_total, operation_id='extend:x', reason='x')
+    over_subcap = dict(obligation_id='y', name='y', category='engineering',
+                       subcap='S2_0', control_samples=50_000_000, basis='x')
+    with pytest.raises(ValueError, match='S2.0 sub-cap'):
+        ledger.extend_stage(over_subcap, operation_id='extend:y', reason='x')

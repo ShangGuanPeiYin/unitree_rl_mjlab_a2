@@ -263,12 +263,13 @@ plane-r1:
 产物：
 
 ```text
-logs/a2_v09/s2_0/evidence/t10-stairs-plane-r1/q030_pitch_recompute.json
+logs/a2_v09/s2_0/evidence/t10-stairs-plane-r1/q032_pitch_recompute.json
+logs/a2_v09/s2_0/evidence/t10-stairs-plane-r1/q030_pitch_recompute.json（旧，superseded）
 logs/a2_v09/s2_0/evidence/t10-stairs-real-r4/post_reset.json
 logs/a2_v09/s2_0/evidence/t10-stairs-plane-r1/post_reset.json
 ```
 
-`step/row` 配对逐条列在 `q030_pitch_recompute.json` 的 `step_row_pairs` 中。
+Q032 的 `step/row` 配对逐条列在 `q032_pitch_recompute.json` 的 `real_r4.top_step_row_pairs`（45 行），字段为 `trace_step/raw_trace_row/latched_event_step/event_completed_steps`。`q030_pitch_recompute.json` 保留旧 44 行并加 `superseded_by=q032_pitch_recompute.json`，旧数值不改。`row_index` 是 post_reset 过滤后的 valid 列表下标；`raw_trace_row` 是原始 trace 文件行号，二者在中间 reset 时可能不同。
 
 ## 5. 整矩阵命令（150 + H 6）
 

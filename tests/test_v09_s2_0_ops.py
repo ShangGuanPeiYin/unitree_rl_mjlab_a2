@@ -79,10 +79,12 @@ def test_s2_ledger_hash_chain_and_namespace(tmp_path):
     assert receipt['sequence'] == 1
     ledger.reserve('resource_probe_1024', 100, operation_id='op-reserve', reason='test')
     ledger.commit('resource_probe_1024', 40, operation_id='op-commit', reason='test')
+    ledger.release('resource_probe_1024', 60, operation_id='op-release', reason='test')
+    ledger.refund('resource_probe_1024', 40, operation_id='op-refund', reason='test')
     state = ledger.state()
     assert state['envelope'] == plan['total_control_samples']
-    assert state['obligations']['resource_probe_1024']['reserved'] == 60
-    assert state['obligations']['resource_probe_1024']['spent'] == 40
+    assert state['obligations']['resource_probe_1024']['reserved'] == 0
+    assert state['obligations']['resource_probe_1024']['spent'] == 0
     with pytest.raises(ValueError):
         ledger.reserve_stage(plan)
     with pytest.raises(ValueError):

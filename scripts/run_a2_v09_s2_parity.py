@@ -28,7 +28,7 @@ from src.tasks.velocity.v09 import s2_cases, s2_env, s2_execute, s2_ledger, s2_p
 from src.tasks.velocity.v09.cases import build_s1_manifest, sha256
 
 OBS_KEYS = ('proprio', 'history', 'heightmap', 'route_error')
-TOL = 1e-3
+TOL = 1e-6
 STRICT_TOL = 1e-6
 
 
@@ -146,6 +146,10 @@ def main(argv=None):
                                                      max=float(obs[key].max()))
                                            for key in OBS_KEYS},
                                 route_x=float(local[0]),
+                                sim_state_sha256=s2_physics.sim_state_digest(
+                                    s1.sim.data.qpos[0], s1.sim.data.qvel[0]),
+                                qpos=s1.sim.data.qpos[0].detach().cpu().numpy().tolist(),
+                                qvel=s1.sim.data.qvel[0].detach().cpu().numpy().tolist(),
                                 action=action[0].detach().cpu().numpy().tolist()))
             s1_obs.append(obs)
             _obs, _reward, terminated, truncated, _info = s1.step(action)
@@ -162,8 +166,13 @@ def main(argv=None):
         env.reset()
         s2_rows = []
         diffs = {key: [] for key in OBS_KEYS}
+        dim_max = {key: None for key in OBS_KEYS}
         first_divergence = None
         first_strict_divergence = None
+        first_sim_state_divergence = None
+        state_dim_max = {'qpos': None, 'qvel': None}
+        first_state_dim = None
+        obs_dim_by_step = []
         for step, action in enumerate(actions):
             obs2 = env.observe()
             row = dict(step=step, obs_sha256=_obs_digest(obs2),
@@ -171,6 +180,9 @@ def main(argv=None):
                                             max=float(_numpy(obs2[key]).max()))
                                   for key in OBS_KEYS},
                        route_x=float(env.last.route_x),
+                       sim_state_sha256=env.last.sim_state_sha256,
+                       qpos=env.backend.env.sim.data.qpos[0].detach().cpu().numpy().tolist(),
+                       qvel=env.backend.env.sim.data.qvel[0].detach().cpu().numpy().tolist(),
                        action=action.tolist())
             s2_rows.append(row)
             for key in OBS_KEYS:
@@ -179,10 +191,34 @@ def main(argv=None):
                 diff = (float(np.max(np.abs(a - b))) if a.shape == b.shape
                         else float('inf'))
                 diffs[key].append(diff)
+                flat = np.abs(a - b).reshape(-1)
+                if step < 4:
+                    obs_dim_by_step.append(dict(
+                        step=step, key=key,
+                        dims=[dict(index=int(i), max_abs=float(v))
+                              for i, v in enumerate(flat) if v > 1e-7]))
+                if dim_max[key] is None:
+                    dim_max[key] = flat.copy()
+                else:
+                    dim_max[key] = np.maximum(dim_max[key], flat)
                 if diff > TOL and first_divergence is None:
                     first_divergence = dict(step=step, key=key, max_abs=diff)
                 if diff > STRICT_TOL and first_strict_divergence is None:
                     first_strict_divergence = dict(step=step, key=key, max_abs=diff)
+            for state_key in ('qpos', 'qvel'):
+                a_state = np.asarray(s1_rows[step][state_key], dtype=np.float64)
+                b_state = np.asarray(row[state_key], dtype=np.float64)
+                d_state = np.abs(a_state - b_state)
+                state_dim_max[state_key] = (d_state.copy() if state_dim_max[state_key] is None
+                                            else np.maximum(state_dim_max[state_key], d_state))
+                if first_state_dim is None and float(np.max(d_state)) > 1e-7:
+                    index = int(np.argmax(d_state))
+                    first_state_dim = dict(step=step, key=state_key, index=index,
+                                           max_abs=float(d_state[index]))
+            if s1_rows[step]['sim_state_sha256'] != row['sim_state_sha256'] and first_sim_state_divergence is None:
+                first_sim_state_divergence = dict(
+                    step=step, s1=s1_rows[step]['sim_state_sha256'],
+                    s2=row['sim_state_sha256'])
             _, done, _info = env.step(action)
             s2_steps += 1
             if bool(done[0]):
@@ -222,11 +258,23 @@ def main(argv=None):
         ).hexdigest() if actions else None,
         obs_key_max_abs={key: (max(values) if values else None)
                          for key, values in diffs.items()},
+        obs_dim_max_abs={key: [dict(index=int(i), max_abs=float(v))
+                               for i, v in enumerate(values) if v > TOL]
+                         for key, values in dim_max.items() if values is not None},
+        first_sim_state_divergence=first_sim_state_divergence,
+        sim_state_prefix_equal=(first_sim_state_divergence is None),
+        first_state_dim=first_state_dim,
+        obs_dim_by_step=obs_dim_by_step,
+        state_dim_max_abs={key: (float(np.max(value)) if value is not None else None)
+                           for key, value in state_dim_max.items()},
         first_divergence=first_divergence,
         first_strict_divergence=first_strict_divergence,
         tolerance=TOL, strict_tolerance=STRICT_TOL,
         parity_ok=(first_divergence is None),
         strict_parity_ok=(first_strict_divergence is None),
+        attribution=('no reproducible observation-pipeline root cause; '
+                     'different runs show inconsistent magnitudes (e.g. 4.65e-6 vs 1.75e-4); '
+                     'strict consistency is not established; no 1e-3 practical pass'),
         scope=('S1 flat-terrain proxy from this S2 case; exact for flat, and '
                'staircase only before stair contact'),
         ledger=dict(obligation_id=args.obligation_id,

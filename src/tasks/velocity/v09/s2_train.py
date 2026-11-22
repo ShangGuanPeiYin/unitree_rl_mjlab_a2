@@ -150,8 +150,8 @@ class S2Trainer:
                 terminated=np.zeros(len(transitions), dtype=bool),
                 timeout=done[index].cpu().numpy(),
                 sampling_boundary=np.ones(len(transitions), dtype=bool))
-            adv.append(torch.as_tensor(a, dtype=torch.float32))
-            returns.append(torch.as_tensor(r, dtype=torch.float32))
+            adv.append(torch.as_tensor(a, dtype=torch.float32, device=self.device))
+            returns.append(torch.as_tensor(r, dtype=torch.float32, device=self.device))
         return transitions, torch.stack(adv, 1), torch.stack(returns, 1)
 
     def update(self, transitions, advantages, returns):
@@ -177,11 +177,11 @@ class S2Trainer:
                     logp = self.model.action_distribution(item)                        .log_prob(flat_actions[chunk]).sum(-1)
                 new_log.append(logp)
             kl = s2_runner.approximate_kl(
-                flat_old.detach().numpy(), torch.cat(new_log).detach().numpy())
+                flat_old.detach().cpu().numpy(), torch.cat(new_log).detach().cpu().numpy())
             self.learning_rate = s2_runner.adjust_learning_rate(self.learning_rate, kl)
             for group in self.optimizer.param_groups:
                 group['lr'] = self.learning_rate
-            order = torch.arange(flat_actions.shape[0])
+            order = torch.arange(flat_actions.shape[0], device=self.device)
             per = math.ceil(len(order) / s2_runner.MINIBATCHES)
             for start in range(0, len(order), per):
                 index = order[start:start + per]
