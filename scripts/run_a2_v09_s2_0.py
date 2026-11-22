@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from a2_v07_bootstrap import activate
 activate(ROOT)
-from src.tasks.velocity.v09 import (s2_cases, s2_execute, s2_ledger, s2_spec)
+from src.tasks.velocity.v09 import (s2_cases, s2_execute, s2_ledger, s2_physics, s2_spec)
 
 
 def load_inputs(root=ROOT):
@@ -50,6 +50,7 @@ def main(argv=None):
     parser.add_argument('--steps', type=int, default=s2_execute.SMOKE_DEFAULT_STEPS)
     parser.add_argument('--branch', choices=('real', 'plane_diagnostic'),
                         default='real')
+    parser.add_argument('--h-legacy', action='store_true')
     parser.add_argument('--device', default='cuda:0')
     parser.add_argument('--ledger', type=Path, default=ROOT / s2_spec.LEDGER_HINT)
     parser.add_argument('--output-dir', type=Path)
@@ -70,6 +71,8 @@ def main(argv=None):
         preflight = s2_execute.reservation_preflight(ledger)
     except s2_execute.ReservationError as error:
         raise SystemExit(str(error))
+    # Load and freeze the Actor on CPU before any device allocation.
+    actor = s2_physics.load_s1_actor(device='cpu')
     factory = build_factory()
     cases = {row['case_sha256']: row for row in matrix['cases']}
     if args.smoke:
@@ -87,13 +90,16 @@ def main(argv=None):
         driver = s2_execute.S2ExecutionDriver(
             env_factory=factory, policy=None, ledger=ledger,
             device=args.device, max_steps=args.steps)
-        print(json.dumps(dict(device=s2_execute.device_report(args.device),
-                              preflight=preflight, case=args.case,
-                              steps=args.steps, branch=args.branch),
+        report = s2_execute.device_report(args.device)
+        print(json.dumps(dict(device=report, preflight=preflight,
+                              actor_sha256=actor['state_sha256'],
+                              actor_frozen=actor['frozen'], case=args.case,
+                              steps=args.steps, branch=args.branch,
+                              h_legacy=args.h_legacy,
+                              estimated_control_steps=args.steps),
                          ensure_ascii=False, indent=2))
-        # The policy must be supplied by the real assembly; refuse otherwise.
-        raise SystemExit('s2_physics.build_s2_env must also provide the Actor '
-                         'mean policy through the smoke factory')
+        # The smoke body is intentionally not run without an approved GPU window.
+        raise SystemExit('smoke preflight OK; GPU execution window not assigned')
     raise SystemExit('full 150-branch execution is gated until the V6 smoke passes')
 
 

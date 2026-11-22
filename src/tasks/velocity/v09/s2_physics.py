@@ -312,8 +312,10 @@ class S2PhysicsEnv:
 def build_s2_env(case, *, device='cuda:0', num_envs=1, seed=42,
                  map_branch='real', h_legacy=False, backend_factory=None):
     """Construct the S2 env; refuse before GPU allocation if no real backend."""
+    if h_legacy and map_branch != 'real':
+        raise ValueError('H legacy only supports the real map')
     if backend_factory is None:
-        backend_factory = MjlabS2Backend
+        backend_factory = MjlabHLegacyBackend if h_legacy else MjlabS2Backend
     report = s2_execute.device_report(device)
     return S2PhysicsEnv(case, backend_factory=backend_factory, device=device,
                         num_envs=num_envs, seed=seed, map_branch=map_branch,
@@ -444,6 +446,9 @@ class MjlabS2Backend:
             self._patches.__exit__(None, None, None)
             raise
         self.steps = 0
+        self.refresh_index = 0
+        self.last_sample_id = None
+        self.last_sample_time = 0.0
 
     def close(self):
         self._patches.__exit__(None, None, None)
@@ -451,6 +456,9 @@ class MjlabS2Backend:
     def reset(self):
         self.env.reset()
         self.steps = 0
+        self.refresh_index = 0
+        self.last_sample_id = None
+        self.last_sample_time = 0.0
         return self._frame()
 
     def step(self, action=None):
@@ -475,9 +483,28 @@ class MjlabS2Backend:
         body_ok = bool(local[0] > front + 0.4)
         feet_ok = bool(platform.all())
         map_valid = self.env.map_cache.map[0, 1].bool().cpu().numpy()
-        sample_id = dict(refresh_index=self.steps // 5,
-                         sample_sim_time_s=self.steps * 0.02,
-                         produced_at_actor_step=self.steps)
+        refreshed = int(self.env.map_cache.steps[0]) == 0
+        sim_time = float(getattr(self.env.sim.data, 'time', self.steps * 0.02))
+        if refreshed:
+            self.refresh_index += 1
+            self.last_sample_time = sim_time
+            self.last_sample_id = dict(refresh_index=self.refresh_index,
+                                       sample_sim_time_s=sim_time,
+                                       produced_at_actor_step=self.steps)
+        sample_id = self.last_sample_id or dict(
+            refresh_index=0, sample_sim_time_s=sim_time,
+            produced_at_actor_step=self.steps)
+        top_forces = self.env.contacts.top_forces[0]
+        contact_pairs = []
+        for foot in range(4):
+            forces = top_forces[foot]
+            if float(forces.max()) <= 0:
+                continue
+            geom = int(forces.argmax())
+            contact_pairs.append(dict(
+                foot=foot, geom=f'geom_{geom}', normal_force=float(forces[geom]),
+                duration_s=0.02, position_xy=list(feet[foot, :2].detach().cpu().numpy()),
+                surface='platform' if feet_ok else 'tread', valid=True))
         return BackendStep(
             route_x=float(local[0]), base_xy=(float(local[0]), float(local[1])),
             feet_xy=feet[:, :2].detach().cpu().numpy().tolist(),
@@ -498,12 +525,134 @@ class MjlabS2Backend:
             joint_position=data.joint_pos[0, self.env.joint_ids].detach().cpu().numpy().tolist(),
             joint_velocity=data.joint_vel[0, self.env.joint_ids].detach().cpu().numpy().tolist(),
             map_valid=map_valid, map_base_z=float(data.root_link_pos_w[0, 2]),
-            refreshed=bool(int(self.env.map_cache.steps[0]) >= 5),
+            refreshed=refreshed,
             terminal=terminal, failure=bool(self.env._physical_failure[0])
             if hasattr(self.env, '_physical_failure') else False,
             top_arrived=feet_ok and body_ok,
             four_feet_on_platform=feet_ok,
             front_foot_top_support=bool(platform[0] or platform[1]),
             feet_ok=feet_ok, body_ok=body_ok,
-            contact_pairs=[], native_sample_id=sample_id,
+            contact_pairs=contact_pairs, native_sample_id=sample_id,
             sim_time_s=self.steps * 0.02)
+
+
+def load_s1_actor(path=None, *, expected_sha256=None, device='cpu'):
+    """Load the approved S1.2 actor only; no optimizer/training state."""
+    import hashlib
+    import torch
+    from .model import V09ActorCritic
+    path = path or s2_env.s2_spec.S1_ENTRY_WEIGHT
+    expected = expected_sha256 or s2_env.s2_spec.S1_ENTRY_WEIGHT_SHA256
+    actual = hashlib.sha256(open(path, 'rb').read()).hexdigest()
+    if actual != expected:
+        raise ValueError(f'S1 actor SHA mismatch: {actual}')
+    payload = torch.load(path, map_location=device, weights_only=False)
+    state = payload.get('model') or payload.get('state_dict')
+    if not isinstance(state, dict):
+        raise ValueError('S1 checkpoint lacks actor/critic model state')
+    model = V09ActorCritic().to(device)
+    model.load_state_dict(state, strict=True)
+    model.eval()
+    for parameter in model.parameters():
+        parameter.requires_grad_(False)
+    model.actor.normalizer.eval()
+    model.critic_normalizer.eval()
+    # Exact state check and frozen-normalizer proof.
+    reference = model.state_dict()
+    for key, value in state.items():
+        if not torch.equal(reference[key], value):
+            raise ValueError(f'actor state differs at {key}')
+    return dict(model=model, state_sha256=actual, frozen=True,
+                normalizer_updates=0, requires_grad=False)
+
+
+def actor_mean(actor_bundle, obs):
+    """Deterministic Actor mean with no gradients."""
+    import torch
+    model = actor_bundle['model'] if isinstance(actor_bundle, dict) else actor_bundle
+    with torch.no_grad():
+        return model(obs)
+
+
+def assembly_contract():
+    """Static consistency assertions against v07/v09 constants (no physics)."""
+    from . import map as v09map
+    from src.tasks.velocity.v07 import spec as v07spec
+    checks = {
+        'control_dt': (v09map.CONTROL_DT, v07spec.CONTROL_DT, 0.02),
+        'physics_dt': (v07spec.PHYSICS_DT, 0.005),
+        'decimation': (v07spec.DECIMATION, 4),
+        'action_scale': (v07spec.ACTION_SCALE, 0.25),
+        'joints': (v07spec.N_JOINTS, 12),
+        'joint_order': (v07spec.JOINT_ORDER, tuple(
+            f'{leg}_{joint}' for leg in ('FL', 'FR', 'RL', 'RR')
+            for joint in ('hip', 'thigh', 'calf'))),
+        'default_pose': (v07spec.A2_DEFAULT_JOINT_POS,
+                         (-.1, .9, -1.8, .1, .9, -1.8, -.1, .9, -1.8, .1, .9, -1.8)),
+        'map_shape': (v09map.MAP_SHAPE, (3, 40, 30)),
+        'map_grid_step': (v09map.GRID_STEP, 0.05),
+        'map_x': (v09map.GRID_X, (-0.8, 1.2)),
+        'map_y': (v09map.GRID_Y, (-0.75, 0.75)),
+        'map_refresh_steps': (v09map.MAP_REFRESH_STEPS, 5),
+    }
+    failures = []
+    for name, values in checks.items():
+        if name == 'physics_dt' or name == 'decimation' or name == 'action_scale':
+            if values[0] != values[1]:
+                failures.append(name)
+        elif name == 'joint_order':
+            if tuple(values[0]) != tuple(values[1]):
+                failures.append(name)
+        elif name == 'default_pose':
+            if tuple(values[0]) != tuple(values[1]):
+                failures.append(name)
+        elif values[0] != values[1]:
+            failures.append(name)
+    if failures:
+        raise ValueError(f'assembly contract drift: {failures}')
+    return checks
+
+
+class MjlabHLegacyBackend(MjlabS2Backend):
+    """Original v07 H/L geometry and termination; no S2 terrain patch."""
+
+    def __init__(self, case, *, device='cuda:0', seed=42, branch='real',
+                 h_legacy=True):
+        if not h_legacy:
+            raise ValueError('HLegacy backend requires h_legacy=True')
+        from src.tasks.velocity.v07.env import V07Env
+        from src.tasks.velocity.v07 import env as v07env
+        from .map import HeightMap
+        from . import s2_terrain
+        self.case = case
+        self.device = device
+        self.branch = branch
+        self.spec = s2_terrain.legacy_spec_from_geometry(case['geometry'])
+        original_validate = v07env._validate_frontier_tile
+        original_check = v07env._check_schedule_frontier
+        v07env._validate_frontier_tile = lambda *a, **k: (
+            k.get('frontier_tile_id') if 'frontier_tile_id' in k
+            else (a[0] if a else None))
+        v07env._check_schedule_frontier = lambda *a, **k: None
+        try:
+            spawn = case['spawn']
+            x, y = spawn['local_position_xy']
+            self.env = V07Env(
+                num_envs=1, device=device, seed=int(seed), phase='L',
+                substage='L40',
+                initial_cases=[[float(x), float(y),
+                                float(spawn['local_yaw_radians']),
+                                float(case['speed'])]],
+                frontier_tile_id=int(case['geometry']['tile_id']),
+                evaluation=True)
+            self.env.map_cache = HeightMap(1, device)
+        finally:
+            v07env._validate_frontier_tile = original_validate
+            v07env._check_schedule_frontier = original_check
+        self.steps = 0
+        self.refresh_index = 0
+        self.last_sample_id = None
+        self.last_sample_time = 0.0
+
+    def close(self):
+        pass

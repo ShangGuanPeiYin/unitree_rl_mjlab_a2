@@ -4296,3 +4296,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 验证：S2 套件 **178 passed**；真实装配/策略/地图/接触证据尚未验证；本轮一次测试曾短暂构造默认场景（未 `step`、未训练、未测量），已改为纯静态断言，不作为 smoke 证据。
 - 仍未完成：Actor 与冻结 normalizer 装配、`contact_pairs`/`pd_target`/`a_applied` 实值、`native_sample_id` 真实绑定、H legacy 独立 backend、真实地形编译一致性验证。
 - 未执行：GPU smoke、训练、正式预留。
+
+
+## 2026-11-22 T7 smoke 前置补齐（Actor/证据/H legacy/静态一致性）
+
+- 目的：补齐 S2.0 GPU smoke 前的 Actor、证据与 H legacy 装配，并做静态一致性断言。
+- 涉及文件：`src/tasks/velocity/v09/s2_physics.py`（`load_s1_actor` 校验 `s1_least.pt` SHA、`V09ActorCritic` 40×30 逐键 `torch.equal`、eval/无梯度/冻结 normalizer；`contact_pairs` 由真实 `top_forces` 生成；`pd_target`/`a_applied` 用实际 processed actions；`native_sample_id` 绑定刷新索引/仿真时间/Actor 步；`map_valid`/采样时刻真实；`front_foot_top_support` 用真实 `current_platform`；新增 `MjlabHLegacyBackend`；`assembly_contract` 断言频率/动作缩放/关节顺序/地图网格）、`scripts/run_a2_v09_s2_0.py`（smoke 自检与无台账拒绝）、`tests/test_v09_s2_0_physics.py`、文档 `docs/v09_s2_0_implementation_plan_v11.md`。
+- 验证：本机复跑 S2 套件 **182 passed**；CPU 上加载 `s1_least.pt` 并 forward `(2,12)` 通过；`run --execute --smoke` 无台账时报错退出 1。
+- 未执行：真实 GPU smoke、H 六例真实 smoke、训练、正式预留写入。

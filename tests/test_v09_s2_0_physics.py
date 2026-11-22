@@ -103,3 +103,49 @@ def test_build_s2_env_defaults_to_the_real_mjlab_backend_factory():
     # Static factory identity only; no scene/GPU/CPU physics is constructed here.
     assert s2_physics.MjlabS2Backend is not s2_physics.S2FakeBackend
     assert callable(s2_physics.build_s2_env)
+
+
+def test_assembly_contract_matches_v07_v09_constants():
+    checks = s2_physics.assembly_contract()
+    assert checks['control_dt'][0] == 0.02
+    assert checks['map_shape'][0] == (3, 40, 30)
+    assert checks['map_refresh_steps'][0] == 5
+    for name, values in checks.items():
+        if name in ('control_dt', 'physics_dt', 'decimation', 'action_scale',
+                    'joints', 'map_shape', 'map_grid_step', 'map_x', 'map_y',
+                    'map_refresh_steps'):
+            assert values[0] == values[1], name
+
+
+def test_s1_actor_loads_deterministic_mean_cpu():
+    import torch
+    actor = s2_physics.load_s1_actor(device='cpu')
+    assert actor['frozen'] is True and actor['requires_grad'] is False
+    obs = dict(
+        proprio=torch.zeros(2, 45), history=torch.zeros(2, 5, 45),
+        heightmap=torch.zeros(2, 3, 40, 30),
+        route_error=torch.zeros(2, 3))
+    out = s2_physics.actor_mean(actor, obs)
+    assert out.shape == (2, 12)
+    assert out.requires_grad is False
+    assert actor['normalizer_updates'] == 0
+
+
+def test_s2_patch_context_restores_v07_functions():
+    from src.tasks.velocity.v07 import terrain
+    before = (terrain.build_terrain_specs, terrain.tile_boxes,
+              terrain.query_surface)
+    with s2_physics._s2_patch_context(s2_physics.s2_terrain.terrain_specs()):
+        assert terrain.build_terrain_specs is not before[0]
+    after = (terrain.build_terrain_specs, terrain.tile_boxes,
+             terrain.query_surface)
+    assert after == before
+
+
+def test_h_legacy_backend_is_separate_and_has_original_timeout_contract():
+    assert issubclass(s2_physics.MjlabHLegacyBackend,
+                      s2_physics.MjlabS2Backend)
+    record = s2_cases.build_h_series_case0_manifest(ROOT)['records'][0]['case']
+    adapter = s2_env.S2TaskAdapter.from_case(record)
+    assert adapter.config.legacy_h is True
+    assert adapter.config.timeout_steps == 1301
