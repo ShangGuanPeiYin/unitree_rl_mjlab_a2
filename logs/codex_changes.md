@@ -4715,3 +4715,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 并发闸：`s2_concurrency.require_safe_window` 检测 `train_a2_v09_s2.py --execute`，要求 free ≥ 2048+1024 MiB；默认拒绝，`--allow-concurrent` 且足够才放行，receipt 记录实测显存/并发标志。
 - 验证：S2 套件 **261 passed**；实际 guard 检测到训练 PID 并拒绝；Q034-A 形状 guard、L40 字段/分位、迁移拒绝均有 CPU 测试。
 - 未完成：L40 真实 20-env 向量装配仍逐例；6400/L40 GPU 采集等训练窗口。
+
+
+## 2026-11-22 第三检查点核验
+
+- `s2_1_000015040512.pt`，SHA `247cc0c47173120c2fea9cffb5cff87b821ea69685416d920d43410005aa703f`，15,040,512 样本 / 612 rollouts，std 0.1772–0.2526，`ledger_cursor` 15,040,512（台账 15,089,664，差 2 个在途 rollout），gates []、序列 gate_A。
+- 训练速率约 7.5 s/rollout，S2.1 ETA 约 65–68 h。
+- 待办：L40 20-env 向量装配（已下达）；训练结束窗口生成 L40/6400 cache；门禁 A/B execute。
