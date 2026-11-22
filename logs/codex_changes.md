@@ -4332,3 +4332,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - S1/S2 观测对照（同初态同动作）：`proprio`/`history` 最大差 4.77e-7、`heightmap`/`route_error` 差 0。
 - 作废证据：r4（零观测）、r5/r6（未推进）、r7（动作恒零）、r8（history 双更新）保留文件，不进入结论。
 - 未执行：S2.0 150 分支正式矩阵、H 六例、训练。
+
+
+## 2026-11-22 V8 执行链路独审：根因修复通过，4 项阻断
+
+- 目的：归档 smoke-r9 与执行链路的第三方复核。
+- 涉及文件：`docs/v09_s2_execution_independent_review_v08.md`、`logs/a2_v09/s2_0/verification/execution_audit_20261122_r8.json`、本日志。
+- 通过：`S2PhysicsEnv.step(action)` 下发动作；`reset/step` 只各调一次 backend，之后 `update=False` 读缓存，`_frame` 不再二次 `_observations`；`first_step` 改为 `route_x>=0`。r9 复算：route Δ 0.3783605694770813、velocity 0.2983198637375608、非零动作 64/64、foot_contact 2.5625、g_level 1.0、无终止/失败；trace 与 `00_flat_walk_real_trace.jsonl` 字节相同。
+- 阻断：B-V8-1 smoke 病例选择按下标（15 个 case_id=0）且与自述不符；B-V8-2 smoke/parity 384 步记在 `s2_0_matrix_two_branches`，整矩阵会超义务，需单列工程义务；B-V8-3 S1 参考与 S2 非同病例（spawn 差 0.0836 m、streams 不同），观测差 4.77e-7 只限同观测重放；B-V8-4 trace SHA 未绑定进 summary/元数据。
+- 处置：已下达按 case_sha 选例、`stage_extend` 增列 `s2_0_pipeline_debug` 义务、用 S2 病例构造 S1 参考、证据 SHA 绑定；随后跑真实楼梯 case（40 级 0.3 m/s）。
+- 未执行：整矩阵、H 六例、训练。
