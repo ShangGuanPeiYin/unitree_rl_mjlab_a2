@@ -181,7 +181,8 @@ def test_b_v6_3_train_cli_512_requires_fallback_evidence(tmp_path):
         train_cli.main(['--dry-run', '--num-envs', '512',
                         '--output-dir', str(tmp_path / 'a')])
     evidence = tmp_path / 'fail1024.json'
-    evidence.write_text(json.dumps({'num_envs': 1024, 'admitted': False}))
+    evidence.write_text(json.dumps({'num_envs': 1024, 'admitted': False,
+                                    'failure_reasons': ['oom']}))
     code = train_cli.main(['--dry-run', '--num-envs', '512',
                            '--fallback-evidence', str(evidence),
                            '--output-dir', str(tmp_path / 'b')])
