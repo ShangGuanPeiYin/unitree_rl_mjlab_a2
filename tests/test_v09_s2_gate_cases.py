@@ -76,3 +76,26 @@ def test_l40_batch_groups_are_twenty_envs():
     assert all(len(batch['cases']) == 20 for batch in batches)
     assert {batch['group_id'] for batch in batches} == {
         'l40/0.3', 'l40/0.5', 'l40/0.6'}
+
+
+def test_course_gate_manifests_v2_v3_shapes_and_budgets():
+    s22 = s2_gate_cases.build_course_manifest('S2.2', 'gate_A')
+    s23 = s2_gate_cases.build_course_manifest('S2.3', 'gate_A')
+    assert s22['suite'] == 'S2_GATE_A_V2'
+    assert s23['suite'] == 'S2_GATE_A_V3'
+    assert len(s22['groups']) == 33 and len(s22['cases']) == 660
+    assert len(s23['groups']) == 51 and len(s23['cases']) == 1020
+    assert s22['budget']['control_samples'] == 2_061_980
+    assert s23['budget']['control_samples'] == 4_348_500
+    assert {row['task'] for row in s22['groups']} >= {'stairs_walk', 'platform_walk'}
+    assert {row['task'] for row in s23['groups']} >= {'stairs_stop', 'platform_stop'}
+    s2_gate_cases.validate_course_manifest(s22, expected_suite='gate_A')
+    s2_gate_cases.validate_course_manifest(s23, expected_suite='gate_A')
+
+
+def test_course_gate_ab_suites_are_distinct():
+    a = s2_gate_cases.build_course_manifest('S2.2', 'gate_A')
+    b = s2_gate_cases.build_course_manifest('S2.2', 'gate_B')
+    assert a['manifest_sha256'] != b['manifest_sha256']
+    assert {row['case_sha256'] for row in a['cases']}.isdisjoint(
+        {row['case_sha256'] for row in b['cases']})

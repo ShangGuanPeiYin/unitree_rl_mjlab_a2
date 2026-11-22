@@ -4730,3 +4730,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 并发闸：`s2_concurrency.require_safe_window` 在 collector `--execute` 前检查训练进程与 GPU free；当前训练中 PIDs 1931599/1931607、free 1393<3072，拒绝。
 - 测试：S2 套件 **262 passed**（含串行 settle、post_reset、组统计、并发闸）。
 - 未执行：GPU cache/门禁，等训练结束窗口。
+
+## 2026-11-22 T15/T16/T17 CPU 计划与课程门禁冻结
+
+- T15：新增 `s2_course.StopState` 与配置/预算断言；S2.2/S2.3 role/geometry/cap 计划、CLI `--course`、stop 时序/奖励列 CPU 测试。真实 V07 stop 注入未完成。
+- T16：`s2_gate_cases` 新增 S2.2 33 组/2,061,980、S2.3 51 组/4,348,500 冻结（v2/v3 独立 suite），gate CLI `--course` dry-run。
+- T17：新增 `run_a2_v09_s2_final.py` 27 组/2700/95/3 套计划；execute 仍拒绝，报告骨架 pending。
+- 验证：S2 套件 **270 passed**；冻结文件已生成。

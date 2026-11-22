@@ -212,3 +212,20 @@ def test_l40_serial_helpers_post_reset_settlement_and_group_stats():
     assert stats['l40/0.3']['p10'] == 1.0
     assert stats['l40/0.3']['p50'] == 1.0
     assert stats['l40/0.3']['p90'] == 1.0
+
+
+def test_gate_course_dry_run_s22_s23(tmp_path):
+    import run_a2_v09_s2_gate as cli
+    ckpt = tmp_path / 'fake.pt'
+    ckpt.write_bytes(b'x')
+    for course, groups, cases, cost in (
+            ('S2.2', 33, 660, 2_061_980),
+            ('S2.3', 51, 1020, 4_348_500)):
+        out = tmp_path / course
+        assert cli.main(['--course', course, '--suite', 'gate_A',
+                         '--dry-run', '--checkpoint', str(ckpt),
+                         '--output-dir', str(out)]) == 0
+        plan = json.loads((out / f'{course}_gate_plan.json').read_text())
+        assert plan['groups'] == groups
+        assert plan['cases'] == cases
+        assert plan['control_samples'] == cost

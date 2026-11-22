@@ -17,9 +17,13 @@ def main(argv=None):
     parser.add_argument('--output-dir', type=Path,
                         default=ROOT / 'logs/a2_v09/s2/gate_cases/v1')
     parser.add_argument('--version', default=s2_gate_cases.GATE_VERSION)
+    parser.add_argument('--course', default='S2.1', choices=('S2.1','S2.2','S2.3'))
     args = parser.parse_args(argv)
-    receipt = s2_gate_cases.freeze_gate_cases(
-        args.output_dir, version=args.version)
+    if args.course == 'S2.1':
+        receipt = s2_gate_cases.freeze_gate_cases(
+            args.output_dir, version=args.version)
+    else:
+        receipt = s2_gate_cases.freeze_course_cases(args.output_dir, args.course)
     print(json.dumps(receipt, ensure_ascii=False, indent=2))
     return 0
 

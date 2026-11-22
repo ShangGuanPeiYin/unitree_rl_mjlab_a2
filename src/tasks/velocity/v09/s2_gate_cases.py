@@ -19,7 +19,9 @@ from .cases import canonical_json, sha256
 
 GATE_VERSION = 'v1'
 GENERATOR = 'v09-s2-gate-sha256-u53-v1'
-SUITES = ('S2_GATE_A', 'S2_GATE_B')
+SUITES = ('S2_GATE_A', 'S2_GATE_B', 'S2_GATE_A_V2', 'S2_GATE_B_V2',
+          'S2_GATE_A_V3', 'S2_GATE_B_V3')
+COURSE_GROUP_COUNTS = {'S2.1': 36, 'S2.2': 33, 'S2.3': 51}
 SUITE_ALIASES = {'gate_A': 'S2_GATE_A', 'gate_B': 'S2_GATE_B',
                  'S2_GATE_A': 'S2_GATE_A', 'S2_GATE_B': 'S2_GATE_B'}
 CASES_PER_GROUP = 20
@@ -83,7 +85,7 @@ def legacy_l40_geometry():
     return result
 
 
-def _timeout(*, task, speed, stair_count=0, geometry=None, post=None, stop_mode='none'):
+def _timeout(*, task, speed, stair_count=0, geometry=None, post=None, stop_mode='none', ramp_seconds=0.0):
     if task == 'flat_walk':
         return s2_spec.FLAT_WALK_HARD_TIMEOUT_STEPS
     if task == 'flat_stop':
@@ -99,6 +101,16 @@ def _timeout(*, task, speed, stair_count=0, geometry=None, post=None, stop_mode=
     if task == 'platform_walk':
         return s2_spec.timeout_steps(task='platform_walk', speed=speed,
                                      post_distance=post)
+    if task == 'stairs_stop':
+        return s2_spec.timeout_steps(
+            task='stairs_stop', speed=speed, stair_count=stair_count,
+            step_height=float(geometry['h']), step_depth=float(geometry['step_depth']),
+            approach_length=s2_spec.T_APPROACH_MAX, post_distance=post,
+            ramp_seconds=float(ramp_seconds), hold_seconds=20.0)
+    if task == 'platform_stop':
+        return s2_spec.timeout_steps(task='platform_stop', speed=speed,
+                                     post_distance=post, ramp_seconds=float(ramp_seconds),
+                                     hold_seconds=20.0)
     raise ValueError(f'unsupported gate task {task}')
 
 
@@ -152,6 +164,90 @@ def gate_groups(course=COURSE):
             hard_timeout_steps=_timeout(task='legacy_l40', speed=speed)))
     if len(groups) != GROUP_COUNT:
         raise AssertionError(f'S2.1 gate must have {GROUP_COUNT} groups')
+    return groups
+
+
+
+
+def course_gate_groups(course):
+    if course not in ('S2.2', 'S2.3'):
+        raise ValueError('course gate groups are S2.2/S2.3')
+    groups = []
+    for speed in s2_spec.SPEEDS:
+        for mode in ('walk', 'stop_instant', 'stop_ramp_2s'):
+            task = 'flat_walk' if mode == 'walk' else 'flat_stop'
+            stop_mode = 'none' if mode == 'walk' else (
+                'instant' if mode == 'stop_instant' else 'ramp_2s')
+            groups.append(dict(
+                group_id=f'flat/{mode}/{speed}', task=task, stair_count=0,
+                geometry=flat_geometry(), speed=float(speed),
+                stop_mode=stop_mode, force_family='none', post_distance=None,
+                walk_seconds=(s2_spec.FLAT_WALK_SECONDS if task == 'flat_walk' else 8.0),
+                hard_timeout_steps=_timeout(task=task, speed=speed, stop_mode=stop_mode)))
+    for width in s2_spec.PLATFORM_WIDTHS:
+        for speed in s2_spec.SPEEDS:
+            geometry = stairs_geometry(40, width)
+            groups.append(dict(
+                group_id=f'l40_walk/{width}/{speed}', task='stairs_walk',
+                stair_count=40, geometry=geometry, speed=float(speed),
+                stop_mode='none', force_family='none', post_distance=10.0,
+                walk_seconds=None,
+                hard_timeout_steps=_timeout(task='stairs_walk', speed=speed,
+                                            stair_count=40, geometry=geometry,
+                                            post=10.0)))
+    for levels in (10, 20):
+        for width in s2_spec.PLATFORM_WIDTHS:
+            for speed in s2_spec.SPEEDS:
+                geometry = stairs_geometry(levels, width)
+                groups.append(dict(
+                    group_id=f'review/{levels}/{width}/{speed}',
+                    task='stairs_walk', stair_count=levels, geometry=geometry,
+                    speed=float(speed), stop_mode='none', force_family='none',
+                    post_distance=5.0, walk_seconds=None,
+                    hard_timeout_steps=_timeout(task='stairs_walk', speed=speed,
+                                                stair_count=levels,
+                                                geometry=geometry, post=5.0)))
+    if course == 'S2.2':
+      for width in s2_spec.PLATFORM_WIDTHS:
+        for speed in s2_spec.SPEEDS:
+            geometry = stairs_geometry(40, width)
+            groups.append(dict(
+                group_id=f'platform/{width}/{speed}', task='platform_walk',
+                stair_count=40, geometry=geometry, speed=float(speed),
+                stop_mode='none', force_family='none', post_distance=10.0,
+                walk_seconds=None,
+                hard_timeout_steps=_timeout(task='platform_walk', speed=speed,
+                                            post=10.0)))
+    if course == 'S2.3':
+        for width in s2_spec.PLATFORM_WIDTHS:
+            for speed in s2_spec.SPEEDS:
+                for mode in ('instant', 'ramp_2s'):
+                    geometry = stairs_geometry(40, width)
+                    groups.append(dict(
+                        group_id=f'l40_stop/{width}/{speed}/{mode}',
+                        task='stairs_stop', stair_count=40, geometry=geometry,
+                        speed=float(speed), stop_mode=mode, force_family='none',
+                        post_distance=10.0, walk_seconds=None,
+                        hard_timeout_steps=_timeout(
+                            task='stairs_stop', speed=speed, stair_count=40,
+                            geometry=geometry, post=10.0,
+                            ramp_seconds=(2.0 if mode == 'ramp_2s' else 0.0))))
+        for width in s2_spec.PLATFORM_WIDTHS:
+            for speed in s2_spec.SPEEDS:
+                for mode in ('instant', 'ramp_2s'):
+                    geometry = stairs_geometry(40, width)
+                    groups.append(dict(
+                        group_id=f'platform_stop/{width}/{speed}/{mode}',
+                        task='platform_stop', stair_count=40,
+                        geometry=geometry, speed=float(speed), stop_mode=mode,
+                        force_family='none', post_distance=10.0,
+                        walk_seconds=None,
+                        hard_timeout_steps=_timeout(
+                            task='platform_stop', speed=speed, post=10.0,
+                            ramp_seconds=(2.0 if mode == 'ramp_2s' else 0.0))))
+    expected = COURSE_GROUP_COUNTS[course]
+    if len(groups) != expected:
+        raise AssertionError(f'{course} gate has {len(groups)} groups, expected {expected}')
     return groups
 
 
@@ -271,10 +367,11 @@ def validate_gate_manifest(manifest, *, expected_suite=None, course=COURSE):
     if expected_suite is not None and manifest.get('suite') != SUITE_ALIASES.get(
             expected_suite, expected_suite):
         raise ValueError('S2 gate suite differs')
-    if len(manifest.get('groups', [])) != GROUP_COUNT:
-        raise ValueError('S2 gate must have 36 groups')
-    if len(manifest.get('cases', [])) != GROUP_COUNT * CASES_PER_GROUP:
-        raise ValueError('S2 gate must have 720 cases')
+    expected_groups = COURSE_GROUP_COUNTS.get(course, GROUP_COUNT)
+    if len(manifest.get('groups', [])) != expected_groups:
+        raise ValueError(f'S2 gate must have {expected_groups} groups')
+    if len(manifest.get('cases', [])) != expected_groups * CASES_PER_GROUP:
+        raise ValueError(f'S2 gate must have {expected_groups * CASES_PER_GROUP} cases')
     if manifest.get('cases_per_group') != CASES_PER_GROUP:
         raise ValueError('S2 gate cases_per_group must be 20')
     seen = set()
@@ -349,3 +446,89 @@ def batch_groups(cases, *, envs_per_batch=20):
         batches.append(dict(group_id=group_id, cases=rows,
                             envs_per_batch=envs_per_batch))
     return batches
+
+
+def build_course_manifest(course, suite):
+    if course not in ('S2.2', 'S2.3'):
+        raise ValueError('course manifest is S2.2/S2.3')
+    version = 'v2' if course == 'S2.2' else 'v3'
+    expected_suite = ('S2_GATE_A_' + version.upper() if suite in ('gate_A', 'S2_GATE_A_' + version.upper())
+                      else 'S2_GATE_B_' + version.upper())
+    groups = course_gate_groups(course)
+    cases = []
+    group_rows = []
+    for group in groups:
+        members = [_case(group, expected_suite, case_id)
+                   for case_id in range(CASES_PER_GROUP)]
+        cases.extend(members)
+        group_rows.append(dict(
+            group_id=group['group_id'], role_sha256=_group_role(group),
+            task=group['task'], stair_count=group['stair_count'],
+            geometry_key=group['geometry'].get('terrain_key'),
+            platform_width=group['geometry'].get('platform_width'),
+            speed=group['speed'], stop_mode=group['stop_mode'],
+            post_distance_m=group['post_distance'],
+            cases=len(members),
+            hard_timeout_steps=int(group['hard_timeout_steps']),
+            control_samples=len(members) * int(group['hard_timeout_steps'])))
+    result = dict(
+        schema_version=s2_spec.CHECKPOINT_SCHEMA, manifest_version=2,
+        gate_version=version, status='frozen', frozen=True,
+        generator=GENERATOR, sds_sha256=s2_spec.SDS_SHA256, sds_version='v1.2',
+        stage=s2_spec.STAGE, suite=expected_suite, course=course,
+        access='gate_acceptance_only',
+        case_key_fields=list(s2_spec.CASE_KEY_FIELDS),
+        cases_per_group=CASES_PER_GROUP, group_count=len(groups),
+        groups=group_rows, cases=cases,
+        budget=dict(control_samples=sum(row['control_samples'] for row in group_rows),
+                    per_group=sum(row['hard_timeout_steps'] * CASES_PER_GROUP
+                                  for row in group_rows)),
+        note=f'Frozen {course} A/B gate inputs; independent suite salt.')
+    result['manifest_sha256'] = sha256(result)
+    return result
+
+
+def validate_course_manifest(manifest, *, expected_suite=None):
+    course = manifest.get('course')
+    if course not in COURSE_GROUP_COUNTS:
+        raise ValueError('unknown course manifest')
+    validate_gate_manifest(manifest, expected_suite=None, course=course)
+    version = 'v2' if course == 'S2.2' else 'v3'
+    if expected_suite is not None:
+        expected_name = ('S2_GATE_A_' + version.upper() if expected_suite in
+                         ('gate_A', 'S2_GATE_A_' + version.upper()) else
+                         'S2_GATE_B_' + version.upper())
+        if manifest.get('suite') != expected_name:
+            raise ValueError('course gate suite differs')
+    if len(manifest['groups']) != COURSE_GROUP_COUNTS[course]:
+        raise ValueError(f'{course} gate group count differs')
+    if len(manifest['cases']) != COURSE_GROUP_COUNTS[course] * CASES_PER_GROUP:
+        raise ValueError(f'{course} gate case count differs')
+    return True
+
+
+def freeze_course_cases(output_dir, course):
+    if course not in ('S2.2', 'S2.3'):
+        raise ValueError('freeze course is S2.2/S2.3')
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    written = {}
+    version = 'v2' if course == 'S2.2' else 'v3'
+    for alias in ('gate_A', 'gate_B'):
+        manifest = build_course_manifest(course, alias)
+        path = output_dir / f'{manifest["suite"]}.json'
+        if path.exists():
+            raise FileExistsError(path)
+        path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
+        written[alias] = dict(path=str(path), suite=manifest['suite'],
+                              manifest_sha256=manifest['manifest_sha256'],
+                              cases=len(manifest['cases']),
+                              control_samples=manifest['budget']['control_samples'])
+    receipt = dict(schema_version=s2_spec.CHECKPOINT_SCHEMA,
+                   gate_version=version, course=course,
+                   a=written['gate_A'], b=written['gate_B'])
+    path = output_dir / 'freeze_receipt.json'
+    if path.exists():
+        raise FileExistsError(path)
+    path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + '\n')
+    return receipt

@@ -335,10 +335,12 @@ def _aggregate(manifest, records, *, original_6400=None, l40_cache=None):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--course', default='S2.1', choices=('S2.1',))
+    parser.add_argument('--course', default='S2.1',
+                        choices=('S2.1', 'S2.2', 'S2.3'))
     parser.add_argument('--suite', required=True, choices=('gate_A', 'gate_B'))
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--manifest', type=Path)
+    parser.add_argument('--version', default=None)
     parser.add_argument('--obligation-id', default='gate_admissions_up_to_40')
     parser.add_argument('--ledger', type=Path, default=ROOT / s2_spec.LEDGER_HINT)
     parser.add_argument('--device', default='cuda:0')
@@ -353,16 +355,27 @@ def main(argv=None):
         raise SystemExit('use --dry-run or --execute')
     if not args.checkpoint.is_file():
         raise SystemExit(f'checkpoint missing: {args.checkpoint}')
+    version = args.version or ({'S2.1': 'v1', 'S2.2': 'v2',
+                                'S2.3': 'v3'}[args.course])
+    suffix = {'v1': '', 'v2': '_V2', 'v3': '_V3'}[version]
     manifest_path = args.manifest or (
-        ROOT / 'logs/a2_v09/s2/gate_cases/v1' /
-        ('S2_GATE_A.json' if args.suite == 'gate_A' else 'S2_GATE_B.json'))
+        ROOT / f'logs/a2_v09/s2/gate_cases/{version}' /
+        (f'S2_GATE_A{suffix}.json' if args.suite == 'gate_A'
+         else f'S2_GATE_B{suffix}.json'))
     if not manifest_path.is_file():
         raise SystemExit(f'gate manifest missing: {manifest_path}')
-    manifest = s2_gate_cases.load_gate_manifest(
-        manifest_path, expected_suite=args.suite, course=args.course)
+    if args.course == 'S2.1':
+        manifest = s2_gate_cases.load_gate_manifest(
+            manifest_path, expected_suite=args.suite, course='S2.1')
+    else:
+        manifest = _load(manifest_path)
+        s2_gate_cases.validate_course_manifest(
+            manifest, expected_suite=args.suite)
     cost = _gate_cost(manifest)
-    if cost != 1_620_000:
-        raise SystemExit(f'gate upper bound {cost} != 1,620,000')
+    expected = {'S2.1': 1_620_000, 'S2.2': 2_061_980,
+                'S2.3': 4_348_500}[args.course]
+    if cost != expected:
+        raise SystemExit(f'gate upper bound {cost} != {expected:,}')
     ledger_obligations = {}
     if args.ledger.is_file():
         try:
@@ -385,8 +398,9 @@ def main(argv=None):
         checkpoint=str(args.checkpoint), checkpoint_file_sha256=_sha(args.checkpoint),
         groups=manifest['group_count'], cases=len(manifest['cases']),
         control_samples=cost, per_group_control_samples=cost // 36,
-        l40_cache_obligations=_l40_cache_paths(manifest),
-        l40_cache_samples=manifest['budget']['l40_milestone_samples'],
+        l40_cache_obligations=(_l40_cache_paths(manifest)
+                               if args.course == 'S2.1' else []),
+        l40_cache_samples=manifest['budget'].get('l40_milestone_samples'),
         obligation_id=args.obligation_id,
         ledger_obligations=ledger_obligations,
         original_6400_cache=dict(path=(str(args.original_6400_cache)
@@ -401,7 +415,7 @@ def main(argv=None):
         stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
         out = args.output_dir or (ROOT / 'logs/a2_v09/s2/gate_dry_run' / stamp)
         out.mkdir(parents=True, exist_ok=True)
-        path = out / 'S2.1_gate_plan.json'
+        path = out / f'{args.course}_gate_plan.json'
         if path.exists():
             raise FileExistsError(path)
         path.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + '\n')
