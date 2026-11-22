@@ -4222,3 +4222,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 实现要点：§5.1/§5.3 全 20 项两列权重与门控、§5.4 平地锚定精确聚合、S2 PPO（含 KL 调 LR、std 解冻投影、按样本加权累积）、1024→512 资源探测、schema 11 检查点、S2 独立台账命名空间、§6.5/§6.1.1 验收与门禁矩阵；Q027 的 g_level 0.5 s 全 ramp（t0=0、t0+1=0.04、t0+24=0.96、t0+25=1）与快照兼容标识 `q027_ramp_total_0p5s`；V4.1 投影写入前由 register 现场重算比对（篡改即拒绝）、登记版本化与第三原因码 `zero_valid_denominator`。
 - 验证：本机复跑 S2 CPU 套件 **144 passed**（1.01 s）；S2.0 dry-run 75 例/150 分支/75 对/H 6 且 `physics_started=false`；S2.1 train dry-run 1024 下 samples/rollout=49,152，rollouts {16,276/24,414/24,414}，参数与 SDS 一致且 `training_started=false`。
 - 未执行：无 GPU 物理、无训练、无梯度更新；`q021_reservation_written=false`，预算 263,888,370 仍为草案。
+
+
+## 2026-11-22 V5 独立复核（T2 地形/状态机/证据/CLI）：3 项阻断
+
+- 目的：归档 S2.0 可执行栈的第三方复核。
+- 涉及文件：`docs/v09_s2_0_terrain_env_independent_review_v05.md`、`logs/a2_v09/s2_0/verification/`（本机）、本日志。
+- 通过：地形 7 行 spec 与 40 级几何逐项复算一致、宽 4 m 平台未被裁窄、x=8.0 拼接仅共边界、窄/宽台侧向查询正确、H00 legacy 一致、MJCF 153 geoms 与 v07 同源；状态机主路径与 top 单次、同帧失败优先、超时冻结值、D_post 双零点；证据字段覆盖；75 对/150 条分支配对与前缀摘要可复算；g_level 手工序列与快照往返正确。
+- 阻断：B-V5-1 `s2_state` docstring 仍写旧 0.5s 保持说法；B-V5-2 H 六例被映射 `stairs_walk` post=0，route_x=2.0 即判成功（v07 需机身 ≥2.6），违反 Q018；B-V5-3 dry-run 缺 run_plan 30 批、`--max-envs 200` 未被限制。
+- 待裁定：Q028（占空比/最长关闭时长口径）、Q029（四个 g 时刻相对延迟是否全列），回执 `01a201fa-3986-7202-8530-8754e0f405ec`。
+- 未执行：未跑 GPU/物理、未训练、未写正式原子预留。
