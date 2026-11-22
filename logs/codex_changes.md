@@ -4706,3 +4706,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 事实：`validate_teacher_observation` 强制 `[20,3,48,32]`；collector 先校验后推理；gate `_load_l40_cache` 已校验 source `efa9caa8…`、逐组字段、P10/P50/P90、regression 判定。
 - 待 GPU 验证：`V09S1Env(course='S1.2')` 是否真给出 3×48×32 teacher 旧图；若否则需修 map 装配。
 - 已下达并发安全闸：cache 生成前检测训练进程与空闲显存，不足即拒绝；禁止非 4-env 之外的"凑显存"手段。
+
+## 2026-11-22 Q034-A 教师观测修复、L40 cache 校验与并发安全闸
+
+- 目的：封死迁移旁路，修原始 6400 旧图观测，补 L40 cache 逐例/分位/校验，防止误并训练。
+- 修改：`collect_a2_v09_s2_gate_original_6400.py` 改用 `env.teacher_observation`（真实 3×48×32），真实输入动作一致性 `torch.equal`；整套 234,180 原子预留、实际 `steps×20` 结算；L40 cache 补 `start`/`last_valid_terminal`/`failure_classes`/超时/工程失败、逐例和分位。
+- 校验：gate 拒绝迁移/错 source 6400 cache；L40 cache 校验 `source_sha256=efa9caa8…`、60 个逐例文件、字段和 P10/P50/P90。
+- 并发闸：`s2_concurrency.require_safe_window` 检测 `train_a2_v09_s2.py --execute`，要求 free ≥ 2048+1024 MiB；默认拒绝，`--allow-concurrent` 且足够才放行，receipt 记录实测显存/并发标志。
+- 验证：S2 套件 **261 passed**；实际 guard 检测到训练 PID 并拒绝；Q034-A 形状 guard、L40 字段/分位、迁移拒绝均有 CPU 测试。
+- 未完成：L40 真实 20-env 向量装配仍逐例；6400/L40 GPU 采集等训练窗口。
