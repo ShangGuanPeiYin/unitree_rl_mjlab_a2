@@ -4641,3 +4641,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - Q010 判断：S1.0 6400 缓存绑定 S1 冻结病例；S1 gate_A 与 S2_GATE_A flat case SHA 交集 0（各 180），不能复用；须在 S2 同病例重采。
 - 验证：S2 套件 **253 passed**（新增 T14 dry-run/预算/拒绝测试）；实际 GPU 采集未运行，等训练结束窗口。
 - 说明：计划字段为 20 envs/batch，实际参考 runner 单进程按 case 执行；若验收要求严格 20 并行环境，需在 GPU 窗口前改用向量装配。
+
+
+## 2026-11-22 门禁前置 dry-run：L40 缓存计划通过
+
+- 目的：验证 L40 里程碑缓存计划（S1 冻结模型在门禁 A/B 病例）并暴露 6400 口径问题。
+- 命令：`build_a2_v09_s2_gate_caches.py --cache-kind l40 --suite gate_A --dry-run --output-dir /tmp/gate_l40_dry`。
+- 结果：`reference=s1_l40`、source `s1_least.pt`（`efa9caa8…`）、3 组/60 例、**219,220** 控制样本、20 envs/batch、3 批、obligation `l40_milestone_cache_gate_A`、`physics_started=false`、`ledger_written=false`；manifest `1ea91343…`/文件 `98842a07…`。
+- 6400 口径：实现方文档称"6400 through 40×30 migration"，已提交 DSH-Q034（建议优先复用 S1.0 封存缓存，其次原 6400+旧图重跑，不接受迁移后网络冒充），裁定前 6400 路径禁用。
+- 训练：222 rollouts 正常。
