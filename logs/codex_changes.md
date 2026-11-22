@@ -4114,3 +4114,20 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 涉及文件：logs/a2_v09/s1_seed42_r3/user_H_series_20261122/下16段视频、逐例元数据、summary.json、视频说明.txt；budget.jsonl及本日志。临时编排 /tmp/a2_user_H_series_20261122.py，未修改训练源码。
 - 实现与理由：复用已验证单病例录像流程，统一case0、vx=0.5m/s、seed=42、单环境cuda:0、6级、踏面0.30m、宽0.8m，逐项比较高度；使用约main100024320样本的相同latest权重SHA efa9caa8ce99e2cdff967212063e198b7ae68a6415727083b1db027f615ead24；保留失败及真实pre-reset终止画面，engineering逐例记账，不关闭正式视频义务。训练保持停止。
 - 验证：录像进程退出码0；16段均通过现有640×480/25fps/帧数验证，元数据完整；本次固定病例成功10/16，总控制步4644。这是单次演示，非统计成功率，不声称训练效果改善；未改训练代码，未运行训练测试。
+
+
+## 2026-11-22 复制S1权重为用户指定名称
+
+- 目的：按用户要求将本次S1权重另存为 s1_least.pt。
+- 文件：logs/a2_v09/s1_seed42_r3/checkpoints/s1_least.pt。
+- 内容与理由：直接复制 latest_000120004608_00009805_f93f026e6df3444aba4bfa5833be38a2.pt，保留原文件，不修改模型或训练配置。
+- 验证：按用户明确要求不执行校验；未验证副本哈希，未运行测试。权重不提交Git。
+
+
+## 2026-11-22 S2 开工基线：SDS v1.2 与 S2.0 输入/预算独立核对
+
+- 目的：按用户授权起执行 A2 v0.9 S2（不再等待 S1 级用户批准），固化规划对话 `01a1f385-ceea-74a0-a77c-85f66b2ccd77` 的 SDS v1.2，并归档独立核对报告。
+- 涉及文件：`doc/sds/SDS_A2_v0.9_Sequential_Map_Walk_Stop_Robustness.md`（v1.1→v1.2，21+/9−，仅 S2 条款）、`docs/v09_s2_0_inputs_and_budget_independent_review.md`、本日志。未改 `scripts/play.py`、`scripts/train.py` 的既有无关修改。
+- 事实与理由：SDS v1.2 实测 SHA256 `09fa2d4cdd858914c46a51fd52670c20cb20f2b6f3e76e6d266054574f64ccbe`；S2 入口用户指定 `logs/a2_v09/s1_seed42_r3/checkpoints/s1_least.pt`（SHA `efa9caa8ce99e2cdff967212063e198b7ae68a6415727083b1db027f615ead24`，与 §1.3 原件逐字节相同，S1.2 主段 100,024,320 样本，总 120,004,608）；不生成 `S1_RESTORED`，保留 gate_A 未通过记录。用户裁定 S2 训练并行数优先 1024、不满足 §2.3 准入退 512。
+- 验证：独立验收子 agent 纯 CPU 核对完成，结论“SDS/权重/停训事实、六例 H 病例解析、S2.0 预算上界（93,566 控制步）均通过；S2.0 执行前置阻断（B-1 SDS 双身份、B-2 无 S2 物理实现/台账、B-3 1024 准入无证据）”；7 项歧义已按 §1.4 提交规划裁定（`codex queue` 回执 `01a201d6-abb2-7f92-9066-5f77a17db706`）。
+- 未执行：未跑 GPU/物理推进、未启动训练、未做梯度更新；S2 实现代码另行提交。
