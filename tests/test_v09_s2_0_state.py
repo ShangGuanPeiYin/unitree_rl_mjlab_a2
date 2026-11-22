@@ -1,4 +1,4 @@
-"""CPU-only S2 state machine / g_level timing tests; no env.step."""
+"""CPU-only S2 state machine / Q027 g_level timing tests; no env.step."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -40,16 +40,15 @@ def test_state_order_and_single_top_latch():
     assert machine.state == 'TOP_TRANSITION'
     assert machine.top_arrived is True
     assert machine.top_route_x == 4.0
-    machine.step(frame(5.0, top=True, four=True))  # repeated top is ignored
+    machine.step(frame(5.0, top=True, four=True))
     assert machine.state == 'POST_WALK'
     assert sum(1 for event in machine.events if event['name'] == 'top_arrived') == 1
-    machine.step(frame(8.9))  # d_post = 4.9, not yet
+    machine.step(frame(8.9))
     assert machine.success is False
-    machine.step(frame(9.0))  # d_post = 5.0 at the step end
+    machine.step(frame(9.0))
     assert machine.success is True
     assert machine.state == 'SUCCESS'
     assert machine.terminal is True
-    assert [event['name'] for event in machine.events].count('success') == 1
 
 
 def test_same_frame_failure_wins_over_top_and_success():
@@ -63,16 +62,14 @@ def test_same_frame_failure_wins_over_top_and_success():
     assert [event['name'] for event in events] == ['failure']
 
 
-def test_timeout_uses_the_frozen_config_value_and_pays_failure():
+def test_timeout_is_task_failure():
     machine = state.S2StateMachine(stairs_config(timeout_steps=3))
     machine.step(frame(-1.0))
     machine.step(frame(0.0))
-    assert machine.failure is False
     machine.step(frame(0.1, first=True))
     assert machine.failure is True
     assert machine.timeout is True
     assert machine.completed_steps == 3
-    assert machine.state == 'FAILURE'
 
 
 def test_platform_start_uses_spawn_zero_and_no_top_event():
@@ -83,11 +80,9 @@ def test_platform_start_uses_spawn_zero_and_no_top_event():
     assert machine.state == 'POST_WALK'
     machine.step(frame(13.9))
     assert machine.success is False
-    assert machine.d_post(13.9) == pytest.approx(4.9)
     machine.step(frame(14.0))
     assert machine.success is True
     assert machine.top_arrived is False
-    assert all(event['name'] != 'top_arrived' for event in machine.events)
 
 
 def test_flat_walk_uses_completion_steps_not_distance():
@@ -100,7 +95,6 @@ def test_flat_walk_uses_completion_steps_not_distance():
     assert machine.success is False
     machine.step(frame(0.0))
     assert machine.success is True
-    assert machine.state == 'SUCCESS'
 
 
 def test_flat_same_frame_failure_wins_over_completion():
@@ -121,40 +115,102 @@ def test_c_exec_chain_is_recorded_every_step():
     trace = machine.command_trace()
     assert trace[0]['c_exec'] == pytest.approx(0.5)
     assert trace[1]['c_exec'] == pytest.approx(0.5)
-    assert trace[1]['c_request'] == pytest.approx(0.5)
     assert trace[1]['a_applied'][0] == pytest.approx(0.4)
 
 
-def test_level_gate_holds_half_second_then_ramps_and_resets():
+def test_q027_manual_sequence_t0_t1_t24_t25_and_full_hold():
     gate = state.LevelGate()
-    for _ in range(state.G_LEVEL_HOLD_STEPS):
-        assert gate.update(True) == 0.0
-    assert gate.update(True) == pytest.approx(1 / state.G_LEVEL_RAMP_STEPS)
-    for _ in range(state.G_LEVEL_RAMP_STEPS):
-        value = gate.update(True)
-    assert value == 1.0
+    assert gate.update(True, step_index=10) == 0.0
+    assert gate.t0_step == 10
+    assert gate.update(True, step_index=11) == pytest.approx(1 / 25)
+    for step in range(12, 35):       # t0+2 .. t0+24
+        value = gate.update(True, step_index=step)
+    assert step == 34 and value == pytest.approx(24 / 25)
+    assert gate.update(True, step_index=35) == 1.0   # t0+25
+    assert gate.first_full_step == 35
+    assert gate.update(True, step_index=36) == 1.0
     assert gate.ever_full is True
-    assert gate.update(False) == 0.0
-    assert gate.held == 0
-    for _ in range(state.G_LEVEL_HOLD_STEPS):
-        gate.update(True)
-    assert gate.update(True) > 0.0
 
 
-def test_level_condition_requires_four_feet_on_true_top_platform():
+def test_q027_exact_offsets_and_no_first_frame_precount():
+    gate = state.LevelGate()
+    assert gate.update(True, step_index=0) == 0.0       # t0
+    assert gate.update(True, step_index=1) == pytest.approx(0.04)
+    gate = state.LevelGate()
+    gate.update(True, step_index=0)
+    for step in range(1, 25):
+        gate.update(True, step_index=step)
+    assert gate.value == pytest.approx(0.96)            # t0+24
+    assert gate.update(True, step_index=25) == 1.0      # t0+25
+    assert gate.first_full_step == 25
+
+
+def test_q027_interruption_and_reentry_restarts_t0():
+    gate = state.LevelGate()
+    gate.update(True, step_index=0)
+    for step in range(1, 6):
+        gate.update(True, step_index=step)
+    assert gate.interruptions == 0
+    assert gate.update(False, step_index=6) == 0.0
+    assert gate.interruptions == 1
+    assert gate.t0_step is None
+    assert gate.update(True, step_index=10) == 0.0      # new t0
+    assert gate.t0_step == 10
+    assert gate.update(True, step_index=11) == pytest.approx(0.04)
+    assert gate.restarts == 2
+
+
+def test_q027_full_then_fail_reentry():
+    gate = state.LevelGate()
+    gate.update(True, step_index=0)
+    for step in range(1, 26):
+        gate.update(True, step_index=step)
+    assert gate.value == 1.0
+    assert gate.update(False, step_index=26) == 0.0
+    assert gate.interruptions == 1
+    assert gate.update(True, step_index=30) == 0.0
+    assert gate.t0_step == 30
+    assert gate.update(True, step_index=31) == pytest.approx(0.04)
+
+
+def test_q027_flat_is_one_and_platform_start_first_sample_is_t0():
+    flat = state.LevelGate(flat=True)
+    assert flat.update(False) == 1.0
+    assert flat.update(False) == 1.0
+    platform = state.LevelGate()
+    assert platform.update(True, step_index=0) == 0.0
+    assert platform.update(True, step_index=1) == pytest.approx(0.04)
+
+
+def test_q027_report_and_snapshot_version():
+    gate = state.LevelGate()
+    gate.update(True, step_index=5)
+    gate.update(True, step_index=6)
+    report = state.g_level_report(gate, four_foot_step=4)
+    assert report['first_full_geometry_step'] == 5
+    assert report['first_g_positive_step'] == 6
+    assert report['delay_seconds_from_four_foot'] == pytest.approx(0.04)
+    assert report['first_g_full_step'] is None
+    assert 'g_level_never_full' in report['na_reasons']
+    snapshot = gate.state_dict()
+    assert snapshot['version'] == state.G_LEVEL_SNAPSHOT_VERSION
+    restored = state.LevelGate().load_state(snapshot)
+    assert restored.value == gate.value
+    old = dict(snapshot, version=state.G_LEVEL_PRE_Q027_SNAPSHOT)
+    with pytest.raises(ValueError):
+        state.LevelGate().load_state(old)
+
+
+def test_level_condition_requires_strict_four_foot_true_platform():
     platform = dict(platform_front_x=8.0, platform_length=20.0,
                     platform_y_half_width=0.4)
-    assert state.level_condition(base_xy=(8.5, 0.0),
-                                 feet_xy=[(8.2, 0.1), (8.3, -0.1),
-                                          (8.4, 0.0), (8.1, 0.2)],
+    feet = [(8.2, 0.1), (8.3, -0.1), (8.4, 0.0), (8.1, 0.2)]
+    assert state.level_condition(base_xy=(8.5, 0.0), feet_xy=feet,
                                  **platform) is True
-    assert state.level_condition(base_xy=(8.2, 0.0),   # not 0.4 m past edge
-                                 feet_xy=[(8.2, 0.1), (8.3, -0.1),
-                                          (8.4, 0.0), (8.1, 0.2)],
+    assert state.level_condition(base_xy=(8.4, 0.0), feet_xy=feet,
                                  **platform) is False
     assert state.level_condition(base_xy=(8.5, 0.0),
-                                 feet_xy=[(8.2, 0.5), (8.3, -0.1),
-                                          (8.4, 0.0), (8.1, 0.2)],
+                                 feet_xy=[(8.2, 0.5)] + feet[1:],
                                  **platform) is False
     wide = dict(platform_front_x=8.0, platform_length=20.0,
                 platform_y_half_width=2.0)

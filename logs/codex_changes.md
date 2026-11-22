@@ -4213,3 +4213,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 涉及文件：`doc/sds/reviews/v09_execution_rulings.md`、本日志。
 - 要点：0.5 s 为 0→1 全部时间、额外保持 0；以物理推进后本控制步状态采样为时刻；t0 为连续满足"四足同台且机身越前缘 0.4 m（严格 >）"首帧且 g(t0)=0；g(t0+k)=min(k/25,1)，t0+1=0.04、t0+24=0.96、t0+25=1；不得预记 0.02 s、不得首帧 0.04；失效同帧归零并解除起点，重入重定 t0（即使曾到 1）；平地=1、楼梯=0、平台起步用首个有效采样；腾空不清零；reset 清计时；两项门控项同帧同 g；报告分离四个事件时刻与相对延迟，未达记 NA。
 - 验证：仅文档追加；未跑测试/物理/训练。实现与验收子 agent 已同步更新 provisional 实现、注释、快照兼容标识与依赖测试。
+
+
+## 2026-11-22 S2.1 训练栈（T3）+ Q027 g_level + V4.1 修正
+
+- 目的：补齐 S2.1~S2.3 训练/资源/检查点/台账/验收实现，落实 Q027 与 V4.1 阻断修复。
+- 涉及文件：新增 `src/tasks/velocity/v09/s2_rewards.py`、`s2_loss.py`、`s2_runner.py`、`s2_resources.py`、`s2_checkpoint.py`、`s2_ledger.py`、`s2_acceptance.py`；新增 `scripts/train_a2_v09_s2.py`、`scripts/freeze_a2_v09_s2_0_cases.py`；新增测试 `test_v09_s2_0_{rewards,loss_runner,ops}.py`；更新 `s2_state.py`/`s2_env.py`/`s2_cases.py`/`s2_metrics.py`/`s2_map_ablation.py` 与相应测试；文档 `docs/v09_s2_0_implementation_plan_v5.md`。
+- 实现要点：§5.1/§5.3 全 20 项两列权重与门控、§5.4 平地锚定精确聚合、S2 PPO（含 KL 调 LR、std 解冻投影、按样本加权累积）、1024→512 资源探测、schema 11 检查点、S2 独立台账命名空间、§6.5/§6.1.1 验收与门禁矩阵；Q027 的 g_level 0.5 s 全 ramp（t0=0、t0+1=0.04、t0+24=0.96、t0+25=1）与快照兼容标识 `q027_ramp_total_0p5s`；V4.1 投影写入前由 register 现场重算比对（篡改即拒绝）、登记版本化与第三原因码 `zero_valid_denominator`。
+- 验证：本机复跑 S2 CPU 套件 **144 passed**（1.01 s）；S2.0 dry-run 75 例/150 分支/75 对/H 6 且 `physics_started=false`；S2.1 train dry-run 1024 下 samples/rollout=49,152，rollouts {16,276/24,414/24,414}，参数与 SDS 一致且 `training_started=false`。
+- 未执行：无 GPU 物理、无训练、无梯度更新；`q021_reservation_written=false`，预算 263,888,370 仍为草案。

@@ -109,7 +109,7 @@ class S2TaskAdapter:
         return s2_state.S2StateMachine(self.config)
 
     def level_gate(self):
-        return s2_state.LevelGate()
+        return s2_state.LevelGate(flat=(self.config.task == 'flat_walk'))
 
     def surface_height(self, points_xy):
         return s2_terrain.query_surface(points_xy, self.terrain)

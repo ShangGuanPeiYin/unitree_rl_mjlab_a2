@@ -340,3 +340,41 @@ def test_history_projection_is_derived_only(tmp_path):
         s2_cases.write_history_projection(tmp_path, broken)
     # Rebuild is deterministic after the projection exists.
     assert s2_cases.rebuild_history_projection(tmp_path) == digest
+
+
+def test_b_v41_tampered_projection_with_recomputed_sha_is_refused(tmp_path):
+    record = dict(old_suite='S2_0', old_manifest_sha256='a' * 64,
+                  old_file_sha256='b' * 64, new_suite='S2_DIAG',
+                  new_manifest_sha256='c' * 64, new_file_sha256='d' * 64,
+                  new_receipt_path='r.json',
+                  new_receipt_content_sha256='e' * 64,
+                  new_receipt_file_sha256='f' * 64,
+                  reason='Q022 更名、旧清单零物理', ruling='DSH-Q026',
+                  written_at='2026-11-22T00:00:00+00:00')
+    s2_cases.register_supersede(tmp_path, **record)
+    projection = s2_cases.history_projection(tmp_path)
+    tampered = __import__('copy').deepcopy(projection)
+    tampered['entries'][0]['reason'] = 'TAMPERED'
+    payload = {key: value for key, value in tampered.items()
+               if key != 'projection_sha256'}
+    tampered['projection_sha256'] = s2_cases.sha256(payload)
+    with pytest.raises(ValueError):
+        s2_cases.write_history_projection(tmp_path, tampered)
+
+
+def test_register_versions_keep_history_and_project_latest_valid(tmp_path):
+    base = dict(old_suite='S2_0', old_manifest_sha256='a' * 64,
+                old_file_sha256='b' * 64, new_suite='S2_DIAG',
+                new_manifest_sha256='c' * 64, new_file_sha256='d' * 64,
+                new_receipt_path='r.json',
+                new_receipt_content_sha256='e' * 64,
+                new_receipt_file_sha256='f' * 64,
+                reason='Q022 更名、旧清单零物理', ruling='DSH-Q026')
+    s2_cases.register_supersede(tmp_path, **base)
+    second = s2_cases.register_supersede(tmp_path, **base)
+    assert second['already_registered'] is True
+    lines = (tmp_path / s2_cases.SUPERSEDE_REGISTER).read_text().splitlines()
+    assert len(lines) == 1
+    projection = s2_cases.history_projection(tmp_path)
+    assert projection['entries'][0]['schema_version'] == 2
+    assert projection['entries'][0]['legacy_pre_dual_sha'] is False

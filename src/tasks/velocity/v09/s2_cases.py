@@ -672,6 +672,13 @@ def register_supersede(root, *, old_suite, old_manifest_sha256, old_file_sha256,
             raise ValueError(f'{name} must be a 64-char SHA256')
     path = root / SUPERSEDE_REGISTER
     path.parent.mkdir(parents=True, exist_ok=True)
+    existing = [json.loads(line) for line in path.read_text(encoding='utf-8').splitlines()
+                if line.strip()] if path.exists() else []
+    supersedes_line = None
+    for number, row in enumerate(existing, 1):
+        if (row.get('old_manifest_sha256') == old_manifest_sha256
+                and row.get('new_manifest_sha256') == new_manifest_sha256):
+            supersedes_line = number
     record = dict(old_suite=old_suite, old_manifest_sha256=old_manifest_sha256,
                   old_file_sha256=old_file_sha256, new_suite=new_suite,
                   new_manifest_sha256=new_manifest_sha256,
@@ -680,6 +687,8 @@ def register_supersede(root, *, old_suite, old_manifest_sha256, old_file_sha256,
                   new_receipt_content_sha256=new_receipt_content_sha256,
                   new_receipt_file_sha256=new_receipt_file_sha256,
                   reason=reason, ruling=ruling,
+                  schema_version=2, supersedes_line=supersedes_line,
+                  legacy_pre_dual_sha=False,
                   written_at=written_at or _utc_now())
     with path.open('a+', encoding='utf-8') as handle:
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
@@ -732,7 +741,7 @@ def history_projection(root):
     entries = []
     for row in rows:
         if not row.get('new_receipt_content_sha256') or not row.get('new_receipt_file_sha256'):
-            continue  # legacy pre-Q026 row; the upgraded row for the pair follows
+            continue  # legacy pre-dual-SHA Q026 row; the upgraded row for the pair follows
         entries.append(dict(
             old_suite=row['old_suite'],
             old_manifest_sha256=row['old_manifest_sha256'],
@@ -744,7 +753,10 @@ def history_projection(root):
             new_receipt_content_sha256=row['new_receipt_content_sha256'],
             new_receipt_file_sha256=row['new_receipt_file_sha256'],
             reason=row['reason'], ruling=row['ruling'],
-            written_at=row['written_at']))
+            written_at=row['written_at'],
+            schema_version=row.get('schema_version', 2),
+            supersedes_line=row.get('supersedes_line', 1),
+            legacy_pre_dual_sha=bool(row.get('legacy_pre_dual_sha', False))))
     projection = dict(
         schema_version=s2_spec.CHECKPOINT_SCHEMA, stage=s2_spec.STAGE,
         suite=s2_spec.S2_0_SUITE, course=s2_spec.S2_0_COURSE,
@@ -759,7 +771,7 @@ def history_projection(root):
 
 
 def write_history_projection(root, projection, *, path=HISTORY_PROJECTION):
-    """Only the rebuild script may write a correctly derived projection."""
+    """Only a byte-for-byte derivation from the register may be written."""
     required = {'read_only_projection', 'source', 'register_sha256', 'entries',
                 'projection_sha256', 'warning'}
     if not isinstance(projection, dict) or not required <= set(projection):
@@ -770,6 +782,11 @@ def write_history_projection(root, projection, *, path=HISTORY_PROJECTION):
                if key != 'projection_sha256'}
     if projection['projection_sha256'] != sha256(payload):
         raise ValueError('projection SHA mismatch')
+    # B-V41-1: a caller can recompute its own SHA, so re-derive now and require
+    # canonical byte equality with the register projection.
+    derived = history_projection(root)
+    if canonical_json(projection) != canonical_json(derived):
+        raise ValueError('projection does not equal the current register derivation')
     target = Path(root) / path
     target.parent.mkdir(parents=True, exist_ok=True)
     temp = target.with_suffix('.json.tmp')

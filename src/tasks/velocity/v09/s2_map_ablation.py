@@ -513,6 +513,9 @@ class S2PlaneAblation:
             exact_clip_denominator=self.saturation_denominator,
             exact_clip_fraction=(self.exact_clip_numerator / self.saturation_denominator
                                  if self.saturation_denominator else Q023_ZERO_DENOMINATOR),
+            zero_valid_denominator=self.saturation_denominator == 0,
+            zero_valid_denominator_reason=('zero_valid_denominator'
+                                           if self.saturation_denominator == 0 else None),
             exact_clip_missing_reason=None if self.saturation_denominator else (
                 'zero_valid_denominator'),
             missing_reason=('event_not_reached' if self.trigger_frame is None
@@ -570,6 +573,9 @@ class S2PlaneAblation:
             exact_clip_denominator=self.saturation_denominator,
             exact_clip_fraction=(self.exact_clip_numerator / self.saturation_denominator
                                  if self.saturation_denominator else Q023_ZERO_DENOMINATOR),
+            zero_valid_denominator=self.saturation_denominator == 0,
+            zero_valid_denominator_reason=('zero_valid_denominator'
+                                           if self.saturation_denominator == 0 else None),
             exact_clip_missing_reason=None if self.saturation_denominator else (
                 'zero_valid_denominator'),
             missing_reason=('event_not_reached' if self.trigger_frame is None
@@ -765,6 +771,9 @@ class S2RealBranchEvidence:
                         if self.saturation_denominator else Q023_ZERO_DENOMINATOR),
             exact_clip_numerator=0, exact_clip_denominator=None,
             exact_clip_fraction=None,
+            zero_valid_denominator=self.saturation_denominator == 0,
+            zero_valid_denominator_reason=('zero_valid_denominator'
+                                           if self.saturation_denominator == 0 else None),
             exact_clip_missing_reason='real_map_stores_only_clipped_height',
             missing_reason=('event_not_reached' if self.trigger_frame is None
                             and self.activation != 'birth_frame'
@@ -818,8 +827,13 @@ def aggregate_evidence(records):
         exact_clip_fraction=(clip_num / clip_den if clip_den else Q023_ZERO_DENOMINATOR),
         exact_clip_available_cases=len(clip_available),
         not_exposed=sum(1 for row in records if not row['exposed']),
-        zero_valid_denominator=sum(1 for row in records
-                                   if row['valid_fraction_denominator'] == 0),
+        zero_frames=sum(1 for row in records
+                        if row['valid_fraction_denominator'] == 0),
         zero_saturation_denominator=sum(1 for row in records
                                         if row['saturation_denominator'] == 0),
+        zero_valid_denominator=sum(1 for row in records
+                                   if row.get('zero_valid_denominator', False)),
+        zero_valid_denominator_reason_counts={'zero_valid_denominator': sum(
+            1 for row in records if row.get('zero_valid_denominator_reason')
+            == 'zero_valid_denominator')},
     )

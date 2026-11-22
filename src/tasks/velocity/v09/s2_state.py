@@ -32,9 +32,11 @@ STATE_ORDER = ('APPROACH', 'CLIMB', 'TOP_TRANSITION', 'POST_WALK', 'DECEL',
                'HOLD', 'SUCCESS', 'FAILURE')
 WALK_TASKS = ('flat_walk', 'stairs_walk', 'platform_walk')
 STOP_TASKS = ('flat_stop', 'stairs_stop', 'platform_stop')
-G_LEVEL_HOLD_STEPS = 25          # 0.5 s at 50 Hz, explicit in §5.2
-G_LEVEL_RAMP_STEPS = 25          # provisional; §5.2 gives no numeric ramp length
-G_LEVEL_BASE_MARGIN = 0.4        # §5.2 body past the platform front edge
+# Q027: the 0.5 s is the *whole* 0→1 ramp; there is no extra hold interval.
+G_LEVEL_RAMP_STEPS = 25          # 25 × 0.02 s = 0.5 s, centralised here
+G_LEVEL_BASE_MARGIN = 0.4        # strict > past the platform front edge
+G_LEVEL_SNAPSHOT_VERSION = 'q027_ramp_total_0p5s'
+G_LEVEL_PRE_Q027_SNAPSHOT = 'pre_q027_hold_plus_ramp'
 DT = s2_spec.CONTROL_DT
 
 
@@ -65,8 +67,6 @@ class S2TaskConfig:
     def from_case(cls, case):
         task = case['task']
         if task == 'stairs':
-            # Original H/L regression wrapper: success at top, original timeout.
-            command = case.get('command', {})
             return cls(task='stairs_walk', speed=float(case['speed']),
                        stair_count=int(case['stair_count']),
                        initial_route_x=float(case['spawn']['local_position_xy'][0]),
@@ -100,7 +100,7 @@ class S2TaskConfig:
             hold_steps=int(command.get('hold_steps', 0)),
             completion_steps=completion,
             platform_start=task.startswith('platform_'))
-    
+
     @property
     def is_stop(self):
         return self.stop_mode != 'none' and self.task.endswith('_stop')
@@ -116,12 +116,12 @@ class S2TaskConfig:
 
 def level_condition(*, platform_front_x, platform_length, platform_y_half_width,
                     base_xy, feet_xy, base_margin=G_LEVEL_BASE_MARGIN):
-    """§5.2 condition on true terrain: four feet XY on the same top platform."""
+    """Q027 condition; strict ``>`` past the front edge, true geometry only."""
     base = (float(base_xy[0]), float(base_xy[1]))
     x0 = float(platform_front_x)
     x1 = x0 + float(platform_length)
     half = float(platform_y_half_width)
-    if not (base[0] >= x0 + float(base_margin) and base[0] <= x1):
+    if not (base[0] > x0 + float(base_margin) and base[0] <= x1):
         return False
     if abs(base[1]) > half:
         return False
@@ -132,34 +132,130 @@ def level_condition(*, platform_front_x, platform_length, platform_y_half_width,
 
 
 class LevelGate:
-    """0.5 s hold then linear 0→1; any failed condition resets to zero."""
+    """Q027: ``g(t0)=0``, ``g(t0+k)=min(k/25,1)``, whole 0.5 s ramp.
 
-    def __init__(self, *, hold_steps=G_LEVEL_HOLD_STEPS, ramp_steps=G_LEVEL_RAMP_STEPS):
-        if hold_steps < 0 or ramp_steps <= 0:
-            raise ValueError('hold must be >=0 and ramp >0')
-        self.hold_steps, self.ramp_steps = int(hold_steps), int(ramp_steps)
-        self.held = 0
-        self.value = 0.0
-        self.ever_full = False
+    ``update`` is called once per post-physics control-step sample.  Flat terrain
+    is fixed at 1 by ``flat=True``.  A failed condition zeroes the gate and
+    clears the start; the next valid frame defines a new t0 (even after full).
+    """
 
-    def update(self, condition):
-        if not condition:
-            self.held = 0
-            self.value = 0.0
+    def __init__(self, *, flat=False):
+        self.flat = bool(flat)
+        self.started = False
+        self.k = None
+        self.value = 1.0 if self.flat else 0.0
+        self.t0_step = 0 if self.flat else None
+        self.first_positive_step = 0 if self.flat else None
+        self.first_full_step = 0 if self.flat else None
+        self.interruptions = 0
+        self.restarts = 0
+        self.total_steps = 0
+        self.on_steps = 0
+        self.off_run = 0
+        self.max_off_run = 0
+        self.ever_full = self.flat
+        self.interruption_log = []
+        self.restart_log = []
+
+    def update(self, condition, *, step_index=None):
+        if self.flat:
+            self.total_steps += 1
+            self.on_steps += 1
+            self.value = 1.0
             return self.value
-        self.held += 1
-        if self.held <= self.hold_steps:
+        self.total_steps += 1
+        if not condition:
+            if self.started:
+                self.interruptions += 1
+                self.interruption_log.append(dict(step=step_index, k=self.k,
+                                                  value=self.value))
+            self.started = False
+            self.k = None
+            self.t0_step = None
             self.value = 0.0
-        else:
-            progress = (self.held - self.hold_steps) / self.ramp_steps
-            self.value = min(1.0, progress)
+            self.off_run += 1
+            self.max_off_run = max(self.max_off_run, self.off_run)
+            return self.value
+        self.off_run = 0
+        self.on_steps += 1
+        if not self.started:
+            self.started = True
+            self.restarts += 1
+            self.k = 0
+            self.t0_step = step_index
+            self.value = 0.0
+            self.restart_log.append(dict(t0=step_index))
+            return self.value
+        self.k += 1
+        self.value = min(self.k / float(G_LEVEL_RAMP_STEPS), 1.0)
+        if self.value > 0.0 and self.first_positive_step is None:
+            self.first_positive_step = step_index
         if self.value >= 1.0:
             self.ever_full = True
+            if self.first_full_step is None:
+                self.first_full_step = step_index
         return self.value
 
+    @property
+    def duty_cycle(self):
+        return (self.on_steps / self.total_steps) if self.total_steps else None
+
     def state_dict(self):
-        return dict(held=self.held, value=self.value, ever_full=self.ever_full,
-                    hold_steps=self.hold_steps, ramp_steps=self.ramp_steps)
+        return dict(version=G_LEVEL_SNAPSHOT_VERSION, flat=self.flat,
+                    started=self.started, k=self.k, value=self.value,
+                    t0_step=self.t0_step,
+                    first_positive_step=self.first_positive_step,
+                    first_full_step=self.first_full_step,
+                    interruptions=self.interruptions, restarts=self.restarts,
+                    total_steps=self.total_steps, on_steps=self.on_steps,
+                    off_run=self.off_run, max_off_run=self.max_off_run,
+                    ever_full=self.ever_full,
+                    interruption_log=list(self.interruption_log),
+                    restart_log=list(self.restart_log))
+
+    def load_state(self, state):
+        """Reject snapshots with a different g_level timing contract."""
+        if not isinstance(state, dict):
+            raise ValueError('gate snapshot must be a mapping')
+        version = state.get('version', G_LEVEL_PRE_Q027_SNAPSHOT)
+        if version != G_LEVEL_SNAPSHOT_VERSION:
+            raise ValueError(
+                f'g_level snapshot version {version!r} is not compatible with '
+                f'{G_LEVEL_SNAPSHOT_VERSION!r}; do not silently mix timing rules')
+        for key, value in state.items():
+            if key == 'version':
+                continue
+            if hasattr(self, key):
+                setattr(self, key, value)
+        return self
+
+
+def g_level_report(gate, *, four_foot_step=None, four_foot_step_end=None):
+    """Four Q027 timestamps and the measured delay from four-foot entry."""
+    report = dict(
+        four_foot_entry_step=four_foot_step,
+        first_full_geometry_step=gate.t0_step,
+        first_g_positive_step=gate.first_positive_step,
+        first_g_full_step=gate.first_full_step,
+        delay_seconds_from_four_foot=None,
+        interruptions=gate.interruptions, restarts=gate.restarts,
+        duty_cycle=gate.duty_cycle, max_off_run_steps=gate.max_off_run,
+        ever_full=gate.ever_full,
+        interruptions_detail=list(gate.interruption_log),
+        restarts_detail=list(gate.restart_log),
+        na_reasons=[])
+    if four_foot_step is None:
+        report['na_reasons'].append('four_foot_entry_not_reached')
+    if gate.t0_step is None:
+        report['na_reasons'].append('full_geometry_not_reached')
+    if gate.first_positive_step is None:
+        report['na_reasons'].append('g_level_never_positive')
+    if gate.first_full_step is None:
+        report['na_reasons'].append('g_level_never_full')
+    if four_foot_step is not None and gate.first_positive_step is not None:
+        report['delay_seconds_from_four_foot'] = (
+            (gate.first_positive_step - four_foot_step) * DT)
+    return report
 
 
 class S2StateMachine:

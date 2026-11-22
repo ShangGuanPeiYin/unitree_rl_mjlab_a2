@@ -49,7 +49,7 @@ def test_adapter_builds_all_three_s2_0_tasks():
         gate = adapter.level_gate()
         assert adapter.config.timeout_steps == case_for(task)['hard_timeout_steps']
         assert machine.config.task == task
-        assert gate.state_dict()['value'] == 0.0
+        assert gate.state_dict()['value'] == (1.0 if task == 'flat_walk' else 0.0)
     platform = s2_env.S2TaskAdapter.from_case(case_for('platform_walk'))
     assert platform.platform['front_x'] == pytest.approx(8.0)
     assert platform.platform['y_half_width'] in (0.4, 2.0)

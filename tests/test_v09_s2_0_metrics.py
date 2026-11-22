@@ -491,3 +491,17 @@ def test_missing_reason_counts_are_written_into_records_and_groups():
     assert result['map_evidence']['missing_reason'] == 'no_valid_refresh'
     group = s2_metrics.summarize_group([result], speed=0.5)
     assert group['map_evidence']['missing_reason_counts']['no_valid_refresh'] == 1
+
+
+def test_zero_valid_denominator_is_a_distinct_reason_code():
+    zero = _evidence(saturation_numerator=0, saturation_denominator=0,
+                     saturation=None, exact_clip_numerator=0,
+                     exact_clip_denominator=None, exact_clip_fraction=None,
+                     zero_valid_denominator_reason='zero_valid_denominator')
+    normalized = s2_metrics.normalize_map_evidence(zero)
+    assert normalized['zero_saturation_denominator'] is True
+    assert normalized['zero_valid_denominator_reason'] == 'zero_valid_denominator'
+    aggregate = s2_metrics.summarize_map_evidence([zero])
+    assert aggregate['zero_valid_denominator_cases'] == 1
+    assert aggregate['zero_valid_denominator_reason_counts'] == {
+        'zero_valid_denominator': 1}

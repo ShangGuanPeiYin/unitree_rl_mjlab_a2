@@ -620,14 +620,16 @@ MAP_EVIDENCE_FIELDS = (
     's_minus_t', 'exposed', 'replacement_applied', 'replacement_frames_consumed',
     'sample_reference_count', 'sample_references_sha256',
     'first_sample_reference', 'last_sample_reference',
-    'exact_clip_missing_reason', 'missing_reason')
+    'exact_clip_missing_reason', 'missing_reason',
+    'zero_valid_denominator_reason')
 
 
 def normalize_map_evidence(evidence):
     """Q023/Q024 record: keep raw numerators/denominators, NA never zero."""
     if not isinstance(evidence, dict):
         raise ValueError('map evidence must be a mapping')
-    optional = {'exact_clip_missing_reason', 'missing_reason'}
+    optional = {'exact_clip_missing_reason', 'missing_reason',
+                'zero_valid_denominator_reason'}
     missing = [key for key in MAP_EVIDENCE_FIELDS
                if key not in evidence and key not in optional]
     if missing:
@@ -663,6 +665,8 @@ def normalize_map_evidence(evidence):
                                              / result['exact_clip_denominator'])
     result['zero_valid_denominator'] = result['valid_fraction_denominator'] in (None, 0)
     result['zero_saturation_denominator'] = result['saturation_denominator'] in (None, 0)
+    if result['zero_saturation_denominator']:
+        result['zero_valid_denominator_reason'] = 'zero_valid_denominator'
     result['not_exposed'] = not bool(result['exposed'])
     native = result['native_sample_id']
     if native is not None:
@@ -703,6 +707,11 @@ def summarize_map_evidence(records):
         missing_reason_counts={reason: sum(1 for row in rows
                                            if row['missing_reason'] == reason)
                                for reason in ('event_not_reached', 'no_valid_refresh')},
+        zero_valid_denominator_cases=sum(
+            1 for row in rows if row['zero_saturation_denominator']),
+        zero_valid_denominator_reason_counts={'zero_valid_denominator': sum(
+            1 for row in rows
+            if row.get('zero_valid_denominator_reason') == 'zero_valid_denominator')},
         replacement_frames_consumed=sum(row['replacement_frames_consumed'] for row in rows),
         sample_reference_count=sum(row['sample_reference_count'] for row in rows),
         not_exposed=sum(1 for row in rows if row['not_exposed']),
