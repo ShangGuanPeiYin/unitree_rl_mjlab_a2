@@ -120,6 +120,7 @@ def test_case_record_carries_metrics_and_map_evidence():
     assert record['metrics']['quality_pass'] is True
     assert record['map_evidence']['branch'] == 'real'
     assert len(record['config_sha256']) == 64
+    assert 'g_level_report' in record
     assert len(record['evidence_contract_sha256']) == 64
 
 

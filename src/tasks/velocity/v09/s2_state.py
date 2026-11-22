@@ -249,7 +249,6 @@ def g_level_report(gate, *, four_foot_step=None, four_foot_step_end=None):
         first_g_full_step=gate.first_full_step,
         delay_seconds_from_four_foot=None,
         interruptions=gate.interruptions, restarts=gate.restarts,
-        max_off_run_steps=gate.max_off_run,
         ever_full=gate.ever_full,
         interruptions_detail=list(gate.interruption_log),
         restarts_detail=list(gate.restart_log),
@@ -530,10 +529,40 @@ def _intervals(values, steps):
     return intervals
 
 
+def first_meter_window_mask(route_x, *, platform_start, four_foot_step,
+                           valid_mask=None, length_m=1.0):
+    """Same-algorithm first-metre window for the diagnostic-only column."""
+    route = np.asarray(route_x, dtype=np.float64)
+    n = len(route)
+    valid = (np.ones(n, dtype=bool) if valid_mask is None
+             else np.asarray(valid_mask, dtype=bool))
+    base = 0 if platform_start else four_foot_step
+    mask = np.zeros(n, dtype=bool)
+    if base is None or base < 0 or base >= n:
+        return mask
+    target = route[base] + float(length_m)
+    end = None
+    for index in range(base, n):
+        if valid[index] and route[index] >= target:
+            end = index
+            break
+    if end is None:
+        end = n - 1
+    mask[base:end + 1] = valid[base:end + 1]
+    return mask
+
+
+def _event_index(step_values, step):
+    if step is None:
+        return None
+    hits = np.flatnonzero(step_values == int(step))
+    return int(hits[0]) if hits.size else None
+
+
 def g_level_window_report(g_values, steps, *, window_mask,
                           sim_times=None, four_foot_step=None,
                           full_geometry_step=None, geometry_events=None,
-                          first_meter=False):
+                          first_meter=False, geometry_intervals=None):
     """Q028 window metrics plus Q029 four event times/delays.
 
     ``g_values``/``steps`` cover the full episode; ``window_mask`` is the §6.5
@@ -580,7 +609,7 @@ def g_level_window_report(g_values, steps, *, window_mask,
             hits = np.flatnonzero(g >= 1)
             index = int(hits[0]) if hits.size else None
         else:
-            index = None if value is None else int(value)
+            index = _event_index(step_values, value)
         if index is None:
             report['events'][name] = dict(step=None, sim_time_s=None, present=False)
             report['na_reasons'].append(f'{name}_not_reached')
@@ -617,12 +646,13 @@ def g_level_window_report(g_values, steps, *, window_mask,
     if start is not None:
         full_intervals.append(dict(start=start, end=last))
     report['full_intervals'] = full_intervals
-    report['first_full_interval_start'] = None
-    if first_full_step is not None:
-        containing = [row for row in positive
-                      if row['start'] <= first_full_step <= row['end']]
-        report['first_full_interval_start'] = (containing[0]['start']
-                                               if containing else None)
+    report['first_full_interval_start'] = full_geometry_step
+    if geometry_intervals and first_full_step is not None:
+        for interval in geometry_intervals:
+            start, end = interval['start'], interval['end']
+            if start <= first_full_step <= end:
+                report['first_full_interval_start'] = start
+                break
     return report
 
 

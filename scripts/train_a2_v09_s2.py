@@ -25,10 +25,18 @@ def main(argv=None):
     parser.add_argument('--num-envs', type=int, default=1024,
                         choices=s2_spec.S2_ENV_CANDIDATES)
     parser.add_argument('--device', default='cpu')
+    parser.add_argument('--fallback-evidence', type=Path,
+                        help='JSON proving 1024 failed before using --num-envs 512')
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--output-dir', type=Path)
     args = parser.parse_args(argv)
     identity = s2_spec.validate_identity()
+    if args.num_envs == 512:
+        if args.fallback_evidence is None or not args.fallback_evidence.exists():
+            raise SystemExit('--num-envs 512 requires --fallback-evidence from a failed 1024 probe')
+        evidence = json.loads(args.fallback_evidence.read_text())
+        if evidence.get('num_envs') != 1024 or evidence.get('admitted') is not False:
+            raise SystemExit('fallback evidence must show 1024 admitted=false')
     plan = s2_runner.dry_run_plan(num_envs=args.num_envs)
     if not args.dry_run:
         raise SystemExit('S2.1 training is gated: Q021 reservation and a GPU '

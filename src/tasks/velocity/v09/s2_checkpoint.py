@@ -42,15 +42,31 @@ def validate_metadata(metadata):
         raise ValueError(f'missing S2 checkpoint metadata: {sorted(missing)}')
     if metadata['stage'] != 'S2' or metadata['course'] not in COURSES:
         raise ValueError('S2 checkpoint requires stage S2 and course S2.1/2/3')
+    for key in ('model_state', 'optimizer_state'):
+        if metadata[key] is None or (hasattr(metadata[key], '__len__')
+                                     and len(metadata[key]) == 0):
+            raise ValueError(f'{key} must be nonempty')
+    teacher = metadata['teacher_source']
+    entry = metadata['entry_weight']
+    if not isinstance(teacher, dict) or not isinstance(teacher.get('sha256'), str):
+        raise ValueError('teacher_source must include a SHA256')
+    _digest(teacher['sha256'], 'teacher_source.sha256')
+    if not isinstance(entry, dict):
+        raise ValueError('entry_weight must be a mapping')
+    _digest(entry.get('sha256'), 'entry_weight.sha256')
     for key in ('case_manifest_sha256', 'candidate_sha256', 'code_sha256',
                 'manifest_sha256'):
         _digest(metadata[key], key)
     if not isinstance(metadata['gates_passed'], list):
         raise ValueError('gates_passed must be a list')
     for entry in metadata['gates_passed']:
-        for key in ('suite', 'case_sha256', 'candidate_sha256'):
+        for key in ('suite', 'case_sha256', 'candidate_sha256', 'ab_sequence',
+                    'gate_uses'):
             if key not in entry:
                 raise ValueError(f'gate entry missing {key}')
+        if entry['ab_sequence'] not in (['gate_A', 'gate_B'],
+                                        ['gate_B', 'gate_A'], 'gate_A', 'gate_B'):
+            raise ValueError('gate ab_sequence must be a valid A/B sequence')
     for key in ('role_assignment', 'randomization', 'command_flow', 'delay_config',
                 'random_state', 'normalizer_state'):
         if not isinstance(metadata[key], dict):
@@ -65,9 +81,30 @@ def validate_metadata(metadata):
     return True
 
 
+def load_checkpoint(path, *, device='cpu'):
+    """Load schema-11 S2 state; reject foreign/legacy identities."""
+    import torch
+    payload = torch.load(path, map_location=device, weights_only=False)
+    for key, expected in IDENTITY.items():
+        if payload.get(key) != expected:
+            raise ValueError(f'S2 checkpoint {key} mismatch')
+    if payload.get('schema') != s2_spec.CHECKPOINT_SCHEMA:
+        raise ValueError('S2 checkpoint schema mismatch')
+    if payload.get('sds_sha256') != s2_spec.SDS_SHA256:
+        raise ValueError('S2 checkpoint SDS mismatch')
+    validate_metadata(payload.get('metadata', {}))
+    if not isinstance(payload.get('model'), dict) or not payload['model']:
+        raise ValueError('S2 checkpoint model state missing')
+    if not isinstance(payload.get('optimizer'), dict) or not payload['optimizer']:
+        raise ValueError('S2 checkpoint optimizer state missing')
+    return payload
+
+
 def save_checkpoint(path, model_state, optimizer_state, metadata):
     """Atomic schema-11 S2 snapshot; the external ledger is never restored."""
     validate_metadata(metadata)
+    if not model_state or not optimizer_state:
+        raise ValueError('model/optimizer state must be nonempty')
     import torch
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

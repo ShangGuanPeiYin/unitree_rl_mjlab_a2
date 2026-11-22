@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from . import s2_spec
 
+PROBE_EVAL_TIMEOUT_STEPS = 9472  # batch hard-timeout inclusive; 9471 is last index
 REQUIREMENTS = dict(gpu_peak_mib=7168, host_free_mib=4096,
                     warmups=5, measurements=50, restore_checks=1,
                     rollout_steps=48, adam_updates_per_rollout=20,
@@ -65,22 +66,32 @@ class ProbeResult:
         return reasons
 
 
-def probe_plan(num_envs, *, evaluation_timeout_steps=9472):
+def probe_plan(num_envs, *, evaluation_timeout_steps=PROBE_EVAL_TIMEOUT_STEPS):
     if num_envs not in s2_spec.S2_ENV_CANDIDATES:
         raise ValueError('S2 probe is 1024 then 512 only')
     samples = num_envs * REQUIREMENTS['warmups'] * REQUIREMENTS['rollout_steps']
     samples += num_envs * REQUIREMENTS['measurements'] * REQUIREMENTS['rollout_steps']
     samples += num_envs * REQUIREMENTS['rollout_steps']  # restore rollout
     samples += REQUIREMENTS['evaluation_envs'] * int(evaluation_timeout_steps)
+    samples += 1 * int(evaluation_timeout_steps)  # one-env video process
     return dict(num_envs=num_envs, requirements=dict(REQUIREMENTS),
+                evaluation_timeout_steps=int(evaluation_timeout_steps),
+                evaluation_samples=REQUIREMENTS['evaluation_envs'] * int(evaluation_timeout_steps),
+                video_samples=int(evaluation_timeout_steps),
                 control_samples=samples, physics_substeps=4 * samples,
                 warmups=REQUIREMENTS['warmups'],
                 measurements=REQUIREMENTS['measurements'],
                 restore_checks=REQUIREMENTS['restore_checks'])
 
 
-def choose_resource(probes):
-    """Return the first admitted 1024→512, carrying failure evidence."""
+def choose_resource(probes, *, require_1024_failure_evidence=True):
+    """Return 1024, or 512 only after an explicit 1024 failure record."""
+    probes = list(probes)
+    if require_1024_failure_evidence:
+        if not probes or probes[0].num_envs != 1024:
+            raise ValueError('512 fallback requires a 1024 probe first')
+        if probes[0].admitted():
+            raise ValueError('1024 already admitted; 512 fallback is not allowed')
     evidence = []
     for result in probes:
         evidence.append(dict(num_envs=result.num_envs, admitted=result.admitted(),

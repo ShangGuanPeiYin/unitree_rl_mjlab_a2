@@ -119,7 +119,9 @@ def reward_terms(frame):
     terms['joint_limits'] = float(frame.get('joint_limit_violation', 0.0))
     terms['horizontal_overspeed'] = g_level * max(
         float(frame.get('v_heading', v_b[0])) - c_exec - 0.15, 0.0) ** 2
-    terms['stable_stand'] = 1.0 if (decel and frame.get('stable_stand', False)) else 0.0
+    # §5.3: I_stable × I_abs(c_exec)≤1e-7; partial DECEL commands never pay it.
+    terms['stable_stand'] = 1.0 if (decel and abs(c_exec) <= 1e-7
+                                     and frame.get('stable_stand', False)) else 0.0
     if decel:
         # Stop request: forward progress and air-time reward are closed.
         air_time = 0.0

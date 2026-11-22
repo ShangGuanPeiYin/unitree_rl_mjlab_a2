@@ -165,7 +165,7 @@ class S2Ledger:
                      spent={key: 0 for key in CATEGORIES},
                      reserved={key: 0 for key in CATEGORIES},
                      obligations={}, learning_obligations={}, items=[],
-                     stage_plan_sha256=None)
+                     stage_plan_sha256=None, operations={})
         for row in events[1:]:
             kind = row['kind']
             if kind == 'stage_reserve':
@@ -187,7 +187,12 @@ class S2Ledger:
                         limit=int(item['control_samples']), spent=0, reserved=0,
                         basis=item['basis'], closed=False)
             elif kind == 'obligation_reserve':
+                operation_id = row.get('operation_id')
+                if not operation_id or operation_id in state['operations']:
+                    raise ValueError('operation_id must be unique / nonempty')
                 obligation = self._obligation(state, row['obligation_id'])
+                state['operations'][operation_id] = dict(kind='reserve',
+                                                         obligation_id=row['obligation_id'])
                 samples = int(row['samples'])
                 if samples <= 0:
                     raise ValueError('reserve samples must be positive')
@@ -196,7 +201,12 @@ class S2Ledger:
                 obligation['reserved'] += samples
                 state['reserved'][obligation['category']] += samples
             elif kind == 'obligation_commit':
+                operation_id = row.get('operation_id')
+                if not operation_id or operation_id in state['operations']:
+                    raise ValueError('operation_id must be unique / nonempty')
                 obligation = self._obligation(state, row['obligation_id'])
+                state['operations'][operation_id] = dict(kind='commit',
+                                                         obligation_id=row['obligation_id'])
                 samples = int(row['samples'])
                 if samples <= 0 or obligation['reserved'] < samples:
                     raise ValueError('commit exceeds reserved samples')

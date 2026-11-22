@@ -166,3 +166,67 @@ def dry_run_plan(*, num_envs=1024):
         std_unfreeze_from='S2.1', std_range=[STD_MIN, STD_MAX],
         new_adam_at='S2.1', physics_started=False, training_started=False,
         note='CPU dry-run only; execution requires Q021 reservation and a GPU window')
+
+
+def gaussian_entropy(std, *, action_dim=12):
+    std = np.asarray(std, dtype=np.float64)
+    if np.any(std <= 0):
+        raise ValueError('std must be positive')
+    return float(0.5 * action_dim * (1.0 + math.log(2.0 * math.pi))
+                 + np.sum(np.log(std)))
+
+
+def approximate_kl(old_log_prob, new_log_prob):
+    old = np.asarray(old_log_prob, dtype=np.float64)
+    new = np.asarray(new_log_prob, dtype=np.float64)
+    if old.shape != new.shape or old.size == 0:
+        raise ValueError('KL inputs must share a nonempty shape')
+    log_ratio = new - old
+    return float(np.mean((np.exp(log_ratio) - 1.0) - log_ratio))
+
+
+def assert_frozen(*, teacher_eval, teacher_grad_enabled, normalizer_updates,
+                  stage='S2'):
+    if not teacher_eval:
+        raise ValueError('teacher must stay in eval mode')
+    if teacher_grad_enabled:
+        raise ValueError('teacher must have no gradients')
+    if normalizer_updates != 0:
+        raise ValueError('student normalizer buffers are frozen in S2')
+    if stage not in ('S2', 'S2.1', 'S2.2', 'S2.3'):
+        raise ValueError('frozen contract applies to S2 stages')
+    return True
+
+
+class PPOTrainerState:
+    """Minimal logical-minibatch update state for CPU numeric tests."""
+
+    def __init__(self, *, learning_rate=LR_INITIAL, std=0.3, course='S2.0'):
+        self.learning_rate = float(learning_rate)
+        self.std = project_std(std)
+        self.course = course
+        self.adam_id = 'adam_s2.1' if course == 'S2.1' else 'adam_s2.0'
+        self.optimizer_steps = 0
+
+    def logical_minibatch_update(self, *, old_log_prob, new_log_prob,
+                                 microbatch_gradients):
+        kl = approximate_kl(old_log_prob, new_log_prob)
+        self.learning_rate = adjust_learning_rate(self.learning_rate, kl)
+        accumulated = weighted_accumulate(microbatch_gradients)
+        self.optimizer_steps += 1
+        return dict(kl=kl, learning_rate=self.learning_rate,
+                    gradient=accumulated, optimizer_steps=self.optimizer_steps,
+                    adam_updates=1)
+
+    def switch_course(self, course):
+        if course not in ('S2.1', 'S2.2', 'S2.3'):
+            raise ValueError('unknown S2 course')
+        previous = (self.learning_rate, self.std, self.course)
+        self.course = course
+        if course == 'S2.1':
+            self.adam_id = 'adam_s2.1'
+        self.learning_rate = previous[0]
+        self.std = previous[1]
+        return dict(previous=previous, learning_rate=self.learning_rate,
+                    std=self.std, adam_id=self.adam_id,
+                    reset_learning_rate=False, reset_std=False)

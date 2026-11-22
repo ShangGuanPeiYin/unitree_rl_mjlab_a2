@@ -91,3 +91,16 @@ def test_twenty_weighted_columns_match_spec():
     assert rewards.WEIGHTS['ang_vel_xy'] == (-0.05, -0.20)
     assert rewards.WEIGHTS['feet_air_time'] == (0.2, 0.0)
     assert rewards.WEIGHTS['stable_stand'] == (0.0, 1.0)
+
+
+def test_b_v6_1_stable_stand_only_at_exact_zero_executed_command():
+    assert rewards.compute_reward(frame(phase='DECEL', c_exec=0.25,
+                                        stable_stand=True))['raw_terms']['stable_stand'] == 0.0
+    assert rewards.compute_reward(frame(phase='DECEL', c_exec=0.1,
+                                        stable_stand=True))['raw_terms']['stable_stand'] == 0.0
+    assert rewards.compute_reward(frame(phase='DECEL', c_exec=1e-12,
+                                        stable_stand=True))['raw_terms']['stable_stand'] == 1.0
+    assert rewards.compute_reward(frame(phase='DECEL', c_exec=0.0,
+                                        stable_stand=True))['raw_terms']['stable_stand'] == 1.0
+    assert rewards.compute_reward(frame(phase='POST_WALK', c_exec=0.0,
+                                        stable_stand=True))['raw_terms']['stable_stand'] == 0.0

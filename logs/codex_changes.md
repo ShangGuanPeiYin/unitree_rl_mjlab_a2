@@ -4269,3 +4269,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 阻断：B-V6-1 stable_stand 在 c_exec=0.25 仍付 +1；B-V6-2 acceptance 缺站立 roll/pitch/高度/无巡航窗/27×100/6400 保持；B-V6-3 512 可不经 1024 失败直选、probe 缺录像、9472 vs 9471；B-V6-4 operation_id 无去重；B-V6-5 checkpoint 无 loader/跨版本守卫、gates_passed 缺 A/B；B-V6-6 runner 非完整 PPO 训练环；B-V6-7 首米窗缺失、首次满值区间起点取错、旧 duty 字段未删、步号当数组下标。
 - 处置：7 项均按 SDS 原文下达修复，无需新裁定。
 - 未执行：未跑 GPU/物理、未训练、未写正式原子预留。
+
+
+## 2026-11-22 V6 七项阻断修复 + T5 执行编排
+
+- 目的：修复训练栈七项阻断，并补齐 S2.0 执行编排（仍无物理装配）。
+- 涉及文件：`s2_rewards.py`、`s2_acceptance.py`、`s2_resources.py`、`s2_ledger.py`、`s2_checkpoint.py`、`s2_runner.py`、`s2_state.py`；新增 `src/tasks/velocity/v09/s2_execute.py`、`scripts/run_a2_v09_s2_0.py`；新增/更新 S2 测试；文档 `docs/v09_s2_0_implementation_plan_v8.md`。
+- 实现要点：`stable_stand` 仅 DECEL/HOLD 且 `|c_exec|≤1e-7`；acceptance 补有效巡航窗、站立 roll/pitch≤10°、高度≥0.30、严格 27×100、9 平地组 6400 保持；512 需 1024 失败证据且 CLI 需 `--fallback-evidence`；probe 加视频项、统一 9472；台账 operation_id 全局唯一；checkpoint loader/跨版本拒绝/A-B 序列/teacher-entry SHA；runner 补 entropy、approx KL、先 KL 定 LR 再一次 Adam、教师 eval 与 normalizer 冻结；Q028/Q029 首米窗与区间起点修正、去旧 duty 字段、事件按控制步号映射。
+- 验证：本机复跑 S2 套件 **173 passed**；`run_a2_v09_s2_0.py --plan-only` 输出 30 批；预留 plan 仍 `773b53c6…`、未写 S2 台账。
+- 未执行：无 GPU/物理/训练；GPU smoke 仍缺 `s2_physics.build_s2_env`。

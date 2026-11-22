@@ -270,7 +270,7 @@ def test_q028_q029_forced_vector_t0_to_t25():
     assert report['delays']['full_geometry']['seconds'] == pytest.approx(0.0)
     assert report['delays']['g_positive']['seconds'] == pytest.approx(0.02)
     assert report['delays']['g_full']['seconds'] == pytest.approx(0.50)
-    assert report['first_full_interval_start'] == 1
+    assert report['first_full_interval_start'] == 0
     assert report['window_valid'] is False  # 26 samples < 1 s, metrics still reported
 
 
@@ -326,7 +326,7 @@ def test_q029_interruption_keeps_intervals_and_first_full_start():
         full_geometry_step=0)
     assert report['positive_intervals'] == [
         dict(start=1, end=2), dict(start=5, end=6)]
-    assert report['first_full_interval_start'] == 1
+    assert report['first_full_interval_start'] == 0
     assert report['events']['g_full']['step'] == 2
 
 
@@ -342,3 +342,23 @@ def test_q028_group_summary_and_platform_birth_interaction():
     assert summary['N'] == 0
     assert summary['average_intensity'] is None
     assert summary['geometry_failure_counts']['feet_not_platform'] == 0
+
+
+def test_b_v6_7_first_meter_window_and_nonzero_step_mapping():
+    route = [0.0, 0.2, 0.5, 1.0, 1.5, 2.0]
+    mask = state.first_meter_window_mask(route, platform_start=True,
+                                         four_foot_step=0, length_m=1.0)
+    assert mask.tolist() == [True, True, True, True, False, False]
+    steps = [100, 103, 107, 110, 114, 120]
+    g = [0.0, 0.04, 0.5, 1.0, 1.0, 1.0]
+    report = state.g_level_window_report(
+        g, steps, window_mask=[True] * 6, four_foot_step=100,
+        full_geometry_step=107, first_meter=True)
+    assert report['events']['four_foot_entry']['step'] == 100
+    assert report['events']['full_geometry']['step'] == 107
+    assert report['first_meter_window'] is True
+    missing = state.g_level_window_report(
+        g, steps, window_mask=[True] * 6, four_foot_step=999,
+        full_geometry_step=998)
+    assert missing['events']['four_foot_entry']['present'] is False
+    assert 'four_foot_entry_not_reached' in missing['na_reasons']
