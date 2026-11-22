@@ -188,6 +188,153 @@ def _select_latest(candidates):
     return [value[1] for value in chosen.values()]
 
 
+def _original_failure(record):
+    """Read the original H episode reason; it is not stored in the H manifest."""
+    source = (record or {}).get('source') or {}
+    path = source.get('original_path')
+    if not path:
+        return {}
+    path = ROOT / path
+    if not path.is_file():
+        return {}
+    episode = (_load_json(path) or {}).get('episode') or {}
+    return dict(reason=episode.get('reason'),
+                success=episode.get('success'),
+                failure=episode.get('failure'),
+                masks=episode.get('failure_masks'),
+                path=str(path))
+
+
+def _h_reasons(row, original):
+    """Q033: every H case remains not_verified; preserve the diagnostic reason."""
+    reasons = []
+    if row.get('status') != 'completed':
+        reasons.append('physical_result_missing')
+    if row.get('success') or not row.get('failure'):
+        reasons.append('success_no_failure')
+    original_reason = (original or {}).get('reason')
+    current_reason = row.get('termination_reason') if row.get('failure') else None
+    if original_reason and current_reason and original_reason != current_reason:
+        reasons.append('category_mismatch')
+    diagnostic = row.get('coverage_diagnostic') or {}
+    if diagnostic.get('covered') is not True:
+        reasons.append('position_not_covered')
+    if not reasons:
+        # Matching category/position is only a diagnostic candidate, never a
+        # formal Q033 verification.  Old matrix evidence was not a Q033 rerun.
+        if str(row.get('attempt_id') or '').startswith('h-q033-r1'):
+            reasons.append('candidate_only')
+        else:
+            reasons.append('diagnostic_match_not_rerun')
+    return reasons
+
+
+def _window_summary(rows):
+    """Four fixed Q032 windows, aggregated by group; top is explicitly counted."""
+    names = ('front_edge', 'four_feet', 'top_arrived', 's6_5_cruise')
+    groups = {}
+    for row in rows:
+        key = (row.get('task'), row.get('branch'), row.get('platform_width'))
+        groups.setdefault(key, []).append(row)
+    result = {}
+    for (task, branch, width), group in sorted(groups.items(),
+                                                key=lambda item: str(item[0])):
+        item = dict(cases=len(group),
+                    top_arrived_cases=sum(bool(row.get('top_arrived'))
+                                          for row in group),
+                    windows={})
+        for name in names:
+            windows = [(row.get('windows') or {}).get(name) or {} for row in group]
+            ok = [window for window in windows if window.get('status') == 'ok']
+            na = [window for window in windows if window.get('status') != 'ok']
+            frames = [int(window['frames']) for window in ok
+                      if window.get('frames') is not None]
+            item['windows'][name] = dict(
+                cases=len(group), ok=len(ok), na=len(na),
+                frames_min=min(frames) if frames else None,
+                frames_max=max(frames) if frames else None,
+                nose_down_all=(all(float(window.get('nose_down_fraction', 0)) == 1.0
+                                   for window in ok) if ok else None),
+                reasons=sorted({str(window.get('reason')) for window in na
+                                if window.get('reason')}))
+        result[f'{task}/{branch}/w{width}'] = item
+    return result
+
+
+def _q031_inputs():
+    """Representative Q031 real Actor inputs: valid channel and invalid counts."""
+    base = ROOT / 'logs/a2_v09/s2_0/evidence'
+    result = dict(
+        schema='a2_v09_s2_0_q031_input_validity_v1',
+        valid_channel='heightmap[1] (1=valid, 0=invalid)',
+        coverage_limitation=(
+            '两个代表性 Q031 输入的所有帧 invalid_cells 均为 0；因此这些样本'
+            '不能区分“台外低面有效回波”和“无回波无效格”，也不能推断某个'
+            '边缘格是摔倒的因果格。'),
+        cases={})
+    for key, name in (('platform', 'q031-platform-inputs-r1'),
+                      ('stairs', 'q031-stairs-inputs-r1')):
+        directory = base / name
+        inputs_path = directory / 'inputs.npz'
+        metadata_path = directory / 'inputs_metadata.json'
+        result['dirs'] = result.get('dirs', {})
+        result['dirs'][key] = str(inputs_path)
+        if not inputs_path.is_file():
+            result['cases'][key] = dict(status='missing', path=str(inputs_path))
+            continue
+        payload = np.load(inputs_path, allow_pickle=False)
+        heightmaps = payload['heightmap']
+        valid = heightmaps[:, 1] > 0.5
+        invalid = ~valid
+        result['cases'][key] = dict(
+            status='ok', path=str(inputs_path),
+            inputs_sha256=_sha(inputs_path),
+            metadata_sha256=_sha(metadata_path),
+            frames=int(heightmaps.shape[0]),
+            cells_per_frame=int(heightmaps.shape[2] * heightmaps.shape[3]),
+            invalid_cells=int(invalid.sum()),
+            frames_with_invalid=int(invalid.any(axis=(1, 2)).sum()),
+            all_valid=bool(valid.all()))
+    return result
+
+
+def _group_stats(rows, task, branch, width):
+    group = [row for row in rows
+             if row.get('task') == task and row.get('branch') == branch
+             and row.get('platform_width') == width]
+    routes = [float(row['route_max']) for row in group
+              if row.get('route_max') is not None]
+    return dict(cases=len(group),
+                failures=sum(bool(row.get('failure')) for row in group),
+                top_arrived=sum(bool(row.get('top_arrived')) for row in group),
+                route_min=min(routes) if routes else None,
+                route_max=max(routes) if routes else None)
+
+
+def _width_confound(rows):
+    """The 0.8/4.0 comparison is not a paired control and cannot be causal."""
+    return dict(
+        status='confounded_not_causal',
+        case_paired=False,
+        spawn_paired=False,
+        stair_collision_boxes_identical=True,
+        only_platform_half_width_differs=True,
+        observed=dict(
+            stairs_real=dict(w0_8=_group_stats(rows, 'stairs_walk', 'real', 0.8),
+                             w4_0=_group_stats(rows, 'stairs_walk', 'real', 4.0)),
+            stairs_plane=dict(w0_8=_group_stats(rows, 'stairs_walk',
+                                               'plane_diagnostic', 0.8),
+                              w4_0=_group_stats(rows, 'stairs_walk',
+                                                'plane_diagnostic', 4.0))),
+        statement=(
+            '病例/出生未配对，宽度非已证因果。楼梯局部碰撞几何相同（仅顶平台'
+            '半宽不同），但不同宽度组使用不同病例、tile/origin 与出生 x/y，'
+            '因此 6.95–8.16 与 9.17–9.31 m 的差异不能归因于平台宽度。'),
+        valid_control=(
+            '只有同一病例、同一速度的 real/plane 分支配对才是有效对照；'
+            '当前 0.8/4.0 宽度组不是该配对。'))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--evidence-root', type=Path,
@@ -227,20 +374,37 @@ def main(argv=None):
     expected_h = len(h_manifest['records'])
     h_by_sha = {record['case']['case_sha256']: record for record in h_manifest['records']}
     for row in h:
-        original = h_by_sha.get(row['case_sha256'], {}).get('original_failure_position')
+        record = h_by_sha.get(row['case_sha256'], {})
+        original = record.get('original_failure_position')
+        row['lesson'] = record.get('lesson')
         row['original_failure_position'] = original
+        original_failure = _original_failure(record)
+        row['original_failure_reason'] = original_failure.get('reason')
         if original and 'route_x' not in original and 'terminal_route_x' in original:
             original = dict(original, route_x=original['terminal_route_x'])
         top = row.get('windows', {}).get('top_arrived') or {}
         row['top_forward_lean'] = (None if top.get('status') != 'ok'
                                    else bool(top.get('nose_down_fraction', 0) > 0.5))
         if row.get('failure_context') and original:
-            row['failure_coverage'] = s2_metrics.original_failure_coverage(
+            row['coverage_diagnostic'] = s2_metrics.original_failure_coverage(
                 dict(max_route_x=row['route_max'], failure_context=row['failure_context']),
                 original)
         else:
-            row['failure_coverage'] = dict(status='not_verified',
-                                           note='original failure position or failure context missing')
+            row['coverage_diagnostic'] = dict(
+                status='not_verified',
+                note='original failure position or failure context missing')
+        reasons = _h_reasons(row, original_failure)
+        row['failure_coverage'] = dict(
+            status='not_verified',
+            q033='all six H cases remain not_verified; do not read diagnostic '
+                 'position/surface matches as verified reproductions',
+            reasons=reasons,
+            reason=('; '.join(reasons) if reasons else 'not_verified'),
+            diagnostic=row['coverage_diagnostic'])
+        row['h_verification'] = dict(status='not_verified', reasons=reasons,
+                                     original_reason=original_failure.get('reason'),
+                                     current_reason=(row.get('termination_reason')
+                                                     if row.get('failure') else None))
     def t10_reference():
         refs = {}
         base = ROOT / 'logs/a2_v09/s2_0/evidence'
@@ -266,12 +430,60 @@ def main(argv=None):
                               'simulation/field opposition or that map replacement caused the fall.')
 
     user_observation = t10_reference()
+    four_windows = _window_summary(s2)
+    q031_inputs = _q031_inputs()
+    edge_path = (ROOT / 'logs/a2_v09/s2_0/reports' /
+                 'platform_edge_analysis-v1.json')
+    edge = _load_json(edge_path) if edge_path.is_file() else None
+    edge_diagnostic = None
+    if edge:
+        edge_agg = edge.get('width_0_8') or {}
+        edge_diagnostic = dict(
+            source=str(edge_path), source_sha256=_sha(edge_path),
+            case_sha256=edge.get('case_sha256'),
+            input_frames=edge.get('input_frames'),
+            outside_valid=edge_agg.get('outside_valid'),
+            outside_invalid=edge_agg.get('outside_invalid'),
+            outside_clip_minus1=edge_agg.get('outside_clip_minus1'),
+            outside_clip_fraction=edge_agg.get('outside_clip_fraction'),
+            inside_valid_height_mean=edge_agg.get('inside_valid_height_mean'),
+            outside_valid_height_mean=edge_agg.get('outside_valid_height_mean'),
+            caveat=edge.get('caveat') or
+                   'whole-image plane replacement cannot identify an edge cell as causal')
     report = dict(
-        schema='a2_v09_s2_0_report_v1',
+        schema='a2_v09_s2_0_report_v2',
         generated_at_utc=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         coverage=dict(expected_s2=expected_s2, observed_s2=len(s2),
                       expected_h=expected_h, observed_h=len(h)),
         s2_cases=s2, h_cases=h,
+        h_coverage=dict(
+            status='not_verified', cases=len(h),
+            counts={'not_verified': sum(
+                (row.get('failure_coverage') or {}).get('status') == 'not_verified'
+                for row in h)},
+            rule='Q033: all six H cases remain not_verified; diagnostic '
+                 'position/surface matches are not formal verification'),
+        four_window_summary=four_windows,
+        top_window_checks=dict(
+            stairs_real_w0_8=dict(
+                n=four_windows.get('stairs_walk/real/w0.8', {}).get('cases'),
+                top_arrived=four_windows.get('stairs_walk/real/w0.8', {}).get(
+                    'top_arrived_cases'),
+                frames_min=four_windows.get('stairs_walk/real/w0.8', {}).get(
+                    'windows', {}).get('top_arrived', {}).get('frames_min'),
+                frames_max=four_windows.get('stairs_walk/real/w0.8', {}).get(
+                    'windows', {}).get('top_arrived', {}).get('frames_max')),
+            stairs_plane=dict(
+                n=sum(four_windows.get(f'stairs_walk/plane_diagnostic/w{width}', {}).get(
+                    'cases', 0) for width in (0.8, 4.0)),
+                top_arrived=sum(four_windows.get(f'stairs_walk/plane_diagnostic/w{width}', {}).get(
+                    'top_arrived_cases', 0) for width in (0.8, 4.0)),
+                all_not_top=all(
+                    four_windows.get(f'stairs_walk/plane_diagnostic/w{width}', {}).get(
+                        'top_arrived_cases') == 0 for width in (0.8, 4.0)))),
+        width_confound=_width_confound(s2),
+        q031_representative_inputs=q031_inputs,
+        edge_diagnostic=edge_diagnostic,
         failure_counts={
             'runner_failed': sum(row['termination'] == 'runner_failed' for row in s2),
             'physical_failure': sum(row['termination'] == 'physical_failure' for row in s2),
@@ -289,7 +501,9 @@ def main(argv=None):
                    for row in selected]),
         user_observation=user_observation,
         note='all windows exclude post_reset rows and retain terminal events; '
-             'first-meter uses four-feet zero per s2_metrics; old artifacts unchanged')
+             'first-meter uses four-feet zero per s2_metrics; old artifacts unchanged; '
+             'H coverage is not_verified for all six cases; invalid_cells=0 in both '
+             'representative Q031 inputs')
     if args.dry_run:
         print(json.dumps(dict(coverage=report['coverage'],
                               failure_counts=report['failure_counts'],

@@ -93,15 +93,25 @@ def main(argv=None):
         label = f'{key[0]}/{key[1]}/w{key[2]}'
         result[label] = summarize_group(rows)
     result['H'] = {h['case_sha256'][:12]: dict(
+        lesson=h.get('lesson'), original_failure_reason=h.get('original_failure_reason'),
         status=h['status'], termination=h['termination'],
         route_max=h['route_max'], failure_context=h['failure_context'],
         top_arrived=h['top_arrived'], top_forward_lean=h.get('top_forward_lean'),
         windows=h['windows'], failure_coverage=h.get('failure_coverage'),
+        h_verification=h.get('h_verification'),
         events=h.get('events')) for h in report['h_cases']}
+    result['h_coverage'] = report.get('h_coverage')
+    result['four_window_summary'] = report.get('four_window_summary')
+    result['top_window_checks'] = report.get('top_window_checks')
+    result['width_confound'] = report.get('width_confound')
+    result['q031_representative_inputs'] = report.get('q031_representative_inputs')
+    result['edge_diagnostic'] = report.get('edge_diagnostic')
     result['evidence_gaps'] = dict(
-        heightmap='trace/npz store only map_valid; no heightmap channels or inputs.npz',
-        platform_heightmap_comparison='not available; needs Q031 --save-inputs',
-        h_q023='3 H cases stopped on Q023 real-map frame proof at 284/349/284/349; no physical failure event')
+        heightmap='trace/npz store only map_valid; raw heightmap channels are only in Q031 inputs.npz',
+        platform_heightmap_comparison='Q031 platform inputs available; no paired width-4.0 inputs',
+        h_q023='original H01/H02/H03 stopped on Q023 real-map frame proof; '
+               'the rerun evidence is reported separately and all six H cases '
+               'remain not_verified')
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n')
     print(json.dumps(result, ensure_ascii=False, indent=2))

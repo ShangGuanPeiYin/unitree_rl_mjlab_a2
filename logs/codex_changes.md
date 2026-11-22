@@ -4550,3 +4550,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 修正项：top 窗实际 43–55（非 46–55）；H coverage 应按 Q033 全部 `not_verified`（原 5 covered 违规：H00 类别不匹配、e826 为 success）；宽 0.8 与 4.0 的 spawn/case 未配对，7.0 vs 9.2 不能归因平台宽度；两个代表输入 `invalid_cells=0`，"低面回波 vs 无效格分列"只能报 0 并说明覆盖限制。
 - 阻塞：1024 probe 因 `S2TrainEnv._sample_tiles` 签名崩于初始化；probe 预留已释放，训练不得启动。
 - 预算：matrix 130,235、H 3,242、debug 11,905、总 145,382；probe 预留已释放。
+
+## 2026-11-22 Q033 修正：H 全 not_verified、宽度混杂、窗口区间与 Q031 invalid
+
+- 目的：按 V9/Q033 修正报告语义，不修改已完成证据、矩阵或原始 trace/npz。
+- 涉及文件：`scripts/report_a2_v09_s2_0.py`（H 原类别读取、`not_verified` 覆盖、四窗口聚合、宽度混杂、Q031 invalid 统计）、`scripts/analyze_a2_v09_s2_groups.py`（H/窗口/宽度/invalid 字段）、新增 `matrix-final-v7/report.json`、`evidence_index.json`、`group_attribution-v5.json`、`group_attribution-v3.md`；`s2_train_real.py` 的 `_sample_tiles` 绑定签名保留为 `(_self, ids)`。
+- 报告修正：六例 H 的 `failure_coverage.status` 全部 `not_verified`，不再出现 5 covered；原因分别记录类别不符、success/no failure、位置未覆盖、candidate-only、diagnostic-only。`stairs_walk/real/w0.8` top 窗 **43–55 帧**；两个 plane 组合计 top **0/30**。宽度对照标注“病例/出生未配对，宽度非已证因果”，有效对照仅同病例同速度 real/plane 配对。Q031 platform 58 帧、stairs 1610 帧 `invalid_cells=0`，并写明不能推断边缘格因果的限制。
+- probe：1024 `S2TrainEnv` 构造已通过；`1024-r2` 在首个 warmup 的 Warp CUDA graph launch OOM（peak 5396.76 MiB，measurements=0），预留已释放，未产生 admission。未再启动正式 probe。
+- 验证：`pytest -q tests/test_v09_s2_0_*.py tests/test_v09_s2_1_train.py` → **233 passed**。
+- 未执行：正式 1024 probe/admission、训练、台账写入；报告仅新增版本化文件。

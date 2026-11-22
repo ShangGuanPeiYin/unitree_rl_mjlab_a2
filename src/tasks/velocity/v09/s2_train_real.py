@@ -161,7 +161,7 @@ class S2TrainEnv:
             apply_train_spawn_z(self.env, self.plan)
             import types
             tile_by = list(self._tile_by_env)
-            def _sample_tiles(ids):
+            def _sample_tiles(_self, ids):
                 ids = ids.to(torch.long)
                 self.env.tile_ids[ids] = torch.as_tensor(
                     [tile_by[int(i)] for i in ids.tolist()], dtype=torch.long,
