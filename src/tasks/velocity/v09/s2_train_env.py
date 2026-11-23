@@ -188,6 +188,15 @@ class S2FakeTrainEnv:
         return dict(proprio=proprio, history=history, heightmap=heightmap,
                     route_error=route_error, privileged=privileged)
 
+    def clean_flags(self):
+        tasks = [str(row.get('task', ''))
+                 for row in self.role_plan.get('envs') or []]
+        n = self.num_envs
+        return dict(ordinary_flat=[task == 'flat_walk' for task in tasks]
+                    if len(tasks) == n else [False] * n,
+                    nominal_dynamics=[True] * n, no_noise=[True] * n,
+                    no_delay=[True] * n, no_force=[True] * n)
+
     def reset(self):
         self.step_count = 0
         self._obs = self._observation()

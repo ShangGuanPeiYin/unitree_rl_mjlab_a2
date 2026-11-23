@@ -4928,3 +4928,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - `s2_terrain.py`：`query_surface` 接受 torch tensor 输入并转 CPU numpy，避免 CUDA tensor/CPU spec 混用。
 - `collect_a2_v09_s2_gate_original_6400.py`：ledger operation_id 加入 run_tag，允许失败后重跑不再冲突。
 - 验证：`pytest tests/test_v09_s2_*.py tests/test_v09_s2_1_train.py` 通过；真实 GPU smoke `scripts/smoke_a2_v09_s2_train.py --course S2.1 --steps 200 --execute` 三个 role 全 `completed: true`（stairs 400 行、platform 200 行、flat 400 行，trace 记录 phase/c_request/c_exec/a_request/a_applied/top_arrived），输出 `logs/a2_v09/s2/smoke7/`。
+
+## 2026-11-23 §5.4 平地锚定聚合修正与 clean 五标志
+
+- `s2_train.py`：锚定项改为 SDS:690-695 合同——每个 micro-batch 只累计分子 `Σ(mu_s-mu_t)²`，在一个 logical minibatch 的 micro 循环结束后一次性除以该 minibatch 自己的 `n_clean` 并 backward；不再按 micro 用全 rollout `n_clean` 除。
+- `s2_train.py` 的 clean 判定改为优先调用环境 `clean_flags()`；`s2_train_real.S2TrainEnv` 与 `s2_train_env.S2FakeTrainEnv` 新增 `clean_flags()`（ordinary_flat 仅 `flat_walk`；v07 L 阶段无噪声/延迟/外力，其余四项为真）。
+- 新增 CPU 测试 `test_anchor_gradient_uses_logical_minibatch_n_clean`：用同一初始权重跑 β=0/0.1 两次 update，取第一个 minibatch 的梯度差，与独立 autograd 手算 `β/(12·n_clean_mb)·2Σ(mu_s−mu_t)∂mu/∂θ` 对比（差 <1e-6），可区分旧的全局 n_clean 错误。
+- 修 `tests/test_v09_s2_lifecycle.py`：真实 v07 `TaskState` 是 frozen dataclass，adapter 用 `dataclasses.replace`；测试桩由 `SimpleNamespace` 改为 frozen dataclass。
+- 验证：S2 全量 `pytest` **302 passed**（未运行 GPU/真实训练）。

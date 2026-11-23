@@ -134,9 +134,16 @@ def _fake_train_env():
 
 
 def test_s2_train_env_task_state_calls_lifecycle():
-    from types import SimpleNamespace
+    import dataclasses
     import torch
     from src.tasks.velocity.v09 import s2_train_real
+
+    @dataclasses.dataclass(frozen=True)
+    class _FrozenState:
+        success: torch.Tensor
+        failure: torch.Tensor
+        timeout: torch.Tensor
+        local: torch.Tensor
     obj = object.__new__(s2_train_real.S2TrainEnv)
     obj.plan = dict(rows=[dict(
         task='stairs_walk', role='stairs_walk', speed=0.5, post_distance=5.0,
@@ -162,7 +169,7 @@ def test_s2_train_env_task_state_calls_lifecycle():
     for step in range(1, 9):
         local = 1.0 * step
         top = step >= 3
-        state = SimpleNamespace(
+        state = _FrozenState(
             success=torch.tensor([top]), failure=torch.tensor([False]),
             timeout=torch.tensor([False]), local=torch.tensor([[local, 0.0, 0.0]]))
         env.episode_length_buf = torch.tensor([step])

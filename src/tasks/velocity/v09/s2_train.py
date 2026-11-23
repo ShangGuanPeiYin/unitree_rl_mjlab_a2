@@ -214,13 +214,20 @@ class S2Trainer:
         old_logs = flatten_time_major_old_logs(transitions)
         # flatten logical rollout; keep one logical batch for KL/LR
         n = self.env.num_envs
-        role_rows = (getattr(self.env, 'role_plan', {}) or {}).get('envs') or []
-        flat = [str(row.get('task', '')).startswith('flat_') for row in role_rows]
-        if len(flat) != n:
-            flat = [False] * n
-        clean = s2_loss.clean_flat_mask(dict(
-            ordinary_flat=flat, nominal_dynamics=[True] * n,
-            no_noise=[True] * n, no_delay=[True] * n, no_force=[True] * n))
+        flags = None
+        clean_flags = getattr(self.env, 'clean_flags', None)
+        if callable(clean_flags):
+            flags = clean_flags()
+        if flags is None:
+            role_rows = (getattr(self.env, 'role_plan', {}) or {}).get('envs') or []
+            flat = [str(row.get('task', '')).startswith('flat_')
+                    for row in role_rows]
+            if len(flat) != n:
+                flat = [False] * n
+            flags = dict(ordinary_flat=flat, nominal_dynamics=[True] * n,
+                         no_noise=[True] * n, no_delay=[True] * n,
+                         no_force=[True] * n)
+        clean = s2_loss.clean_flat_mask(flags)
         clean_env = torch.tensor(clean, dtype=torch.bool, device=self.device)
         for epoch in range(s2_runner.EPOCHS):
             # deterministic logical minibatches over flattened samples
@@ -252,11 +259,14 @@ class S2Trainer:
                 group['lr'] = self.learning_rate
             flat_clean = clean_env.unsqueeze(0).expand(
                 len(transitions), n).reshape(-1)
-            n_clean = int(flat_clean.sum())
             order = torch.arange(flat_actions.shape[0], device=self.device)
             per = math.ceil(len(order) / s2_runner.MINIBATCHES)
             for start in range(0, len(order), per):
                 index = order[start:start + per]
+                # SDS 690-695: accumulate the anchor numerator per micro-batch and
+                # divide once by the logical minibatch's own n_clean.
+                n_clean = int(flat_clean[index].sum())
+                anchor_numerator = None
                 self.optimizer.zero_grad(set_to_none=True)
                 for micro_start in range(0, len(index), s2_runner.MICROBATCH_MAX):
                     micro = index[micro_start:micro_start + s2_runner.MICROBATCH_MAX]
@@ -286,9 +296,12 @@ class S2Trainer:
                             mu_student = self.model(clean_item)
                             with torch.no_grad():
                                 mu_teacher = self.teacher(teacher_item).detach()
-                            anchor = torch.sum((mu_student - mu_teacher) ** 2) / (12.0 * n_clean)
-                            scaled_loss = scaled_loss + self.beta_flat * anchor
+                            numerator = torch.sum((mu_student - mu_teacher) ** 2)
+                            anchor_numerator = (numerator if anchor_numerator is None
+                                                else anchor_numerator + numerator)
                     scaled_loss.backward()
+                if anchor_numerator is not None and n_clean:
+                    (self.beta_flat * anchor_numerator / (12.0 * n_clean)).backward()
                 nn.utils.clip_grad_norm_(self.model.parameters(),
                                           s2_runner.GRAD_CLIP)
                 self.optimizer.step()

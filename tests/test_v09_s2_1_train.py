@@ -475,3 +475,90 @@ def test_r1_attempt_and_checkpoint_are_rejected(tmp_path):
                         '--attempt-id', 's2.1-r1',
                         '--fallback-evidence', str(tmp_path / 'x'),
                         '--output-dir', str(tmp_path / 'out')])
+
+
+def test_anchor_gradient_uses_logical_minibatch_n_clean(monkeypatch):
+    """SDS 690-695: numerator per micro-batch, divide once by the logical
+    minibatch's own n_clean (not the whole-rollout count)."""
+    from src.tasks.velocity.v09.model import V09ActorCritic
+
+    class Teacher(torch.nn.Module):
+        def forward(self, obs):
+            return torch.zeros(obs['proprio'].shape[0], 12)
+
+    n = 4
+    rows = [dict(task='flat_walk', role='flat_walk'),
+            dict(task='flat_walk', role='flat_walk'),
+            dict(task='stairs_walk', role='stairs_walk'),
+            dict(task='stairs_walk', role='stairs_walk')]
+    plan = dict(num_envs=n, course='S2.1', counts={
+        'flat_walk': 2, 'flat_stop': 0, 'stairs_walk': 2,
+        'platform_walk': 0, 'l40_milestone': 0}, order=list(range(n)),
+        envs=rows)
+    env = s2_train_env.S2FakeTrainEnv(num_envs=n, role_plan=plan)
+
+    def observation(step):
+        proprio = torch.zeros(n, 45)
+        proprio[:, 0] = 0.1 * step
+        proprio[:, 6] = 0.5
+        history = proprio[:, None, :].expand(n, 5, 45).clone()
+        heightmap = torch.zeros(n, 3, 40, 30)
+        heightmap[:, 1] = 1.0
+        route_error = torch.zeros(n, 3)
+        route_error[:, 2] = 1.0
+        privileged = torch.zeros(n, 35)
+        return dict(proprio=proprio, history=history, heightmap=heightmap,
+                    route_error=route_error, privileged=privileged)
+
+    steps = 2
+    transitions = []
+    for step in range(steps):
+        transitions.append(dict(
+            obs=observation(step), actions=torch.zeros(n, 12),
+            log_probs=torch.zeros(n), values=torch.zeros(n),
+            reward=torch.zeros(n), done=torch.zeros(n, dtype=torch.bool)))
+
+    captured = {}
+
+    def fake_clip(parameters, max_norm, *args, **kwargs):
+        params = list(parameters)
+        if 'grads' not in captured:
+            captured['grads'] = [p.grad.detach().clone()
+                                 if p.grad is not None else None
+                                 for p in params]
+        return torch.tensor(0.0)
+
+    def run(beta):
+        torch.manual_seed(7)
+        model = V09ActorCritic()
+        trainer = s2_train.S2Trainer(model=model, env=env, device='cpu',
+                                     teacher=Teacher(), beta_flat=beta)
+        captured.clear()
+        monkeypatch.setattr(s2_train.nn.utils, 'clip_grad_norm_', fake_clip)
+        trainer.update(transitions, torch.zeros(steps, n),
+                       torch.zeros(steps, n))
+        monkeypatch.undo()
+        names = [name for name, _ in trainer.model.named_parameters()]
+        return dict(zip(names, captured['grads']))
+
+    with_anchor = run(0.1)
+    without = run(0.0)
+    beta = 0.1
+    # first logical minibatch: samples 0,1 = step 0, both clean flat envs
+    torch.manual_seed(7)
+    reference = V09ActorCritic()
+    clean_obs = {key: value.detach().clone()
+                 for key, value in observation(0).items()}
+    clean_obs = {key: value[:2] for key, value in clean_obs.items()}
+    mu = reference(clean_obs)
+    numerator = torch.sum(mu ** 2)
+    reference.zero_grad(set_to_none=True)
+    numerator.backward()
+    expected = {name: p.grad * beta / (12.0 * 2)
+                for name, p in reference.named_parameters()
+                if p.grad is not None}
+    diffs = []
+    for name, grad in expected.items():
+        actual = with_anchor[name] - without[name]
+        diffs.append(float(torch.max(torch.abs(actual - grad))))
+    assert max(diffs) < 1e-6, f'anchor gradient mismatch: {max(diffs)}'

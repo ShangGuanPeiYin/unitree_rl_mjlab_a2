@@ -492,6 +492,17 @@ class S2TrainEnv:
     def __getattr__(self, name):
         return getattr(self.env, name)
 
+    def clean_flags(self):
+        """§5.4 five flags per env: ordinary flat x nominal x no noise/delay/force."""
+        tasks = [str(row.get('task', '')) for row in self.plan['rows']]
+        n = len(tasks)
+        # v07 L-phase has no noise, action delay or external force randomisation
+        # (s2_physics._s2_patch_context installs the terrain only), so the three
+        # nominal flags are True by construction; only ordinary_flat is selective.
+        return dict(ordinary_flat=[task == 'flat_walk' for task in tasks],
+                    nominal_dynamics=[True] * n, no_noise=[True] * n,
+                    no_delay=[True] * n, no_force=[True] * n)
+
     def _update_teacher_map(self):
         from src.tasks.velocity.v07.events import euler_heading
         data = self.env.robot.data
