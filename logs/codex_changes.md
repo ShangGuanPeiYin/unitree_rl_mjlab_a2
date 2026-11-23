@@ -5000,3 +5000,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - **F-2（证据）**：用已提交 probe 重跑 `stop_instant_final2`/`stop_ramp_final2`/`flat_all_final2`/`stairs_top_final2`（保留旧目录），字段含 reward/reward_terms/at_actor/ramp_k/four_feet_entry/cruise_samples/quality 等，另有 `evidence_sha256.json`。观测：instant request 400→first zero 401→HOLD 1000→终点 1400（−10，非超时）；ramp k99=0.003@499、k100=0@500→HOLD 1001→终点 1500（−10）；flat_walk 3/3 +8@1000；stairs 安全登顶 491（top_x=2.8529，+2）后 528 物理失败，入台+1 m 窗仍未自然覆盖。
 - 独审 24 例中 3 个楼梯例按旧零点编码，已被 F-4 取代为 21/24 精确 + 3 个新 top-zero 楼梯测试，报告中不得写 24/24。
 - 验证：S2 全量 + gate/acceptance + V13 **342 passed**。
+
+## 2026-11-23 Q035/Q036 独立签字完成，r2 启动
+
+- 独立验收对最终 SHA `bfb2550` 签发 **GRANTED**：Q035/Q036 链签字完成，可从 `s1_least.pt` 直接启动全新 r2。
+- 签字依据：V13 CPU evidence `18427c6d…`（all_passed）；342 passed；fresh 512-env Run A（2×24,576 行、46 字段、reset 异常 0、512/512 跨 rollout 连续）；F-2 重跑证据 `13cea396…`（instant/ramp 停车、flat_walk +8、flat_stop −10、楼梯 top+2）；F-3 共享窗口；F-4 top_x 零点（32/32 重放）；预算 20,299,776 + 31,726×24,576 = 799,997,952，余 2,048。
+- 非阻塞余项：无自然通过的停车/登顶后 +8 样本，按 Q036 C3 由生产路径可控边界覆盖；S1/S2.0 metrics 的支撑代理窗口仅在该路径、且需传 `four_feet_entry` 才严格等价。
+- r2 以 512 env、官方台账、`--attempt-id s2.1-r2` 启动，trace 按 5000 轮取 3 份节流。
