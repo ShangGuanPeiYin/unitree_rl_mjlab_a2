@@ -4892,3 +4892,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 结果（gate loader 实际接受）：3 组，59/60 成功；L40 0.3：20/20，P10/P50/P90 = 9.784/9.866/9.929；0.5：19/20，9.802/9.879/9.951；0.6：20/20，9.809/9.906/9.962。
 - 台账：rerun3 spent 75,204 / 219,220，unused 144,016 已释放；三次 L40 A 尝试合计按实际步数计费（75,179 + 75,147 + 75,204）。
 - 建议：collector 后续加 `failure_class` 原生字段与增量 cache 更新，避免再依赖抢救。
+
+## 2026-11-23 L40 collector failure_class/增量恢复/signal
+
+- 每行补 `failure_class`（physical termination/timeout/None），保留 failure_classes 字典。
+- 加 `--resume`：扫描已有 `cases/*.json` 继续，释放 stale reserve，仅 reserve 剩余上界。
+- SIGTERM/SIGINT handler 设停止标志，完成当前 case 后写 partial cache/receipt 再 release，exit 130；缓存 `complete` 字段，gate 拒绝 false。
+- 验证：282 passed；未触碰运行中的 6400 collector。

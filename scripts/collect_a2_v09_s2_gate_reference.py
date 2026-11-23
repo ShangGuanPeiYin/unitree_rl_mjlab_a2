@@ -13,7 +13,15 @@ import json
 from pathlib import Path
 import sys
 
+import signal
 import numpy as np
+_STOP = False
+
+
+def _handle_stop(signum, frame):
+    global _STOP
+    _STOP = True
+    print(f'[l40] received signal {signum}; finishing current case and flushing cache', flush=True)
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -89,7 +97,10 @@ def main(argv=None):
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--execute', action='store_true')
     parser.add_argument('--allow-concurrent', action='store_true')
+    parser.add_argument('--resume', action='store_true')
     args = parser.parse_args(argv)
+    signal.signal(signal.SIGTERM, _handle_stop)
+    signal.signal(signal.SIGINT, _handle_stop)
     if not (args.dry_run or args.execute):
         raise SystemExit('use --dry-run or --execute')
     if args.reference == '6400_flat':
@@ -160,6 +171,11 @@ def main(argv=None):
     duty = ledger.state()['obligations'].get(obligation)
     if duty is None:
         raise SystemExit(f'missing obligation {obligation}')
+    if args.resume and duty['reserved']:
+        ledger.release(obligation, duty['reserved'],
+                       operation_id='ref:s1_l40:resume:release-stale',
+                       reason='release stale reservation before incremental L40 resume')
+        duty = ledger.state()['obligations'][obligation]
     if duty['limit'] - duty['spent'] - duty['reserved'] < cost:
         raise SystemExit(f'insufficient {obligation} balance')
     if args.reference != 's1_l40':
@@ -176,13 +192,34 @@ def main(argv=None):
                               f'{args.reference}-{args.suite}-{stamp}')
     out.mkdir(parents=True, exist_ok=True)
     results = []
-    suite_reserved = 219_220
+    cases_dir = out / 'cases'
+    cases_dir.mkdir(parents=True, exist_ok=True)
+    case_files = []
+    existing = {}
+    if args.resume:
+        for path in sorted(cases_dir.glob('*.json')):
+            try:
+                row = _load(path)
+            except Exception:
+                continue
+            if row.get('case_sha256') in {c['case_sha256'] for c in cases}:
+                existing[row['case_sha256']] = row
+                case_files.append(dict(case_sha256=row['case_sha256'],
+                                       path=str(path), sha256=_sha(path)))
+        print(f'[l40] resume: {len(existing)}/{len(cases)} completed cases found', flush=True)
+    completed_steps = sum(int(row['steps']) for row in existing.values())
+    by_sha = {case['case_sha256']: case for case in cases}
+    suite_reserved = cost - completed_steps
     suite_actual = 0
-    ledger.reserve(obligation, suite_reserved,
-                   operation_id=f'ref:s1_l40:{run_tag}:reserve',
-                   reason='L40 reference whole-suite atomic reservation')
+    if suite_reserved > 0:
+        ledger.reserve(obligation, suite_reserved,
+                       operation_id=f'ref:s1_l40:{run_tag}:reserve',
+                       reason='L40 reference remaining atomic reservation')
     print(f'[l40] starting {len(cases)} cases / {len(groups)} groups', flush=True)
     for case_index, case in enumerate(cases):
+        if case['case_sha256'] in existing:
+            results.append(existing[case['case_sha256']])
+            continue
         print(f'[l40] case {case_index + 1}/{len(cases)} {case["case_sha256"][:12]}', flush=True)
         h_legacy = case['task'] == 'legacy_l40'
         env, _ = s2_physics.build_s2_env(
@@ -195,7 +232,7 @@ def main(argv=None):
             import torch
             env.reset()
             done = False
-            while not done and steps < timeout:
+            while not done and steps < timeout and not _STOP:
                 obs = env.observe()
                 tensor_obs = {
                     key: (value[None] if isinstance(value, torch.Tensor) else value)
@@ -228,11 +265,22 @@ def main(argv=None):
                 route_max=float(route.max()) if route.size else start_x,
                 net_distance=terminal_x - start_x,
                 termination_reason=getattr(env.last, 'termination_reason', None),
+                failure_class=(getattr(env.last, 'termination_reason', None)
+                               if bool(env.machine.failure) else
+                               'timeout' if bool(env.machine.timeout) else None),
                 failure_classes=dict(
                     physical=bool(env.machine.failure),
                     timeout=bool(env.machine.timeout),
                     engineering=False),
                 trace=trace))
+            path = cases_dir / f"{case['case_sha256']}.json"
+            if path.exists():
+                raise FileExistsError(path)
+            path.write_text(json.dumps(s2_env.jsonable(results[-1]),
+                                       ensure_ascii=False, indent=2) + '\n')
+            case_files.append(dict(case_sha256=case['case_sha256'],
+                                   path=str(path), sha256=_sha(path)))
+            print(f'[l40] case {case_index + 1} written {path.name}', flush=True)
         except Exception:
             if steps:
                 ledger.commit(obligation, steps, operation_id=f'{op}:{run_tag}:commit',
@@ -250,25 +298,20 @@ def main(argv=None):
         print(f'[l40] case {case_index + 1}/{len(cases)} done steps={steps} '
               f'success={bool(results[-1]["success"])} '
               f'failure={bool(results[-1]["failure"])}', flush=True)
-    if len(results) != len(cases):
+        if _STOP:
+            print('[l40] stop requested; flushing completed cases', flush=True)
+            break
+    complete = len(results) == len(cases)
+    if not complete and not _STOP:
         raise RuntimeError(f'L40 cache incomplete: {len(results)}/{len(cases)} cases')
     settlement = suite_settlement(results)
     groups_out = group_statistics(groups, results)
 
     if args.reference == 's1_l40':
-        cases_dir = out / 'cases'
-        cases_dir.mkdir(parents=True, exist_ok=True)
-        case_files = []
-        for row in results:
-            path = cases_dir / f"{row['case_sha256']}.json"
-            if path.exists():
-                raise FileExistsError(path)
-            path.write_text(json.dumps(s2_env.jsonable(row), ensure_ascii=False, indent=2) + '\n')
-            case_files.append(dict(case_sha256=row['case_sha256'],
-                                   path=str(path), sha256=_sha(path)))
         cache = dict(schema=cache_schema, suite=manifest['suite'],
                      manifest_sha256=manifest['manifest_sha256'],
                      source_sha256=source_sha, model_sha256=source_sha,
+                     complete=bool(complete),
                      checkpoint=str(checkpoint), groups=groups_out,
                      concurrency=window, settlement=settlement,
                      execution=dict(envs_per_batch=1, batches=len(cases),
@@ -290,7 +333,8 @@ def main(argv=None):
         schema='a2_v09_s2_gate_cache_receipt_v1',
         model_sha256=source_sha, source_sha256=source_sha,
         manifest_sha256=manifest['manifest_sha256'],
-        suite=manifest['suite'], case_sha256s=[row['case_sha256'] for row in results],
+        complete=bool(complete), suite=manifest['suite'],
+        case_sha256s=[row['case_sha256'] for row in results],
         budget=dict(control_samples=cost, actual_samples=suite_actual,
                     unused_samples=settlement['unused'], envs_per_batch=1,
                     batches=len(cases), estimated_seconds=4.7 * 3600),
@@ -308,8 +352,9 @@ def main(argv=None):
                        reason='L40 reference unused reservation')
     print(json.dumps(dict(path=str(path), receipt=str(receipt_path),
                           groups=len(groups_out), cases=len(results),
-                          cost=cost), ensure_ascii=False, indent=2))
-    return 0
+                          complete=complete, cost=cost), ensure_ascii=False,
+                     indent=2))
+    return 0 if complete else 130
 
 
 if __name__ == '__main__':

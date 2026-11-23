@@ -240,3 +240,16 @@ def test_gate_rejects_r1_checkpoint(tmp_path):
         cli.main(['--course', 'S2.1', '--suite', 'gate_A', '--dry-run',
                   '--checkpoint', str(r1),
                   '--output-dir', str(tmp_path / 'out')])
+
+
+def test_gate_rejects_incomplete_l40_cache(tmp_path):
+    import run_a2_v09_s2_gate as cli
+    manifest = s2_gate_cases.build_gate_manifest('gate_A')
+    doc = dict(schema='a2_v09_s2_gate_l40_cache_v1', suite='S2_GATE_A',
+               manifest_sha256=manifest['manifest_sha256'],
+               source_sha256='efa9caa8ce99e2cdff967212063e198b7ae68a6415727083b1db027f615ead24',
+               complete=False, groups={}, case_files=[])
+    path = tmp_path / 'l40.json'
+    path.write_text(json.dumps(doc))
+    with pytest.raises(ValueError, match='incomplete'):
+        cli._load_l40_cache(path, manifest)

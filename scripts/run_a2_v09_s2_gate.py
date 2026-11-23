@@ -66,6 +66,8 @@ def _load_l40_cache(path, manifest):
     doc = _load(path)
     groups = _validate_reference_cache(
         doc, schema=L40_CACHE_SCHEMA, manifest=manifest, path=path)
+    if doc.get('complete') is False:
+        raise ValueError(f'{path}: L40 cache is incomplete')
     if doc.get('source_sha256') != s2_spec.S1_ENTRY_WEIGHT_SHA256:
         raise ValueError(f'{path}: L40 cache source is not s1_least')
     expected = [row['group_id'] for row in manifest['groups']
