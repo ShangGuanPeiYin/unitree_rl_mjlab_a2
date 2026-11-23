@@ -4906,3 +4906,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - S2TrainEnv/collect transitions 增加 a_request/a_applied 记录；真实集成仍未完成。
 - L40 collector failure_class/resume/signal；gate 拒绝 incomplete。
 - 验证：**290 passed**。
+
+## 2026-11-23 S2TrainEnv 接入 s2_lifecycle
+
+- `_s2_task_state` 现在每步构造/调用 `s2_lifecycle.S2Lifecycle`，用真实 local/top/foot/body/failure/timeout 更新，覆盖 state.success/failure/timeout，写 `_s2_phase/_s2_c_request/_s2_c_exec`，并让 `env.command=c_exec`。
+- lifecycle 增加 flat completion window；S2TrainEnv 初始化 lifecycle（六任务/post/speed/stop/legacy/front/spawn/completion）。
+- 新增 fake backend stairs 序列测试：top 不 reset，post 5m 后 success；phase 序列 CLIMB,CLIMB,POST_WALK...
+- 验证：`pytest tests/test_v09_s2_1_train.py -q` **27 passed**；全 S2 **291 passed**。

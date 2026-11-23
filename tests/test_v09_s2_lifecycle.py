@@ -118,3 +118,59 @@ def test_quality_reasons_thresholds():
     assert 'pitch_rms' in bad and 'pitch_p99' in bad
     assert 'speed_rmse' in bad and 'nonfoot_contact' in bad
     assert 'support' in bad
+
+
+def _fake_train_env():
+    from types import SimpleNamespace
+    import torch
+    class Env:
+        num_envs = 1
+        device = 'cpu'
+        def __init__(self):
+            self.episode_length_buf = torch.zeros(1, dtype=torch.long)
+            self.command = torch.zeros(1, 3)
+            self.climb = SimpleNamespace(current_support=torch.ones(1, 4, dtype=torch.bool))
+    return Env()
+
+
+def test_s2_train_env_task_state_calls_lifecycle():
+    from types import SimpleNamespace
+    import torch
+    from src.tasks.velocity.v09 import s2_train_real
+    obj = object.__new__(s2_train_real.S2TrainEnv)
+    obj.plan = dict(rows=[dict(
+        task='stairs_walk', role='stairs_walk', speed=0.5, post_distance=5.0,
+        stop_mode='none', geometry=dict(platform_front_local_x=2.0),
+        spawn=[-1.0, 0.0, 0.0, 0.5])])
+    env = _fake_train_env()
+    obj.env = env
+    obj._s2_front = torch.tensor([2.0])
+    obj._s2_post = torch.tensor([5.0])
+    obj._s2_speed = torch.tensor([0.5])
+    obj._s2_stop = torch.tensor([False])
+    obj._s2_legacy = torch.tensor([False])
+    obj._s2_stairs = torch.tensor([True])
+    obj._s2_platform = torch.tensor([False])
+    obj._s2_top_event = None
+    obj._s2_top_latched = torch.zeros(1, dtype=torch.bool)
+    obj._s2_success_latched = torch.zeros(1, dtype=torch.bool)
+    obj._s2_spawn_x = torch.tensor([-1.0])
+    obj._s2_c_request = torch.tensor([0.5])
+    obj._s2_c_exec = torch.tensor([0.5])
+    phases = []
+    success = []
+    for step in range(1, 9):
+        local = 1.0 * step
+        top = step >= 3
+        state = SimpleNamespace(
+            success=torch.tensor([top]), failure=torch.tensor([False]),
+            timeout=torch.tensor([False]), local=torch.tensor([[local, 0.0, 0.0]]))
+        env.episode_length_buf = torch.tensor([step])
+        obj._v07_task_state = lambda: state
+        out = obj._s2_task_state(env)
+        phases.append(obj._lifecycle.phase[0])
+        success.append(bool(out.success[0]))
+    assert phases[2] in (2, 3)  # top transition/post-walk, not reset
+    assert not success[2]
+    assert success[-1]
+    assert phases[-1] == 3

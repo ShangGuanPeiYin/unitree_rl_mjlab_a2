@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import copy
 
-from . import s2_physics, s2_rewards, s2_spec, s2_terrain, s2_train_env
+from . import s2_lifecycle, s2_physics, s2_rewards, s2_spec, s2_terrain, s2_train_env
 from .map import _SampleFrameMap
 
 
@@ -250,7 +250,23 @@ class S2TrainEnv:
             self._s2_contacted = z(n, 4, dtype=torch.bool)
             self._s2_prev_qdot = z(n, 12)
             self._s2_steps = z(n, dtype=torch.long)
+        if not hasattr(self, '_lifecycle'):
+            rows = self.plan['rows']
+            tasks = [str(r.get('task') or r.get('role')) for r in rows]
+            self._lifecycle = s2_lifecycle.S2Lifecycle(
+                task=tasks,
+                post_distance=[float(r.get('post_distance') or 5.0) for r in rows],
+                speed=[float(r.get('speed') or 0.5) for r in rows],
+                stop_mode=[str(r.get('stop_mode') or 'none') for r in rows],
+                legacy=[str(t) == 'legacy_l40' for t in tasks],
+                front=[float(r['geometry'].get('platform_front_local_x') or 0.0)
+                       for r in rows],
+                spawn_x=[float(r['spawn'][0]) for r in rows],
+                completion_steps=[1001 if t == 'flat_walk' else
+                                  (1401 if t == 'flat_stop' else 1000)
+                                  for t in tasks])
         first = env.episode_length_buf <= 1
+        self._lifecycle.reset(first.detach().cpu().numpy())
         self._s2_top_latched[first] = False
         self._s2_success_latched[first] = False
         self._s2_top_event[first] = False
@@ -266,24 +282,37 @@ class S2TrainEnv:
         self._s2_c_request[first] = self._s2_speed[first]
         self._s2_c_exec[first] = self._s2_speed[first]
         original_success = state.success.clone()
-        top_now = original_success & ~self._s2_top_latched
-        self._s2_top_event = top_now
-        self._s2_top_latched |= top_now
         local = state.local[:, 0]
-        dpost = local - self._s2_front
-        # L40 review is the explicit exception: top is success immediately.
-        success = torch.where(self._s2_legacy, original_success,
-                              torch.where(self._s2_platform,
-                                          (local - self._s2_spawn_x) >= self._s2_post,
-                                          self._s2_top_latched & (dpost >= self._s2_post)))
-        if hasattr(self, '_s2_hold_step'):
-            hold_ok = ((self._s2_hold_step >= 0)
-                       & ((self._s2_steps - self._s2_hold_step) >= 1000))
-            success = torch.where(self._s2_stop, hold_ok, success)
-        success = success & ~state.failure & ~state.timeout
-        state.success = success
-        # S2 success is a policy quality/terminal event, not a v07 timeout.
-        state.failure = state.failure | (success & False)
+        failure = state.failure.clone()
+        timeout = state.timeout.clone()
+        support = env.climb.current_support.bool()
+        four_feet = support.all(-1)
+        body_ok = local > self._s2_front + 0.4
+        quality_ok = torch.ones(n, dtype=torch.bool, device=env.device)
+        out = self._lifecycle.update(
+            local_x=local.detach().cpu().numpy(),
+            top_signal=original_success.detach().cpu().numpy(),
+            four_feet=four_feet.detach().cpu().numpy(),
+            body_ok=body_ok.detach().cpu().numpy(),
+            quality_ok=quality_ok.detach().cpu().numpy(),
+            failure=failure.detach().cpu().numpy(),
+            timeout=timeout.detach().cpu().numpy())
+        self._lifecycle_out = out
+        self._s2_phase = out['phase']
+        self._s2_c_request = torch.as_tensor(out['c_request'], dtype=torch.float32,
+                                             device=env.device)
+        self._s2_c_exec = torch.as_tensor(out['c_exec'], dtype=torch.float32,
+                                          device=env.device)
+        self._s2_top_event = torch.as_tensor(out['top_event'], dtype=torch.bool,
+                                             device=env.device)
+        state.success = torch.as_tensor(out['success'], dtype=torch.bool,
+                                        device=env.device)
+        state.failure = torch.as_tensor(out['failure'], dtype=torch.bool,
+                                        device=env.device)
+        state.timeout = torch.as_tensor(out['timeout'], dtype=torch.bool,
+                                        device=env.device)
+        env.command[:, 0] = self._s2_c_exec.detach()
+        return state
         return state
 
     def _s2_reward(self, env, state, previous_action):
