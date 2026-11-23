@@ -4969,3 +4969,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - `s2_physics._s2_patch_context` 在补丁上下文中替换 `v07env.StallDiagnostics.update`：当执行命令在 episode 内变化（S2 停车/渐变）时，仅对变化的环境调用 `reset` 重启 51 样本窗口并继续记录，不再抛 `executed command changed inside an episode`（SDS 6.2 明确旧 stall 诊断不得因指令改变抛错）；退出上下文恢复原方法。
 - 真实 GPU flat_stop 长跑验证前先经此修复；此前 `--steps 1600` 在首次减速处异常退出。
 - 验证：`pytest tests/test_v09_s2_0_physics.py tests/test_v09_s2_1_train.py` **50 passed**；真实 GPU 复跑见下一步（待 Q036 质量判据实现后统一复验）。
+
+## 2026-11-23 r2 长跑 trace 节流与预算算术更正
+
+- `S2Trainer` 增加 `trace_every` / `trace_limit` / `trace_written`：仅按间隔写逐帧 trace 并限制总份数；训练 CLI 新增 `--trace-every`（默认 1）与 `--trace-max-rollouts`。避免 31,726 rollouts×24,576 行（约 760 GB）不可承受。
+- 文档算术按 Q036 更正：r2 31,726×24,576 = 779,698,176；加已耗 20,299,776 = 799,997,952，余 2,048（`docs/v09_s2_1_numerical_acceptance_plan_v13.md`、`docs/v09_s2_1_r2_execution_contract.md`）。
+- 验证：`pytest tests/test_v09_s2_1_train.py` **30 passed**。

@@ -48,6 +48,10 @@ def main(argv=None):
     parser.add_argument('--attempt-id', default='s2.1-r2')
     parser.add_argument('--trace-dir', type=Path,
                         help='write per-(step, env) rollout evidence JSONL')
+    parser.add_argument('--trace-every', type=int, default=1,
+                        help='trace one rollout every N (default 1)')
+    parser.add_argument('--trace-max-rollouts', type=int,
+                        help='stop tracing after this many traced rollouts')
     args = parser.parse_args(argv)
     try:
         s2_r1.reject_invalid_attempt(args.attempt_id)
@@ -137,6 +141,8 @@ def main(argv=None):
         ledger_run_id=run_id, course=args.course, teacher=teacher)
     if args.trace_dir is not None:
         trainer.trace_dir = args.trace_dir
+        trainer.trace_every = max(1, int(args.trace_every))
+        trainer.trace_limit = args.trace_max_rollouts
     if args.resume is not None:
         try:
             s2_r1.reject_invalid_checkpoint(args.resume)

@@ -127,6 +127,9 @@ class S2Trainer:
         self._obs = None
         self._rollout_steps = 0
         self.trace_dir = None
+        self.trace_every = 1
+        self.trace_limit = None
+        self.trace_written = 0
         self.anchor_observations = []
         if self.teacher is not None:
             self.teacher.requires_grad_(False)
@@ -246,15 +249,24 @@ class S2Trainer:
         adv_t = torch.stack(adv, 1).contiguous()
         ret_t = torch.stack(returns, 1).contiguous()
         assert adv_t.shape == (len(transitions), n), 'advantage must be [T,N]'
-        if self.trace_dir is not None:
+        if self._trace_this_rollout():
             self._write_trace(trace_rows, adv_t, ret_t, n)
         return transitions, adv_t, ret_t
+
+    def _trace_this_rollout(self):
+        if self.trace_dir is None:
+            return False
+        if self.trace_limit is not None and self.trace_written >= self.trace_limit:
+            return False
+        every = max(1, int(self.trace_every))
+        return int(self.rollouts) % every == 0
 
     def _write_trace(self, trace_rows, advantages, returns, n):
         """Per-(step, env) evidence for the V13 Run A shadow audit."""
         out = Path(self.trace_dir)
         out.mkdir(parents=True, exist_ok=True)
         path = out / f'rollout_{self.rollouts:06d}.jsonl'
+        self.trace_written += 1
         with path.open('w') as handle:
             for step, row in enumerate(trace_rows):
                 info = row['info'] if hasattr(row['info'], 'get') else {}
