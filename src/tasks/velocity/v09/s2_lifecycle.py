@@ -5,6 +5,7 @@ import numpy as np
 
 TASK_CODES = dict(flat_walk=0, flat_stop=1, stairs_walk=2, platform_walk=3,
                   stairs_stop=4, platform_stop=5, legacy_l40=6)
+FLAT_STOP_STEP = 400  # 8 s of walking at 0.02 s control
 PHASES = ('APPROACH', 'CLIMB', 'TOP_TRANSITION', 'POST_WALK', 'DECEL', 'HOLD')
 APPROACH, CLIMB, TOP_TRANSITION, POST_WALK, DECEL, HOLD = range(6)
 
@@ -94,9 +95,13 @@ class S2Lifecycle:
         stop_distance = np.where(
             np.isin(self.task, ['platform_walk', 'platform_stop']),
             start_dist, dpost)
+        # flat_stop stops after 8 s of walking (SDS 6.2: 20 s walk, then stop,
+        # then a 20 s hold); stairs/platform stop tasks stop on distance.
+        flat_stop_time = (self.task == 'flat_stop') & (self.step >= FLAT_STOP_STEP)
         requested = ((~self.stop_requested) & ~failure & ~timeout
-                     & (np.isin(self.task, ['stairs_stop', 'platform_stop']))
-                     & (stop_distance >= self.post))
+                     & (((np.isin(self.task, ['stairs_stop', 'platform_stop']))
+                         & (stop_distance >= self.post))
+                        | flat_stop_time))
         self.stop_requested |= requested
         self.stop_step = np.where(requested, self.step, self.stop_step)
         elapsed = np.maximum(0, self.step - self.stop_step)
@@ -111,15 +116,22 @@ class S2Lifecycle:
         self.hold_step = np.where(first_zero, self.step, self.hold_step)
         # success
         top_success = self.legacy & self.top
-        distance_ok = (~self.legacy) & (
-            np.where(np.isin(self.task, ['platform_walk', 'platform_stop']),
-                     start_dist, dpost) >= self.post)
+        # Flat tasks succeed on their planned time window, never on distance.
+        distance_ok = ((~self.legacy)
+                       & np.isin(self.task, ['platform_walk', 'platform_stop',
+                                             'stairs_walk'])
+                       & (np.where(
+                           np.isin(self.task, ['platform_walk', 'platform_stop']),
+                           start_dist, dpost) >= self.post))
         hold_ok = self.stop_requested & (self.hold_step >= 0) & (
             self.step - self.hold_step >= self.hold_steps)
         nonstop_ok = distance_ok & ~np.isin(self.task, ['stairs_stop', 'platform_stop'])
         stop_ok = hold_ok & np.isin(self.task, ['stairs_stop', 'platform_stop'])
-        flat_ok = (np.isin(self.task, ['flat_walk', 'flat_stop'])
-                   & (self.step >= self.completion))
+        flat_stop_hold = (self.task == 'flat_stop') & self.stop_requested \
+            & (self.hold_step >= 0) & (self.step - self.hold_step >= self.hold_steps)
+        flat_ok = (((self.task == 'flat_walk') & (self.step >= self.completion))
+                   | ((self.task == 'flat_stop') & (self.step >= self.completion)
+                      & flat_stop_hold))
         success_now = ((top_success | nonstop_ok | stop_ok | flat_ok)
                        & quality_ok & ~failure & ~timeout & ~self.success)
         # phase

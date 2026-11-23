@@ -91,18 +91,13 @@ def apply_train_spawn_z(env, plan):
 
 def build_env_plan(num_envs=1024, course='S2.1'):
     role_plan = s2_train_env.build_role_plan(num_envs, course=course)
-    specs = {spec.terrain_key: spec for spec in s2_terrain.terrain_specs()}
     rows = []
     for index, role in enumerate(role_plan['envs']):
         geometry = _geometry_for(role, course=course)
-        # use the frozen S2 table entry where present
-        key = geometry['terrain_key']
-        spec = specs.get(key)
-        if spec is None:
-            spec = s2_terrain.spec_from_geometry(geometry)
-            geometry['tile_id'] = spec.tile_id
-        else:
-            geometry['tile_id'] = spec.tile_id
+        # terrain_key alone is shared by every stair count, so the frozen row
+        # must be matched on (N, width, h, depth, platform length), not the key.
+        spec = s2_terrain.spec_from_geometry(geometry)
+        geometry['tile_id'] = spec.tile_id
         front = geometry.get('platform_front_local_x')
         if str(role.get('task', '')).startswith('platform_'):
             spawn_x = float(front) + 1.0
@@ -264,9 +259,18 @@ class S2TrainEnv:
                 front=[float(r['geometry'].get('platform_front_local_x') or 0.0)
                        for r in rows],
                 spawn_x=[float(r['spawn'][0]) for r in rows],
-                completion_steps=[1001 if t == 'flat_walk' else
-                                  (1401 if t == 'flat_stop' else 1000)
-                                  for t in tasks])
+                completion_steps=[
+                    1001 if t == 'flat_walk' else
+                    (1501 if (t == 'flat_stop'
+                              and str(r.get('stop_mode')) == 'ramp_2s') else
+                     (1401 if t == 'flat_stop' else 1000))
+                    for t, r in zip(tasks, rows)])
+            self._s2_platform_width = torch.tensor(
+                [float(r['geometry'].get('platform_width') or 8.0) for r in rows],
+                dtype=torch.float32, device=env.device)
+            self._s2_platform_length = torch.tensor(
+                [float(r['geometry'].get('platform_length') or 0.0) for r in rows],
+                dtype=torch.float32, device=env.device)
         first = env.episode_length_buf <= 1
         self._lifecycle.reset(first.detach().cpu().numpy())
         self._s2_top_latched[first] = False
@@ -288,13 +292,24 @@ class S2TrainEnv:
         local = state.local[:, 0]
         failure = state.failure.clone()
         timeout = state.timeout.clone()
-        support = env.climb.current_support.bool()
-        four_feet = support.all(-1)
+        # SDS 5.3: top = four-foot XY entry into the platform rectangle and the
+        # body past front+0.4. v07 success is suppressed for S2 tasks, so this
+        # signal must be geometric, never the (zeroed) v07 success flag.
+        feet_local = state.feet_local
+        in_platform = (
+            (feet_local[:, :, 0] >= self._s2_front[:, None])
+            & (feet_local[:, :, 0]
+               <= self._s2_front[:, None] + self._s2_platform_length[:, None])
+            & (feet_local[:, :, 1].abs()
+               <= self._s2_platform_width[:, None] / 2.0))
+        four_feet = in_platform.all(-1)
         body_ok = local > self._s2_front + 0.4
+        stairs = self._s2_stairs
+        top_signal = four_feet & body_ok & stairs
         quality_ok = torch.ones(n, dtype=torch.bool, device=env.device)
         out = self._lifecycle.update(
             local_x=local.detach().cpu().numpy(),
-            top_signal=original_success.detach().cpu().numpy(),
+            top_signal=top_signal.detach().cpu().numpy(),
             four_feet=four_feet.detach().cpu().numpy(),
             body_ok=body_ok.detach().cpu().numpy(),
             quality_ok=quality_ok.detach().cpu().numpy(),
@@ -377,17 +392,11 @@ class S2TrainEnv:
         contact = env.contacts.filtered.bool()
         foot_vel = data.site_lin_vel_w[:, env.foot_ids, :2]
         failure = state.failure | state.timeout
-        # §5.3/§4: g_level t0 from four-foot support + body margin; 0.5 s ramp.
-        support = env.climb.current_support.bool()
-        g_ready = (support.all(-1) & (local[:, 0] > self._s2_front + 0.4)
-                   & ~failure)
-        t0 = self._s2_g_step
-        t0 = torch.where(g_ready & (t0 < 0), self._s2_steps, t0)
-        t0 = torch.where(~g_ready, torch.full_like(t0, -1), t0)
-        self._s2_g_step = t0
-        g_level = torch.where(
-            t0 < 0, torch.zeros_like(self._s2_g_level),
-            ((self._s2_steps - t0).float() / 25.0).clamp(0.0, 1.0))
+        # §5.3/§4 g_level: single source of truth is the lifecycle state machine
+        # (top & four-foot support & body margin, 0.5 s = 25-step ramp).
+        g_level = torch.as_tensor(
+            self._lifecycle_out.get('g_level', self._s2_g_level),
+            dtype=torch.float32, device=env.device)
         self._s2_g_level = g_level
         # Command chain: request is external speed; c_exec is the post-ramp
         # command actually consumed next. S2.1 has no stop.

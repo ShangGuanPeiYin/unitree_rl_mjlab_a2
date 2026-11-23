@@ -4953,3 +4953,13 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 每轮 update 结束（仅 CUDA）调用 `torch.cuda.empty_cache()`，把缓存块归还驱动，避免 PyTorch 缓存挤占 Warp 图捕获所需显存。
 - 新增测试 `test_anchor_uses_clean_teacher_observations_only`：教师 mu 由 `(step, env)` 编码，比对 `anchor_observations[0]` 分子与独立手算，验证 clean 教师观测的取样与排序正确。
 - 验证：S2 全量 `pytest` **304 passed**；待重跑真实 shadow 验证 OOM 是否消失。
+
+## 2026-11-23 S2.1 真实链重大修复：tile 映射、几何 top、flat 时间语义、账本帧计数
+
+- **tile 映射塌缩（根因）**：`s2_train_real.build_env_plan` 原用 `{terrain_key: spec}` 查表，但 `terrain_key` 不含 N，N10/N20/N40 共用同一 key ⇒ 所有楼梯/平台角色被赋同一 tile（实测全是 N20/front 4.0）。平台起步 spawn x=3.0、z=2.4 而实际期望顶面 4.0，v07 `fall` 每帧触发（800/800 失败）。改为一律 `s2_terrain.spec_from_geometry`（按 N/width/h/depth/platform_length 精确匹配）；复核 N10→tile 3、N20→tile 5、N40→tile 1，平台起步正常。
+- **几何 top 信号**：S2 补丁把 v07 success 置零，原 adapter 用 v07 success 作 lifecycle top ⇒ 楼梯永不可能 top/success。改为 SDS 5.3：`feet_local` 四足 XY 均落在 [front, front+platform_length]×|y|≤width/2 且 `local_x > front+0.4`；`TaskState.feet_local` 直接使用，不再读 robot data。
+- **flat 任务时间语义**：原 `distance_ok` 让 flat_walk/flat_stop 在 5 m 成功（实测 921/913 步），flat_stop 永不停车。改为：flat 只在时间窗成功；flat_stop 第 8 秒（400 步）请求停车，instant 完成 1401 步、ramp_2s 完成 1501 步（adapter 传 completion_steps）。
+- **g_level 单一来源**：reward 改用 lifecycle `out['g_level']`（top & 四足 & body，25 步 ramp），删除 adapter 内联 g 计算。
+- **账本帧计数**：`collect_rollout` 中 `_rollout_steps += 1` 移到 `env.step` 之后立即执行，step 后异常不再漏计；并写明 terminated/truncated/failure/timeout 统一零 bootstrap 的 Q035 合同。
+- 测试：`tests/test_v09_s2_lifecycle.py` 的适配器桩改为 frozen dataclass + 平台内四足坐标。
+- 验证：S2 全量 + V13 证据 pytest **315 passed**；GPU 复核 tile/平台起步通过；Run B 重跑中。

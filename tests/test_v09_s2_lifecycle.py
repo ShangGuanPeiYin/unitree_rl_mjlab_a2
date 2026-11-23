@@ -144,10 +144,13 @@ def test_s2_train_env_task_state_calls_lifecycle():
         failure: torch.Tensor
         timeout: torch.Tensor
         local: torch.Tensor
+        feet_local: torch.Tensor
     obj = object.__new__(s2_train_real.S2TrainEnv)
     obj.plan = dict(rows=[dict(
         task='stairs_walk', role='stairs_walk', speed=0.5, post_distance=5.0,
-        stop_mode='none', geometry=dict(platform_front_local_x=2.0),
+        stop_mode='none',
+        geometry=dict(platform_front_local_x=2.0, platform_width=8.0,
+                      platform_length=20.0),
         spawn=[-1.0, 0.0, 0.0, 0.5])])
     env = _fake_train_env()
     obj.env = env
@@ -169,9 +172,13 @@ def test_s2_train_env_task_state_calls_lifecycle():
     for step in range(1, 9):
         local = 1.0 * step
         top = step >= 3
+        feet_x = 2.5 if top else 0.0
+        feet = torch.tensor([[[feet_x, -0.2, 1.0], [feet_x, 0.2, 1.0],
+                              [feet_x, -0.2, 1.0], [feet_x, 0.2, 1.0]]])
         state = _FrozenState(
             success=torch.tensor([top]), failure=torch.tensor([False]),
-            timeout=torch.tensor([False]), local=torch.tensor([[local, 0.0, 0.0]]))
+            timeout=torch.tensor([False]), local=torch.tensor([[local, 0.0, 0.0]]),
+            feet_local=feet)
         env.episode_length_buf = torch.tensor([step])
         obj._v07_task_state = lambda: state
         out = obj._s2_task_state(env)

@@ -174,6 +174,9 @@ class S2Trainer:
             log_probs = dist.log_prob(actions).sum(-1)
             values = self.model.evaluate(item).squeeze(-1)
             next_obs, reward, done, info = self.env.step(actions.detach())
+            # Charge the physical step before any append/convert work can raise,
+            # so an exception after the simulation step still settles exactly.
+            self._rollout_steps += 1
             transitions.append(dict(obs=obs, actions=actions,
                                     log_probs=log_probs, values=values,
                                     reward=reward, done=done,
@@ -203,7 +206,6 @@ class S2Trainer:
                     values=values.detach().cpu().numpy(),
                     log_probs=log_probs.detach().cpu().numpy()))
             obs = next_obs
-            self._rollout_steps += 1
         self._obs = obs
         rewards = torch.stack([row['reward'] for row in transitions], 1)
         values = torch.stack([row['values'] for row in transitions], 1)
@@ -219,8 +221,11 @@ class S2Trainer:
         truncated = _mask('truncated_mask', torch.zeros_like(done))
         failure = _mask('failure_mask', torch.zeros_like(done))
         timeout = _mask('timeout_mask', torch.zeros_like(done))
-        # Non-terminal sampling boundary bootstraps from V(next_obs); terminal
-        # rows keep the zero bootstrap in GAE.
+        # Contract (Q035): terminated, truncated, failure and timeout all use the
+        # same PPO value-target rule - zero bootstrap inside the rollout and, at
+        # the sampling boundary, V(next_obs) only when the last step is not done.
+        # Per-class separation is preserved in the recorded masks (and the
+        # trace), not by giving different bootstrap values.
         with torch.no_grad():
             next_values = self.model.evaluate(
                 {key: value for key, value in self._obs.items()}).squeeze(-1)
