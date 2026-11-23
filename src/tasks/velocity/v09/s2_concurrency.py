@@ -42,6 +42,9 @@ def detect_training_processes(*, proc_root='/proc', current_pid=None):
         if not argv:
             continue
         joined = ' '.join(argv)
+        # CPU/fake-backend runs never touch the GPU: they must not block caches.
+        if '--fake-backend' in argv:
+            continue
         if (TRAIN_SCRIPT in joined or any(script in joined for script in CACHE_SCRIPTS)) \
                 and '--execute' in joined:
             found.append(dict(pid=pid, argv=argv))
