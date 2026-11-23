@@ -46,6 +46,8 @@ def main(argv=None):
     parser.add_argument('--max-rollouts', type=int)
     parser.add_argument('--checkpoint-every-rollouts', type=int)
     parser.add_argument('--attempt-id', default='s2.1-r2')
+    parser.add_argument('--trace-dir', type=Path,
+                        help='write per-(step, env) rollout evidence JSONL')
     args = parser.parse_args(argv)
     try:
         s2_r1.reject_invalid_attempt(args.attempt_id)
@@ -133,6 +135,8 @@ def main(argv=None):
         model=model, env=env, ledger=ledger, output_dir=args.output_dir,
         device=args.device, attempt_id=args.attempt_id,
         ledger_run_id=run_id, course=args.course, teacher=teacher)
+    if args.trace_dir is not None:
+        trainer.trace_dir = args.trace_dir
     if args.resume is not None:
         try:
             s2_r1.reject_invalid_checkpoint(args.resume)

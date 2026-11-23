@@ -562,3 +562,34 @@ def test_anchor_gradient_uses_logical_minibatch_n_clean(monkeypatch):
         actual = with_anchor[name] - without[name]
         diffs.append(float(torch.max(torch.abs(actual - grad))))
     assert max(diffs) < 1e-6, f'anchor gradient mismatch: {max(diffs)}'
+
+
+def test_collect_rollout_advantages_are_time_major(monkeypatch):
+    """Adv/return flattening must match the time-major obs/action order."""
+    from src.tasks.velocity.v09.model import V09ActorCritic
+
+    n = 4
+    env = s2_train_env.S2FakeTrainEnv(num_envs=n)
+    trainer = s2_train.S2Trainer(model=V09ActorCritic(), env=env, device='cpu')
+
+    def encoder(env_index):
+        def gae(rewards, values, **kwargs):
+            steps = np.arange(len(rewards), dtype=np.float64)
+            return env_index * 100.0 + steps, env_index * 100.0 - steps
+        return gae
+
+    call = {'i': 0}
+
+    def dispatch(rewards, values, **kwargs):
+        result = encoder(call['i'])(rewards, values, **kwargs)
+        call['i'] += 1
+        return result
+
+    monkeypatch.setattr(s2_train.s2_runner, 'gae', dispatch)
+    transitions, adv, ret = trainer.collect_rollout()
+    steps = len(transitions)
+    assert tuple(adv.shape) == (steps, n)
+    # time-major flatten: sample k is (step=k//n, env=k%n)
+    flat = adv.reshape(-1).tolist()
+    expected = [(k % n) * 100.0 + (k // n) for k in range(steps * n)]
+    assert flat == expected

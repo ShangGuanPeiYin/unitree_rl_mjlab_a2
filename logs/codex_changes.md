@@ -4936,3 +4936,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新增 CPU 测试 `test_anchor_gradient_uses_logical_minibatch_n_clean`：用同一初始权重跑 β=0/0.1 两次 update，取第一个 minibatch 的梯度差，与独立 autograd 手算 `β/(12·n_clean_mb)·2Σ(mu_s−mu_t)∂mu/∂θ` 对比（差 <1e-6），可区分旧的全局 n_clean 错误。
 - 修 `tests/test_v09_s2_lifecycle.py`：真实 v07 `TaskState` 是 frozen dataclass，adapter 用 `dataclasses.replace`；测试桩由 `SimpleNamespace` 改为 frozen dataclass。
 - 验证：S2 全量 `pytest` **302 passed**（未运行 GPU/真实训练）。
+
+## 2026-11-23 PPO GAE 优势/回报的 time-major 对齐修复 + V13 shadow 追踪
+
+- 发现并修复真实缺陷：`collect_rollout` 中原 `torch.stack(adv, 1).transpose(0, 1)` 实际得到 `[N,T]`（env-major），而 `flat_obs/flat_actions` 是 time-major `[T,N]`；`advantages.reshape(-1)` 与 `returns.reshape(-1)` 因而与样本错位。改为直接 `torch.stack(adv, 1)` = `[T,N]`，并加断言。
+- 新增 `test_collect_rollout_advantages_are_time_major`：把 `(step, env)` 编码进 GAE 返回值，验证 `adv.reshape(-1)` 严格 time-major（旧实现会失败）。
+- `S2Trainer` 新增 `trace_dir` 与 `_write_trace`：每次 rollout 写 `rollout_XXXXXX.jsonl`，逐 `(step, env)` 记录 reward/done/value/log_prob/advantage/ret/phase/terminated/truncated/failure/timeout/failure_class_mask/c_request/c_exec/g_level/a_request/a_applied/episode_length；`--trace-dir` 由 `scripts/train_a2_v09_s2.py` 传入。
+- `S2TrainEnv.step` info 增加 `failure_class_mask`（逐环境 v07 reason 名称）、`g_level`、`episode_length`。
+- `S2Trainer.update` 记录每个 minibatch 的 `anchor_observations`（n_clean/分子/loss）并在 `train_rollout` 返回值中汇总，供 Run D 证据。
+- 验证：S2 全量 `pytest` **303 passed**；真实 V13 shadow 首轮因上面 trace/索引问题暴露该 bug，修复后待重跑（见下一步）。

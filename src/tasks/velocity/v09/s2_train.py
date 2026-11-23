@@ -126,6 +126,8 @@ class S2Trainer:
         self.random_state = None
         self._obs = None
         self._rollout_steps = 0
+        self.trace_dir = None
+        self.anchor_observations = []
         if self.teacher is not None:
             self.teacher.requires_grad_(False)
 
@@ -140,6 +142,7 @@ class S2Trainer:
             self._obs = self.env.reset()
         obs = self._obs
         transitions = []
+        trace_rows = []
         n = self.env.num_envs
         for _ in range(s2_runner.ROLLOUT_STEPS):
             item = {key: value for key, value in obs.items()}
@@ -171,6 +174,12 @@ class S2Trainer:
                                                if hasattr(info, 'get') else None),
                                     a_applied=(info.get('a_applied')
                                                if hasattr(info, 'get') else None)))
+            if self.trace_dir is not None:
+                trace_rows.append(dict(
+                    info=info, reward=reward.detach().cpu().numpy(),
+                    done=done.detach().cpu().numpy(),
+                    values=values.detach().cpu().numpy(),
+                    log_probs=log_probs.detach().cpu().numpy()))
             obs = next_obs
             self._rollout_steps += 1
         self._obs = obs
@@ -205,10 +214,58 @@ class S2Trainer:
                             float(next_values[index].detach().cpu())))
             adv.append(torch.as_tensor(a, dtype=torch.float32, device=self.device))
             returns.append(torch.as_tensor(r, dtype=torch.float32, device=self.device))
-        # [N,T] -> [T,N] so flattening matches time-major transitions.
-        return (transitions,
-                torch.stack(adv, 1).transpose(0, 1).contiguous(),
-                torch.stack(returns, 1).transpose(0, 1).contiguous())
+        # Per-env GAE returns [T] each; stacking on dim=1 gives time-major
+        # [T,N], which is exactly the order transitions/flat obs are built in.
+        adv_t = torch.stack(adv, 1).contiguous()
+        ret_t = torch.stack(returns, 1).contiguous()
+        assert adv_t.shape == (len(transitions), n), 'advantage must be [T,N]'
+        if self.trace_dir is not None:
+            self._write_trace(trace_rows, adv_t, ret_t, n)
+        return transitions, adv_t, ret_t
+
+    def _write_trace(self, trace_rows, advantages, returns, n):
+        """Per-(step, env) evidence for the V13 Run A shadow audit."""
+        out = Path(self.trace_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        path = out / f'rollout_{self.rollouts:06d}.jsonl'
+        with path.open('w') as handle:
+            for step, row in enumerate(trace_rows):
+                info = row['info'] if hasattr(row['info'], 'get') else {}
+                def _arr(name):
+                    value = info.get(name)
+                    if value is None:
+                        return [None] * n
+                    if hasattr(value, 'detach'):
+                        return value.detach().cpu().tolist()
+                    return list(value)
+                masks = {name: _arr(name) for name in (
+                    'terminated_mask', 'truncated_mask', 'failure_mask',
+                    'timeout_mask', 'failure_class_mask')}
+                phases = info.get('phase')
+                if isinstance(phases, (list, tuple)):
+                    phases = list(phases)
+                elif phases is None:
+                    phases = [None] * n
+                else:
+                    phases = [None] * n
+                extra = {name: _arr(name) for name in (
+                    'c_request', 'c_exec', 'g_level', 'a_request',
+                    'a_applied', 'episode_length')}
+                for env_id in range(n):
+                    record = dict(
+                        step=step, env_id=env_id,
+                        reward=float(row['reward'][env_id]),
+                        done=bool(row['done'][env_id]),
+                        value=float(row['values'][env_id]),
+                        log_prob=float(row['log_probs'][env_id]),
+                        advantage=float(advantages[step][env_id]),
+                        ret=float(returns[step][env_id]),
+                        phase=phases[env_id] if env_id < len(phases) else None)
+                    for name, values in masks.items():
+                        record[name] = values[env_id] if env_id < len(values) else None
+                    for name, values in extra.items():
+                        record[name] = values[env_id] if env_id < len(values) else None
+                    handle.write(json.dumps(record) + '\n')
 
     def update(self, transitions, advantages, returns):
         old_logs = flatten_time_major_old_logs(transitions)
@@ -301,15 +358,27 @@ class S2Trainer:
                                                 else anchor_numerator + numerator)
                     scaled_loss.backward()
                 if anchor_numerator is not None and n_clean:
-                    (self.beta_flat * anchor_numerator / (12.0 * n_clean)).backward()
+                    anchor_loss = self.beta_flat * anchor_numerator / (12.0 * n_clean)
+                    anchor_loss.backward()
+                    self.anchor_observations.append(dict(
+                        epoch=epoch, start=int(start), n_clean=int(n_clean),
+                        numerator=float(anchor_numerator.detach().cpu()),
+                        loss=float(anchor_loss.detach().cpu())))
                 nn.utils.clip_grad_norm_(self.model.parameters(),
                                           s2_runner.GRAD_CLIP)
                 self.optimizer.step()
                 self.model.constrain_std()
         self.rollouts += 1
         self.learning_samples += self.env.num_envs * s2_runner.ROLLOUT_STEPS
+        anchor = None
+        if self.anchor_observations:
+            last = self.anchor_observations[-1]
+            anchor = dict(n_clean=last['n_clean'],
+                          numerator=last['numerator'], loss=last['loss'],
+                          beta_flat=self.beta_flat,
+                          observations=len(self.anchor_observations))
         return dict(rollouts=self.rollouts, learning_rate=self.learning_rate,
-                    std=self.model.std.detach().cpu().tolist())
+                    std=self.model.std.detach().cpu().tolist(), anchor=anchor)
 
     def train_rollout(self, budget=None):
         if budget is not None:

@@ -532,6 +532,28 @@ class S2TrainEnv:
         timeout = bool(timeout.any()) if hasattr(timeout, 'any') else bool(timeout)
         failure_mask = info.get('failure', False)
         timeout_mask = info.get('timeout', False)
+        failure_class_mask = None
+        termination = getattr(self.env, 'last_termination', None)
+        if termination is not None and len(termination) >= 4:
+            from src.tasks.velocity.v07.events import FAILURE_CODES
+            names = {code: name for name, code in FAILURE_CODES.items()}
+            reasons = termination[3].detach().cpu().tolist()
+            fail = failure_mask.detach().cpu().tolist() \
+                if hasattr(failure_mask, 'detach') else list(failure_mask or [])
+            ok = terminated.detach().cpu().tolist() \
+                if hasattr(terminated, 'detach') else list(terminated or [])
+            timeout_list = timeout_mask.detach().cpu().tolist() \
+                if hasattr(timeout_mask, 'detach') else list(timeout_mask or [])
+            failure_class_mask = []
+            for i, code in enumerate(reasons):
+                if i < len(fail) and fail[i]:
+                    failure_class_mask.append(names.get(code, f'v07_code_{code}'))
+                elif i < len(timeout_list) and timeout_list[i]:
+                    failure_class_mask.append('timeout')
+                elif i < len(ok) and ok[i]:
+                    failure_class_mask.append('s2_success')
+                else:
+                    failure_class_mask.append(None)
         info.update(
             terminated=bool(terminated.any()) if hasattr(terminated, 'any') else bool(terminated),
             truncated=bool(truncated.any()) if hasattr(truncated, 'any') else bool(truncated),
@@ -540,6 +562,7 @@ class S2TrainEnv:
             failure_mask=failure_mask,
             timeout_mask=timeout_mask,
             failure_class='failure' if failure else 'timeout' if timeout else None,
+            failure_class_mask=failure_class_mask,
             teacher_observation=self.teacher_observation(),
             a_request=self.env.action_manager.action.detach().clone(),
             a_applied=self.env.action_term._processed_actions.detach().clone(),
@@ -548,7 +571,9 @@ class S2TrainEnv:
             c_exec=getattr(self, '_s2_c_exec', None),
             top_arrived=(getattr(self, '_lifecycle_out', {}) or {}).get('top'),
             local_x=(self.env.robot.data.root_link_pos_w
-                     - self.env.origins[self.env.tile_ids])[:, 0])
+                     - self.env.origins[self.env.tile_ids])[:, 0],
+            g_level=(getattr(self, '_s2_g_level', None)),
+            episode_length=self.env.episode_length_buf.detach().clone())
         return obs, reward, terminated | truncated, info
 
     def close(self):
