@@ -4986,3 +4986,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 测试：新增 `tests/test_v09_s2_quality.py`（18 项，含独审 24 个手算用例、T-1 零指令巡航、T-2 晚零、T-6 窗外/跨窗/精确 15°、步数与 ramp、L40、恢复锁存）；更新 lifecycle 测试。全量 S2 + gate/acceptance + V13 **336 passed**。
 - 真实 GPU（最终代码）：instant 停车 request 400→first zero 401→HOLD 1000→终点 1400，质量失败 −10（非超时）；ramp k99/100 → 500 首次 0，终点 1500，HOLD 1001，质量失败 −10；flat 3/3 walk 在 1000 成功 +8，3/3 stop 到终点但站立质量失败；stairs 自然安全登顶 step 489（四足入台 471，+2），524 物理失败早于入台+1 m 巡航窗。证据 `logs/a2_v09/s2/q036/`。
 - 独审（另一 agent）另完成 Q037 §3 的 S2.0 离线重算 v2：严格逐足接触等价证明 15/15，窄真 15/15 安全登顶、post-summit→failure 25–38 帧、低头比例 1.0，宽真 0/15；`docs/v09_s2_0_top_recompute_q037.md` + MANIFEST；旧 0.4 代理窗保留并标 superseded。
+
+## 2026-11-23 训练 trace 写入 JSON 标量修复 + Q036/Q037 证据字段
+
+- `S2TrainEnv.step` info 补齐 Q037 证据字段：`v_cruise`、`c_request_at_actor/after_step`、`c_exec_at_actor/after_step`、`ramp_k_at_actor/after_step`、`first_zero_actor_step`、`stop_requested_at_actor/after_step`、`phase_at_actor/phase_next`、`hold_samples_lifecycle`、`four_feet_entry_step`。
+- `S2Trainer._write_trace` 的 `_arr` 改为递归 `_py` 转换（ndarray/np 标量/list→JSON 原生），修复 fresh 512-env Run A 首行即 `int64 not JSON serializable` 的崩溃；fake backend 192 行 trace 验证通过。
+- 验证：`pytest tests/test_v09_s2_1_train.py tests/test_v09_s2_quality.py` **48 passed**；待重跑 512-env Run A。

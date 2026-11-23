@@ -270,13 +270,24 @@ class S2Trainer:
         with path.open('w') as handle:
             for step, row in enumerate(trace_rows):
                 info = row['info'] if hasattr(row['info'], 'get') else {}
+                def _py(item):
+                    if isinstance(item, np.ndarray):
+                        return item.tolist()
+                    if hasattr(item, 'tolist') and not isinstance(item, (list, tuple)):
+                        return item.tolist()
+                    if isinstance(item, (list, tuple)):
+                        return [_py(entry) for entry in item]
+                    if isinstance(item, (np.str_, str)):
+                        return str(item)
+                    return item
+
                 def _arr(name):
                     value = info.get(name)
                     if value is None:
                         return [None] * n
                     if hasattr(value, 'detach'):
-                        return value.detach().cpu().tolist()
-                    return list(value)
+                        return _py(value.detach().cpu().numpy())
+                    return _py(value)
                 masks = {name: _arr(name) for name in (
                     'terminated_mask', 'truncated_mask', 'failure_mask',
                     'timeout_mask', 'failure_class_mask')}
@@ -289,7 +300,19 @@ class S2Trainer:
                     phases = [None] * n
                 extra = {name: _arr(name) for name in (
                     'c_request', 'c_exec', 'g_level', 'a_request',
-                    'a_applied', 'episode_length')}
+                    'a_applied', 'episode_length', 'v_cruise',
+                    'c_request_at_actor', 'c_request_after_step',
+                    'c_exec_at_actor', 'c_exec_after_step',
+                    'ramp_k_at_actor', 'ramp_k_after_step',
+                    'first_zero_actor_step', 'stop_requested_at_actor',
+                    'stop_requested_after_step', 'phase_at_actor',
+                    'phase_next', 'hold_samples_lifecycle',
+                    'four_feet_entry_step', 'quality_ok',
+                    'quality_failure_mask', 'quality_reason',
+                    'quality_cruise_state', 'quality_stop_state',
+                    'cruise_start_step', 'cruise_samples', 'hold_samples',
+                    'stop_mean_speed', 'stop_peak_speed',
+                    'stop_max_displacement', 'stop_support_ratio')}
                 for env_id in range(n):
                     record = dict(
                         step=step, env_id=env_id,

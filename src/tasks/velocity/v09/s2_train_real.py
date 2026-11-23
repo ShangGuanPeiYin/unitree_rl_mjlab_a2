@@ -736,7 +736,22 @@ class S2TrainEnv:
             local_x=(self.env.robot.data.root_link_pos_w
                      - self.env.origins[self.env.tile_ids])[:, 0],
             g_level=(getattr(self, '_s2_g_level', None)),
-            episode_length=self.env.episode_length_buf.detach().clone())
+            episode_length=self.env.episode_length_buf.detach().clone(),
+            v_cruise=lifecycle_out.get('v_cruise'),
+            c_request_at_actor=lifecycle_out.get('c_request_at_actor'),
+            c_request_after_step=lifecycle_out.get('c_request_after_step'),
+            c_exec_at_actor=lifecycle_out.get('c_exec_at_actor'),
+            c_exec_after_step=lifecycle_out.get('c_exec_after_step'),
+            ramp_k_at_actor=lifecycle_out.get('ramp_k_at_actor'),
+            ramp_k_after_step=lifecycle_out.get('ramp_k_after_step'),
+            first_zero_actor_step=lifecycle_out.get('first_zero_step'),
+            stop_requested_at_actor=lifecycle_out.get('stop_requested_at_actor'),
+            stop_requested_after_step=lifecycle_out.get('stop_requested_after_step'),
+            phase_at_actor=lifecycle_out.get('phase'),
+            phase_next=lifecycle_out.get('phase_next'),
+            hold_samples_lifecycle=lifecycle_out.get('hold_samples'),
+            four_feet_entry_step=(getattr(self, '_quality_out', {}) or {}).get(
+                'four_feet_entry_step'))
         return obs, reward, terminated | truncated, info
 
     def close(self):
