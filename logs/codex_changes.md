@@ -4963,3 +4963,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - **账本帧计数**：`collect_rollout` 中 `_rollout_steps += 1` 移到 `env.step` 之后立即执行，step 后异常不再漏计；并写明 terminated/truncated/failure/timeout 统一零 bootstrap 的 Q035 合同。
 - 测试：`tests/test_v09_s2_lifecycle.py` 的适配器桩改为 frozen dataclass + 平台内四足坐标。
 - 验证：S2 全量 + V13 证据 pytest **315 passed**；GPU 复核 tile/平台起步通过；Run B 重跑中。
+
+## 2026-11-23 S2 训练中断车命令变化不再被 v07 stall 诊断拒绝
+
+- `s2_physics._s2_patch_context` 在补丁上下文中替换 `v07env.StallDiagnostics.update`：当执行命令在 episode 内变化（S2 停车/渐变）时，仅对变化的环境调用 `reset` 重启 51 样本窗口并继续记录，不再抛 `executed command changed inside an episode`（SDS 6.2 明确旧 stall 诊断不得因指令改变抛错）；退出上下文恢复原方法。
+- 真实 GPU flat_stop 长跑验证前先经此修复；此前 `--steps 1600` 在首次减速处异常退出。
+- 验证：`pytest tests/test_v09_s2_0_physics.py tests/test_v09_s2_1_train.py` **50 passed**；真实 GPU 复跑见下一步（待 Q036 质量判据实现后统一复验）。

@@ -556,7 +556,26 @@ def _s2_patch_context(specs):
         original_cfg_gen = getattr(v07cfg, 'terrain_generator_cfg', None)
         original_validate = getattr(v07env, '_validate_frontier_tile', None)
         original_check = getattr(v07env, '_check_schedule_frontier', None)
+        original_stall_update = getattr(v07env.StallDiagnostics, 'update', None)
         try:
+            if original_stall_update is not None:
+                def stall_update_on_command_change(self, local_x, executed_c,
+                                                   climbed, first_step_acquired,
+                                                   enabled):
+                    # SDS 6.2: the S2 stop command legitimately changes inside an
+                    # episode; restart the inherited v07 stall window instead of
+                    # aborting the whole run.
+                    executed_c = torch.as_tensor(executed_c, device=self.device)
+                    known = torch.isfinite(self.executed_c)
+                    changed = known & (self.executed_c
+                                       != executed_c.to(self.executed_c.dtype))
+                    if bool(changed.any()):
+                        ids = changed.nonzero(as_tuple=False).flatten()
+                        self.reset(ids, local_x.to(self.x_history.dtype)[ids])
+                    return original_stall_update(
+                        self, local_x, executed_c, climbed, first_step_acquired,
+                        enabled)
+                v07env.StallDiagnostics.update = stall_update_on_command_change
             v07terrain.build_terrain_specs = lambda: tuple(specs)
             v07terrain.tile_boxes = lambda tile: s2_terrain.boxes(tile)
             def query(points_world, tile_ids):
@@ -634,6 +653,8 @@ def _s2_patch_context(specs):
                 v07events.build_terrain_specs = original_events_table
             if original_evaluate is not None:
                 v07events.evaluate = original_evaluate
+            if original_stall_update is not None:
+                v07env.StallDiagnostics.update = original_stall_update
             v07events._TABLE_CACHE.clear()
             if original_cfg_gen is not None:
                 v07cfg.terrain_generator_cfg = original_cfg_gen
