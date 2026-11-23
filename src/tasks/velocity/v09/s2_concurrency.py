@@ -12,6 +12,10 @@ from pathlib import Path
 ESTIMATE_20_ENV_MIB = 2048
 SAFETY_MARGIN_MIB = 1024
 TRAIN_SCRIPT = 'train_a2_v09_s2.py'
+CACHE_SCRIPTS = ('collect_a2_v09_s2_gate_reference.py',
+                 'collect_a2_v09_s2_gate_original_6400.py',
+                 'build_a2_v09_s2_gate_caches.py',
+                 'run_a2_v09_s2_gate.py')
 
 
 class ConcurrencyError(RuntimeError):
@@ -38,7 +42,8 @@ def detect_training_processes(*, proc_root='/proc', current_pid=None):
         if not argv:
             continue
         joined = ' '.join(argv)
-        if TRAIN_SCRIPT in joined and '--execute' in joined:
+        if (TRAIN_SCRIPT in joined or any(script in joined for script in CACHE_SCRIPTS)) \
+                and '--execute' in joined:
             found.append(dict(pid=pid, argv=argv))
     return found
 

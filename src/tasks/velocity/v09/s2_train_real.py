@@ -526,7 +526,13 @@ class S2TrainEnv:
             failure_class='failure' if failure else 'timeout' if timeout else None,
             teacher_observation=self.teacher_observation(),
             a_request=self.env.action_manager.action.detach().clone(),
-            a_applied=self.env.action_term._processed_actions.detach().clone())
+            a_applied=self.env.action_term._processed_actions.detach().clone(),
+            phase=getattr(self, '_s2_phase', None),
+            c_request=getattr(self, '_s2_c_request', None),
+            c_exec=getattr(self, '_s2_c_exec', None),
+            top_arrived=(getattr(self, '_lifecycle_out', {}) or {}).get('top'),
+            local_x=(self.env.robot.data.root_link_pos_w
+                     - self.env.origins[self.env.tile_ids])[:, 0])
         return obs, reward, terminated | truncated, info
 
     def close(self):

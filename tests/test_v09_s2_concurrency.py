@@ -38,3 +38,25 @@ def test_guard_refuses_even_without_training_when_free_is_insufficient():
     with pytest.raises(s2_concurrency.ConcurrencyError, match='insufficient free'):
         s2_concurrency.require_safe_window(
             processes=[], memory=dict(free_mib=1385, total_mib=8192))
+
+
+@pytest.mark.parametrize('script', s2_concurrency.CACHE_SCRIPTS)
+def test_detector_sees_running_cache_jobs(tmp_path, script):
+    proc = tmp_path / 'proc'
+    pid = proc / '4321'
+    pid.mkdir(parents=True)
+    (pid / 'cmdline').write_bytes(
+        ('python\0' + 'scripts/' + script + '\0--execute\0').encode())
+    found = s2_concurrency.detect_training_processes(
+        proc_root=proc, current_pid=9999)
+    assert [row['pid'] for row in found] == [4321]
+
+
+def test_detector_ignores_cache_dry_run(tmp_path):
+    proc = tmp_path / 'proc'
+    pid = proc / '4321'
+    pid.mkdir(parents=True)
+    (pid / 'cmdline').write_bytes(
+        b'python\0scripts/collect_a2_v09_s2_gate_reference.py\0--dry-run\0')
+    assert s2_concurrency.detect_training_processes(
+        proc_root=proc, current_pid=9999) == []

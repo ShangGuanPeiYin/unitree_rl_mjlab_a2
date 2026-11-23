@@ -4913,3 +4913,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - lifecycle 增加 flat completion window；S2TrainEnv 初始化 lifecycle（六任务/post/speed/stop/legacy/front/spawn/completion）。
 - 新增 fake backend stairs 序列测试：top 不 reset，post 5m 后 success；phase 序列 CLIMB,CLIMB,POST_WALK...
 - 验证：`pytest tests/test_v09_s2_1_train.py -q` **27 passed**；全 S2 **291 passed**。
+
+## 2026-11-23 S2 真实环境 smoke CLI 与并发守卫
+
+- 新增 `scripts/smoke_a2_v09_s2_train.py`：固定使用 `S2TrainEnv` + `S2Trainer`，支持 `--course`、`--num-envs`、`--device`、`--steps`、`--output-dir`、`--ledger`、`--attempt-id`、`--role-filter stairs|platform|flat`；逐环境写 `smoke_trace.jsonl`（phase、c_request、c_exec、a_request、a_applied、success/failure/timeout、top_arrived、local_x、done），并写 `smoke_summary.json`。
+- `--dry-run` 只构建真实 env 计划（S2.1/S2.3、角色过滤），不加载 mjlab、不启物理；`--execute` 先过并发守卫。
+- `s2_concurrency` 的 cache 检测补入 `build_a2_v09_s2_gate_caches.py`。
+- CPU fake 测试新增 `tests/test_v09_s2_smoke_train.py`（5 个：plan、角色选择、platform 无角色拒绝、训练/cache 运行拒绝、显存不足拒绝）；并发守卫新增 cache 探测器参数化测试。
+- 验证：`pytest $(printf '%s ' tests/test_v09_s2_*.py) tests/test_v09_s2_1_train.py tests/test_v09_s2_smoke_train.py -q` → **301 passed**；未运行 GPU smoke（等待缓存窗口结束）。
