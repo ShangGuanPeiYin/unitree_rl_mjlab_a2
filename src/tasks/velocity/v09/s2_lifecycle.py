@@ -49,6 +49,7 @@ class S2Lifecycle:
                                  self.ramp_steps, 0).astype(int)
         self.phase = np.zeros(n, dtype=int)
         self.top = np.zeros(n, dtype=bool)
+        self.top_x = np.full(n, np.nan, dtype=float)
         self.top_event = np.zeros(n, dtype=bool)
         self.success = np.zeros(n, dtype=bool)
         self.failure = np.zeros(n, dtype=bool)
@@ -88,6 +89,7 @@ class S2Lifecycle:
         mask = np.asarray(mask, dtype=bool)
         self.phase[mask] = APPROACH
         self.top[mask] = False
+        self.top_x[mask] = np.nan
         self.top_event[mask] = False
         self.success[mask] = False
         self.failure[mask] = False
@@ -138,8 +140,11 @@ class S2Lifecycle:
         top_now = top_signal & ~self.top & ~failure & ~timeout
         self.top_event = top_now
         self.top |= top_now
-        dpost = local_x - self.front
+        # Q019 A3 / Q036: the stairs D_post zero is the body route_x at the
+        # latched safe-summit frame, never the platform front edge.
+        self.top_x = np.where(top_now, local_x, self.top_x)
         start_dist = local_x - self.spawn_x
+        dpost = np.where(self.top, local_x - self.top_x, -np.inf)
         # Phase / g-level geometry gate.
         g_ready = self.top & four_feet & body_ok & ~failure & ~timeout
         self.g_step = np.where(g_ready & (self.g_step < 0), self.step, self.g_step)
@@ -249,7 +254,8 @@ class S2Lifecycle:
         if quality_reason is not None:
             self.quality_reason = [str(v) for v in quality_reason]
         return dict(top=self.top,
-                    top_event=self.top_event, success=self.success,
+                    top_event=self.top_event, top_x=self.top_x,
+                    d_post=dpost, success=self.success,
                     failure=self.failure, timeout=self.timeout,
                     quality_failure=self.quality_failure,
                     physical_failure=failure,

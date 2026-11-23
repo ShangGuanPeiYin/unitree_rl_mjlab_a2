@@ -143,7 +143,58 @@ def cruise_stall(evidence, cruise):
                 cruise_stall_latched=latched_step is not None)
 
 
-def summarize_trajectory(evidence, *, task, stop_mode, cruise, physical_failure=False):
+def shared_quality_window(evidence, step, cruise):
+    """Return the Q036/§6.5 cruise-window mask from recorded frames.
+
+    This mirrors ``s2_quality.S2Quality``: flat tasks use the half-open
+    ``2 s <= t < 20 s`` / ``2 s <= t < 8 s`` windows (interval 100..999 /
+    100..399); stairs/platform tasks start 1 m after the four-foot platform
+    entry (spawn+1 m for platform-direct) and end at the decel request or the
+    terminal frame.  The evidence's debounced ``support`` channel is used as
+    the recorded four-foot entry proxy; callers with an explicit entry index
+    can pass ``quality_window`` directly.
+    """
+    n = int(step.numel())
+    task = str(evidence.get('task', ''))
+    if task.startswith('flat_'):
+        end = 1000 if task == 'flat_walk' else 400
+        return (step >= 100) & (step < end)
+    if not (task.startswith('stairs_') or task.startswith('platform_')):
+        return torch.ones(n, dtype=torch.bool)
+    x = evidence['position'][:, 0].float()
+    command = evidence.get('command')
+    if command is None:
+        command = torch.full_like(x, float(cruise))
+    else:
+        command = command.float()
+    if task.startswith('platform_'):
+        entry_i = 0
+        zero_x = float(evidence.get('initial_position', x[:1])[0])
+    else:
+        explicit = evidence.get('four_feet_entry')
+        if explicit is not None:
+            entry = torch.as_tensor(explicit).bool().nonzero().flatten()
+        else:
+            support = evidence.get('support')
+            if support is None:
+                return torch.zeros(n, dtype=torch.bool)
+            entry = support.bool().all(-1).nonzero().flatten()
+        if not entry.numel():
+            return torch.zeros(n, dtype=torch.bool)
+        entry_i = int(entry[0])
+        zero_x = float(x[entry_i])
+    eligible = (x[entry_i:] >= zero_x + 1.0).nonzero().flatten()
+    if not eligible.numel():
+        return torch.zeros(n, dtype=torch.bool)
+    start_i = entry_i + int(eligible[0])
+    decel = (command[start_i:] < float(cruise) - 1e-9).nonzero().flatten()
+    end_i = start_i + int(decel[0]) - 1 if decel.numel() else n - 1
+    if end_i < start_i:
+        return torch.zeros(n, dtype=torch.bool)
+    return (step >= step[start_i]) & (step <= step[end_i])
+
+
+def summarize_trajectory(evidence, *, task, stop_mode, cruise, physical_failure=False, quality_window=None):
     """All arrays are pre-reset samples at the ends of physical control steps.
 
     Required fields: step, position[3], roll, pitch, velocity_b[3], velocity_w[3],
@@ -153,15 +204,25 @@ def summarize_trajectory(evidence, *, task, stop_mode, cruise, physical_failure=
     recomputation; returned statistics include exact denominators and cycles.
     """
     e = {key: torch.as_tensor(value).detach().cpu() for key, value in evidence.items()}
+    e.setdefault('task', task)
     step = e['step'].long()
     if not step.numel() or bool((step[1:] != step[:-1] + 1).any()):
         raise ValueError('complete contiguous control-step evidence is required')
-    cruise_end = 1000 if task == 'flat_walk' else 400 if task == 'flat_stop' else int(step[-1])
-    window = (step > 100) & (step <= cruise_end) if task.startswith('flat_') else torch.ones_like(step, dtype=torch.bool)
+    if quality_window is not None:
+        window = torch.as_tensor(quality_window).bool()
+        if window.numel() != step.numel():
+            raise ValueError('quality_window length differs from evidence')
+    else:
+        window = shared_quality_window(e, step, cruise)
     n = int(window.sum())
+    window_steps = step[window]
+    window_start_step = int(window_steps[0]) if n else None
+    window_end_step = int(window_steps[-1]) if n else None
     required_cruise_samples = 900 if task == 'flat_walk' else 300 if task == 'flat_stop' else 50
     valid_window = (n == required_cruise_samples if task.startswith('flat_') else n >= required_cruise_samples)
     result = dict(sample_count=len(step), cruise_sample_count=n,
+                  quality_window_start_step=window_start_step,
+                  quality_window_end_step=window_end_step,
                   cruise_required_sample_count=required_cruise_samples, cruise_window_valid=valid_window,
                   speed_rmse=None, pitch_rms_degrees=None, pitch_p99_degrees=None,
                   roll_rms_degrees=None, base_height_mean=float(e['height'].float().mean()),

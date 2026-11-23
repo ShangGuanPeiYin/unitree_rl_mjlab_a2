@@ -66,16 +66,18 @@ def test_stop_instant_next_actor_zero_and_hold_then_success():
     s = _one(task='stairs_stop', post=3.0, stop='instant')
     s.update(local_x=[4.9], top_signal=[True], four_feet=[True],
              body_ok=[True], quality_ok=[True])
-    out = s.update(local_x=[5.0], top_signal=[True], four_feet=[True],
+    # D_post zero is the latched top_x (4.9), not the platform front (2.0);
+    # post=3.0 is reached at x=7.9.
+    out = s.update(local_x=[7.9], top_signal=[True], four_feet=[True],
                    body_ok=[True], quality_ok=[True])
     assert bool(out['c_exec'][0] == 0.0)
     assert out['phase_next'][0] in ('HOLD', 'DECEL')
     assert not s.success[0]
     for _ in range(999):
-        out = s.update(local_x=[5.0], top_signal=[True], four_feet=[True],
+        out = s.update(local_x=[7.9], top_signal=[True], four_feet=[True],
                        body_ok=[True], quality_ok=[True])
     assert not s.success[0]
-    out = s.update(local_x=[3.0], top_signal=[True], four_feet=[True],
+    out = s.update(local_x=[7.9], top_signal=[True], four_feet=[True],
                    body_ok=[True], quality_ok=[True])
     assert bool(s.success[0]) and bool(out['success_event'][0])
 
@@ -282,3 +284,19 @@ def test_q037_request_and_ramp_k_at_actor():
     assert rows[500]['c_exec_at_actor'] == pytest.approx(0.0)
     assert rows[500]['first_zero_step'] == 500
     assert rows[501]['hold_samples'] == 2
+
+
+def test_stairs_dpost_zero_is_top_not_front():
+    s = life.S2Lifecycle(task=['stairs_walk'], post_distance=[5.0],
+                         speed=[0.5], stop_mode=['none'], front=[2.0],
+                         spawn_x=[-1.0])
+    out = s.update(local_x=[2.8858], top_signal=[True], four_feet=[True],
+                   body_ok=[True], quality_ok=[True])
+    assert out['top'][0] and out['top_x'][0] == pytest.approx(2.8858)
+    # platform front + 5 = 7.0 is NOT enough; the zero is the safe summit.
+    out = s.update(local_x=[7.0], top_signal=[True], four_feet=[True],
+                   body_ok=[True], quality_ok=[True])
+    assert not s.success[0]
+    out = s.update(local_x=[7.8858], top_signal=[True], four_feet=[True],
+                   body_ok=[True], quality_ok=[True])
+    assert s.success[0] and out['d_post'][0] == pytest.approx(5.0)

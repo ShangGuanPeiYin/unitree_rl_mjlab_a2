@@ -301,6 +301,7 @@ class S2Quality:
         self.stall_count = np.zeros(n, dtype=np.int64)
         self.stall_consec = np.zeros(n, dtype=np.int64)
         self.top_step = np.full(n, -1, dtype=np.int64)
+        self.top_x = np.full(n, np.nan, dtype=np.float64)
         self.entry_step = np.full(n, -1, dtype=np.int64)
         self.entry_x = np.zeros(n, dtype=np.float64)
         self.cruise_start_step = np.full(n, -1, dtype=np.int64)
@@ -365,6 +366,7 @@ class S2Quality:
         self.stall_count[mask] = 0
         self.stall_consec[mask] = 0
         self.top_step[mask] = -1
+        self.top_x[mask] = np.nan
         self.entry_step[mask] = -1
         self.entry_x[mask] = 0
         self.cruise_start_step[mask] = -1
@@ -490,6 +492,8 @@ class S2Quality:
         self.timeout = timeout
         top_new = top_arrived & ~failure & ~timeout & (self.top_step < 0)
         self.top_step[top_new] = step[top_new]
+        # Q019 A3 / Q036: D_post zero is the latched safe-summit route_x.
+        self.top_x = np.where(top_new, local_x, self.top_x)
 
         # ------------------------------------------------ four-foot entry
         new_entry = (four_feet_entry & ~self.is_platform & ~self.is_flat
@@ -619,12 +623,13 @@ class S2Quality:
 
     # --------------------------------------------------------------- helpers
     def _distance(self, local_x):
-        stairs = np.isin(self.task, ('stairs_walk', 'stairs_stop',
-                                     'legacy_l40'))
-        zero = np.where(self.entry_step >= 0, self.entry_x, local_x)
+        stairs = np.isin(self.task, ('stairs_walk', 'stairs_stop'))
+        # Before the top latch the stairs D_post is undefined/negative; the
+        # platform front edge is NOT the zero (Q019 A3 / Q036 F-4).
+        zero = np.where(self.top_step >= 0, self.top_x, local_x)
+        distance = np.where(self.top_step >= 0, local_x - zero, -np.inf)
         return np.where(self.is_platform, local_x - self.spawn_x,
-                        np.where(stairs, local_x - zero,
-                                 local_x - self.spawn_x))
+                        np.where(stairs, distance, local_x - self.spawn_x))
 
     def _endpoint(self, local_x):
         self._current_x = np.asarray(local_x, dtype=np.float64)
@@ -634,11 +639,8 @@ class S2Quality:
         endpoint |= (self.task == 'flat_stop') & (
             self.step >= self.planned_stop_end)
         # Endpoint distance matches S2Lifecycle exactly: platform direct walks
-        # from spawn, stairs walk from the platform front edge (D_post).
-        dist = np.where(
-            self.is_platform, local_x - self.spawn_x,
-            np.where(np.isin(self.task, ('stairs_walk', 'platform_walk')),
-                     local_x - self.front, local_x - self.spawn_x))
+        # from spawn, stairs walk from the latched safe-summit top_x (D_post).
+        dist = self._distance(local_x)
         endpoint |= (np.isin(self.task, ('stairs_walk', 'platform_walk'))
                      & (dist >= self.post))
         endpoint |= self.is_legacy & (self.top_step >= 0)
@@ -798,6 +800,8 @@ class S2Quality:
                                 'none').astype(object),
             four_feet_entry_step=self.entry_step.copy(),
             four_feet_entry_x=self.entry_x.copy(),
+            top_step=self.top_step.copy(),
+            top_x=self.top_x.copy(),
             cruise_start_step=self.cruise_start_step.copy(),
             cruise_close_step=self.cruise_close_step.copy(),
             cruise_samples=self.cruise_samples.copy(),

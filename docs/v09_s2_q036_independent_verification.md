@@ -6,7 +6,8 @@
   - 裁定 DSH-Q036：`doc/sds/reviews/v09_execution_rulings.md:344-386`
   - SDS v0.9 §4.2/§5/§5.2/§5.3/§5.4/§6.2/§6.5：`doc/sds/SDS_A2_v0.9_Sequential_Map_Walk_Stop_Robustness.md:462-517,565-706,751-777,824-866`
   - 数值验收设计：`docs/v09_s2_1_numerical_acceptance_plan_v13.md`
-- 结论：**当前已提交的 HEAD `cd18d44` 不满足 Q036 的 A、top、B 三组要求，不得签字；工作区 WIP 已大幅接近 Q036，但未提交、无 `s2_quality` 测试、且存在两处可复现的质量判据缺陷，同样不得签字。**本报告只签“独立参照与负向结论”，不签训练链路通过。
+- 结论（对 `cd18d44`/14:29 WIP 的时点判定）：**`cd18d44` 不满足 Q036 的 A、top、B 三组要求；14:29 WIP 已大幅接近但有两处可复现缺陷。**
+- **最终重审（2026-11-23，`0a0276e`/`56820bb`）：见 §12。实现级结论为 PASS（A/top/B 的核心判据经独立参照与真实 trace 验证）；Run A 已在修复提交 `56820bb` 上重跑并通过（F-1 关闭）。整链签字仍为 CONDITIONAL，仅剩 F-2（探针 reward/at_actor 字段重采）、F-3（门禁/训练窗口统一）与 F-4（D_post 零点）待最终 SHA 复核。**
 
 > 审计对象是移动的。审计开始时 `HEAD=cd18d44`（2026-11-23 14:21:57），工作区已有未提交的 Q036 实现。我在 14:29:26 对 7 个文件做了只读快照并记录 SHA256（`logs/a2_v09/s2/q036_verify/snapshot_1429/SHA256SUMS.txt`）；此后 `s2_physics.py` 又在 14:29:43 变动。**本报告对“HEAD”和“14:29 快照 WIP”分别判定**，所有 file:line 均注明属于哪一份。
 
@@ -309,3 +310,91 @@ v1（`logs/a2_v09/s2/q036_verify/recompute_s2_0_top.py`）用 `foot_on_platform`
 - §4.3 的定性结论不变：窄台 15/15 在安全登顶后失败、窗内低头 1.0；宽台 0/15。
 - 数字更正：窄台安全登顶窗为 **25–38 帧**（不是 43–55），安全登顶比 0.4 代理晚 **16–20 帧**（不是 15–19）。
 - 该修订**不改变** Q036 主体判定：HEAD `cd18d44` 的 top 仍是 0.4 代理、WIP 原始信号修复仍需最终 SHA 的真实 GPU 验证；S2.0 的离线修订可由本派生件闭合（Q037 §3 已批准不重跑）。
+
+
+## 12. 最终重审：`0a0276e`（Q036/Q037 全链复核与签字判定）
+
+审计时间 2026-11-23 15:20–15:35 CST；主对象 `0a0276e0a2f6d1b3c5662f3d564d5736da4c85d6`（main，父 `cd18d44`）；Run A 在后续修复提交 `56820bba5ab9098889a439271aa060f2060746a5` 上重跑。工作区在审计期间另有未提交的 F-3/F-4 修复补丁（`metrics.py`/`s2_lifecycle.py`/`s2_quality.py`/tests），不属于上述 SHA。只读审计，未改生产/测试/SDS，未运行 GPU/训练。
+
+### 12.1 被审文件与 SHA256
+
+| 文件 | SHA256 |
+|---|---|
+| `src/tasks/velocity/v09/s2_quality.py` | `5fefffe94ef697b479f7614f6430d5cfd2c1e79e9a8b7bec84582c80a4495d30` |
+| `src/tasks/velocity/v09/s2_lifecycle.py` | `d913b86815cd1ff08cde963ace53344f3d955e25dc0b89490af1d08c652b0ad0` |
+| `src/tasks/velocity/v09/s2_train_real.py` | `a87eaed5fc6a3d66fe65ecedb1bb063a3b5d057c8ad2f2fc7e2d14110a8a922f` |
+| `src/tasks/velocity/v09/s2_physics.py` | `242ca72960d70e8eef647253ce84f4e9aa12e572db13c60ac42f6e2552c0d917` |
+| `src/tasks/velocity/v09/s2_acceptance.py` | `3c6b3d8574b6167a05212de6a83d0cdb0b345a04dafc317e4ca4a07f444af451` |
+| `tests/test_v09_s2_quality.py` | `8b1ca610e29fa58395e20e3867bf67f27d3d95b2131b1d67845983e6c2f44205` |
+| `tests/test_v09_s2_lifecycle.py` | `e11efd6a18df06bd71c43ec5e88b0fd7e53d246832f3ea282728f8d917ffd0a5` |
+
+> 工作区状态：审计期间（15:15:47）出现未提交的 `s2_train.py`/`s2_train_real.py` trace 字段补丁（`s2_train_real.py` 工作区 `5ee70704…`，committed `a87eaed5…`），不属于 `0a0276e`；§12.4 的 Run A 崩溃来自该补丁。本报告对 `0a0276e` 的判定以 committed blob 为准。
+
+### 12.2 逐项复核（检查单 1）
+
+| 项 | 判定 | 证据 |
+|---|---|---|
+| T-1 零命令巡航窗不得成功 | **PASS** | `s2_quality.py:538-542`（`in_window &= cruise`）；`final_quality_crosscheck.json` 的 `T1_zero_command_cruise_must_fail`：`missing_window`、−10 |
+| T-2 HOLD 锚定实际首零 | **PASS** | `s2_quality.py:586-600,740-758`；延迟 100 帧的用例 → `hold=900`、`hold_incomplete` |
+| 站姿窗与首零 | **PASS** | instant 首零 401、终点 1400、hold=1000；ramp 首零 500、终点 1500、hold=1001（真实 trace，§12.4） |
+| pitch 15°/10 帧窗作用域 | **PASS** | `s2_quality.py:556-559` 只在 `in_window` 计、出窗清零；边界：窗外 10 帧不锁、窗内 9 帧不锁、窗内 10 帧锁、恰好 15.0° 不锁、15.001° 锁、跨 8 s 窗不累计（6 例全过） |
+| c_request / ramp 语义（Q037） | **PASS** | `s2_lifecycle.py:17,166-190`：请求帧 `c_request_after_step=0`、`c_request_at_actor=v`；ramp k=1..100，`k=100` 恰为 0；真实 trace `c_exec_consumed` 401=0.297…500=0 |
+| HOLD 锚定（lifecycle） | **PASS** | `s2_lifecycle.py:187-204`；真实 instant/ramp trace 首零 401/500 |
+| 单一奖励来源 | **PASS** | `s2_train_real.py:525-531`：reward 只读 `c_request_at_actor/c_exec_at_actor/phase`，`env.command` 仅由 lifecycle 写（`:351-353`），旧 `_s2_reward` stop 分支已删 |
+| 门禁/终验共享判据 | **PARTIAL** | `s2_acceptance.py:18-25` 委托 `s2_quality.acceptance_reasons`（阈值/比较共享，`final_state_crosscheck.json` 边界 12/12 一致）；但 `metrics.py:160` 对楼梯仍用**全轨迹**窗计算 RMS/P99/over15，训练用 `entry+1 m→endpoint` 窗；同一“10 帧窗外 16°”训练通过而 gate 判 `pitch_over15`（`final_alignment_findings.json`）。Q036 A1 的“同一逐例判据”未完全成立 |
+| 显式成功/失败终点 | **PASS** | `s2_lifecycle.py:200-243`；flat_walk 1000/instant 1400/ramp 1500；真实 flat_all：3×flat_walk +8、3×flat_stop −10、`timeout=false` |
+
+### 12.3 独立参照对已提交代码的重放（检查单 2）
+
+| 参照 | 结果 | 证据 |
+|---|---|---|
+| 24 个手算质量用例 | **24/24 PASS** | `final_quality_crosscheck.json`（直接 import 已提交 `s2_quality`，逐项比 outcome/endpoint/window/reasons/first_zero/cruise/stand） |
+| T-1 / T-2 回归 | **2/2 PASS** | 同上 |
+| pitch 边界 6 例 | **6/6 PASS** | 同上 |
+| 时基 1000/1400/1500、首零 401/500、k100=0 | **5/5 PASS** | `final_timing_crosscheck.json`（生产 `S2Lifecycle`） |
+| 同帧优先、pending/closed | **PASS** | `final_state_crosscheck.json`（物理失败/质量失败优先于成功；结束前 pending、终点 closed） |
+| 逐 env reset / 跨 rollout 持久 | **PASS（CPU）** | 同一 `S2Quality` 2-env：env0 重置清空、env1 保留 401 窗样本/step=500，env1 在 step 1000 成功；`final_state_crosscheck.json` |
+| 共享阈值边界 | **PASS** | gate/shared reasons 12/12 一致（含 5.0/5.001、9/10 帧、0.05/0.0501 等边界） |
+
+### 12.4 真实 trace 审计（检查单 3）
+
+| 证据 | 结论 | SHA256 |
+|---|---|---|
+| `stop_instant_final` | 请求 400、首零 401、hold=1000、终点 1400、**quality_failure、timeout=false**，reason `recovery+stand_peak_speed+stand_support`；`t0_rows=1`，`pre_step` 行不计 | trace `2e574746…` |
+| `stop_ramp_final` | 请求 400、k=1@401=0.297、k=99@499=0.003、k=100@500=0（消费值）、首零 500、hold@1500=1001、终点 1500、quality_failure、timeout=false | trace `09ee7ea2…` |
+| `flat_all_final` | 3×flat_walk 在 1000 成功；3×flat_stop 在 1400/1500/1400 质量失败（非 timeout） | trace `eadbbb31…` |
+| `stairs_top_final` | 首个 0.4 m 门控帧 471（x=2.4228）时 `top_arrived=false`；真实安全登顶 **489**（x=2.8858，front=2.0，+0.8858>0.8）；524 物理失败；入台+1 m 窗未开启（max x=3.11），未覆盖登顶后 +8 | trace `6d71d9c4…` |
+| 300 步 smoke | flat/stairs/platform 600/900/300 行，completed=true | 三者 SHA 见 `final_trace_audit.json` |
+| **fresh 512 Run A（`56820bb`）** | **PASS**：2×24,576 行、46 字段；唯一 `(env_id,step)`、time-major 顺序 0 错；max\|ret−(adv+value)\| = 6.56e-7 / 4.77e-7；done 10/21、terminated=done、truncated=0、timeout=0；**reset 异常 0**（done 行 ep_len 为 reset 后的 0，下一行=1 且 g_level=0）；跨 rollout 连续 512/512、边界 reset 0；`c_request_at_actor`∈{0.3,0.5,0.6} 且 `c_exec_at_actor==c_request_after_step`；ramp_k=0、stop=false、first_zero=-1、hold=0（S2.1 96 步无停车）；quality 字段齐全，quality_ok 仅在 10/21 个物理失败帧为 false、其余 true；reward 有限（−10.2…0.05）；checkpoint SHA `d1aca5ba…`；隔离 ledger 副本 `ledger_shadow_final.jsonl`，正式 `ledger.jsonl` mtime 未变（13:49:25） | `final_run_a_audit.json` `9e270698…`；trace `39b57c7c…`/`e9d1d37e…`；log `8792e5b9…` |
+
+**探针字段缺口（重要）**：保存的 4 份 q036 trace 是 15:01–15:03 由旧版 `run_stop_trace.py` 写出的 24 字段格式；committed 探针（15:04:43 之后）才写 `reward`、`reward_terms`、`c_request_at_actor`、`c_exec_at_actor`、`ramp_k_*`、`stop_request_step`、`four_feet_entry_step`、`cruise_samples`。因此实现文档 §4 引用的 at-actor/ramp/reward 数值**不能从已保存 trace 独立复核**，+2/+8/−10 的真实支付也未被 trace 记录（仅代码+CPU 单测）。
+
+### 12.5 V13 CPU evidence 与测试套件（检查单 3/4 的旁证）
+
+- `logs/a2_v09/s2/v13/v13_cpu_evidence.json` SHA256 **`3bf7aae71059d5c13d3b23c1c7c4a08463d8db80616e172207503ad9f5b1270e`**，`all_passed=true`，生成于 `2026-11-23T07:11:17Z`；但 checks 仍是原来的 7 项（handcalc/g_level/PPO/GAE/exception/r1/flat_anchor），**不覆盖 Q036 质量/top/时基**，`blocked_real_backend` 仍列 Run A。
+- 我复跑实现文档的 8 个 S2 测试文件：**318 passed**；再加 `test_v09_s2_smoke_train.py`/`test_v09_s2_course.py`/`test_v09_s2_concurrency.py` 的 **18 passed**，合计 **336 passed**，与 lead 的“336 passed”一致。
+
+### 12.6 剩余 FAIL（file:line）
+
+| 编号 | 级别 | 问题 | 位置 | 证据 |
+|---|---|---|---|---|
+| F-1 | **已关闭（`56820bb`）** | 递归 `_py` 序列化 + 46 字段导出；fresh 512×2 块 Run A 通过（2×24,576 行，reset 异常 0，跨 rollout 连续 512/512） | `56820bb`：`s2_train.py` `_py/_arr`、`s2_train_real.py` 新增 info 字段 | `final_run_a_audit.json` `9e270698…`；trace `39b57c7c…`/`e9d1d37e…` |
+| F-2 | **阻塞（证据）** | q036 探针 trace 缺 reward / at_actor / four_feet_entry 等字段；+8/−10 真实支付未记录 | `logs/a2_v09/s2/q036/run_stop_trace.py`（committed 版本新写，但保存 trace 早于它） | `final_trace_audit.json.probe_schema_gap`（12 个字段 cited_but_absent） |
+| F-3 | **A1 不符** | gate 楼梯指标窗为全轨迹（`window=ones`），训练为 entry+1 m→endpoint；同一“10 帧窗外 16°”训练通过而 gate 判 `pitch_over15` | `metrics.py:160` vs `s2_quality.py:551-559` | `final_alignment_findings.json.gate_window_divergence`（gate `['pitch_over15']`，training `success`） |
+| F-4 | **SDS 4.2 不符** | 训练成功距离用 `local_x - front`，SDS 4.2/Q019 A3 要求 `D_post = local_x - local_x(top_arrived)`；示范：front=2.0、真实 top=2.8858，lifecycle/quality 在 x=7.0 成功，规范为 7.8858（早 0.886 m） | `s2_lifecycle.py:141,208-214`；`s2_quality.py:629-641`；反例 `s2_cases.py:56`、`s2_metrics.py:475`；测试 `tests/test_v09_s2_lifecycle.py:29` | `final_alignment_findings.json.d_post_zero` |
+| F-5 | 覆盖缺口（非错误） | 无自然通过的 stop、无自然安全登顶后 +8；通过分支仅 CPU 覆盖 | `docs/v09_s2_q036_implementation.md` §7 已承认 | `final_trace_audit.json`、`final_quality_crosscheck.json` |
+
+### 12.7 自然轨迹 vs 受控边界
+
+- **自然真实轨迹覆盖**：flat_walk 20 s +8 终点、flat_stop instant/ramp 的 400/401/500/1400/1500 时刻与质量失败 −10（非 timeout）、真实安全登顶事件（0.4 门控已开而 top 未开）、300 步三角色 smoke。上述均由 0a0276e 的真实环境代码产生（代码文件 mtime ≤14:58，trace 15:01–15:03；探针脚本字段更早，见 F-2）。
+- **仅 CPU 受控边界覆盖**：通过的 stop 分支、安全登顶后 post-walk +8、逐 env reset/跨 rollout 持久、同帧优先/ pending-closed、pitch 边界、时基 1000/1400/1500。它们直接调用**生产 `S2Quality`/`S2Lifecycle`**（训练同一模块），但不是完整 `S2TrainEnv`+真实后端的受控驱动。
+- **必需的最小受控真实路径 run**（若要求非 CPU 的通过分支证据）：在真实后端初始化“已停在 flat 的稳定站姿”与“已安全登顶、四足在平台”的状态（可用同一生产 `S2TrainEnv` + 受控初始状态/脚本化命令），跑到 1400/1400+ 或平台 +5 m 终点，记录 success/quality/reward；或由裁定方书面接受 CPU 覆盖。
+
+### 12.8 签字判定
+
+**CONDITIONAL（不签整链通过；签“实现级 Q036 A/top/B 通过 + Run A 通过”）。**
+
+- **可签**：在 `0a0276e` 上，Q036 的两处已复现缺陷已修（T-1/T-2）、pitch 窗作用域与 15° 边界正确、c_request/ramp/HOLD/终点/单源奖励正确；独立参照 24+2+6 质量用例、5 时基用例、4 状态用例全部通过；真实 stop/flat/top trace 的时刻与“显式质量失败而非 timeout”成立；**Run A 在 `56820bb` 上通过**（2×24,576 行、46 字段、reset 异常 0、跨 rollout 512/512 连续）。
+- **不可签**：整条 S2.1 训练链仍差 F-2（真实 reward/at_actor 字段未重采）、F-3（gate 楼梯窗仍为全轨迹 vs 训练 entry+1 m）、F-4（楼梯 +8 距离仍用 front，非 top_arrived）。三项已在工作区修复中（未提交），需在最终 SHA 上复核。
+- **解除条件**：① 用 committed `run_stop_trace.py` 重跑 stop instant/ramp、flat_all、stairs_top，保留 reward/reward_terms/at_actor/four_feet_entry（F-2）；② 提交并在最终 SHA 复核 F-3 的共享窗与 F-4 的 top_arrived 零点；③ 若裁定接受现状则给书面例外。①② 完成后我重审并给最终签字。
+- **依赖的证据 SHA256**：`v13_cpu_evidence.json` `3bf7aae7…`（只作旁证）；`final_quality_crosscheck.json` `156b2ebb…`；`final_timing_crosscheck.json` `4c960807…`；`final_state_crosscheck.json` `49a1f34f…`；`final_trace_audit.json` `153ae303…`；`final_alignment_findings.json` `7b3bfcc9…`；**`final_run_a_audit.json` `9e270698…`**；Run A trace `39b57c7c…`/`e9d1d37e…`、checkpoint `d1aca5ba…`、log `8792e5b9…`、隔离 ledger `11f4e699…`；5 份 q036 真实 trace 的 SHA 见 `final_trace_audit.json`；旧崩溃日志 `66d0e5f8…`（历史）。

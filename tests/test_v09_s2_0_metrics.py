@@ -505,3 +505,65 @@ def test_zero_valid_denominator_is_a_distinct_reason_code():
     assert aggregate['zero_valid_denominator_cases'] == 1
     assert aggregate['zero_valid_denominator_reason_counts'] == {
         'zero_valid_denominator': 1}
+
+
+def _metric_evidence(n, task, *, support_entry=None):
+    import torch
+    step = torch.arange(n, dtype=torch.long)
+    position = torch.zeros(n, 3)
+    position[:, 0] = -1.0 + 0.01 * step.float()
+    support = torch.ones(n, 4, dtype=torch.bool)
+    if support_entry is not None:
+        support[:support_entry] = False
+    return dict(
+        step=step, position=position,
+        initial_position=position[0].clone(),
+        roll=torch.zeros(n), pitch=torch.zeros(n),
+        velocity_b=torch.tensor([[0.5, 0.0, 0.0]]).repeat(n, 1),
+        velocity_w=torch.tensor([[0.5, 0.0, 0.0]]).repeat(n, 1),
+        omega=torch.zeros(n, 3),
+        foot_x=position[:, 0].unsqueeze(-1).repeat(1, 4),
+        foot_velocity_xy=torch.zeros(n, 4, 2),
+        raw_contact=(step[:, None] + torch.tensor([0, 0, 1, 1])) % 2 == 1,
+        filtered=(step[:, None] + torch.tensor([0, 0, 1, 1])) % 2 == 1,
+        support=support,
+        action=torch.zeros(n, 12), previous_action=torch.zeros(n, 12),
+        height=torch.full((n,), 0.4), nonfoot_contact=torch.zeros(n, dtype=torch.bool),
+        command=torch.full((n,), 0.5), is_cruise=torch.ones(n, dtype=torch.bool))
+
+
+def test_f3_flat_pitch_15_latch_is_window_scoped_in_gate_metrics():
+    from src.tasks.velocity.v09 import metrics
+    evidence = _metric_evidence(1000, 'flat_walk')
+    evidence['pitch'][50:60] = 16 * 3.141592653589793 / 180
+    result = metrics.summarize_trajectory(
+        evidence, task='flat_walk', stop_mode='none', cruise=0.5)
+    assert result['quality_window_start_step'] == 100
+    assert result['quality_window_end_step'] == 999
+    assert result['pitch_over_15_max_frames'] == 0
+    assert 'pitch_continuous' not in result['quality_reasons']
+
+    evidence = _metric_evidence(1000, 'flat_walk')
+    evidence['pitch'][300:310] = 16 * 3.141592653589793 / 180
+    result = metrics.summarize_trajectory(
+        evidence, task='flat_walk', stop_mode='none', cruise=0.5)
+    assert result['pitch_over_15_max_frames'] == 10
+    assert 'pitch_continuous' in result['quality_reasons']
+
+
+def test_f3_stairs_pitch_15_latch_starts_after_entry_plus_one_metre():
+    from src.tasks.velocity.v09 import metrics
+    evidence = _metric_evidence(700, 'stairs_walk', support_entry=100)
+    evidence['pitch'][150:160] = 16 * 3.141592653589793 / 180
+    result = metrics.summarize_trajectory(
+        evidence, task='stairs_walk', stop_mode='none', cruise=0.5)
+    assert result['quality_window_start_step'] == 200
+    assert result['pitch_over_15_max_frames'] == 0
+    assert 'pitch_continuous' not in result['quality_reasons']
+
+    evidence = _metric_evidence(700, 'stairs_walk', support_entry=100)
+    evidence['pitch'][300:310] = 16 * 3.141592653589793 / 180
+    result = metrics.summarize_trajectory(
+        evidence, task='stairs_walk', stop_mode='none', cruise=0.5)
+    assert result['pitch_over_15_max_frames'] == 10
+    assert 'pitch_continuous' in result['quality_reasons']

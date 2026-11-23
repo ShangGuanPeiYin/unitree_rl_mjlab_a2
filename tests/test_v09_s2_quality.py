@@ -125,6 +125,8 @@ def run_case(case):
         endpoint_step=int(out['endpoint_step'][0]),
         window_frames=int(out['cruise_samples'][0]),
         reasons=list(out['reasons'][0]),
+        latched=bool(out['latched'][0]),
+        latched_reason=str(out['latched_reason'][0]),
         first_zero=int(out['first_zero_step'][0]),
         cruise_metrics=dict(
             frames=int(out['cruise_samples'][0]),
@@ -138,6 +140,16 @@ def _document():
     return json.loads(CASES.read_text(encoding='utf-8'))
 
 
+# The independent reference JSON predates Q019 A3 / Q036 F-4 and used the
+# four-foot-entry / platform-front zero for stairs D_post.  Under the
+# authoritative top_x zero those three stairs cases cannot reach their old
+# endpoint inside the recorded frame count; their window/metric checks remain
+# valid and separate top-zero cases below cover the corrected endpoint.
+SUPERSEDED_STAIRS = {'stairs_walk_pass_1m_window',
+                     'stairs_walk_window_shorter_than_1s',
+                     'stairs_walk_stall_latch'}
+
+
 def test_all_twenty_four_independent_reference_cases_pass():
     document = _document()
     assert len(document['cases']) == 24
@@ -145,6 +157,15 @@ def test_all_twenty_four_independent_reference_cases_pass():
     for case in document['cases']:
         expected = case['expected']
         actual = run_case(case)
+        if case['name'] in SUPERSEDED_STAIRS:
+            if actual['window_frames'] != expected.get('window_frames'):
+                failures.append(
+                    f"{case['name']} frames {actual['window_frames']} != "
+                    f"{expected.get('window_frames')}")
+            if case['name'] == 'stairs_walk_stall_latch':
+                if not (actual['latched'] and actual['latched_reason'] == 'stall'):
+                    failures.append(f"{case['name']} did not latch stall")
+            continue
         if expected.get('outcome') != actual['outcome']:
             failures.append(f"{case['name']} outcome {actual['outcome']} != {expected['outcome']}")
         if ('endpoint_step' in expected
@@ -469,3 +490,55 @@ def test_recovery_deadline_latches_at_first_zero_plus_150():
     assert out['first_zero_step'][0] == 401
     assert out['latched'][0] and out['latched_reason'][0] == 'recovery'
     assert int(qm.latched_step[0]) == 551
+
+
+# ------------------------------------------------ F-4 stairs D_post zero = top
+def _stairs_case(*, n, post, top_at, four_feet_at=(100,), front=0.0,
+                 x_step=0.01, x_start=-1.0, x_segments=None):
+    case = dict(name='custom', task='stairs_walk', speed=0.5, n=n,
+                post=post, c_exec='cruise',
+                x=(x_segments or [[n, x_start, x_step]]),
+                four_feet_platform_at=list(four_feet_at),
+                top_at=[top_at])
+    return build_frames(case)
+
+
+def test_stairs_dpost_zero_is_top_not_platform_front():
+    # front=2.0, top=2.8858: success requires x >= 7.8858, not front+5 = 7.0.
+    frames = _stairs_case(n=1000, post=5.0, top_at=389, front=2.0,
+                          x_start=-1.0042)
+    out, machine = q.evaluate_frames(
+        frames, task='stairs_walk', speed=0.5, front=2.0, spawn_x=-1.0,
+        post_distance=5.0)
+    assert out['endpoint'][0]
+    assert out['top_x'][0] == pytest.approx(2.8858)
+    assert int(out['endpoint_step'][0]) == 889  # x = 7.8858 = top + 5
+    assert out['quality_ok'][0]
+    # x = 7.0 (front+5) is not the endpoint.
+    assert int(out['endpoint_step'][0]) != 800
+
+
+def test_stairs_top_zero_short_window_is_rejected():
+    # top at x=1.0 is exactly the window start; post=0.05 leaves 6 window frames.
+    frames = _stairs_case(n=210, post=0.05, top_at=200)
+    out, _ = q.evaluate_frames(
+        frames, task='stairs_walk', speed=0.5, front=0.0, spawn_x=-1.0,
+        post_distance=0.05)
+    assert out['endpoint'][0]
+    assert out['cruise_samples'][0] < 50
+    assert out['quality_failure'][0]
+    assert 'window_short' in out['reasons'][0]
+
+
+def test_stairs_top_zero_stall_latches_and_fails_at_endpoint():
+    # Window opens at x=1.0 (n=200); freeze x 201..300 -> stall; resume to top+5.
+    segments = [[200, -1.0, 0.01], [100, 1.0, 0.0], [500, 1.0, 0.01]]
+    frames = _stairs_case(n=800, post=5.0, top_at=185,
+                          x_segments=segments)
+    out, _ = q.evaluate_frames(
+        frames, task='stairs_walk', speed=0.5, front=0.0, spawn_x=-1.0,
+        post_distance=5.0)
+    assert out['endpoint'][0]
+    assert out['latched'][0] and out['latched_reason'][0] == 'stall'
+    assert out['quality_failure'][0]
+    assert 'stall' in out['reasons'][0]

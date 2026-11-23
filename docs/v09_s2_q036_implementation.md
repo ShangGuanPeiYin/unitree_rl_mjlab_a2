@@ -12,7 +12,9 @@
 | `src/tasks/velocity/v09/s2_lifecycle.py` | 计划终点 1000/1400/1500；400 cruise + ramp k=1..100；按 Actor **实际消费**的 `c_exec` 锚定 first-zero/HOLD；`c_request` 单一开关；输出 `*_at_actor`/`*_after_step`/`ramp_k`；`quality_reasons` 委托共享核心。 |
 | `src/tasks/velocity/v09/s2_train_real.py` | `_s2_task_state` 接入质量机（重置/更新/显式成功或质量失败）；修正 top 捕获；`_s2_reward` 只消费 lifecycle 的 `*_at_actor` 状态；删除重复 stop 状态机；`stop_mode` 写入 plan row。 |
 | `src/tasks/velocity/v09/s2_physics.py` | `_s2_patch_context` 在 v07 success 被清零前捕获 raw safe-summit；`top_arrived`/`v07_success` 改用该信号；fake backend 同步为 front+0.8 安全登顶。 |
-| `src/tasks/velocity/v09/s2_acceptance.py` | `quality_reasons` 委托 `s2_quality.acceptance_reasons`（T-3；这是本任务对原 ownership 清单的唯一扩展，理由见 §7）。 |
+| `src/tasks/velocity/v09/s2_acceptance.py` | `quality_reasons` 委托 `s2_quality.acceptance_reasons`（T-3；这是本任务对原 ownership 清单的扩展，理由见 §7）。 |
+| `src/tasks/velocity/v09/metrics.py` | F-3：gate/final 巡航窗改为共享窗口（flat 100..999/100..399；stairs/platform 四足入台+1 m 至 decel/终点），并输出 `quality_window_start_step/end_step`。 |
+| `tests/test_v09_s2_0_metrics.py` | F-3 回归：窗外 16°/10 帧不产生 gate reason，窗内才产生。 |
 | `tests/test_v09_s2_quality.py`（新） | 24 例独立参考用例 + T-1/T-2/T-6/Q037 回归。 |
 | `tests/test_v09_s2_lifecycle.py` | 1000/1400/1500、400+ramp、`*_at_actor`、`c_request` 开关兼容。 |
 | `docs/v09_s2_q036_implementation.md`（本文件） | 证据与说明。 |
@@ -23,6 +25,7 @@
 - 质量核心：`s2_quality.py:98`（cruise metrics）、`:114`（cruise reasons）、`:131`（stand metrics）、`:155`（stand reasons）、`:177`（acceptance）、`:234`（`S2Quality`）、`:431`（`update`）、`:557`（窗内 pitch latch）、`:872`（`evaluate_frames`）。
 - gate/final 委托：`s2_acceptance.py:18`；`s2_lifecycle.quality_reasons` `s2_lifecycle.py:282`。
 - top 捕获：`s2_physics.py:544`（`_RawV07Success`）、`:566`（context wrapper）、`:654`（`capture.record(result.success)`）、`:880`（`take`）、`:913`（`top_arrived=top_raw`）。
+- F-4 D_post zero：`s2_lifecycle.py:52,145-147`（`top_x` + `dpost`），`s2_quality.py:304,496,625-630`；gate 窗口：`metrics.py:146-195`。
 
 ## 2. `top_arrived`：原 v07 安全登顶信号
 
@@ -36,7 +39,9 @@
 - 失败优先：`success = result.success & ~failure`（`events.py:330`）。
 - 真实地形/平台边界：使用 v07 `tile_parameters` 的 `N*d` 与实际 `bounds`，S2 terrain patch 只替换几何表，不替换该判定（`s2_physics._s2_patch_context`）。
 
-该信号与 §5.2 门控分开记录：训练 trace 同时给出 `four_feet_entry_step`（四足首次同时入台）、`g_level`、`top_arrived`、`cruise_start_step`（`s2_train_real.step` info，`:700-730`；`s2_quality.result()` 同名字段）。
+该信号与 §5.2 门控分开记录：训练 trace 同时给出 `four_feet_entry_step`（四足首次同时入台）、`g_level`、`top_arrived`、`cruise_start_step`（`s2_train_real.step` info，`:700-760`；`s2_quality.result()` 同名字段）。
+
+**F-4 / Q019 A3 / Q036：** `D_post` 的零点是 top latch 同帧的机身 `route_x`（`top_x`），不是平台前缘。`S2Lifecycle` 在 top 事件帧写 `top_x` 并用 `local_x - top_x`；`S2Quality` 同样记录 `top_x` 并用它做 stairs walk 终点与 stairs stop 请求距离。平台直启仍用 spawn+start_dist，flat 仍为时间终点。示例（前端 2.0、top=2.8858）成功点为 `x >= 7.8858`，而不是 `front+5=7.0`；测试 `test_stairs_dpost_zero_is_top_not_front`、`test_stairs_dpost_zero_is_top_not_platform_front`。S2.0/gate 缓存中若有“从前缘量距离”的字段，它们是另一个零点，不能与 `top_x` 混用。
 
 旧 S2.0 影响：独立验证方已用原始轨迹重算 30 例（`logs/a2_v09/s2/q036_verify/s2_0_top_recompute.json`）：15/30 达到真正的安全登顶；旧报告 top 比安全登顶早 **15–19 帧（均值 16.1）**，且 15 例在安全登顶后 **25–38 帧**才物理失败。原 S2.0 的 top 窗口属于旧 proxy 版本，相关“登顶后立即失败”的时序结论应按重算结果复核；本实现产生的 `top_arrived` 与重算规则一致。
 
@@ -60,7 +65,8 @@
 **T-1**：零命令 flat_walk 无任何 cruise 帧 → `missing_window` → −10；测试 `test_zero_command_flat_walk_must_not_succeed`。
 **T-2**：HOLD 锚定实际首零；延迟 100 帧 → 计划终点 1400 时 hold=900 → `hold_incomplete`；测试 `test_hold_anchored_to_actual_first_zero_*`。
 **T-6**：窗外 10 帧不 latch、窗内第 10 帧 latch、9+10 分段、跨 8 s 窗边界不累计、恰好 15° 不计数；测试 `test_pitch_over15_latch_is_window_scoped`、`test_pitch_nine_then_ten_inside_same_window`、`test_pitch_counter_does_not_span_window_boundary`、`test_pitch_exactly_15_degrees_does_not_latch`。
-**T-7**：`test_all_twenty_four_independent_reference_cases_pass` 直接读取 `logs/a2_v09/s2/q036_verify/quality_cases.json` 的 24 个手算用例，重建帧后逐项比对 outcome/endpoint/window_frames/reasons/first_zero/cruise/stand metrics，全部通过。
+**T-7**：`test_all_twenty_four_independent_reference_cases_pass` 直接读取 `logs/a2_v09/s2/q036_verify/quality_cases.json` 的 24 个手算用例。flat + platform 的 21 例逐项（outcome/endpoint/window/reasons/first_zero/metrics）全部通过；3 个 stairs 参考例（`stairs_walk_pass_1m_window`、`stairs_walk_window_shorter_than_1s`、`stairs_walk_stall_latch`）的期望终点是旧的四足入台/前缘零点，在 F-4 的 `top_x` 零点下记录帧数内不会到达终点（窗口帧数与 stall latch 仍逐项核对）。这 3 例由 `test_stairs_dpost_zero_*`、`test_stairs_top_zero_short_window_is_rejected`、`test_stairs_top_zero_stall_latches_and_fails_at_endpoint` 覆盖；因此当前口径是 **21/24 逐项 + 3 例旧零点已由 Q019/Q036 取代**，不能声称 24/24。
+**F-3**：`metrics.shared_quality_window` 与 `s2_quality` 使用同一窗口边界；回归 `test_f3_flat_pitch_15_latch_is_window_scoped_in_gate_metrics` 与 `test_f3_stairs_pitch_15_latch_starts_after_entry_plus_one_metre` 证明窗外 16°/10 帧不产生 gate reason、窗内才产生。
 
 ## 4. 时间/步数语义（DSH-Q036 B / Q037）
 
@@ -106,8 +112,8 @@
 # 真实 stop/safe-top trace（14 env，1600 步；含 t=0 行）
 /home/xxs/anaconda3/envs/a2/bin/python logs/a2_v09/s2/q036/run_stop_trace.py \
   --num-envs 14 --steps 1600 --mode stop_instant \
-  --output-dir logs/a2_v09/s2/q036/stop_instant_final
-# stop_ramp / stairs_top / flat_all 同参数
+  --output-dir logs/a2_v09/s2/q036/stop_instant_final2
+# stop_ramp / stairs_top / flat_all 同参数，目录分别 *_final2
 ```
 
 | 证据 | 结果 |
@@ -115,19 +121,20 @@
 | `smoke_flat_300_final/` | 2 env ×300 行，完成 |
 | `smoke_stairs_300_final/` | 3 env ×300 行，完成 |
 | `smoke_platform_300_final/` | 1 env ×300 行，完成 |
-| `flat_all_final/trace.jsonl` | 3×flat_walk 在 1000 步成功 +8；3×flat_stop（instant 0.3/instant 0.5/ramp 0.3）分别在 1400/1400/1500 终点质量失败 −10（`recovery+stand_peak_speed+stand_displacement+stand_support`），非 timeout |
-| `stop_instant_final/` | 请求 400、首零 401、HOLD 1000、终点 1400，−10；`t0_rows=1` |
-| `stop_ramp_final/` | 请求 400、k=1..100、首零 500、终点 1500、hold=1001，−10；`t0_rows=1` |
-| `stairs_top_final/` | 自然策略在 step 489 触发**真实 safe-summit** `top_arrived`（+2 reward），四足入台 step 471；step 524 物理失败，入台+1 m 巡航窗未开启，故未覆盖登顶后 +8。`max local_x=3.19` |
+| `flat_all_final2/trace.jsonl` | 3×flat_walk 在 1000 步成功（reward≈8.05，含 +8）；3×flat_stop（instant 0.3/instant 0.5/ramp 0.3）分别在 1400/1400/1500 终点质量失败（reward≈−9.94，含 −10），非 timeout |
+| `stop_instant_final2/` | 请求 400、首零 401、HOLD 1000、终点 1400，质量失败 −10；`t0_rows=1` |
+| `stop_ramp_final2/` | 请求 400、k=1..100、首零 500、终点 1500、hold=1001，质量失败 −10；`t0_rows=1` |
+| `stairs_top_final2/` | 自然策略在 step 491 触发**真实 safe-summit** `top_arrived`，`top_x=2.8529`（+2 已在该帧 reward≈2.03 中），四足入台 step 473；step 528 物理失败，入台+1 m 巡航窗未开启，故未覆盖登顶后 +8。 |
+| `logs/a2_v09/s2/q036/evidence_sha256.json` | 本次 final2 证据的 per-file SHA256 与逐 env 结果/payment 摘要 |
 | GPU 峰值显存（torch 统计） | 5.86 MiB（allocator peak；warp/mjlab 实际占用见 `nvidia-smi`，未另测） |
 
-独立参考用例：`logs/a2_v09/s2/q036_verify/quality_cases.json` 的 24 例在本实现下全部通过（outcome/endpoint/window/reasons/metrics/first_zero）。旧 `v13_runB2` stop traces 在 stall 修复前崩溃（906/907）且 flat “HOLD” 实为距离触发，**不作为本实现证据**。
+独立参考用例：`logs/a2_v09/s2/q036_verify/quality_cases.json` 的 21 个 flat/platform 例逐项通过；3 个 stairs 例的终点期望使用旧零点，已按 F-4 取代（见 §3）。旧 `v13_runB2` stop traces 在 stall 修复前崩溃（906/907）且 flat “HOLD” 实为距离触发，**不作为本实现证据**。
 
 ## 7. 未验证 / 明确缺口
 
-- **自然策略的 stop 通过分支未覆盖**：真实 instant/ramp 都在终点质量失败（`recovery+stand_*`），没有自然通过样本；通过分支只由 CPU 24 例参考用例覆盖。
+- **自然策略的 stop 通过分支未覆盖**：真实 instant/ramp 都在终点质量失败（`recovery+stand_*`），没有自然通过样本；通过分支由 CPU flat/platform 21 例参考用例 + 3 个 F-4 top-zero stairs 例覆盖。
 - **自然策略的 safe-summit + post walk 未覆盖**：真实 stairs 只到 safe summit + 物理失败，未覆盖 top+2 后的 +8 窗口。
-- **S2.0 旧 top 窗口**：已由独立验证方用原轨迹重算（15/30 安全登顶，旧 proxy 早 15–19 帧）；本实现未重跑 S2.0 全批，只保证新信号与重算规则一致。
+- **S2.0 旧 top 窗口**：已由独立验证方用原轨迹重算（15/30 安全登顶，旧 proxy 早 15–19 帧）；本实现未重跑 S2.0 全批，只保证新信号与重算规则一致。F-4 后 stairs D_post 零点为 `top_x`；旧 S2.0/gate 缓存中从前缘量的距离不能与之混用。
 - **奖励的完整 20 项在真实后端的逐项核对**：真实 trace 已记录 `reward_terms`，但独立手算 20 项在 GPU 上的逐项对照仍属 Run B/D 范围，本次未做。
 - **gate/final 真实路径**：`s2_acceptance.quality_reasons` 已委托共享核心并有 CPU gate 测试（315 项总套件通过），但未跑真实 gate/final 轨迹。
 - **T-5 c_request**：Q037 已裁定 stop 时 c_request 置 0 且保持；实现用 `C_REQUEST_ZERO_AT_STOP_REQUEST` 单点隔离，若后续裁定不同只需改此常量。真实 instant/ramp trace 已记录 `c_request_at_actor` / `c_request_after_step`。
@@ -153,7 +160,7 @@ remaining after 31,726          = 2,048
   tests/test_v09_s2_0_*.py tests/test_v09_s2_1_train.py \
   tests/test_v09_s2_lifecycle.py tests/test_v09_s2_rewards.py \
   tests/test_v09_s2_v13_evidence.py tests/test_v09_s2_quality.py -q
-# 297 passed, 1 warning
+# 303 passed, 1 warning
 
 # 追加 gate/acceptance 套件
 /home/xxs/anaconda3/envs/a2/bin/python -m pytest \
@@ -161,20 +168,22 @@ remaining after 31,726          = 2,048
   tests/test_v09_s2_lifecycle.py tests/test_v09_s2_rewards.py \
   tests/test_v09_s2_v13_evidence.py tests/test_v09_s2_quality.py \
   tests/test_v09_s2_gate.py tests/test_v09_s2_gate_cases.py -q
-# 318 passed, 1 warning
+# 324 passed, 1 warning
 ```
 
 ## 10. 最终文件 SHA256（本快照）
 
 ```text
-5fefffe94ef697b479f7614f6430d5cfd2c1e79e9a8b7bec84582c80a4495d30  src/tasks/velocity/v09/s2_quality.py
-d913b86815cd1ff08cde963ace53344f3d955e25dc0b89490af1d08c652b0ad0  src/tasks/velocity/v09/s2_lifecycle.py
-a87eaed5fc6a3d66fe65ecedb1bb063a3b5d057c8ad2f2fc7e2d14110a8a922f  src/tasks/velocity/v09/s2_train_real.py
+8433b06de6b5aa29bc0f4e9f9e3242817ed153b846545d2641c0ec3b762691ab  src/tasks/velocity/v09/s2_quality.py
+ab679d1197335083d497b57d52e87fa36d0823e75cb3b57aa0426771168c3a63  src/tasks/velocity/v09/s2_lifecycle.py
+de00d160b9e4930e4665e50c6420a5edfe9f6c9888abab1aa9f824821061da83  src/tasks/velocity/v09/metrics.py
+5ee70704ff2d18eb5e4d400a6cbb1758d63002aaf69d49236f9900164ef0b426  src/tasks/velocity/v09/s2_train_real.py
 242ca72960d70e8eef647253ce84f4e9aa12e572db13c60ac42f6e2552c0d917  src/tasks/velocity/v09/s2_physics.py
 3c6b3d8574b6167a05212de6a83d0cdb0b345a04dafc317e4ca4a07f444af451  src/tasks/velocity/v09/s2_acceptance.py
-8b1ca610e29fa58395e20e3867bf67f27d3d95b2131b1d67845983e6c2f44205  tests/test_v09_s2_quality.py
-e11efd6a18df06bd71c43ec5e88b0fd7e53d246832f3ea282728f8d917ffd0a5  tests/test_v09_s2_lifecycle.py
-5f2710c01b985b2028a4b45ac96ed7ee40d3de0b1cc1829b9db6e8631b19369b  tests/test_v09_s2_1_train.py
+8b3b25f5f615aeb44b4077a461ffcc4534d02fed4b78c6d3b1fb3f5c56962ea9  tests/test_v09_s2_quality.py
+89a5ccdf0d97a617782b3d153f6019b0465256f1680c8e651b53e15c5defd4db  tests/test_v09_s2_lifecycle.py
+43099a12913e333d3ceda723a518bab9faf3bf2af8deb3ed899f59bb2856e566  tests/test_v09_s2_0_metrics.py
+30fbdc5c41c8594b1164a47ca28faec38f225250b6bea562ccbae1077649cfc3  logs/a2_v09/s2/q036/run_stop_trace.py
 ```
 
-> 说明：`tests/test_v09_s2_1_train.py` 未修改，列出 SHA 仅用于确认身份。`logs/a2_v09/s2/q036/` 下为本次真实运行证据（trace/summary）与复现脚本 `run_stop_trace.py`；未改动 `logs/a2_v09/s2/ledger.jsonl`、SDS 文档、`s2_train.py`、`s2_train_env.py`、`scripts/train_a2_v09_s2.py`。
+> 说明：`logs/a2_v09/s2/q036/evidence_sha256.json` 记录 final2 四个目录的 trace/summary per-file SHA；旧 `*_final` 目录保留未删。`tests/test_v09_s2_1_train.py` 未修改。未改动 `logs/a2_v09/s2/ledger.jsonl`、SDS 文档、`s2_train.py`、`s2_train_env.py`、`scripts/train_a2_v09_s2.py`。

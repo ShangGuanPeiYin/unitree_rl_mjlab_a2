@@ -4992,3 +4992,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - `S2TrainEnv.step` info 补齐 Q037 证据字段：`v_cruise`、`c_request_at_actor/after_step`、`c_exec_at_actor/after_step`、`ramp_k_at_actor/after_step`、`first_zero_actor_step`、`stop_requested_at_actor/after_step`、`phase_at_actor/phase_next`、`hold_samples_lifecycle`、`four_feet_entry_step`。
 - `S2Trainer._write_trace` 的 `_arr` 改为递归 `_py` 转换（ndarray/np 标量/list→JSON 原生），修复 fresh 512-env Run A 首行即 `int64 not JSON serializable` 的崩溃；fake backend 192 行 trace 验证通过。
 - 验证：`pytest tests/test_v09_s2_1_train.py tests/test_v09_s2_quality.py` **48 passed**；待重跑 512-env Run A。
+
+## 2026-11-23 Q036 独审 F-3/F-4 修复与 F-2 证据重跑
+
+- **F-4（D_post 零点）**：`s2_lifecycle.py` 新增逐 env `top_x`，在安全登顶事件帧锁存 `local_x`，楼梯 `dpost = local_x − top_x`；平台直启保持 spawn+start_dist，平地按时间。`s2_quality.py` 同口径锁存 top_x 并用于终点/停车请求。测试用 front=2.0、top=2.8858 例子：只有 x≥7.8858 才成功，不再是 front+5=7.0。旧按前缘计零点的 S2.0/门禁缓存必须视为不同零点，不得混用。
+- **F-3（门禁窗口）**：`metrics.py` 新增 `shared_quality_window`：平地 100..999/100..399（半开），楼梯/平台为入台+1 m 至减速请求/终点，不再整帧统计；`summarize_trajectory` 接受 `quality_window=` 并记录起止步。回归：窗外 10 帧 16° 不产生门禁原因，窗内同样 10 帧产生 `pitch_continuous`。
+- **F-2（证据）**：用已提交 probe 重跑 `stop_instant_final2`/`stop_ramp_final2`/`flat_all_final2`/`stairs_top_final2`（保留旧目录），字段含 reward/reward_terms/at_actor/ramp_k/four_feet_entry/cruise_samples/quality 等，另有 `evidence_sha256.json`。观测：instant request 400→first zero 401→HOLD 1000→终点 1400（−10，非超时）；ramp k99=0.003@499、k100=0@500→HOLD 1001→终点 1500（−10）；flat_walk 3/3 +8@1000；stairs 安全登顶 491（top_x=2.8529，+2）后 528 物理失败，入台+1 m 窗仍未自然覆盖。
+- 独审 24 例中 3 个楼梯例按旧零点编码，已被 F-4 取代为 21/24 精确 + 3 个新 top-zero 楼梯测试，报告中不得写 24/24。
+- 验证：S2 全量 + gate/acceptance + V13 **342 passed**。
