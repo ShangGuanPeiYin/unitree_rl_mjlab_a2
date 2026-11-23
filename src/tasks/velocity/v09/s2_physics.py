@@ -202,7 +202,11 @@ class S2FakeBackend:
         feet = [[self.route_x, 0.1], [self.route_x, -0.1],
                 [self.route_x - 0.1, 0.1], [self.route_x - 0.1, -0.1]]
         actor_step = max(0, self.step_index - 1) if advance else 0
-        top = bool(on_platform and self.route_x >= (front + 0.4 if front else 1e9))
+        # DSHS-Q036: the CPU fake mirrors the real signal split - four-foot XY
+        # entry (front) is the gating start; ``top_arrived`` is the safe summit
+        # at front + 0.8 m, exactly the frozen v07 body margin.
+        top = bool(on_platform and front is not None
+                   and self.route_x >= front + 0.8)
         terminal = self.step_index >= self.steps_to_terminal
         return BackendStep(
             route_x=self.route_x, base_xy=(self.route_x, 0.0), root_z=0.4, feet_xy=feet,
@@ -232,8 +236,7 @@ class S2FakeBackend:
                                   produced_at_actor_step=actor_step),
             sim_time_s=self.sim_time,
             termination_reason=('success' if top and terminal else 'timeout' if terminal else 'running'),
-            v07_success=bool(on_platform and front and
-                             self.route_x >= front + 0.8),
+            v07_success=top,
             sim_state_sha256=sim_state_digest(np.zeros(19), np.zeros(18)),
             post_reset=terminal)
 
@@ -538,6 +541,42 @@ def build_s2_env(case, *, device='cuda:0', num_envs=1, seed=42,
 
 
 # --------------------------------------------------------------- mjlab backend
+class _RawV07Success:
+    """Side-channel for the original v07 safe-summit flag.
+
+    ``v07events.evaluate`` is a module-level function with no env reference, so
+    the S2 patch records its raw ``result.success`` here *before* zeroing it.
+    ``take`` consumes one frame, so a stale value can never be paid twice.
+    """
+
+    __slots__ = ('value',)
+
+    def __init__(self):
+        self.value = None
+
+    def record(self, tensor):
+        self.value = tensor.detach().clone()
+
+    def take(self):
+        value = self.value
+        self.value = None
+        return value
+
+
+class _S2PatchContext:
+    """Context manager + the raw v07 safe-summit capture channel."""
+
+    def __init__(self, manager, capture):
+        self._manager = manager
+        self.raw_v07_success = capture
+
+    def __enter__(self):
+        return self._manager.__enter__()
+
+    def __exit__(self, *exc_info):
+        return self._manager.__exit__(*exc_info)
+
+
 def _s2_patch_context(specs):
     """Temporarily install S2 terrain into the unchanged v07/mjlab assembly."""
     from contextlib import contextmanager
@@ -545,6 +584,8 @@ def _s2_patch_context(specs):
     from src.tasks.velocity.v07 import events as v07events
     from src.tasks.velocity.v07 import env_cfg as v07cfg
     from src.tasks.velocity.v07 import env as v07env
+
+    capture = _RawV07Success()
 
     @contextmanager
     def patches():
@@ -606,7 +647,11 @@ def _s2_patch_context(specs):
                     # S2 sequential tasks own success (top_arrived/D_post); the
                     # original v07 success condition would auto-reset at the
                     # platform edge before the S2 state machine can latch top.
+                    # DSHS-Q036: keep the raw safe-summit flag first - it is the
+                    # only correct ``top_arrived`` source (front >= 0.8 m, 0.042 m
+                    # foot inset, real support, 5 consecutive frames, no failure).
                     result = original_evaluate(**kwargs)
+                    capture.record(result.success)
                     if bool(result.success.any()):
                         result = _replace(result,
                                           success=torch.zeros_like(result.success))
@@ -662,7 +707,8 @@ def _s2_patch_context(specs):
                 v07env._validate_frontier_tile = original_validate
             if original_check is not None:
                 v07env._check_schedule_frontier = original_check
-    return patches()
+
+    return _S2PatchContext(patches(), capture)
 
 
 TERMINATION_REQUIRED = ('body', 'nonfoot', 'posture', 'fall', 'bounds',
@@ -706,6 +752,7 @@ class MjlabS2Backend:
         self.branch = branch
         self.spec = spec
         self._patches = _s2_patch_context(tuple(s2_terrain.terrain_specs()))
+        self._top_capture = self._patches.raw_v07_success
         self._patches.__enter__()
         try:
             spawn = case['spawn']
@@ -827,6 +874,17 @@ class MjlabS2Backend:
                 termination_reason = v07events.REASON_NAMES[code]
         except Exception:
             termination_reason = 'unknown'
+        # DSHS-Q036: ``top_arrived`` is the original v07 safe-summit event read
+        # before the S2 patch zeroes v07 success, not the front+0.4/XY gating
+        # proxy.  The H legacy backend keeps the unpatched v07 success.
+        raw_top = (self._top_capture.take()
+                   if getattr(self, '_top_capture', None) is not None else None)
+        if raw_top is not None:
+            top_raw = bool(raw_top[0])
+        elif last is not None:
+            top_raw = bool(last[0][0])
+        else:
+            top_raw = False
         return BackendStep(
             route_x=float(local[0]), base_xy=(float(local[0]), float(local[1])),
             root_z=float(data.root_link_pos_w[0, 2]),
@@ -852,14 +910,14 @@ class MjlabS2Backend:
             refreshed=refreshed,
             terminal=terminal,
             failure=(bool(last[1][0]) if last is not None else False),
-            top_arrived=feet_ok and body_ok,
+            top_arrived=top_raw,
             four_feet_on_platform=feet_ok,
             front_foot_top_support=bool((platform[:2] & contact[:2]).any()),
             feet_ok=feet_ok, body_ok=body_ok,
             contact_pairs=contact_pairs, native_sample_id=sample_id,
             sim_time_s=self.steps * 0.02, nonfoot_contact=nonfoot,
             termination_reason=termination_reason,
-            v07_success=(bool(last[0][0]) if last is not None else False),
+            v07_success=top_raw,
             sim_state_sha256=sim_state_digest(self.env.sim.data.qpos[0],
                                               self.env.sim.data.qvel[0]),
             post_reset=terminal)
@@ -983,6 +1041,9 @@ class MjlabHLegacyBackend(MjlabS2Backend):
         self.last_sample_id = None
         self.last_sample_time = 0.0
         self._last_observation = None
+        # H legacy keeps the original v07 evaluate (success is not suppressed);
+        # there is no S2 raw-success capture channel.
+        self._top_capture = None
 
     def close(self):
         pass

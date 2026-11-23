@@ -4975,3 +4975,14 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - `S2Trainer` 增加 `trace_every` / `trace_limit` / `trace_written`：仅按间隔写逐帧 trace 并限制总份数；训练 CLI 新增 `--trace-every`（默认 1）与 `--trace-max-rollouts`。避免 31,726 rollouts×24,576 行（约 760 GB）不可承受。
 - 文档算术按 Q036 更正：r2 31,726×24,576 = 779,698,176；加已耗 20,299,776 = 799,997,952，余 2,048（`docs/v09_s2_1_numerical_acceptance_plan_v13.md`、`docs/v09_s2_1_r2_execution_contract.md`）。
 - 验证：`pytest tests/test_v09_s2_1_train.py` **30 passed**。
+
+## 2026-11-23 Q036/Q037 S2.1 质量判据、安全登顶 top、步数口径与奖励单源
+
+- 新增 `src/tasks/velocity/v09/s2_quality.py`：训练/门禁/终验共用的逐例绝对质量状态机与离线评价核心（巡航窗、10 帧 pitch 锁存（仅巡航窗、严格 >15°、不跨窗）、150 步/25 帧停车后恢复锁存、1000 HOLD、末 500 步速度/位移/姿态/支撑高度/四足支撑率、pending/closed、失败优先、L40 例外）。
+- `s2_lifecycle.py`：完成步 1000/1400/1500（1001/1401/1501 仅硬保护）、400 巡航区间后停车请求、ramp k=1..100（第 100 为 0）、HOLD 以实际首次 `c_exec==0` 起算、输出 `*_at_actor`/`*_after_step`/`ramp_k`/`first_zero_actor_step`/HOLD 计数；`c_request` 于步末请求锁存时一次置 0 并保持（Q037，单开关）。
+- `s2_train_real.py`：质量接入 success/failure 与 +8/−10；top 改为在屏蔽 v07 终止前捕获的原始安全登顶信号（前缘 +0.8 m、0.042 m 内缩、2 帧/≥2 足/50 帧/连续 5 帧、侧向 0.20 m、失败优先）；四足入台+0.4 m 仅作 §5.2 门控；reward 不再自算停车状态机，改用 lifecycle `*_at_actor` 单源。
+- `s2_physics.py`：`_RawV07Success` 在补丁置零前记录原 success，`top_arrived`/`v07_success` 使用该信号。
+- `s2_acceptance.py`：`quality_reasons` 改为委托共享核心（T-3 单一口径）。
+- 测试：新增 `tests/test_v09_s2_quality.py`（18 项，含独审 24 个手算用例、T-1 零指令巡航、T-2 晚零、T-6 窗外/跨窗/精确 15°、步数与 ramp、L40、恢复锁存）；更新 lifecycle 测试。全量 S2 + gate/acceptance + V13 **336 passed**。
+- 真实 GPU（最终代码）：instant 停车 request 400→first zero 401→HOLD 1000→终点 1400，质量失败 −10（非超时）；ramp k99/100 → 500 首次 0，终点 1500，HOLD 1001，质量失败 −10；flat 3/3 walk 在 1000 成功 +8，3/3 stop 到终点但站立质量失败；stairs 自然安全登顶 step 489（四足入台 471，+2），524 物理失败早于入台+1 m 巡航窗。证据 `logs/a2_v09/s2/q036/`。
+- 独审（另一 agent）另完成 Q037 §3 的 S2.0 离线重算 v2：严格逐足接触等价证明 15/15，窄真 15/15 安全登顶、post-summit→failure 25–38 帧、低头比例 1.0，宽真 0/15；`docs/v09_s2_0_top_recompute_q037.md` + MANIFEST；旧 0.4 代理窗保留并标 superseded。

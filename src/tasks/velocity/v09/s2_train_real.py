@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import copy
 
-from . import s2_lifecycle, s2_physics, s2_rewards, s2_spec, s2_terrain, s2_train_env
+import numpy as np
+
+from . import (s2_lifecycle, s2_physics, s2_quality, s2_rewards, s2_spec,
+               s2_terrain, s2_train_env)
 from .map import _SampleFrameMap
 
 
@@ -115,6 +118,7 @@ def build_env_plan(num_envs=1024, course='S2.1'):
             spawn=[spawn_x, spawn_y, yaw, float(role['speed'])],
             spawn_z=spawn_z,
             task=role['task'],
+            stop_mode=role.get('stop_mode'),
             post_distance=role.get('post_distance'),
             platform_width=role.get('platform_width'),
             stair_count=role.get('stair_count')))
@@ -163,6 +167,7 @@ class S2TrainEnv:
         self._s2_success_latched = None
         self._s2_plan_tensors = None
         self._patch = s2_physics._s2_patch_context(s2_terrain.terrain_specs())
+        self._top_capture = getattr(self._patch, 'raw_v07_success', None)
         self._patch.__enter__()
         try:
             self.env = V07Env(
@@ -250,21 +255,39 @@ class S2TrainEnv:
         if not hasattr(self, '_lifecycle'):
             rows = self.plan['rows']
             tasks = [str(r.get('task') or r.get('role')) for r in rows]
+            stop_modes = [str(r.get('stop_mode') or 'none') for r in rows]
+            fronts = [float(r['geometry'].get('platform_front_local_x') or 0.0)
+                      for r in rows]
+            spawns = [float(r['spawn'][0]) for r in rows]
+            post = [float(r.get('post_distance') or 5.0) for r in rows]
+            speeds = [float(r.get('speed') or 0.5) for r in rows]
+            legacy = [t == 'legacy_l40' for t in tasks]
+            # Planned endpoints in completed 0.02 s control intervals: flat_walk
+            # 1000 (20 s), flat_stop 1400 (instant) / 1500 (ramp 2 s).  The
+            # +1 hard-protection limit lives in S2Lifecycle, never here.
+            completion = [
+                1000 if t == 'flat_walk' else
+                (1500 if (t == 'flat_stop' and stop_modes[i] == 'ramp_2s') else
+                 (1400 if t == 'flat_stop' else -1))
+                for i, t in enumerate(tasks)]
             self._lifecycle = s2_lifecycle.S2Lifecycle(
-                task=tasks,
-                post_distance=[float(r.get('post_distance') or 5.0) for r in rows],
-                speed=[float(r.get('speed') or 0.5) for r in rows],
-                stop_mode=[str(r.get('stop_mode') or 'none') for r in rows],
-                legacy=[str(t) == 'legacy_l40' for t in tasks],
-                front=[float(r['geometry'].get('platform_front_local_x') or 0.0)
-                       for r in rows],
-                spawn_x=[float(r['spawn'][0]) for r in rows],
-                completion_steps=[
-                    1001 if t == 'flat_walk' else
-                    (1501 if (t == 'flat_stop'
-                              and str(r.get('stop_mode')) == 'ramp_2s') else
-                     (1401 if t == 'flat_stop' else 1000))
-                    for t, r in zip(tasks, rows)])
+                task=tasks, post_distance=post, speed=speeds,
+                stop_mode=stop_modes, legacy=legacy, front=fronts,
+                spawn_x=spawns, completion_steps=completion)
+            self._quality = s2_quality.S2Quality(
+                task=tasks, speed=speeds, front=fronts, spawn_x=spawns,
+                post_distance=post,
+                platform_length=[float(r['geometry'].get('platform_length') or 0.0)
+                                 for r in rows],
+                platform_width=[float(r['geometry'].get('platform_width') or 8.0)
+                                for r in rows],
+                stop_mode=stop_modes, legacy=legacy)
+            self._s2_flat = torch.tensor(
+                [t in ('flat_walk', 'flat_stop') for t in tasks],
+                dtype=torch.bool, device=env.device)
+            self._s2_top_tasks = torch.tensor(
+                [t in ('stairs_walk', 'stairs_stop', 'legacy_l40')
+                 for t in tasks], dtype=torch.bool, device=env.device)
             self._s2_platform_width = torch.tensor(
                 [float(r['geometry'].get('platform_width') or 8.0) for r in rows],
                 dtype=torch.float32, device=env.device)
@@ -272,7 +295,9 @@ class S2TrainEnv:
                 [float(r['geometry'].get('platform_length') or 0.0) for r in rows],
                 dtype=torch.float32, device=env.device)
         first = env.episode_length_buf <= 1
-        self._lifecycle.reset(first.detach().cpu().numpy())
+        first_np = first.detach().cpu().numpy()
+        self._lifecycle.reset(first_np)
+        self._quality.reset(first_np)
         self._s2_top_latched[first] = False
         self._s2_success_latched[first] = False
         self._s2_top_event[first] = False
@@ -288,13 +313,24 @@ class S2TrainEnv:
         self._s2_steps[first] = 0
         self._s2_c_request[first] = self._s2_speed[first]
         self._s2_c_exec[first] = self._s2_speed[first]
-        original_success = state.success.clone()
+        if hasattr(self, '_s2_support_count'):
+            self._s2_support_count[first] = 0
         local = state.local[:, 0]
         failure = state.failure.clone()
         timeout = state.timeout.clone()
-        # SDS 5.3: top = four-foot XY entry into the platform rectangle and the
-        # body past front+0.4. v07 success is suppressed for S2 tasks, so this
-        # signal must be geometric, never the (zeroed) v07 success flag.
+        # DSHS-Q036: four-foot XY entry + body > front+0.4 is the §5.2 gating
+        # start, never ``top_arrived``.  The safe summit is the raw v07 success
+        # captured by ``s2_physics._s2_patch_context`` *before* the S2 patch
+        # suppresses v07 termination (actual tile geometry, 0.8 m body margin,
+        # 0.042 m foot inset, real support and 5-frame confirmation).
+        raw_top = (self._top_capture.take() if getattr(
+            self, '_top_capture', None) is not None else None)
+        if raw_top is None:
+            raw_top = torch.zeros(n, dtype=torch.bool, device=env.device)
+        else:
+            raw_top = raw_top.to(env.device).reshape(-1)
+        top_signal = raw_top & self._s2_top_tasks
+        # §5.2 gating geometry, recorded separately from the safe summit.
         feet_local = state.feet_local
         in_platform = (
             (feet_local[:, :, 0] >= self._s2_front[:, None])
@@ -304,17 +340,7 @@ class S2TrainEnv:
                <= self._s2_platform_width[:, None] / 2.0))
         four_feet = in_platform.all(-1)
         body_ok = local > self._s2_front + 0.4
-        stairs = self._s2_stairs
-        top_signal = four_feet & body_ok & stairs
-        quality_ok = torch.ones(n, dtype=torch.bool, device=env.device)
-        out = self._lifecycle.update(
-            local_x=local.detach().cpu().numpy(),
-            top_signal=top_signal.detach().cpu().numpy(),
-            four_feet=four_feet.detach().cpu().numpy(),
-            body_ok=body_ok.detach().cpu().numpy(),
-            quality_ok=quality_ok.detach().cpu().numpy(),
-            failure=failure.detach().cpu().numpy(),
-            timeout=timeout.detach().cpu().numpy())
+        out = self._s2_quality_update(env, state, top_signal, four_feet)
         self._lifecycle_out = out
         self._s2_phase = out['phase']
         self._s2_c_request = torch.as_tensor(out['c_request'], dtype=torch.float32,
@@ -333,6 +359,96 @@ class S2TrainEnv:
                                     device=env.device),
             timeout=torch.as_tensor(out['timeout'], dtype=torch.bool,
                                     device=env.device))
+
+    def _s2_foot_support(self, env, feet_local):
+        """Per-foot §5.3 valid support: real top-face >5 N inside the 0.042 m
+        inset of the actual support rectangle (platform/tread/ground)."""
+        import torch
+        tops = env.contacts.top_forces
+        same_tile = env.geom_tile[None, None, :] == env.tile_ids[:, None, None]
+        force = torch.where(same_tile, tops,
+                            torch.zeros_like(tops)).sum(-1)
+        force_ok = force > 5.0
+        x = feet_local[..., 0]
+        y = feet_local[..., 1]
+        inset = 0.042
+        front = self._s2_front[:, None]
+        width = self._s2_platform_width[:, None]
+        length = self._s2_platform_length[:, None]
+        platform = ((x >= front + inset)
+                    & (x <= front + length - inset)
+                    & (y.abs() <= width / 2.0 - inset))
+        tread = ((x >= inset) & (x <= front - inset)
+                 & (y.abs() <= 0.4 - inset))
+        ground = ((x >= -2.0 + inset) & (x < inset)
+                  & (y.abs() <= 2.0 - inset))
+        flat_ground = ((x >= -2.0 + inset) & (x <= 22.0 - inset)
+                       & (y.abs() <= 4.0 - inset))
+        region = torch.where(self._s2_stairs[:, None],
+                             platform | tread | ground, flat_ground)
+        raw = force_ok & region
+        # §5.3: two consecutive control frames of real top-face support.
+        if not hasattr(self, '_s2_support_count'):
+            self._s2_support_count = torch.zeros(
+                raw.shape, dtype=torch.long, device=raw.device)
+        self._s2_support_count = torch.where(
+            raw, self._s2_support_count + 1,
+            torch.zeros_like(self._s2_support_count))
+        return self._s2_support_count >= 2
+
+    def _s2_quality_update(self, env, state, top_signal, four_feet):
+        """Measure this frame and advance the shared S2 quality state machine."""
+        import math
+        import torch
+        from src.tasks.velocity.v07 import events as _v07events
+        from src.tasks.velocity.v07 import terrain as _v07terrain
+        n = int(env.num_envs)
+        data = env.robot.data
+        local = state.local
+        roll, pitch, _ = _v07events.euler_heading(data.root_link_quat_w)
+        surface_z, surface_valid = _v07terrain.query_surface(
+            data.root_link_pos_w[:, :2], env.tile_ids)
+        surface_z = torch.where(surface_valid, surface_z,
+                                torch.zeros_like(surface_z))
+        foot_support = self._s2_foot_support(env, state.feet_local)
+        foot_speed = data.site_lin_vel_w[:, env.foot_ids, :2].norm(dim=-1)
+        expected = (state.failure | state.timeout)
+        quality = self._quality.update(
+            local_x=local[:, 0].detach().cpu().numpy(),
+            local_y=local[:, 1].detach().cpu().numpy(),
+            pitch_deg=(pitch * (180.0 / math.pi)).detach().cpu().numpy(),
+            roll_deg=(roll * (180.0 / math.pi)).detach().cpu().numpy(),
+            horizontal_speed=(data.root_link_lin_vel_w[:, :2]
+                              .norm(dim=-1)).detach().cpu().numpy(),
+            v_heading=data.root_link_lin_vel_w[:, 0].detach().cpu().numpy(),
+            c_exec=env.sample_command[:, 0].detach().cpu().numpy(),
+            four_feet_entry=four_feet.detach().cpu().numpy(),
+            top_arrived=top_signal.detach().cpu().numpy(),
+            base_height=data.root_link_pos_w[:, 2].detach().cpu().numpy(),
+            surface_height=surface_z.detach().cpu().numpy(),
+            foot_support=foot_support.detach().cpu().numpy(),
+            foot_speed_xy=foot_speed.detach().cpu().numpy(),
+            angular_speed=data.root_link_ang_vel_b.norm(dim=-1)
+            .detach().cpu().numpy(),
+            failure=state.failure.detach().cpu().numpy(),
+            # DSHS-Q036: flat hard protection is the S2 1001/1401/1501 limit,
+            # never the raw v07 1500-step flat timeout.
+            timeout=(state.timeout & ~self._s2_flat).detach().cpu().numpy())
+        self._quality_out = quality
+        out = self._lifecycle.update(
+            local_x=local[:, 0].detach().cpu().numpy(),
+            top_signal=top_signal.detach().cpu().numpy(),
+            four_feet=four_feet.detach().cpu().numpy(),
+            body_ok=(local[:, 0] > self._s2_front + 0.4)
+            .detach().cpu().numpy(),
+            quality_ok=quality['quality_ok'],
+            quality_failure=quality['quality_failure'],
+            quality_reason=quality['quality_reason'],
+            failure=expected.detach().cpu().numpy(),
+            # DSHS-Q036: flat protection limits are 1001/1401/1501 inside the
+            # lifecycle; the v07 1500-step flat timeout must not pre-empt them.
+            timeout=(state.timeout & ~self._s2_flat).detach().cpu().numpy())
+        return out
 
     def _s2_reward(self, env, state, previous_action):
         """Vectorized S2 §5 reward; never the v07 RewardComputer."""
@@ -398,42 +514,29 @@ class S2TrainEnv:
             self._lifecycle_out.get('g_level', self._s2_g_level),
             dtype=torch.float32, device=env.device)
         self._s2_g_level = g_level
-        # Command chain: request is external speed; c_exec is the post-ramp
-        # command actually consumed next. S2.1 has no stop.
-        speed = self._s2_c_request
-        dpost = local[:, 0] - self._s2_front
-        request_stop = self._s2_stop & ~self._s2_stop_requested & (dpost >= self._s2_post) & ~failure
-        self._s2_stop_requested |= request_stop
-        self._s2_stop_step = torch.where(
-            request_stop, self._s2_steps, self._s2_stop_step)
-        instant_zero = self._s2_stop_requested & ~self._s2_ramp & (self._s2_hold_step < 0)
-        ramp_elapsed = (self._s2_steps - self._s2_stop_step).clamp_min(0).float()
-        ramp_exec = speed * (1.0 - ramp_elapsed / 100.0).clamp(0.0, 1.0)
-        c_exec = torch.where(self._s2_stop_requested,
-                             torch.where(instant_zero, torch.zeros_like(speed), ramp_exec),
-                             speed)
-        c_exec = torch.where(c_exec <= 1e-12, torch.zeros_like(c_exec), c_exec)
-        self._s2_c_exec = c_exec
-        first_zero = self._s2_stop_requested & (self._s2_hold_step < 0) & (c_exec <= 1e-12)
-        self._s2_hold_step = torch.where(first_zero, self._s2_steps,
-                                         self._s2_hold_step)
-        phase = torch.where(
-            self._s2_stop_requested & (c_exec > 1e-7), torch.ones_like(self._s2_steps),
-            torch.where(self._s2_hold_step >= 0, torch.full_like(self._s2_steps, 2),
-                        torch.zeros_like(self._s2_steps)))
-        # phase codes: 0 APPROACH/CLIMB/POST_WALK, 1 DECEL, 2 HOLD
-        # top comes from the v07 climb event; success from distance/stop contract.
-        top_now = self._s2_top_event
-        if self._s2_stop.any():
-            hold_ok = ((self._s2_hold_step >= 0)
-                       & ((self._s2_steps - self._s2_hold_step) >= 1000))
-            success_now = self._s2_stop & hold_ok
-        else:
-            success_now = ((~self._s2_stop) & state.success
-                           & ~self._s2_success_latched)
-        success_now &= ~self._s2_success_latched & ~failure
-        self._s2_success_latched |= success_now
-        # air-time accumulated from filtered contacts
+        # Command chain: the S2Lifecycle is the only source of truth for the
+        # request, ramp, first zero and HOLD.  Never recompute the stop timeline
+        # here (DSH-Q036; the old duplicate 400/1000 logic is gone).
+        out = self._lifecycle_out
+        # DSHS-Q037.2: the reward is settled with the phase/command that this
+        # control step actually consumed (``*_at_actor``), never with the new
+        # step-end command that is only consumed next tick.  One source: the
+        # same S2Lifecycle update that produced success/failure.
+        c_request = torch.as_tensor(out['c_request_at_actor'],
+                                    dtype=torch.float32, device=env.device)
+        c_exec = torch.as_tensor(out['c_exec_at_actor'],
+                                 dtype=torch.float32, device=env.device)
+        self._s2_c_request = torch.as_tensor(out['c_request'], dtype=torch.float32,
+                                             device=env.device)
+        self._s2_c_exec = torch.as_tensor(out['c_exec'], dtype=torch.float32,
+                                          device=env.device)
+        phase_names = list(out['phase'])
+        top_now = torch.as_tensor(out['top_event'], dtype=torch.bool,
+                                  device=env.device)
+        success_now = torch.as_tensor(out['success_event'], dtype=torch.bool,
+                                      device=env.device)
+        self._s2_top_event = top_now
+        # air-time accumulated from filtered contacts (reward-only state)
         self._s2_contacted |= contact
         landing = contact & ~self._s2_prev_contact & self._s2_contacted & (self._s2_air_time > 0)
         air_bonus = (landing.float() * (self._s2_air_time - 0.10)).sum(-1)
@@ -453,10 +556,10 @@ class S2TrainEnv:
         qdot = data.joint_vel[:, env.joint_ids]
         route_error = env.route_error()
         yaw_error = torch.atan2(route_error[:, 1], route_error[:, 2])
-        phase_names = ['DECEL' if p.item() == 1 else 'HOLD' if p.item() == 2
-                       else 'POST_WALK' for p in phase]
+        stable_stand = (np.asarray([p == 'HOLD' for p in phase_names], dtype=bool)
+                        & (c_exec.detach().cpu().numpy() <= 1e-7))
         frame = dict(
-            c_request=speed.detach().cpu().numpy(),
+            c_request=c_request.detach().cpu().numpy(),
             c_exec=c_exec.detach().cpu().numpy(),
             phase=phase_names,
             gravity_b=data.projected_gravity_b.detach().cpu().numpy(),
@@ -486,14 +589,14 @@ class S2TrainEnv:
             timeout=state.timeout.detach().cpu().numpy(),
             top_once=(top_now & ~failure).detach().cpu().numpy(),
             success_once=success_now.detach().cpu().numpy(),
-            stable_stand=((phase > 0) & (c_exec <= 1e-7)).detach().cpu().numpy())
+            stable_stand=stable_stand)
         result = s2_rewards.compute_reward_batch(frame)
+        self.reward_term_values = dict(result['terms'])
         totals = torch.as_tensor(result['total'], dtype=torch.float32,
                                  device=env.device)
         self._s2_prev_qdot = qdot.detach().clone()
-        self._s2_steps = self._s2_steps + 1
-        # Actor consumes c_exec on the next control step.
-        env.command[:, 0] = c_exec.detach()
+        # The lifecycle already set env.command to c_exec for the next Actor
+        # tick; never overwrite the command timeline from the reward path.
         self.step_reward_tensors = {'reward_total': totals}
         self.reward_terms = {'total': float(totals.mean().detach().cpu())}
         return totals
@@ -533,6 +636,7 @@ class S2TrainEnv:
         return obs
 
     def step(self, actions):
+        import torch
         obs, reward, terminated, truncated, info = self.env.step(actions)
         info = dict(info)
         failure = info.get('failure', False)
@@ -541,28 +645,61 @@ class S2TrainEnv:
         timeout = bool(timeout.any()) if hasattr(timeout, 'any') else bool(timeout)
         failure_mask = info.get('failure', False)
         timeout_mask = info.get('timeout', False)
+        n = int(self.num_envs)
+        quality_out = getattr(self, '_quality_out', None) or {}
+        quality_ok = torch.as_tensor(
+            quality_out.get('quality_ok', np.ones(n, dtype=bool)),
+            dtype=torch.bool, device=self.device)
+        quality_failure_mask = torch.as_tensor(
+            quality_out.get('quality_failure', np.zeros(n, dtype=bool)),
+            dtype=torch.bool, device=self.device)
+        quality_reason = list(quality_out.get('quality_reason',
+                                              [''] * n))
+        lifecycle_out = getattr(self, '_lifecycle_out', None) or {}
+        physical = lifecycle_out.get('physical_failure')
+        physical_mask = (torch.as_tensor(physical, dtype=torch.bool,
+                                         device=self.device)
+                         if physical is not None else failure_mask)
         failure_class_mask = None
         termination = getattr(self.env, 'last_termination', None)
         if termination is not None and len(termination) >= 4:
             from src.tasks.velocity.v07.events import FAILURE_CODES
             names = {code: name for name, code in FAILURE_CODES.items()}
             reasons = termination[3].detach().cpu().tolist()
-            fail = failure_mask.detach().cpu().tolist() \
-                if hasattr(failure_mask, 'detach') else list(failure_mask or [])
-            ok = terminated.detach().cpu().tolist() \
-                if hasattr(terminated, 'detach') else list(terminated or [])
+            physical_list = physical_mask.detach().cpu().tolist() \
+                if hasattr(physical_mask, 'detach') else list(physical_mask or [])
             timeout_list = timeout_mask.detach().cpu().tolist() \
                 if hasattr(timeout_mask, 'detach') else list(timeout_mask or [])
+            quality_list = quality_failure_mask.detach().cpu().tolist() \
+                if hasattr(quality_failure_mask, 'detach') else []
+            ok = terminated.detach().cpu().tolist() \
+                if hasattr(terminated, 'detach') else list(terminated or [])
             failure_class_mask = []
             for i, code in enumerate(reasons):
-                if i < len(fail) and fail[i]:
+                if i < len(physical_list) and physical_list[i]:
                     failure_class_mask.append(names.get(code, f'v07_code_{code}'))
+                elif i < len(quality_list) and quality_list[i]:
+                    failure_class_mask.append(
+                        's2_quality_failure:' + str(quality_reason[i]))
                 elif i < len(timeout_list) and timeout_list[i]:
                     failure_class_mask.append('timeout')
                 elif i < len(ok) and ok[i]:
                     failure_class_mask.append('s2_success')
                 else:
                     failure_class_mask.append(None)
+        classes = failure_class_mask or []
+        if any(str(v).startswith('s2_quality_failure') for v in classes):
+            failure_class = 'quality_failure'
+        elif any(v == 'timeout' for v in classes):
+            failure_class = 'timeout'
+        elif any(v == 's2_success' for v in classes):
+            failure_class = 'success'
+        elif failure:
+            failure_class = 'failure'
+        elif timeout:
+            failure_class = 'timeout'
+        else:
+            failure_class = None
         info.update(
             terminated=bool(terminated.any()) if hasattr(terminated, 'any') else bool(terminated),
             truncated=bool(truncated.any()) if hasattr(truncated, 'any') else bool(truncated),
@@ -570,7 +707,22 @@ class S2TrainEnv:
             truncated_mask=truncated.detach().clone() if hasattr(truncated, 'detach') else truncated,
             failure_mask=failure_mask,
             timeout_mask=timeout_mask,
-            failure_class='failure' if failure else 'timeout' if timeout else None,
+            physical_failure_mask=physical_mask,
+            quality_ok=quality_ok,
+            quality_failure_mask=quality_failure_mask,
+            quality_reason=list(quality_reason),
+            quality_cruise_state=list(quality_out.get(
+                'cruise_state', [''] * n)),
+            quality_stop_state=list(quality_out.get('stop_state', [''] * n)),
+            cruise_entry_step=quality_out.get('four_feet_entry_step'),
+            cruise_start_step=quality_out.get('cruise_start_step'),
+            cruise_samples=quality_out.get('cruise_samples'),
+            hold_samples=quality_out.get('hold_samples'),
+            stop_mean_speed=quality_out.get('stop_mean_speed'),
+            stop_peak_speed=quality_out.get('stop_peak_speed'),
+            stop_max_displacement=quality_out.get('stop_max_displacement'),
+            stop_support_ratio=quality_out.get('stop_support_ratio'),
+            failure_class=failure_class,
             failure_class_mask=failure_class_mask,
             teacher_observation=self.teacher_observation(),
             a_request=self.env.action_manager.action.detach().clone(),
@@ -578,7 +730,9 @@ class S2TrainEnv:
             phase=getattr(self, '_s2_phase', None),
             c_request=getattr(self, '_s2_c_request', None),
             c_exec=getattr(self, '_s2_c_exec', None),
+            c_exec_consumed=self.env.sample_command[:, 0].detach().clone(),
             top_arrived=(getattr(self, '_lifecycle_out', {}) or {}).get('top'),
+            top_event=(getattr(self, '_lifecycle_out', {}) or {}).get('top_event'),
             local_x=(self.env.robot.data.root_link_pos_w
                      - self.env.origins[self.env.tile_ids])[:, 0],
             g_level=(getattr(self, '_s2_g_level', None)),

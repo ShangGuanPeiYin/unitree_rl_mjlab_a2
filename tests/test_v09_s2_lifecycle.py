@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 
 import numpy as np
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -68,7 +69,7 @@ def test_stop_instant_next_actor_zero_and_hold_then_success():
     out = s.update(local_x=[5.0], top_signal=[True], four_feet=[True],
                    body_ok=[True], quality_ok=[True])
     assert bool(out['c_exec'][0] == 0.0)
-    assert out['phase'][0] in ('HOLD', 'DECEL')
+    assert out['phase_next'][0] in ('HOLD', 'DECEL')
     assert not s.success[0]
     for _ in range(999):
         out = s.update(local_x=[5.0], top_signal=[True], four_feet=[True],
@@ -79,8 +80,8 @@ def test_stop_instant_next_actor_zero_and_hold_then_success():
     assert bool(s.success[0]) and bool(out['success_event'][0])
 
 
-def test_stop_ramp_monotone_and_request_independent():
-    s = _one(task='platform_stop', post=2.0, stop='ramp_2s')
+def test_stop_ramp_monotone_and_request_zero():
+    s = _one(task='platform_stop', post=6.0, stop='ramp_2s')
     s.update(local_x=[4.9], top_signal=[False], four_feet=[False],
              body_ok=[False], quality_ok=[True])
     out = s.update(local_x=[5.0], top_signal=[False], four_feet=[False],
@@ -90,8 +91,40 @@ def test_stop_ramp_monotone_and_request_independent():
         values.append(s.update(local_x=[5.0], top_signal=[False], four_feet=[False],
                                body_ok=[False], quality_ok=[True])['c_exec'][0])
     assert all(a >= b for a, b in zip(values, values[1:]))
-    assert bool(values[-1] == 0.0)
-    assert np.allclose(s.c_request[0], 0.5)
+    assert values[0] == pytest.approx(0.5 * (1 - 1 / 100))
+    assert bool(values[-1] == 0.0)  # k = 100 is exactly zero
+    expected_request = 0.0 if life.C_REQUEST_ZERO_AT_STOP_REQUEST else 0.5
+    assert np.allclose(s.c_request[0], expected_request)
+
+
+def test_flat_stop_counts_1400_instant_and_1500_ramp():
+    for mode, endpoint in (('instant', 1400), ('ramp_2s', 1500)):
+        s = life.S2Lifecycle(task=['flat_stop'], post_distance=[5.0],
+                             speed=[0.5], stop_mode=[mode], front=[0.0],
+                             spawn_x=[-1.0])
+        success = None
+        for step in range(1, endpoint + 3):
+            out = s.update(local_x=[-1.0], top_signal=[False],
+                           four_feet=[False], body_ok=[False],
+                           quality_ok=[True])
+            if out['success_event'][0] and success is None:
+                success = step
+            if step == endpoint:
+                assert out['hold_step'][0] == (401 if mode == 'instant' else 500)
+        assert success == endpoint, (mode, success)
+        assert not bool(s.timeout[0])
+
+
+def test_flat_walk_endpoint_is_1000_not_1001():
+    s = life.S2Lifecycle(task=['flat_walk'], post_distance=[5.0], speed=[0.5],
+                         stop_mode=['none'], front=[0.0], spawn_x=[-1.0])
+    for step in range(1, 1002):
+        out = s.update(local_x=[-1.0], top_signal=[False], four_feet=[False],
+                       body_ok=[False], quality_ok=[True])
+        if step == 1000:
+            assert out['success_event'][0]
+            assert not bool(s.timeout[0])
+    assert not bool(s.timeout[0])
 
 
 def test_failure_precedence_and_reset_isolation():
@@ -167,6 +200,34 @@ def test_s2_train_env_task_state_calls_lifecycle():
     obj._s2_spawn_x = torch.tensor([-1.0])
     obj._s2_c_request = torch.tensor([0.5])
     obj._s2_c_exec = torch.tensor([0.5])
+
+    class _QualityStub:
+        def reset(self, mask):
+            pass
+
+    obj._quality = _QualityStub()
+
+    def _quality_update(_env, state, top_signal, four_feet):
+        return obj._lifecycle.update(
+            local_x=state.local[:, 0].cpu().numpy(),
+            top_signal=top_signal.cpu().numpy(),
+            four_feet=four_feet.cpu().numpy(),
+            body_ok=(state.local[:, 0] > obj._s2_front + 0.4).cpu().numpy(),
+            quality_ok=[True], failure=state.failure.cpu().numpy(),
+            timeout=state.timeout.cpu().numpy())
+
+    obj._s2_quality_update = _quality_update
+
+    class _Capture:
+        def __init__(self):
+            self.value = None
+
+        def take(self):
+            value = self.value
+            self.value = None
+            return value
+
+    obj._top_capture = _Capture()
     phases = []
     success = []
     for step in range(1, 9):
@@ -176,10 +237,11 @@ def test_s2_train_env_task_state_calls_lifecycle():
         feet = torch.tensor([[[feet_x, -0.2, 1.0], [feet_x, 0.2, 1.0],
                               [feet_x, -0.2, 1.0], [feet_x, 0.2, 1.0]]])
         state = _FrozenState(
-            success=torch.tensor([top]), failure=torch.tensor([False]),
+            success=torch.tensor([False]), failure=torch.tensor([False]),
             timeout=torch.tensor([False]), local=torch.tensor([[local, 0.0, 0.0]]),
             feet_local=feet)
         env.episode_length_buf = torch.tensor([step])
+        obj._top_capture.value = torch.tensor([top])
         obj._v07_task_state = lambda: state
         out = obj._s2_task_state(env)
         phases.append(obj._lifecycle.phase[0])
@@ -188,3 +250,35 @@ def test_s2_train_env_task_state_calls_lifecycle():
     assert not success[2]
     assert success[-1]
     assert phases[-1] == 3
+
+
+def test_q037_request_and_ramp_k_at_actor():
+    s = life.S2Lifecycle(task=['flat_stop'], post_distance=[5.0], speed=[0.5],
+                         stop_mode=['ramp_2s'], front=[0.0], spawn_x=[-1.0])
+    rows = {}
+    for step in range(1, 503):
+        out = s.update(local_x=[-1.0], top_signal=[False], four_feet=[False],
+                       body_ok=[False], quality_ok=[True])
+        if step in (399, 400, 401, 499, 500, 501):
+            rows[step] = {key: out[key][0] for key in (
+                'c_request_at_actor', 'c_request_after_step',
+                'c_exec_at_actor', 'c_exec_after_step', 'ramp_k_at_actor',
+                'ramp_k_after_step', 'phase', 'phase_next',
+                'stop_requested_at_actor', 'stop_requested_after_step',
+                'first_zero_step', 'hold_samples')}
+    assert rows[400]['c_request_at_actor'] == pytest.approx(0.5)
+    assert rows[400]['c_request_after_step'] == pytest.approx(0.0)
+    assert rows[400]['stop_requested_at_actor'] is np.False_
+    assert rows[400]['stop_requested_after_step'] is np.True_
+    assert rows[400]['ramp_k_after_step'] == 1
+    assert rows[400]['c_exec_after_step'] == pytest.approx(0.495)
+    assert rows[401]['phase'] == 'DECEL'
+    assert rows[401]['c_request_at_actor'] == pytest.approx(0.0)
+    assert rows[401]['c_exec_at_actor'] == pytest.approx(0.495)
+    assert rows[401]['ramp_k_at_actor'] == 1
+    assert rows[499]['ramp_k_at_actor'] == 99
+    assert rows[499]['c_exec_at_actor'] == pytest.approx(0.005)
+    assert rows[500]['ramp_k_at_actor'] == 100
+    assert rows[500]['c_exec_at_actor'] == pytest.approx(0.0)
+    assert rows[500]['first_zero_step'] == 500
+    assert rows[501]['hold_samples'] == 2

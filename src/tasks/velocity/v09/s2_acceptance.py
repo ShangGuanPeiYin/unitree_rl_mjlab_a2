@@ -16,38 +16,13 @@ QUALITY = dict(pitch_rms_deg=5.0, pitch_p99_deg=10.0, pitch_over15_seconds=0.2,
 
 
 def quality_reasons(metrics, *, stop=False):
-    reasons = []
-    if metrics.get('valid_cruise_window') is not True:
-        reasons.append('missing_cruise_window')
-    if metrics.get('pitch_rms_deg') is None or metrics['pitch_rms_deg'] > QUALITY['pitch_rms_deg']:
-        reasons.append('pitch_rms')
-    if metrics.get('pitch_p99_deg') is None or metrics['pitch_p99_deg'] > QUALITY['pitch_p99_deg']:
-        reasons.append('pitch_p99')
-    if metrics.get('pitch_over15_max_frames', 0) * 0.02 >= QUALITY['pitch_over15_seconds']:
-        reasons.append('pitch_over15')
-    if metrics.get('speed_rmse') is None or metrics['speed_rmse'] > QUALITY['speed_rmse']:
-        reasons.append('speed_rmse')
-    if metrics.get('nonfoot_contact', False):
-        reasons.append('nonfoot_contact')
-    if metrics.get('cruise_stall_latched', False):
-        reasons.append('cruise_stall')
-    if stop:
-        if metrics.get('recovery_seconds') is None or metrics['recovery_seconds'] > QUALITY['recovery_seconds']:
-            reasons.append('recovery')
-        if metrics.get('stand_mean_speed') is None or metrics['stand_mean_speed'] > QUALITY['stand_mean_speed']:
-            reasons.append('stand_mean_speed')
-        if metrics.get('stand_peak_speed') is None or metrics['stand_peak_speed'] > QUALITY['stand_peak_speed']:
-            reasons.append('stand_peak_speed')
-        if metrics.get('stand_max_displacement') is None or metrics['stand_max_displacement'] > QUALITY['stand_displacement_m']:
-            reasons.append('stand_displacement')
-        if metrics.get('stand_support_fraction') is None or metrics['stand_support_fraction'] < QUALITY['stand_support_fraction']:
-            reasons.append('stand_support')
-        for key in ('stand_roll_abs_max_deg', 'stand_pitch_abs_max_deg'):
-            if metrics.get(key) is None or metrics[key] > 10.0:
-                reasons.append('stand_attitude')
-        if metrics.get('stand_height_min') is None or metrics['stand_height_min'] < 0.30:
-            reasons.append('stand_height')
-    return reasons
+    """Gate/final §6.5 reasons (T-3: shared core in :mod:`s2_quality`).
+
+    The public reason vocabulary is unchanged; every threshold and comparison
+    is owned by ``s2_quality`` so training and gate/final cannot drift.
+    """
+    from . import s2_quality
+    return s2_quality.acceptance_reasons(metrics, stop=stop)
 
 
 def group_result(successes, total, *, threshold, engineering_invalid=False):
