@@ -4945,3 +4945,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - `S2TrainEnv.step` info 增加 `failure_class_mask`（逐环境 v07 reason 名称）、`g_level`、`episode_length`。
 - `S2Trainer.update` 记录每个 minibatch 的 `anchor_observations`（n_clean/分子/loss）并在 `train_rollout` 返回值中汇总，供 Run D 证据。
 - 验证：S2 全量 `pytest` **303 passed**；真实 V13 shadow 首轮因上面 trace/索引问题暴露该 bug，修复后待重跑（见下一步）。
+
+## 2026-11-23 降低锚定教师观测显存占用并回收缓存（修复 512 环境第二轮 OOM）
+
+- 真实 shadow 第 1 轮成功（anchor 生效：n_clean=1236、loss=0.003535、20 个 minibatch 观测），第 2 轮在 `sim.step` 的 Warp graph launch 处 OOM。
+- `s2_train.py`：`teacher_obs` 只保存 clean-flat 环境（`_clean_env_index` + `_clean_teacher_obs`），不再每步保存 512×(3×48×32) 全量教师图；update 用 `flat_teacher_index = step*n + clean_env` 与 `torch.searchsorted` 映射到 clean 样本，教师输入仍逐样本对齐。
+- 每轮 update 结束（仅 CUDA）调用 `torch.cuda.empty_cache()`，把缓存块归还驱动，避免 PyTorch 缓存挤占 Warp 图捕获所需显存。
+- 新增测试 `test_anchor_uses_clean_teacher_observations_only`：教师 mu 由 `(step, env)` 编码，比对 `anchor_observations[0]` 分子与独立手算，验证 clean 教师观测的取样与排序正确。
+- 验证：S2 全量 `pytest` **304 passed**；待重跑真实 shadow 验证 OOM 是否消失。

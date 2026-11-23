@@ -593,3 +593,66 @@ def test_collect_rollout_advantages_are_time_major(monkeypatch):
     flat = adv.reshape(-1).tolist()
     expected = [(k % n) * 100.0 + (k // n) for k in range(steps * n)]
     assert flat == expected
+
+
+def test_anchor_uses_clean_teacher_observations_only():
+    """Teacher obs must be stored/selected for clean envs in (step, env) order."""
+    from src.tasks.velocity.v09.model import V09ActorCritic
+
+    class EchoTeacher(torch.nn.Module):
+        def forward(self, obs):
+            # mu depends only on the first proprio channel: 0.1*step + 0.01*env
+            value = obs['proprio'][:, 0]
+            return value[:, None].repeat(1, 12)
+
+    n = 4
+    rows = [dict(task='flat_walk', role='flat_walk'),
+            dict(task='flat_walk', role='flat_walk'),
+            dict(task='stairs_walk', role='stairs_walk'),
+            dict(task='stairs_walk', role='stairs_walk')]
+    plan = dict(num_envs=n, course='S2.1', counts={
+        'flat_walk': 2, 'flat_stop': 0, 'stairs_walk': 2,
+        'platform_walk': 0, 'l40_milestone': 0}, order=list(range(n)),
+        envs=rows)
+    env = s2_train_env.S2FakeTrainEnv(num_envs=n, role_plan=plan)
+    values = torch.arange(n, dtype=torch.float32) * 0.01
+
+    def observation(step):
+        proprio = torch.zeros(n, 45)
+        proprio[:, 0] = 0.1 * step + values
+        history = proprio[:, None, :].expand(n, 5, 45).clone()
+        heightmap = torch.zeros(n, 3, 40, 30)
+        heightmap[:, 1] = 1.0
+        route_error = torch.zeros(n, 3)
+        route_error[:, 2] = 1.0
+        privileged = torch.zeros(n, 35)
+        privileged[:, 0] = 0.1 * step + values
+        return dict(proprio=proprio, history=history, heightmap=heightmap,
+                    route_error=route_error, privileged=privileged)
+
+    steps = 2
+    transitions = []
+    for step in range(steps):
+        obs = observation(step)
+        transitions.append(dict(
+            obs=obs, actions=torch.zeros(n, 12),
+            log_probs=torch.zeros(n), values=torch.zeros(n),
+            reward=torch.zeros(n), done=torch.zeros(n, dtype=torch.bool),
+            teacher_obs={key: obs[key][:2] for key in obs}))
+
+    torch.manual_seed(11)
+    model = V09ActorCritic()
+    trainer = s2_train.S2Trainer(model=model, env=env, device='cpu',
+                                 teacher=EchoTeacher())
+    trainer.update(transitions, torch.zeros(steps, n), torch.zeros(steps, n))
+    # first logical minibatch = samples 0,1 = step 0, clean envs 0,1
+    torch.manual_seed(11)
+    reference = V09ActorCritic()
+    first = observation(0)
+    clean = {key: value[:2] for key, value in first.items()}
+    mu_student = reference(clean)
+    mu_teacher = EchoTeacher()(clean)
+    expected = float(torch.sum((mu_student - mu_teacher) ** 2).detach())
+    observed = trainer.anchor_observations[0]
+    assert observed['n_clean'] == 2
+    assert abs(observed['numerator'] - expected) < 1e-4, (observed, expected)

@@ -134,6 +134,29 @@ class S2Trainer:
     def _policy_obs(self, obs, index):
         return _obs_batch(obs, index, self.device)
 
+    def _clean_env_index(self):
+        """Indices of §5.4 clean-flat envs, used to keep teacher storage small."""
+        if getattr(self, '_clean_env_cache', None) is None:
+            clean_flags = getattr(self.env, 'clean_flags', None)
+            if callable(clean_flags):
+                mask = np.asarray(s2_loss.clean_flat_mask(clean_flags()), dtype=bool)
+            else:
+                mask = np.zeros(int(self.env.num_envs), dtype=bool)
+            self._clean_env_cache = torch.as_tensor(
+                np.nonzero(mask)[0], dtype=torch.long, device=self.device)
+        return self._clean_env_cache
+
+    def _clean_teacher_obs(self, info):
+        if self.teacher is None or not hasattr(info, 'get'):
+            return None
+        obs = info.get('teacher_observation')
+        if obs is None:
+            return None
+        index = self._clean_env_index()
+        if index.numel() == 0:
+            return None
+        return {key: value[index].detach() for key, value in obs.items()}
+
     def collect_rollout(self):
         # Episodes persist across rollout boundaries.  The env resets only the
         # environments whose episode terminates, not the whole batch.
@@ -168,8 +191,7 @@ class S2Trainer:
                                                   if hasattr(info, 'get') else None),
                                     failure_class=(info.get('failure_class')
                                                    if hasattr(info, 'get') else None),
-                                    teacher_obs=(info.get('teacher_observation')
-                                                 if hasattr(info, 'get') else None),
+                                    teacher_obs=self._clean_teacher_obs(info),
                                     a_request=(info.get('a_request')
                                                if hasattr(info, 'get') else None),
                                     a_applied=(info.get('a_applied')
@@ -292,10 +314,15 @@ class S2Trainer:
             for key in transitions[0]['obs']:
                 flat_obs[key] = torch.cat([row['obs'][key] for row in transitions], 0)
             flat_teacher = {}
+            flat_teacher_index = None
             if self.teacher is not None and transitions[0].get('teacher_obs') is not None:
                 for key in transitions[0]['teacher_obs']:
                     flat_teacher[key] = torch.cat(
                         [row['teacher_obs'][key] for row in transitions], 0)
+                clean_index = self._clean_env_index()
+                steps = torch.arange(len(transitions), device=self.device)
+                flat_teacher_index = (
+                    steps[:, None] * n + clean_index[None, :]).reshape(-1)
             flat_actions = torch.stack([row['actions'] for row in transitions], 0).reshape(-1, 12)
             flat_old = old_logs
             flat_adv = advantages.reshape(-1)
@@ -347,9 +374,13 @@ class S2Trainer:
                         if len(clean_micro):
                             clean_item = {key: value[clean_micro]
                                           for key, value in flat_obs.items()}
-                            teacher_item = ({key: value[clean_micro]
-                                             for key, value in flat_teacher.items()}
-                                            if flat_teacher else clean_item)
+                            if flat_teacher and flat_teacher_index is not None:
+                                position = torch.searchsorted(
+                                    flat_teacher_index, clean_micro)
+                                teacher_item = {key: value[position]
+                                                for key, value in flat_teacher.items()}
+                            else:
+                                teacher_item = clean_item
                             mu_student = self.model(clean_item)
                             with torch.no_grad():
                                 mu_teacher = self.teacher(teacher_item).detach()
@@ -389,6 +420,8 @@ class S2Trainer:
             if budget is not None:
                 budget.finish(self.attempt_id,
                               self.env.num_envs * s2_runner.ROLLOUT_STEPS)
+            if str(self.device).startswith('cuda'):
+                torch.cuda.empty_cache()
             return result
         except Exception:
             if budget is not None:
