@@ -12,7 +12,7 @@ APPROACH, CLIMB, TOP_TRANSITION, POST_WALK, DECEL, HOLD = range(6)
 class S2Lifecycle:
     def __init__(self, *, task, post_distance, speed, stop_mode='none',
                  legacy=False, front=0.0, spawn_x=-1.0,
-                 ramp_steps=100, hold_steps=1000):
+                 ramp_steps=100, hold_steps=1000, completion_steps=None):
         self.task = np.asarray(task, dtype=object)
         n = self.task.shape[0]
         self.post = np.asarray(post_distance, dtype=float)
@@ -23,6 +23,10 @@ class S2Lifecycle:
         self.spawn_x = np.asarray(spawn_x, dtype=float)
         self.ramp_steps = int(ramp_steps)
         self.hold_steps = int(hold_steps)
+        self.completion = (np.asarray(
+            [1000 if self.task[i] == 'flat_walk' else 1401 for i in range(n)],
+            dtype=int) if completion_steps is None
+            else np.asarray(completion_steps, dtype=int))
         self.phase = np.zeros(n, dtype=int)
         self.top = np.zeros(n, dtype=bool)
         self.top_event = np.zeros(n, dtype=bool)
@@ -114,7 +118,9 @@ class S2Lifecycle:
             self.step - self.hold_step >= self.hold_steps)
         nonstop_ok = distance_ok & ~np.isin(self.task, ['stairs_stop', 'platform_stop'])
         stop_ok = hold_ok & np.isin(self.task, ['stairs_stop', 'platform_stop'])
-        success_now = ((top_success | nonstop_ok | stop_ok)
+        flat_ok = (np.isin(self.task, ['flat_walk', 'flat_stop'])
+                   & (self.step >= self.completion))
+        success_now = ((top_success | nonstop_ok | stop_ok | flat_ok)
                        & quality_ok & ~failure & ~timeout & ~self.success)
         # phase
         phase = np.zeros(n, dtype=int)
