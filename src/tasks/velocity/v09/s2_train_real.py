@@ -495,7 +495,9 @@ class S2TrainEnv:
             failure_mask=failure_mask,
             timeout_mask=timeout_mask,
             failure_class='failure' if failure else 'timeout' if timeout else None,
-            teacher_observation=self.teacher_observation())
+            teacher_observation=self.teacher_observation(),
+            a_request=self.env.action_manager.action.detach().clone(),
+            a_applied=self.env.action_term._processed_actions.detach().clone())
         return obs, reward, terminated | truncated, info
 
     def close(self):

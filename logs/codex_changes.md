@@ -4899,3 +4899,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 加 `--resume`：扫描已有 `cases/*.json` 继续，释放 stale reserve，仅 reserve 剩余上界。
 - SIGTERM/SIGINT handler 设停止标志，完成当前 case 后写 partial cache/receipt 再 release，exit 130；缓存 `complete` 字段，gate 拒绝 false。
 - 验证：282 passed；未触碰运行中的 6400 collector。
+
+## 2026-11-23 P1-a/b CPU 生命周期/质量纯函数
+
+- 新增 `s2_lifecycle.py`：六任务阶段/stop/HOLD/L40 例外/失败优先/单 env reset；8 个 CPU 测试（top 不 reset→post、platform 5m、L40 同帧、instant/ramp/HOLD、失败优先、quality 阈值）。
+- S2TrainEnv/collect transitions 增加 a_request/a_applied 记录；真实集成仍未完成。
+- L40 collector failure_class/resume/signal；gate 拒绝 incomplete。
+- 验证：**290 passed**。

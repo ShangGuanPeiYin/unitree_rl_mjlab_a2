@@ -166,7 +166,11 @@ class S2Trainer:
                                     failure_class=(info.get('failure_class')
                                                    if hasattr(info, 'get') else None),
                                     teacher_obs=(info.get('teacher_observation')
-                                                 if hasattr(info, 'get') else None)))
+                                                 if hasattr(info, 'get') else None),
+                                    a_request=(info.get('a_request')
+                                               if hasattr(info, 'get') else None),
+                                    a_applied=(info.get('a_applied')
+                                               if hasattr(info, 'get') else None)))
             obs = next_obs
             self._rollout_steps += 1
         self._obs = obs
