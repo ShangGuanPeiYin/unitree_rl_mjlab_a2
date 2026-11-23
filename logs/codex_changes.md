@@ -4921,3 +4921,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - `s2_concurrency` 的 cache 检测补入 `build_a2_v09_s2_gate_caches.py`。
 - CPU fake 测试新增 `tests/test_v09_s2_smoke_train.py`（5 个：plan、角色选择、platform 无角色拒绝、训练/cache 运行拒绝、显存不足拒绝）；并发守卫新增 cache 探测器参数化测试。
 - 验证：`pytest $(printf '%s ' tests/test_v09_s2_*.py) tests/test_v09_s2_1_train.py tests/test_v09_s2_smoke_train.py -q` → **301 passed**；未运行 GPU smoke（等待缓存窗口结束）。
+
+## 2026-11-23 S2TrainEnv 真实 GPU smoke 打通（命令/奖励/教师图）
+
+- `s2_train_real.py`：`_s2_reward` 的 `_s2_g_level` 等适配器张量改为在 `_s2_task_state` 中初始化并按 `episode_length_buf<=1` 清零（此前 lazy-init 分支被 `_s2_top_latched` 已存在而跳过，真实链首步即 `AttributeError`）；reward 表面高度与教师图查询改用 v07 逐 tile `terrain.query_surface(points, tile_ids)`；冻结 state 用 `dataclasses.replace`；`_task_state/_reward` 用 `types.MethodType` 绑定。
+- `s2_terrain.py`：`query_surface` 接受 torch tensor 输入并转 CPU numpy，避免 CUDA tensor/CPU spec 混用。
+- `collect_a2_v09_s2_gate_original_6400.py`：ledger operation_id 加入 run_tag，允许失败后重跑不再冲突。
+- 验证：`pytest tests/test_v09_s2_*.py tests/test_v09_s2_1_train.py` 通过；真实 GPU smoke `scripts/smoke_a2_v09_s2_train.py --course S2.1 --steps 200 --execute` 三个 role 全 `completed: true`（stairs 400 行、platform 200 行、flat 400 行，trace 记录 phase/c_request/c_exec/a_request/a_applied/top_arrived），输出 `logs/a2_v09/s2/smoke7/`。

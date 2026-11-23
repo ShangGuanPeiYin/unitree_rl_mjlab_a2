@@ -189,14 +189,15 @@ class S2TrainEnv:
             self._v07_task_state = self.env._task_state
             def _s2_task_state(_env):
                 return self._s2_task_state(_env)
-            self.env._task_state = _s2_task_state
+            self.env._task_state = types.MethodType(_s2_task_state, self.env)
             def _s2_reward(_env, state, previous_action):
                 return self._s2_reward(_env, state, previous_action)
-            self.env._reward = _s2_reward
+            self.env._reward = types.MethodType(_s2_reward, self.env)
             self.env.reset()
+            from src.tasks.velocity.v07 import terrain as _v07terrain
             self._teacher_map = _SampleFrameMap(
                 self.num_envs, device, (3, 48, 32), -0.8, -0.8,
-                s2_terrain.query_surface)
+                _v07terrain.query_surface)
             self._update_teacher_map()
             assert_v07_contract(self.env)
         except Exception:
@@ -249,6 +250,7 @@ class S2TrainEnv:
             self._s2_prev_contact = z(n, 4, dtype=torch.bool)
             self._s2_contacted = z(n, 4, dtype=torch.bool)
             self._s2_prev_qdot = z(n, 12)
+            self._s2_g_level = z(n)
             self._s2_steps = z(n, dtype=torch.long)
         if not hasattr(self, '_lifecycle'):
             rows = self.plan['rows']
@@ -278,6 +280,7 @@ class S2TrainEnv:
         self._s2_prev_contact[first] = False
         self._s2_contacted[first] = False
         self._s2_prev_qdot[first] = 0
+        self._s2_g_level[first] = 0
         self._s2_steps[first] = 0
         self._s2_c_request[first] = self._s2_speed[first]
         self._s2_c_exec[first] = self._s2_speed[first]
@@ -305,15 +308,16 @@ class S2TrainEnv:
                                           device=env.device)
         self._s2_top_event = torch.as_tensor(out['top_event'], dtype=torch.bool,
                                              device=env.device)
-        state.success = torch.as_tensor(out['success'], dtype=torch.bool,
-                                        device=env.device)
-        state.failure = torch.as_tensor(out['failure'], dtype=torch.bool,
-                                        device=env.device)
-        state.timeout = torch.as_tensor(out['timeout'], dtype=torch.bool,
-                                        device=env.device)
         env.command[:, 0] = self._s2_c_exec.detach()
-        return state
-        return state
+        import dataclasses
+        return dataclasses.replace(
+            state,
+            success=torch.as_tensor(out['success'], dtype=torch.bool,
+                                    device=env.device),
+            failure=torch.as_tensor(out['failure'], dtype=torch.bool,
+                                    device=env.device),
+            timeout=torch.as_tensor(out['timeout'], dtype=torch.bool,
+                                    device=env.device))
 
     def _s2_reward(self, env, state, previous_action):
         """Vectorized S2 §5 reward; never the v07 RewardComputer."""
@@ -341,7 +345,7 @@ class S2TrainEnv:
                 [str(r.get('stop_mode', 'none')) == 'ramp_2s' for r in rows],
                 dtype=torch.bool, device=device)
             self._s2_plan_tensors = True
-        if self._s2_top_latched is None:
+        if not hasattr(self, '_s2_g_level'):
             device = env.device
             z = lambda *shape, dtype=torch.float32: torch.zeros(
                 *shape, dtype=dtype, device=device)
@@ -364,7 +368,8 @@ class S2TrainEnv:
         local = data.root_link_pos_w - env.origins[env.tile_ids]
         feet_local = data.site_pos_w[:, env.foot_ids] - env.origins[env.tile_ids, None]
         feet_xy = data.site_pos_w[:, env.foot_ids, :2]
-        surface_z, surface_valid = s2_terrain.query_surface(
+        from src.tasks.velocity.v07 import terrain as _v07terrain
+        surface_z, surface_valid = _v07terrain.query_surface(
             data.root_link_pos_w[:, :2], env.tile_ids)
         surface_z = torch.where(surface_valid, surface_z,
                                 torch.zeros_like(surface_z))

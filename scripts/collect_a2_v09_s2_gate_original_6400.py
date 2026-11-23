@@ -115,6 +115,7 @@ def main(argv=None):
     consistency = None
 
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    run_tag = f'{args.obligation_id or "q034a"}:{stamp}'
     out = args.output_dir
     out.mkdir(parents=True, exist_ok=True)
     cases_dir = out / 'cases'
@@ -124,7 +125,7 @@ def main(argv=None):
     suite_committed = 0
     suite_reserved = 234_180
     ledger.reserve(args.obligation_id, suite_reserved,
-                   operation_id=f'q034a:{manifest["suite"]}:suite:reserve',
+                   operation_id=f'q034a:{manifest["suite"]}:{run_tag}:reserve',
                    reason='Q034-A original 6400 flat cache whole suite')
     for group in groups:
         batch = [case for case in cases if case['group_id'] == group['group_id']]
@@ -192,12 +193,12 @@ def main(argv=None):
             partial = steps * 20
             if partial:
                 ledger.commit(args.obligation_id, partial,
-                              operation_id=f'{op}:commit',
+                              operation_id=f'{op}:{run_tag}:commit',
                               reason='Q034-A original 6400 partial')
             unused = suite_reserved - suite_committed - partial
             if unused > 0:
                 ledger.release(args.obligation_id, unused,
-                               operation_id=f'{op}:release',
+                               operation_id=f'{op}:{run_tag}:release',
                                reason='Q034-A original 6400 failed/unused')
             raise
         actual = steps * 20
@@ -206,12 +207,12 @@ def main(argv=None):
     suite_actual = sum(group_actual.values())
     if suite_actual:
         ledger.commit(args.obligation_id, suite_actual,
-                      operation_id=f'q034a:{manifest["suite"]}:suite:commit',
+                      operation_id=f'q034a:{manifest["suite"]}:{run_tag}:suite:commit',
                       reason='Q034-A original 6400 actual')
     unused = suite_reserved - suite_actual
     if unused > 0:
         ledger.release(args.obligation_id, unused,
-                       operation_id=f'q034a:{manifest["suite"]}:suite:release',
+                       operation_id=f'q034a:{manifest["suite"]}:{run_tag}:suite:release',
                        reason='Q034-A original 6400 unused')
     grouped = {}
     for row in rows:
@@ -224,7 +225,7 @@ def main(argv=None):
                        'drift', 'stride', 'frequency')
         metrics = {}
         for key in metric_keys:
-            vals = [float(row.get('metrics', {}).get(key, 0.0)) for row in rows_g]
+            vals = [float(row.get('metrics', {}).get(key) or 0.0) for row in rows_g]
             metrics[key] = (sum(vals) / len(vals)) if vals else 0.0
         groups_out[group['group_id']] = dict(
             cases=len(rows_g),

@@ -232,9 +232,19 @@ def boxes(spec):
     return tuple(result)
 
 
+def _to_numpy_points(x):
+    try:
+        import torch
+        if isinstance(x, torch.Tensor):
+            return x.detach().cpu().numpy()
+    except Exception:
+        pass
+    return x
+
+
 def query_surface(points_world, spec):
     """Highest exact surface at ``(x,y)``; ``nan`` outside the frozen bounds."""
-    points = np.asarray(points_world, dtype=np.float64)
+    points = np.asarray(_to_numpy_points(points_world), dtype=np.float64)
     if points.shape[-1] not in (2, 3):
         raise ValueError('points must have last axis 2 or 3')
     x0, x1, y0, y1 = (float(v) for v in spec.valid_bounds_local)
