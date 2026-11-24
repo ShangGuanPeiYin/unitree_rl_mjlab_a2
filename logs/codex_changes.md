@@ -5007,3 +5007,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 签字依据：V13 CPU evidence `18427c6d…`（all_passed）；342 passed；fresh 512-env Run A（2×24,576 行、46 字段、reset 异常 0、512/512 跨 rollout 连续）；F-2 重跑证据 `13cea396…`（instant/ramp 停车、flat_walk +8、flat_stop −10、楼梯 top+2）；F-3 共享窗口；F-4 top_x 零点（32/32 重放）；预算 20,299,776 + 31,726×24,576 = 799,997,952，余 2,048。
 - 非阻塞余项：无自然通过的停车/登顶后 +8 样本，按 Q036 C3 由生产路径可控边界覆盖；S1/S2.0 metrics 的支撑代理窗口仅在该路径、且需传 `four_feet_entry` 才严格等价。
 - r2 以 512 env、官方台账、`--attempt-id s2.1-r2` 启动，trace 按 5000 轮取 3 份节流。
+
+## 2026-11-24 Q038：r2 关闭登记与算法偏差修复授权
+
+- 记录 DSH-Q038 与 `docs/v09_s2_r2_closed_q038.md`：r2 判工程不合规未通过；保留样本/checkpoint 仅供诊断，不得晋级/导出/续训。
+- 确认三项实现偏差待修：GAE 后全 rollout advantage 归一化缺失、value loss 缺 clipped 版本、KL/LR 应按逻辑 minibatch 而非整 rollout 每 epoch 一次。
+- 冻结项未获变更授权；批准显存与对账修复。后续按 Q038 取证 → 独审 → 限额试训方案申请恢复。
