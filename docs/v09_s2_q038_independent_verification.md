@@ -48,7 +48,7 @@
 | time-major 对齐 | PASS | 采样为 step 前 obs（`s2_train.py:174`），reward/value/mask `stack(...,1)`（`:213-226`），obs `cat` 于 dim0（`:355`）、action `stack` 后 reshape（`:366`）、old logp `stack` 后 reshape（`:45-46,333`）、adv `[T,N]` reshape（`:368`），全部为 `(t, env)` 序 |
 | bootstrap / reset | PASS（按 Q035 合同），与 v07 谱系不同（已文档化） | 内部 terminated/truncated/failure/timeout 一律 0 bootstrap（`:227-244`, `s2_runner.py:105-139`）；仅采样边界且末步未 done 时用 `V(next_obs)`；`next_values` 在 `no_grad` 下（`:232-234`）。v07 `ppo.py:151-177` 对 truncation 用 terminal obs 值 bootstrap——差异见 `v09_execution_rulings.md:357` 的 Q035 裁定，非静默改动 |
 | mask 缺失回退 | FAIL（健壮性） | `s2_train.py:216-226`：任一行缺 mask 就整体回退 `zeros_like(done)` → GAE 会跨 reset 传播而**不报错**；应改为抛异常 |
-| §5.4 锚定分母 | PASS | `s2_train.py:392` 取逻辑 minibatch 的 `n_clean`，`:431-433` 统一除 `12*n_clean`，与 `s2_loss.py:35-56` 的 `AnchorAccumulator` 一致；本次用独立参照与仓库 helper 双验（`reference_selfcheck.json.repo_helpers.anchor_acc_matches=true`）。错误做法的偏差量：同一单块固定批上“除全部样本”得 3.2639e-4，比正确的 4.8958e-4 小 33.3%；不等长微批固定批上“各微批 mean 再平均”比正确值大 16.9 倍（§4） |
+| §5.4 锚定分母 | PASS | `s2_train.py:392` 取逻辑 minibatch 的 `n_clean`，`:431-433` 统一除 `12*n_clean`，与 `s2_loss.py:35-56` 的 `AnchorAccumulator` 一致；本次用独立参照与仓库 helper 双验（`reference_selfcheck.json.repo_helpers.anchor_acc_matches=true`）。错误做法的偏差量：同一单块固定批上“除全部样本”得 3.2639e-4，比正确的 4.8958e-4 小 33.3%；不等长微批固定批上“各微批 mean 再平均”为正确值的 1.4113 倍（§4，v2 勘误后） |
 | 锚定 teacher 状态对齐 | **FAIL** | `s2_train.py:200` 在 `self.env.step()`（`:179`）**之后**取 `info['teacher_observation']`；`s2_train_real.py:727` 的该字段由 `teacher_observation()`（`:624-631`）从 step 后的 robot 数据生成，而 student 样本用的是 step 前 obs（`:174`）。锚定因此把 `mu_s(obs_t)` 与 `mu_t(obs_{t+1})` 配对（t 为末步时甚至是 reset 后状态）。需改到 step 前采 teacher obs 并加 1 步位移测试 |
 | teacher 缺失静默回退 | FAIL（健壮性） | `s2_train.py:422-423`：`flat_teacher` 为空时 `teacher_item = clean_item`，锚定退化为“学生对自己”且不报错 |
 | clean-flat 口径 | 观察项 | `s2_train_real.py:607-615` 只把 `flat_walk` 记为 ordinary_flat，`flat_stop` 环境永不进入 §5.4；r2 日志每逻辑 minibatch `n_clean=1236`（6,144 的 20.1%，对应整 rollout 4,944/24,576）。§5.4 未明确 flat_stop 是否算“普通平地”，需规划裁定 |
@@ -63,11 +63,13 @@
 
 | 文件 | SHA256 | 作用 |
 |---|---|---|
-| `reference_ppo.py` | `72c7980989b314ad5c713430d020ff509517a0b8a81c622e158d80d09a573f5f` | 从零实现 §2.4（正确语义）与 bfb2550 语义（旧版）两套更新 |
-| `reference_expected.json` | `fb6fc4f15141a4fee73bf4b5f20881666d52cf3e9234d887386d42ff5298d1af` | 固定批期望值；`batch_sha256=482cdadb9db8ee2c6a02e0b54c6c176988a91b9ddcb5c4fc7356a14c9d056945` |
-| `selfcheck_reference.py` / `reference_selfcheck.json` | `3e457583…` / `a2b2a95b…` | 手算 GAE + 第二个 torch-autograd 实现逐项对拍 + 仓库 helper 交叉验证 |
-| `compare.py` | `96349527682cec7e81df137976564161cbcd19a944a98e78563bb6829a36a73e` | 判定实现方 fixed-batch 证据（格式见文件头 docstring，15 项检查） |
+| `reference_ppo.py`（v2） | `e298a2f4d8d9c97c792ce082f3174bac42deca6a0eb5f81a1010dd0f0e52cb53` | 从零实现 §2.4（正确语义）与 bfb2550 语义（旧版）两套更新；v1 锚定因子缺陷已修，见 §11 |
+| `reference_expected.json`（v2） | `736f1eeba3dcc496cfe288162a3d565ba34244444a7666e0b62aa4c356e278c5` | 固定批期望值；`batch_sha256=482cdadb9db8ee2c6a02e0b54c6c176988a91b9ddcb5c4fc7356a14c9d056945`（仅微批锚定块变化） |
+| `selfcheck_reference.py` / `reference_selfcheck.json`（v2） | `3e457583…` / `d7c62b30…` | 手算 GAE + 第二个 torch-autograd 实现逐项对拍 + 仓库 helper 交叉验证（含微批锚定 `anchor_microbatch_acc_matches=true`） |
+| `compare.py`（v2，权威判定器） | `d1ffb3d4728ba195d3b3d7ed805b5250cb653d378df112dc395e33382002ee20` | 判定实现方 fixed-batch 证据（格式见文件头 docstring，15 项检查） |
 | `selftest_judge.py` / `selftest_judge.json` | `e0971b0f…` / `9b43f5bb…` | 判定器自测：正确证据 15 项全 PASS；旧语义证据 6 项 FAIL（负对照有效） |
+| `repro_factor12_v1.py` / `repro_factor12.json` | `6ad614c9…` / `52844f93…` | v1 缺陷复现：同一 truthful 证据在 v1 下 14 PASS/1 FAIL、在 v2 下 15/15 |
+| `SUPERSEDE.md` / `superseded/*.v1.*` | — | v1→v2 版本留痕（旧文件原样保留） |
 
 固定批：T=2、N=4（8 样本，time-major），小解析模型 `mu=w_a·x+b_a`、`v=w_c·x+b_c`、`sigma=clamp(std)`；初始 `w_a=0.5,b_a=0.1,w_c=-0.4,b_c=0.2,std=0.30`。含 terminated@t0 env2、truncated@t1 env1、truncated@t0 env3、无 done env0（边界 bootstrap）。
 
@@ -92,7 +94,7 @@ normalized adv: mean=0, std=1（raw std=1.013269）
 
 - 正确语义：20 次 LR 决策、序列 `3e-5, 4.5e-5, 6.75e-5, 1e-4×17`；旧语义：5 次 LR 决策、序列 `3e-5×4, 4.5e-5×4, 6.75e-5×4, 1e-4×8`（同 epoch 内 4 次 Adam 共用 lr，判定器据此判别）。
 - 旧语义在固定批上另有两个可测征兆：`epoch 内 KL 恒定`（4 个 minibatch 同值）；`used_adv` 与 raw 相同（未归一化，平均绝对差 0.01550，尺度比 0.9869）。
-- 锚定固定批（6×12，clean=[T,F,T,T,F,T]，n_clean=4）：numerator=0.0195833，`L_anchor=4.895833e-4`，`dL/dmu_s = β·(2/12)·(mu_s-mu_t)/n_clean`；错误分母对照（单块批）：除全部样本 3.263889e-4（比正确值小 33.3%）。不等长微批判别批（6+2 样本、n_clean 2+1）：正确 `β·Σnum/(12·n_clean)=1.058681e-4`；“先各微批取 mean 再平均”=1.792917e-3（**16.9×**）；“除全部样本”=4.764063e-4（4.5×）。判定器对应新增检查 `anchor_accumulates_microbatch_numerators`。
+- 锚定固定批（6×12，clean=[T,F,T,T,F,T]，n_clean=4）：numerator=0.0195833，`L_anchor=4.895833e-4`，`dL/dmu_s = β·(2/12)·(mu_s-mu_t)/n_clean`；错误分母对照（单块批）：除全部样本 3.263889e-4（比正确值小 33.3%）。不等长微批判别批（6+2 样本、n_clean 2+1，`S=0.45735`）：正确 `β·S/(12·n_clean)=β·Σnum/n_clean=1.270417e-3`（与 `s2_loss.AnchorAccumulator` 的 `total(0)` 一致）；“先各微批取 mean 再平均”=1.792917e-3（**1.4113×**）；“除全部样本”=4.764063e-4（0.375×）。判定器对应新增检查 `anchor_accumulates_microbatch_numerators`。
 - 自证强度：手算 GAE 一致；解析实现 vs torch-autograd 最坏绝对差 policy 4.7e-10、value 1.4e-10、params 4.3e-11；`s2_runner.gae` / `normalize_advantage` / `s2_loss.AnchorAccumulator` 三者与参照一致。
 - 判定器自测：`judge_is_discriminating=true`（正确 15/15 PASS；旧语义 FAIL：`advantage_normalized_once_over_rollout`、`kl_per_logical_minibatch_from_logp`、`lr_decision_before_each_adam_step`、`kl_differs_between_minibatches_in_an_epoch`、`value_loss_clip_convention_on_cases`、`anchor_accumulates_microbatch_numerators`）。
 
@@ -105,6 +107,8 @@ normalized adv: mean=0, std=1（raw std=1.013269）
 | 1e8 | rollout 4,070 = 100,024,320（**未落盘**） | `s2_1_000100270080.pt`（4,080 = 100,270,080，晚 245,760 = 10 个 rollout） | `28c4a6f576b1793c37c692f73b4bb48c6b891b85193effcca3599cdd409e9fb6` / `79cacbbc1bc2…` | **否（missing measurement）** | 0 | `gate_admissions_up_to_40`：0 条 reserve/commit | 无 |
 | 2e8 | rollout 8,139 = 200,024,064（**未落盘**） | `s2_1_000200540160.pt`（8,160 = 200,540,160，晚 516,096） | `b603d37e03856ae13c9555e008d7d4f00325ceda30ddf64594a03e73ddad0607` / `48180a859048…` | **否** | 0 | 同上：0 | 无 |
 | 3e8 | rollout 12,208 = 300,023,808（**未落盘**） | `s2_1_000300810240.pt`（12,240 = 300,810,240，晚 786,432） | `7b053b8d6035c6cc128a0e0b8d9e15e8b5f317e3d6a2d816042b8cb75396d6a1` / `386623e91c84…` | **否** | 0 | 同上：0 | 无 |
+
+规划已确认本节 1/2/3 亿三项按 **missing measurement** 登记、不做倒签；上表即登记依据。
 
 补充事实：
 
@@ -181,7 +185,7 @@ CPU 实测保留量（`oom_forensics.py`，同形状/FP32；`oom_forensics.json`
 ## 8. 实现方签字前必须补齐的证据（精确清单）
 
 1. **提交**：一个新 commit（附 SHA），其 `s2_train.py` 满足：whole-rollout 一次归一化、returns 仍为 raw adv+V_old、clipped value loss（old-value clamp）、每逻辑 minibatch 先 KL 后 LR 再 Adam（20 次 LR 决策）、采样 `no_grad` + detach 快照、teacher obs 与 student 同一步、缺失 mask/teacher 时抛异常而非静默回退、去重后的每一步诊断字段。附对应单元测试与全量回归结果。
-2. **固定批证据**（新文件，`q038_fixed_batch_evidence_v1` 格式，见 `compare.py` docstring）：至少 1 份“真实存档入模批”+1 份本报告冻结批；由 `compare.py` 判定 **PASS**（全部检查项：冻结批模式 15 项 / 自定义批 13 项，含 `value_loss_cases` 判别三元组与 `anchor_microbatches`）。
+2. **固定批证据**（新文件，`q038_fixed_batch_evidence_v1` 格式，见 `compare.py` docstring）：至少 1 份“真实存档入模批”+1 份本报告冻结批；由 `compare.py` **v2**（`d1ffb3d4…`）判定 **PASS**（全部检查项：冻结批模式 15 项 / 自定义批 13 项，含 `value_loss_cases` 判别三元组与 `anchor_microbatches`）；证据须携带逐微批原始数组供判定器重算，且判定 JSON 必须记录 `judge_version="v2"` 与 `evidence_sha256`（见 §11 裁决规则）。
 3. **锚定对齐证据**：证明 `mu_teacher` 与 `mu_student` 取自同一状态（t 而非 t+1），含 1 步位移的失败用例与 `n_clean` 兼容性说明。
 4. **显存证据**：修正后 512×48×5 epoch 连续 ≥5 rollout 的 `max_memory_allocated/max_memory_reserved` 峰值、`mem_get_info` free MiB、无 OOM；最重场景（trace 开启）+ 一次 save/restore；以及修正前后保留量对比（本报告可作基线：采样图 3,981.6 MiB、obs 366.4 MiB、teacher 92.7 MiB、每 epoch 重建 459.1 MiB）。
 5. **台账/游标**：崩溃轮的三游标记录与“废弃部分更新”书面结论；新 attempt 的原子预留（含门禁/缓存/探针上界）与 attempt-id；`learning_S2_1` 口径更正文案（或确认仅指 S2.1 学习义务）。
@@ -210,3 +214,32 @@ cd /home/xxs/dog/unitree_rl_mjlab_a2
 
 - 本会话未修改任何生产代码/测试/SDS/台账；未运行 GPU、mjlab、训练或评估。
 - 审计期间实现代理正在改 `src/tasks/velocity/v09/s2_train.py`（工作树 `2452d96d…`，含 `normalize_rollout_advantages`、`clipped_value_loss`、minibatch 内 KL 的雏形）；该 WIP 未被本报告审计，也不能作为签字依据，需其提交并附 §8 证据后重新判定。
+
+## 11. 勘误 v1→v2：锚定微批期望值的 12 倍缺陷（2026-11-24 复核）
+
+实现代理提出 `compare.py` 检查 #12 / `anchor_microbatch_fixture` 存在 12 倍缺陷，**我独立复算后确认成立**，并已修正、留痕、复现。
+
+- 固定批：8 样本×12 维，不等长微批 6+2，`clean=[T,F,T,T,F,F,T,F]`，`n_clean=3`，`S=Σ_cleanΣ_j diff²=0.45735`。
+- SDS §5.4：`L=β·Σ_clean(Σ_j diff²/12)/n_clean = β·S/(12n) = 1.2704167e-3`。
+- v1 的期望值：`β·S/(144n)=1.0586806e-4`（= 正确值的 1/12）——因为 `per`/`numerator` 内已含一次 `/12`，`loss`/`want_micro` 又除了一次 `/12`。**检查 #12 在 v1 下对任何符合 SDS 的实现都不可满足**。
+- 独立佐证：把同一两个微批喂给仓库的 `s2_loss.AnchorAccumulator`，`total(0)=1.2704167e-3`，与 SDS 一致、与 v1 期望不一致；v1 的 `cross_check_repo_helpers` 只覆盖单块批，故未暴露该缺陷。
+- 错误做法的真实偏差（勘误原报告“16.9×”）：以正确值为基准，“先各微批 mean 再平均”=1.7929e-3（**1.4113×**），“除全部样本”=4.7641e-4（0.375×）。1.4113× 仍远超容差，判别力保留。
+- 修复内容（仅此两类）：`reference_ppo.anchor_microbatch_fixture` 去掉多余 `/12`；`compare.py` `want_micro` 去掉多余 `/12`；schema 升为 `…reference_v2` / `…judgement_v2` 并写入 `judge_version="v2"`；`cross_check_repo_helpers` 增加微批 `AnchorAccumulator` 对拍（`anchor_microbatch_acc_matches`）；其余检查、固定批与全部 adv/returns/value-loss/KL/LR 期望值不变。
+- 版本留痕：`logs/a2_v09/s2/q038_verify/superseded/{reference_ppo.v1.py, reference_expected.v1.json, compare.v1.py, reference_selfcheck.v1.json, selftest_judge.v1.json}`（SHA 见 `SUPERSEDE.md`）。
+
+| 产物 | v1 SHA256 | v2 SHA256 |
+|---|---|---|
+| `reference_ppo.py` | `72c79809…573f5f` | `e298a2f4d8d9c97c792ce082f3174bac42deca6a0eb5f81a1010dd0f0e52cb53` |
+| `reference_expected.json` | `fb6fc4f1…298d1af` | `736f1eeba3dcc496cfe288162a3d565ba34244444a7666e0b62aa4c356e278c5` |
+| `compare.py`（权威） | `9634952…36a73e` | `d1ffb3d4728ba195d3b3d7ed805b5250cb653d378df112dc395e33382002ee20` |
+| `reference_selfcheck.json` | `a2b2a95b…a4a8cb7b` | `d7c62b30e1876fd586df368799cd10e144540e04167cdae96bad1594bfe665b9` |
+| `repro_factor12_v1.py` / `.json` | — | `6ad614c9…0a894225` / `52844f93…b536470` |
+
+复现与回归（本次全部重跑）：
+- `repro_factor12_v1.py`（`6ad614c95490b87026313f7436f5a203dd71d5168726669392da2c9c0a894225`）：同一份 truthful 证据在 **v1** 下 = 14 PASS / 1 FAIL（唯一 FAIL 就是 `anchor_accumulates_microbatch_numerators`），在 **v2** 下 = 15/15 PASS；反向亦守住——把锚定 loss 改成 v1 的 `1.05868e-4` 或改成“各微批 mean 再平均”的 `1.7929e-3`，v2 都判 FAIL。这与实现代理报告的“旧判 14/1、修正判 15/15”完全一致，说明 v1 的 1 FAIL 是判定器缺陷。
+- `selftest_judge.py`：correct 15/15 PASS；legacy 6 项 FAIL（含微批锚定检查）；`judge_is_discriminating=true`。
+- `reference_selfcheck.py`：手算 GAE 一致；解析 vs torch 最差 policy 4.70e-10 / value 1.40e-10 / params 4.31e-11；`repo_helpers.anchor_microbatch_acc_matches=true`。
+
+**裁决规则（权威结果）**：以 `compare.py` **v2**（`d1ffb3d4…`）在实现方**未改动**的证据文件上重跑得到的判定为准；判定 JSON 必须含 `judge_version:"v2"`、`evidence_sha256`，且证据须带逐微批原始 `mu_student/mu_teacher/clean` 数组（判定器自行重算，不信任其标量）。v1 的任何结果（含 14/1）及实现方自制的“修正判定器副本”均不作为权威，只有本目录 v2 文件由验收方重跑才计入。truthful 实现预期在 v2 下 15/15 PASS；剩余 FAIL 均为真实发现。
+
+**对既有结论的影响**：无。§2 三项偏差、§3 其他核对项、§5 门禁缺测（1/2/3 亿已按“missing measurement”登记）、§6 OOM 与对账、§7 判定均不受此勘误影响；本勘误只涉及验收工具自身的锚定微批期望值。
