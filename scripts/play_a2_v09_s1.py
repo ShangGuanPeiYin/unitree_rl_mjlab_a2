@@ -20,16 +20,61 @@ def select_case(manifest, lesson, vx, case_id):
     return matches[0]
 
 
-def configure_terrain(case, *, steps=None, width=None):
+def configure_terrain(case, *, steps=None, width=None, length=None):
     """Optional process-local geometry; frozen cases/specs remain unchanged."""
     from src.tasks.velocity.v07 import terrain, spec
     tile = spec.terrain_spec(int(case['geometry']['tile_id']))
-    if steps is not None or width is not None:
+    if steps is not None or width is not None or length is not None:
         terrain.configure_playback_platform(
-            tile_id=tile.tile_id, length=tile.platform_length,
+            tile_id=tile.tile_id, length=tile.platform_length if length is None else length,
             width=tile.width if width is None else width, steps=steps)
     played = terrain.build_terrain_specs()[tile.tile_id]
     return played, terrain.platform_width(played)
+
+
+def continuation_state(state, reached):
+    """Suppress only successful termination and post-top timeout, preserving failure."""
+    from dataclasses import replace
+    import torch
+    reached = reached | state.success
+    continuing = reached & ~state.failure
+    reason = torch.where(continuing & ((state.reason == 1) | (state.reason == 2)),
+                         torch.zeros_like(state.reason), state.reason)
+    return replace(state, success=torch.zeros_like(state.success),
+                   timeout=state.timeout & ~continuing, reason=reason), reached
+
+
+def enable_continue_after_success(env):
+    """Playback-only stair lifecycle; no bounded S1 acceptance trace is produced."""
+    from types import MethodType
+    import torch
+    from src.tasks.velocity.v07.env import V07Env
+
+    if any(case['task'] != 'stairs' for case in env.v09_cases):
+        raise ValueError('Continuation is only supported for stair playback')
+    env.playback_reached_top = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+    original_reset = env._reset_ids
+
+    def task_state(self):
+        state = V07Env._task_state(self)
+        self._flat_outcome = {}
+        self._physical_failure = state.failure.clone()
+        state, reached = continuation_state(state, self.playback_reached_top)
+        if bool((reached & ~self.playback_reached_top).any()):
+            print('TOP REACHED: continuing forward on the landing; no success reset/timeout.', flush=True)
+        self.playback_reached_top = reached
+        return state
+
+    def reset_ids(self, ids, **kwargs):
+        original_reset(ids, **kwargs)
+        self.playback_reached_top[ids] = False
+
+    env._task_state = MethodType(task_state, env)
+    env._reset_ids = MethodType(reset_ids, env)
+    # This mode exceeds the frozen S1 evidence horizon; use legacy diagnostic
+    # records instead of accumulating/claiming S1 acceptance trajectories.
+    env._episode_records = MethodType(V07Env._episode_records, env)
+    env._outcomes = MethodType(V07Env._outcomes, env)
 
 
 def playback_course(payload, *, allow_s2):
@@ -109,6 +154,8 @@ def main(argv=None):
     parser.add_argument('--case-id', type=int, default=0)
     parser.add_argument('--stair-steps', type=int, default=None, help='Temporary playback stair count')
     parser.add_argument('--platform-width', type=float, default=None, help='Temporary landing width in metres; stair width unchanged')
+    parser.add_argument('--platform-length', type=float, default=None, help='Temporary landing length in metres (>=2)')
+    parser.add_argument('--continue-after-success', action='store_true', help='Keep walking after top success; retain failure resets, ignore post-top timeout')
     parser.add_argument('--vx', type=float, default=0.5)
     parser.add_argument('--vy', type=float, default=0.0)
     parser.add_argument('--wz', type=float, default=0.0)
@@ -119,6 +166,8 @@ def main(argv=None):
     parser.add_argument('--duration', type=float, default=None, help='Playback seconds; otherwise until window closes')
     parser.add_argument('--headless-steps', type=int, default=0, help='Finite physics/scan smoke without a window')
     args = parser.parse_args(argv)
+    if args.platform_length is not None and (not math.isfinite(args.platform_length) or args.platform_length < 2.0):
+        parser.error('platform-length must be finite and >= 2 metres')
     if args.stair_steps is not None and args.stair_steps <= 0:
         parser.error('stair-steps must be positive')
     if args.platform_width is not None and (not math.isfinite(args.platform_width) or not 0.8 <= args.platform_width <= 4.0):
@@ -154,7 +203,7 @@ def main(argv=None):
         print('DIAGNOSTIC ONLY: S2 weights in the S1 scene; not S2 evaluation/resume.', flush=True)
     if payload.get('architecture') != 'a2-v09-native40x30-route-history':
         parser.error('Incompatible model architecture')
-    played_tile, landing_width = configure_terrain(case, steps=args.stair_steps, width=args.platform_width)
+    played_tile, landing_width = configure_terrain(case, steps=args.stair_steps, width=args.platform_width, length=args.platform_length)
     print(f'Playback geometry: stairs={played_tile.N}, h={played_tile.h:g}m, depth={played_tile.step_depth:g}m, '
           f'stair width={played_tile.width:g}m, landing length={played_tile.platform_length:g}m, '
           f'landing width={landing_width:g}m; demo only, not frozen-case evaluation', flush=True)
@@ -166,10 +215,12 @@ def main(argv=None):
                  f'front {GRID_X[1]:g} rear {-GRID_X[0]:g} left {GRID_Y[1]:g} right {-GRID_Y[0]:g}m | '
                  f'{MAP_SHAPE[1]}x{MAP_SHAPE[2]} {GRID_STEP:g}m {MAP_HZ}Hz')
     print(f'{args.lesson}, vx={args.vx}, vy={args.vy}, wz={args.wz}, seed={args.seed}, '
-          f'envs=1, deterministic, original auto-reset\n{scan_text}\n'
+          f'envs=1, deterministic, continue-after-success={args.continue_after_success}\n{scan_text}\n'
           'Cyan=valid, orange=clipped, red=invalid; yellow=scan boundary/forward.', flush=True)
     env = V09S1Env([case], device=args.device, seed=args.seed, course=course)
     try:
+        if args.continue_after_success:
+            enable_continue_after_success(env)
         obs, _ = env.reset()
         with torch.inference_mode():
             if args.headless_steps:

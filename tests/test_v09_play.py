@@ -78,3 +78,89 @@ def test_s2_playback_requires_explicit_diagnostic_opt_in():
     assert player.playback_course(payload, allow_s2=True) == 'S1.2'
     assert player.playback_course(dict(schema=11, metadata=dict(stage='S1', course='S1.1')),
                                   allow_s2=False) == 'S1.1'
+
+
+def test_continue_after_success_retains_failures_and_pre_top_timeout():
+    import torch
+    from dataclasses import dataclass
+    player = load_player()
+
+    @dataclass(frozen=True)
+    class State:
+        success: object
+        failure: object
+        timeout: object
+        reason: object
+
+    state = State(torch.tensor([True, False, False]), torch.tensor([False, True, False]),
+                  torch.tensor([False, False, True]), torch.tensor([2, 3, 1]))
+    result, reached = player.continuation_state(state, torch.zeros(3, dtype=torch.bool))
+    assert reached.tolist() == [True, False, False]
+    assert result.success.tolist() == [False, False, False]
+    assert result.failure.tolist() == [False, True, False]
+    assert result.timeout.tolist() == [False, False, True]
+    assert result.reason.tolist() == [0, 3, 1]
+    later = State(torch.zeros(3, dtype=torch.bool), torch.tensor([False, True, False]),
+                  torch.tensor([True, False, True]), torch.tensor([1, 3, 1]))
+    result, _ = player.continuation_state(later, reached)
+    assert result.timeout.tolist() == [False, False, True]
+    assert result.reason.tolist() == [0, 3, 1]
+
+
+def test_temporary_ten_metre_landing_keeps_training_length():
+    code = '''
+import sys
+sys.path.insert(0, 'scripts')
+from a2_v07_bootstrap import activate
+activate()
+from play_a2_v09_s1 import configure_terrain
+from src.tasks.velocity.v07 import spec, terrain
+original = spec.terrain_spec(spec.tile_id_for('L40'))
+played, width = configure_terrain({'geometry': {'tile_id': original.tile_id}},
+                                 steps=20, width=2.0, length=10.0)
+assert played.N == 20 and width == 2.0
+assert played.platform_length == 10.0
+assert played.valid_bounds_local[1] == 14.0
+assert original.platform_length == 2.0 and original.N == 40
+'''
+    result = subprocess.run([sys.executable, '-c', code], cwd=ROOT,
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+
+
+def test_continuation_hooks_keep_s1_info_and_clear_latch_on_failure_reset():
+    code = '''
+import sys
+sys.path.insert(0, 'scripts')
+from a2_v07_bootstrap import activate
+activate()
+import torch
+from dataclasses import dataclass
+from types import SimpleNamespace
+from unittest.mock import patch
+from src.tasks.velocity.v07.env import V07Env
+from play_a2_v09_s1 import enable_continue_after_success
+@dataclass(frozen=True)
+class State:
+    success: object
+    failure: object
+    timeout: object
+    reason: object
+state = State(torch.tensor([True]), torch.tensor([False]),
+              torch.tensor([False]), torch.tensor([2]))
+resets = []
+env = SimpleNamespace(v09_cases=[{'task':'stairs'}], num_envs=1, device='cpu',
+                      _reset_ids=lambda ids, **kwargs: resets.append(ids.tolist()))
+enable_continue_after_success(env)
+with patch.object(V07Env, '_task_state', return_value=state):
+    result = env._task_state()
+assert not result.success.any() and not result.timeout.any()
+assert env.playback_reached_top.tolist() == [True]
+assert env._flat_outcome == {} and not env._physical_failure.any()
+assert resets == []
+env._reset_ids(torch.tensor([0]))
+assert resets == [[0]] and not env.playback_reached_top.any()
+'''
+    result = subprocess.run([sys.executable, '-c', code], cwd=ROOT,
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
