@@ -20,6 +20,18 @@ def select_case(manifest, lesson, vx, case_id):
     return matches[0]
 
 
+def configure_terrain(case, *, steps=None, width=None):
+    """Optional process-local geometry; frozen cases/specs remain unchanged."""
+    from src.tasks.velocity.v07 import terrain, spec
+    tile = spec.terrain_spec(int(case['geometry']['tile_id']))
+    if steps is not None or width is not None:
+        terrain.configure_playback_platform(
+            tile_id=tile.tile_id, length=tile.platform_length,
+            width=tile.width if width is None else width, steps=steps)
+    played = terrain.build_terrain_specs()[tile.tile_id]
+    return played, terrain.platform_width(played)
+
+
 def scan_bounds(grid, spacing):
     return (float(grid[..., 0].min()) - spacing / 2,
             float(grid[..., 0].max()) + spacing / 2,
@@ -81,6 +93,8 @@ def main(argv=None):
     parser.add_argument('--manifest', type=Path, default=ROOT / 'logs/a2_v09/s1_seed42_r3/cases/S1_DIAG.json')
     parser.add_argument('--lesson', default='L40')
     parser.add_argument('--case-id', type=int, default=0)
+    parser.add_argument('--stair-steps', type=int, default=None, help='Temporary playback stair count')
+    parser.add_argument('--platform-width', type=float, default=None, help='Temporary landing width in metres; stair width unchanged')
     parser.add_argument('--vx', type=float, default=0.5)
     parser.add_argument('--vy', type=float, default=0.0)
     parser.add_argument('--wz', type=float, default=0.0)
@@ -91,6 +105,10 @@ def main(argv=None):
     parser.add_argument('--duration', type=float, default=None, help='Playback seconds; otherwise until window closes')
     parser.add_argument('--headless-steps', type=int, default=0, help='Finite physics/scan smoke without a window')
     args = parser.parse_args(argv)
+    if args.stair_steps is not None and args.stair_steps <= 0:
+        parser.error('stair-steps must be positive')
+    if args.platform_width is not None and (not math.isfinite(args.platform_width) or not 0.8 <= args.platform_width <= 4.0):
+        parser.error('platform-width must be finite and within [0.8, 4] metres')
     if args.vy != 0 or args.wz != 0:
         parser.error('Frozen S1 stairs require --vy 0 --wz 0')
     if args.headless_steps < 0 or (args.duration is not None and (not math.isfinite(args.duration) or args.duration <= 0)):
@@ -118,6 +136,10 @@ def main(argv=None):
         parser.error('This route only supports schema11 v09 S1 checkpoints')
     if payload.get('architecture') != 'a2-v09-native40x30-route-history':
         parser.error('Incompatible model architecture')
+    played_tile, landing_width = configure_terrain(case, steps=args.stair_steps, width=args.platform_width)
+    print(f'Playback geometry: stairs={played_tile.N}, h={played_tile.h:g}m, depth={played_tile.step_depth:g}m, '
+          f'stair width={played_tile.width:g}m, landing length={played_tile.platform_length:g}m, '
+          f'landing width={landing_width:g}m; demo only, not frozen-case evaluation', flush=True)
     torch.manual_seed(args.seed)
     model = V09ActorCritic().to(args.device)
     model.load_state_dict(payload['model'], strict=True)
