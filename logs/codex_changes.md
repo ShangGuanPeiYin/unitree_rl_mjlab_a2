@@ -5013,3 +5013,16 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 记录 DSH-Q038 与 `docs/v09_s2_r2_closed_q038.md`：r2 判工程不合规未通过；保留样本/checkpoint 仅供诊断，不得晋级/导出/续训。
 - 确认三项实现偏差待修：GAE 后全 rollout advantage 归一化缺失、value loss 缺 clipped 版本、KL/LR 应按逻辑 minibatch 而非整 rollout 每 epoch 一次。
 - 冻结项未获变更授权；批准显存与对账修复。后续按 Q038 取证 → 独审 → 限额试训方案申请恢复。
+
+## 2026-11-26 接入 play.py 的 v09 S1 播放与默认高程图显示
+
+- 目的：按用户要求使用一条 play.py 命令查看 s1_least.pt，并在每次 v09 S1 播放时展示高程图扫描尺寸范围。
+- 涉及文件：scripts/play.py、scripts/play_a2_v09_s1.py、tests/test_v09_play.py、docs/superpowers/specs/2026-11-26-v09-play-design.md、docs/superpowers/plans/2026-11-26-v09-play.md、logs/codex_changes.md。
+- 实际修改与理由：play.py 在通用依赖/任务扫描前分流 Unitree-A2-V09-S1；独立播放器直接使用 V09ActorCritic 和 V09S1Env，严格接收 reset 的两返回值和 step 的五返回值，避免此前临时命令观测解包错误。校验 checkpoint SHA256、schema11、S1 阶段/课程及模型架构，严格加载模型；从现有 S1_DIAG 冻结清单选择病例，不重写速度或病例几何。
+- 默认播放设置：L40、case_id=0、vx=0.5 m/s、vy=wz=0、seed=42、num_envs=1、cuda:0、确定性动作、保留原自动 reset/终止规则；支持 duration 或 headless-steps。S2 权重不接入此 S1 路由。
+- 高程图：此前临时窗口命令无扫描显示；现在默认绘制策略实际缓存的1200个扫描点、四条边界和方向箭头，并通过 viewer.set_texts/终端展示 2.0×1.5m、前1.2/后0.8/左右各0.75m、40×30、5cm、10Hz。边界由网格中心加半格推得，随缓存采样帧更新；装饰不写入训练观测或实体碰撞。
+- 范围：未更改训练入口、奖励/损失、速度采样、学习率、课程或训练权重；保留工作区原 play.py 的 V02/ideal 分流以及其他既有未提交修改，仅提交本次早期分流。
+- 验证：新增测试先运行3失败（入口与模块缺失），实现后3通过；真实 s1_least.pt GPU headless 12控制步通过，qpos有限且成功绘制1205个装饰几何；CLI help、py_compile、git diff --check通过。扩展 play/map_model/s1_tasks 测试35通过、1失败：test_early_failure_cannot_turn_a_short_prefix_into_complete_teacher_window（tests/test_v09_s1_tasks.py:78，cruise_sample_count预期50、实际51），该既有任务测试独立运行仍失败，与新播放器未发生导入依赖，不在本次范围内修复。
+- 未验证：当前无桌面 DISPLAY，原生窗口交互与文字实际视觉效果未验证；未运行完整训练/全项目测试，不声称训练效果改善。
+- 复核补充：独立只读审查未发现阻断实现错误；据审查将病例选择单测改为内存清单，避免依赖未入 Git 的本地 logs；播放器+map_model 回归14通过（1条既有 Torch 弃用警告），真实冻结病例仍由上述 GPU smoke 覆盖。自动 reset 后窗口显示尚未实际验证。
+- 提交/推送：本次改动已提交到 main；push origin main 被自动审批拒绝，理由是尚无可信证据确认 GitHub origin 为受信目的地，担忧源码外传。未执行推送、未绕过拒绝；远端同步尚未完成，需用户明确确认该远端授权。原有未提交改动保持原样。

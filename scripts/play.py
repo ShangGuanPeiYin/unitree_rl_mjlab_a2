@@ -6,6 +6,12 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal
 
+# Native v09 must dispatch before importing the generic task registry.
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "Unitree-A2-V09-S1":
+  from play_a2_v09_s1 import main as v09_main
+  v09_main(sys.argv[2:])
+  raise SystemExit(0)
+
 import torch
 import tyro
 
