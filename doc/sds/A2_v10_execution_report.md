@@ -33,3 +33,11 @@ D1/D2/D3分别154/226/334组；A/B每组20例分别>=18，终验100例分别>=95
 - 独立审查已修复分母重复、缺窗绕过、NaN放行、端点时长、F_STOP距离混淆、漂移起点、固定教师恢复、地形污染物理SHA及Critic CUDA RNG等实现缺陷。
 - 裸pytest有324项收集错误（历史logs重复测试及旧bootstrap冲突，首次还包含未完工新调度）；tests目录完整命令有109项旧版本bootstrap收集错误，保留/tmp/a2_v10_full_pytest.log、/tmp/a2_v10_tests_directory.log。不改旧测试，不声称全项目测试通过。
 - 完整双栈probe、教师准入、正式训练、行为终验和导出尚未完成。当前无效果改善对比数据。
+
+## 执行启动记录
+
+- 独立工程报告通过，冻结源码指纹7f15a529b47f0b9a5512109a9050ad25a5b00c82bb294deaefd0edf0b7cb71a7；最终统一62 passed、4显式GPU skip。
+- 实现提交4b80853ab7875970efbd6953e3223314dff094c8已成功push至origin/main，并用ls-remote逐字核对。初次HTTPS缺默认credential helper，使用本机已有gh登录凭据助手后成功；未改远端URL、未读取/输出明文token。
+- 自动流程已启动：logs/a2_v10/formal_20261126_approved；当前正在资源探测。工程准入logs/a2_v10/engineering_admission_20261126.json，controller_state.json记录运行/停止状态。
+- 启动命令：PYTHONUNBUFFERED=1 MUJOCO_GL=egl /home/xxs/anaconda3/envs/a2/bin/python scripts/train_a2_v10.py --run-dir logs/a2_v10/formal_20261126_approved --engineering-admission logs/a2_v10/engineering_admission_20261126.json --device cuda:0。
+- N选择、峰值、教师逐组结果与正式学习样本以对应运行结果为准；此记录不声称正式学习已经开始。

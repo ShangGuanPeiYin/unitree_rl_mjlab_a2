@@ -5173,3 +5173,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 已实际核对当前源码指纹为7f15a529b47f0b9a5512109a9050ad25a5b00c82bb294deaefd0edf0b7cb71a7，与独立报告一致，签发logs/a2_v10/engineering_admission_20261126.json，scope仅v10工程，不宣称资源/教师/行为通过。
 - 最终新版统一62 passed、4 GPU显式skip、1上游warning；审核者另独立运行58项联合测试和33项最后局部复验，报告逐项列证据与局限。
 - 后续按已授权流程提交/push、资源探测、教师准入、训练；每个依赖门禁仍严格执行。当前正式学习样本为0，实际工程416样本。
+
+## 2026-11-26 A2 v1.0：提交推送与自动执行启动
+
+- 提交4b80853ab7875970efbd6953e3223314dff094c8已push origin/main，本地rev-parse和远端ls-remote一致。首次默认HTTPS因无凭据helper失败；检测现有gh认证后用单命令credential helper成功，无明文token读出，不改origin、不force-push。
+- 已启动自动流程logs/a2_v10/formal_20261126_approved（cuda:0），完整显式命令记在doc/sds/A2_v10_execution_report.md；工程准入绑定独立报告与当前源码指纹。
+- 当前进入1024档完整DAgger资源探测，若失败512回退，两栈同N都通过才教师A/B，教师通过后自动正式学习；未跳过任何依赖门禁。启动时正式学习0样本，工程416样本另列，probe费用由独立外账记录。
+- 修改文件：上述执行报告及本日志；只补状态不改配方/代码/源码身份。实际N、资源峰值、行为结果尚待运行输出，未声称效果改善。
