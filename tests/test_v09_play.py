@@ -247,3 +247,17 @@ assert case['spawn']['local_position_xy'][0] == -1.
     result = subprocess.run([sys.executable, '-c', code], cwd=ROOT,
                             capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_platform_start_pose_uses_actual_top_height():
+    player = load_player()
+    from types import SimpleNamespace
+    case = {'spawn': {'local_position_xy': [-1.,0.], 'local_yaw_radians':0.,
+                     'frame_origin_world':[0.,168.,0.], 'local_position':[-1.,0.,.4]},
+            'case_sha256':'original'}
+    tile = SimpleNamespace(N=20, step_depth=.2, h=.2)
+    moved = player.platform_start_case(case, tile, 43)
+    assert moved['spawn']['local_position_xy'][0] == 5.0
+    assert moved['spawn']['local_position'][2] == 4.4
+    assert moved['spawn']['world_position'][2] == 4.4
+    assert case['spawn']['local_position_xy'][0] == -1.

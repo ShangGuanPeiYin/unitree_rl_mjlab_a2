@@ -40,6 +40,16 @@ def resample_spawn(case, seed, *, x_bounds, y_bounds, yaw_bounds):
     return result
 
 
+def platform_start_case(case, tile, seed):
+    from copy import deepcopy
+    from src.tasks.velocity.v07 import spec
+    copied = deepcopy(case)
+    copied['spawn']['local_position'][2] += tile.N * tile.h
+    x = tile.N * tile.step_depth + 1.0
+    return resample_spawn(copied, seed, x_bounds=(x, x), y_bounds=spec.SPAWN_Y,
+                          yaw_bounds=spec.SPAWN_YAW_RADIANS)
+
+
 def configure_air_case(case, *, length, width, height, seed):
     from copy import deepcopy
     from dataclasses import asdict
@@ -248,6 +258,7 @@ def main(argv=None):
     parser.add_argument('--walk-seconds', type=float, default=8.0)
     parser.add_argument('--stop-seconds', type=float, default=5.0)
     parser.add_argument('--case-id', type=int, default=0)
+    parser.add_argument('--start-on-platform', action='store_true', help='Start 1m inside the stair landing at its actual height')
     parser.add_argument('--stair-steps', type=int, default=None, help='Temporary playback stair count')
     parser.add_argument('--platform-width', type=float, default=None, help='Temporary landing width in metres; stair width unchanged')
     parser.add_argument('--platform-length', type=float, default=None, help='Temporary landing length in metres (>=2)')
@@ -263,6 +274,8 @@ def main(argv=None):
     parser.add_argument('--duration', type=float, default=None, help='Playback seconds; otherwise until window closes')
     parser.add_argument('--headless-steps', type=int, default=0, help='Finite physics/scan smoke without a window')
     args = parser.parse_args(argv)
+    if args.start_on_platform and args.scene != 'stairs':
+        parser.error('start-on-platform requires --scene stairs')
     if (args.air_platform or args.continuous_walk) and args.scene != 'flat':
         parser.error('air-platform and continuous-walk require --scene flat')
     if args.keyboard and args.continuous_walk:
@@ -326,6 +339,9 @@ def main(argv=None):
               f'height={args.platform_height:g}m; spawn x=1m, diagnostic only', flush=True)
     if args.scene == 'stairs':
         played_tile, landing_width = configure_terrain(case, steps=args.stair_steps, width=args.platform_width, length=args.platform_length)
+        if args.start_on_platform:
+            case = platform_start_case(case, played_tile, args.spawn_seed if args.spawn_seed is not None else args.seed)
+            print(f'Playback start on landing: local position={case["spawn"]["local_position"]}', flush=True)
         print(f'Playback geometry: stairs={played_tile.N}, h={played_tile.h:g}m, depth={played_tile.step_depth:g}m, '
               f'stair width={played_tile.width:g}m, landing length={played_tile.platform_length:g}m, '
               f'landing width={landing_width:g}m; demo only, not frozen-case evaluation', flush=True)
@@ -350,6 +366,8 @@ def main(argv=None):
           'Cyan=valid, orange=clipped, red=invalid; yellow=scan boundary/forward.', flush=True)
     env = V09S1Env([case], device=args.device, seed=args.seed, course=course)
     try:
+        if args.start_on_platform:
+            env.robot.data.default_root_state[:, 2] = case['spawn']['local_position'][2]
         if args.scene == 'flat':
             enable_flat_sequence(env)
         elif args.continue_after_success:
