@@ -32,6 +32,19 @@ def configure_terrain(case, *, steps=None, width=None):
     return played, terrain.platform_width(played)
 
 
+def playback_course(payload, *, allow_s2):
+    meta = payload.get('metadata', {})
+    if payload.get('schema') != 11:
+        raise ValueError('Playback requires schema11 v09 checkpoints')
+    if meta.get('stage') == 'S1' and meta.get('course') in ('S1.1', 'S1.2'):
+        return meta['course']
+    if meta.get('stage') == 'S2' and meta.get('course') in ('S2.1', 'S2.2', 'S2.3'):
+        if not allow_s2:
+            raise ValueError('S2 weights require --allow-s2-diagnostic for S1-scene playback')
+        return 'S1.2'
+    raise ValueError('Unsupported checkpoint stage/course')
+
+
 def scan_bounds(grid, spacing):
     return (float(grid[..., 0].min()) - spacing / 2,
             float(grid[..., 0].max()) + spacing / 2,
@@ -90,6 +103,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--checkpoint', '--checkpoint-file', dest='checkpoint', type=Path, required=True)
     parser.add_argument('--checkpoint-sha256', required=True)
+    parser.add_argument('--allow-s2-diagnostic', action='store_true', help='Play S2 weights in the S1 diagnostic scene; not S2 evaluation or resume')
     parser.add_argument('--manifest', type=Path, default=ROOT / 'logs/a2_v09/s1_seed42_r3/cases/S1_DIAG.json')
     parser.add_argument('--lesson', default='L40')
     parser.add_argument('--case-id', type=int, default=0)
@@ -132,8 +146,12 @@ def main(argv=None):
 
     payload = torch.load(args.checkpoint, map_location='cpu', weights_only=False)
     meta = payload.get('metadata', {})
-    if payload.get('schema') != 11 or meta.get('stage') != 'S1' or meta.get('course') not in ('S1.1', 'S1.2'):
-        parser.error('This route only supports schema11 v09 S1 checkpoints')
+    try:
+        course = playback_course(payload, allow_s2=args.allow_s2_diagnostic)
+    except ValueError as error:
+        parser.error(str(error))
+    if meta.get('stage') == 'S2':
+        print('DIAGNOSTIC ONLY: S2 weights in the S1 scene; not S2 evaluation/resume.', flush=True)
     if payload.get('architecture') != 'a2-v09-native40x30-route-history':
         parser.error('Incompatible model architecture')
     played_tile, landing_width = configure_terrain(case, steps=args.stair_steps, width=args.platform_width)
@@ -150,7 +168,7 @@ def main(argv=None):
     print(f'{args.lesson}, vx={args.vx}, vy={args.vy}, wz={args.wz}, seed={args.seed}, '
           f'envs=1, deterministic, original auto-reset\n{scan_text}\n'
           'Cyan=valid, orange=clipped, red=invalid; yellow=scan boundary/forward.', flush=True)
-    env = V09S1Env([case], device=args.device, seed=args.seed, course=meta['course'])
+    env = V09S1Env([case], device=args.device, seed=args.seed, course=course)
     try:
         obs, _ = env.reset()
         with torch.inference_mode():

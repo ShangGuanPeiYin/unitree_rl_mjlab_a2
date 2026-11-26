@@ -67,3 +67,14 @@ assert original.N == 40
     result = subprocess.run([sys.executable, '-c', code], cwd=ROOT,
                             capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_s2_playback_requires_explicit_diagnostic_opt_in():
+    import pytest
+    player = load_player()
+    payload = dict(schema=11, metadata=dict(stage='S2', course='S2.1'))
+    with pytest.raises(ValueError, match='allow-s2-diagnostic'):
+        player.playback_course(payload, allow_s2=False)
+    assert player.playback_course(payload, allow_s2=True) == 'S1.2'
+    assert player.playback_course(dict(schema=11, metadata=dict(stage='S1', course='S1.1')),
+                                  allow_s2=False) == 'S1.1'
