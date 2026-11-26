@@ -164,3 +164,20 @@ assert resets == [[0]] and not env.playback_reached_top.any()
     result = subprocess.run([sys.executable, '-c', code], cwd=ROOT,
                             capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_spawn_seed_changes_pose_reproducibly_without_editing_case():
+    from copy import deepcopy
+    player = load_player()
+    case = {'spawn': {'local_position_xy': [-1., 0.], 'local_yaw_radians': 0.,
+                     'frame_origin_world': [0., 168., 0.],
+                     'local_position': [-1., 0., .4], 'world_position': [-1., 168., .4]},
+            'case_sha256': 'original', 'streams': {'spawn_x': 'frozen'}}
+    original = deepcopy(case)
+    a = player.resample_spawn(case, 43, x_bounds=(-1.1, -.9), y_bounds=(-.05, .05), yaw_bounds=(-.05, .05))
+    b = player.resample_spawn(case, 43, x_bounds=(-1.1, -.9), y_bounds=(-.05, .05), yaw_bounds=(-.05, .05))
+    c = player.resample_spawn(case, 44, x_bounds=(-1.1, -.9), y_bounds=(-.05, .05), yaw_bounds=(-.05, .05))
+    assert a == b and a['spawn'] != c['spawn']
+    assert case == original and a['case_sha256'] != 'original'
+    assert a['playback_spawn_seed'] == 43
+    assert -.05 <= a['spawn']['local_yaw_radians'] <= .05

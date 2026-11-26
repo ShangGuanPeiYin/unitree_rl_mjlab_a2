@@ -20,6 +20,26 @@ def select_case(manifest, lesson, vx, case_id):
     return matches[0]
 
 
+def resample_spawn(case, seed, *, x_bounds, y_bounds, yaw_bounds):
+    """Copy a case and override only its pose for reproducible playback."""
+    from copy import deepcopy
+    import random
+    result = deepcopy(case)
+    rng = random.Random(seed)
+    x, y, yaw = rng.uniform(*x_bounds), rng.uniform(*y_bounds), rng.uniform(*yaw_bounds)
+    pose = result['spawn']
+    origin = pose['frame_origin_world']
+    z = pose['local_position'][2]
+    pose.update(local_position_xy=[x, y], local_yaw_radians=yaw,
+                local_position=[x, y, z], world_position_xy=[origin[0]+x, origin[1]+y],
+                world_position=[origin[0]+x, origin[1]+y, origin[2]+z],
+                quaternion_wxyz=[math.cos(yaw/2), 0., 0., math.sin(yaw/2)])
+    result['playback_source_case_sha256'] = result.pop('case_sha256')
+    result['playback_spawn_seed'] = seed
+    result['case_sha256'] = hashlib.sha256(json.dumps(result, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    return result
+
+
 def configure_terrain(case, *, steps=None, width=None, length=None):
     """Optional process-local geometry; frozen cases/specs remain unchanged."""
     from src.tasks.velocity.v07 import terrain, spec
@@ -160,6 +180,7 @@ def main(argv=None):
     parser.add_argument('--vy', type=float, default=0.0)
     parser.add_argument('--wz', type=float, default=0.0)
     parser.add_argument('--seed', type=int, choices=[42], default=42)
+    parser.add_argument('--spawn-seed', type=int, default=None, help='Playback-only seed for a new spawn pose within original bounds')
     parser.add_argument('--num-envs', type=int, choices=[1], default=1)
     parser.add_argument('--device', default='cuda:0')
     parser.add_argument('--viewer', choices=['native'], default='native')
@@ -193,6 +214,12 @@ def main(argv=None):
     from src.tasks.velocity.v09.spec import CONTROL_DT
     from src.tasks.velocity.v09.map import GRID_X, GRID_Y, GRID_STEP, MAP_HZ, MAP_SHAPE
 
+    if args.spawn_seed is not None:
+        from src.tasks.velocity.v07 import spec as original_spec
+        case = resample_spawn(case, args.spawn_seed, x_bounds=original_spec.SPAWN_X,
+                              y_bounds=original_spec.SPAWN_Y, yaw_bounds=original_spec.SPAWN_YAW_RADIANS)
+        print(f'Playback spawn seed={args.spawn_seed}: {case["spawn"]["local_position_xy"]}, '
+              f'yaw={case["spawn"]["local_yaw_radians"]}; diagnostic pose override only', flush=True)
     payload = torch.load(args.checkpoint, map_location='cpu', weights_only=False)
     meta = payload.get('metadata', {})
     try:
