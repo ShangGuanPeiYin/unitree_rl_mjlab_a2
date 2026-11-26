@@ -1,0 +1,29 @@
+{
+  "schema": "a2-v10-formal-engineering-acceptance-v1",
+  "audit_base_commit": "25575edfb47168fa45c1367673fd85f0f64a3962",
+  "source_sha256": "b48e3fd1601ff2926272ed014d846fd480fe24a8c56d77100d646f933b92991f",
+  "rulings_sha256": "5b522c5288d87776f72d2a4f7bc2fcc7db5ecfc89ce8ba8107e591bc9a76cbc2",
+  "engineering_acceptance": "passed_after_two_scoped_fixes",
+  "overall_behavior_acceptance": "not_passed",
+  "resource_selection": null,
+  "formal_learning_samples": 0,
+  "new_physical_samples": 0,
+  "teacher_cases": 0,
+  "global_probe_file_sha256": "841528659558cfcf44b49e03949babd64121c75ef53ca61e5c4bc79a73be04bb",
+  "global_probe_chain_last_sha256": "ef4684dbecf1ca696a3151def51ff42733ad8c191b9879868de2a3289c8cea39",
+  "charged": 737280,
+  "executed": 737280,
+  "updated": 663552,
+  "uncertain": 0,
+  "production_budget_authorization_created": false,
+  "auto_review_rejected": true,
+  "artifacts": {
+    "doc/sds/reviews/v10_final_acceptance_20261127.md": "eaa8d93fac232d2081d69c226905ca57da2ea76482937201c67f24814ac9f208",
+    "doc/sds/reviews/v10_final_independent_acceptance_20261127.md": "6acb1311b30d33fb094dd24ba18cca8b13a7862d7ded5175cd521bd70569fd64",
+    "doc/sds/reviews/v10_sds_evidence_map_20261127.md": "b41dccf795431ed032789614431f6cc1e68df9ec954830e1d6de85810c3ab1b6",
+    "doc/sds/SDS_A2_v1.0_DualTeacher_DAgger_PPO_v1.1.md": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+    "doc/sds/reviews/v10_execution_rulings.md": "5b522c5288d87776f72d2a4f7bc2fcc7db5ecfc89ce8ba8107e591bc9a76cbc2",
+    "logs/a2_v10/final_acceptance_identity_20261127.json": "59d8fb8b10784f9c41ae62ca99f2db0f0a1673dd243947d16aa4c9e191e8bbc3",
+    "logs/a2_v10/final_acceptance_gap_tests_20261127.log": "76ab9b02268d0c78e42970b12c146a475cfec9bf456ae4121fa267a656737ddd"
+  }
+}

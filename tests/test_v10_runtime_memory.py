@@ -88,7 +88,7 @@ def test_real_worker_periodic_resume_and_boundary_save(tmp_path,monkeypatch):
  def collect(env,model,teachers,phase,ledger,kind='learning',budget_limit=None,steps=48):
   import uuid
   ledger.charge(phase,env.num_envs*48,limit=budget_limit,kind=kind)
-  return batch(),dict(rollout_id=uuid.uuid4().hex,episodes=[])
+  return batch(),dict(rollout_id=uuid.uuid4().hex,episodes=[],per_task={})
  monkeypatch.setattr(env_module,'V10Env',Env);monkeypatch.setattr(rt,'V10ActorCritic',Model)
  monkeypatch.setattr(rt,'DAggerLearner',Learner);monkeypatch.setattr(rt,'frozen_teachers',lambda device:None)
  monkeypatch.setattr(rt,'physical_contract',lambda env:{'sha256':'cpu-worker-seam','contract':{}})

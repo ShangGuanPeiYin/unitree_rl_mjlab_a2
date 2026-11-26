@@ -21,6 +21,13 @@ FULL_SEQUENCE_DEMAND=26*48*(2*1024+2*512)
 class ProbeBudgetError(RuntimeError):pass
 
 
+class ProbeBudgetInsufficient(ProbeBudgetError):
+    def __init__(self,required,remaining):
+        self.required_samples=required;self.remaining_samples=remaining
+        self.shortfall_samples=max(required-remaining,0)
+        super().__init__(f'global probe remaining cap insufficient: required={required}, remaining={remaining}, shortfall={self.shortfall_samples}')
+
+
 def streaming_sha256(path):
     digest=hashlib.sha256()
     with Path(path).open('rb') as f:
@@ -84,7 +91,7 @@ class GlobalProbeBudget:
         self.scope_id=scope_id;self.sequence_id=None
         self._cache=None
         self._state=dict(cost=_empty_cost(),scopes={},entries={},pending=set(),sources={},source_paths={},
-                         legacy_ids=set(),authorizations={},sequences={},active_sequence=None,last_sha='0'*64,seq=0)
+                         legacy_ids=set(),authorizations={},sequences={},active_sequence=None,capacity_leases={},active_capacity=None,last_sha='0'*64,seq=0)
 
     def _apply(self,row):
         s=self._state;p=row['payload'];op=row['op']
@@ -103,6 +110,12 @@ class GlobalProbeBudget:
         elif op=='sequence_end':
             if s['active_sequence']!=p['id']:raise ProbeBudgetError('invalid sequence close')
             s['sequences'][p['id']].update(p,status='finished');s['active_sequence']=None
+        elif op=='stack_capacity_acquire':
+            if s['active_capacity'] is not None:raise ProbeBudgetError('two active stack capacity leases')
+            s['capacity_leases'][p['scope']]=dict(p,status='active');s['active_capacity']=p['scope']
+        elif op=='stack_capacity_release':
+            if s['active_capacity']!=p['scope']:raise ProbeBudgetError('invalid stack capacity release')
+            s['capacity_leases'][p['scope']].update(p,status='released');s['active_capacity']=None
         elif op=='reserve':
             uid=p['id'];scope=p['scope'];key=p['key'];n=p['samples']
             if uid in s['entries'] or s['pending']:raise ProbeBudgetError('duplicate reserve or multiple in-flight steps')
@@ -157,7 +170,7 @@ class GlobalProbeBudget:
     def global_report(self):
         def report(f,s):
             result=copy.deepcopy(s['cost']);result['global_totals']=_cost_sum(s['cost']);result['pending']=sorted(s['pending'])
-            result.update(authorizations=copy.deepcopy(s['authorizations']),sources=copy.deepcopy(s['sources']),source_paths=dict(s['source_paths']),sequences=copy.deepcopy(s['sequences']),active_sequence=s['active_sequence'],journal_sha256=s['last_sha'])
+            result.update(active_capacity=s['active_capacity'],capacity_leases=copy.deepcopy(s['capacity_leases']),authorizations=copy.deepcopy(s['authorizations']),sources=copy.deepcopy(s['sources']),source_paths=dict(s['source_paths']),sequences=copy.deepcopy(s['sequences']),active_sequence=s['active_sequence'],journal_sha256=s['last_sha'])
             return result
         return self._locked(report)
 
@@ -219,7 +232,7 @@ class GlobalProbeBudget:
             if s['active_sequence'] is not None:raise ProbeBudgetError('another global probe sequence is active')
             if s['pending']:raise ProbeBudgetError('global in-flight step unresolved')
             charged=_cost_sum(s['cost'])['charged'];cap=auth['document']['max_probe_samples']
-            if charged+required_samples>cap:raise ProbeBudgetError('global probe remaining cap cannot fund complete requested sequence')
+            if charged+required_samples>cap:raise ProbeBudgetInsufficient(required_samples,cap-charged)
             event=dict(id=sequence_id,authorization_sha256=auth['sha256'],required_samples=required_samples,charged_at_start=charged,cap=cap)
             self._append(f,'sequence_begin',event);return copy.deepcopy(s['sequences'][sequence_id])
         return self._locked(perform)
@@ -235,8 +248,49 @@ class GlobalProbeBudget:
             if s['pending']:raise ProbeBudgetError('global in-flight physical step unresolved')
             if (not seq or seq['status']!='active' or s['active_sequence']!=sequence_id or seq['authorization_sha256']!=auth['sha256']):raise ProbeBudgetError('active authorized probe sequence required')
             if self.scope_id and not self.scope_id.startswith(sequence_id+':'):raise ProbeBudgetError('probe scope does not belong to sequence')
-            if _cost_sum(s['cost'])['charged']+required_samples>auth['document']['max_probe_samples']:raise ProbeBudgetError('global remaining cap insufficient')
+            remaining=auth['document']['max_probe_samples']-_cost_sum(s['cost'])['charged']
+            lease=s['capacity_leases'].get(self.scope_id,{})
+            demand=required_samples
+            if lease.get('status')=='active' and required_samples==lease['required_samples']:
+                used=_cost_sum(s['scopes'].get(self.scope_id,_empty_cost()))['charged']-lease['charged_at_start']
+                demand=max(required_samples-used,0)
+            if demand>remaining:raise ProbeBudgetInsufficient(demand,remaining)
             self.sequence_id=sequence_id;return auth
+        return self._locked(perform)
+
+    def acquire_stack_capacity(self,sequence_id,required_samples,scope_id=None):
+        """Exclusive capacity, not a charge; parent and child share the same scope."""
+        auth=self._authorization();scope=scope_id or self.scope_id
+        if not scope or not scope.startswith(sequence_id+':') or not _positive(required_samples):raise ProbeBudgetError('explicit stack scope/capacity required')
+        def perform(f,s):
+            seq=s['sequences'].get(sequence_id)
+            if not seq or seq['status']!='active' or seq['authorization_sha256']!=auth['sha256']:raise ProbeBudgetError('active authorized sequence required')
+            old=s['capacity_leases'].get(scope)
+            if old:
+                if old['status']!='active' or old['required_samples']!=required_samples:raise ProbeBudgetError('stack capacity lease already released or identity changed')
+                return copy.deepcopy(old)
+            if s['active_capacity'] is not None:raise ProbeBudgetError('another stack scope holds exclusive capacity')
+            if s['pending']:raise ProbeBudgetError('in-flight physical step unresolved')
+            remaining=auth['document']['max_probe_samples']-_cost_sum(s['cost'])['charged']
+            if required_samples>remaining:raise ProbeBudgetInsufficient(required_samples,remaining)
+            start=_cost_sum(s['scopes'].get(scope,_empty_cost()))['charged']
+            self._append(f,'stack_capacity_acquire',dict(scope=scope,sequence_id=sequence_id,required_samples=required_samples,charged_at_start=start))
+            return copy.deepcopy(s['capacity_leases'][scope])
+        return self._locked(perform)
+
+    def release_stack_capacity(self,scope_id=None,reason=''):
+        scope=scope_id or self.scope_id
+        def perform(f,s):
+            lease=s['capacity_leases'].get(scope)
+            if not lease:raise ProbeBudgetError('unknown stack capacity lease')
+            if lease['status']=='released':return False
+            if s['pending']:raise ProbeBudgetError('cannot release capacity with unresolved in-flight step')
+            used=_cost_sum(s['scopes'].get(scope,_empty_cost()))['charged']-lease['charged_at_start']
+            # Executed AND uncertain are already charged, so neither is released.
+            unused=lease['required_samples']-used
+            if unused<0:raise ProbeBudgetError('stack capacity overconsumed')
+            self._append(f,'stack_capacity_release',dict(scope=scope,released_unused_samples=unused,consumed_charged_samples=used,reason=str(reason)))
+            return unused
         return self._locked(perform)
 
     def finish_sequence(self,sequence_id,passed=False,reason=''):
@@ -245,6 +299,7 @@ class GlobalProbeBudget:
             if not seq:raise ProbeBudgetError('unknown probe sequence')
             if seq['status']=='finished':return False
             if s['pending']:raise ProbeBudgetError('cannot close sequence with in-flight physical step')
+            if s['active_capacity'] is not None:raise ProbeBudgetError('cannot close sequence with active stack capacity lease')
             self._append(f,'sequence_end',dict(id=sequence_id,passed=bool(passed),reason=str(reason),totals=_cost_sum(s['cost'])))
             return True
         return self._locked(perform)
@@ -269,6 +324,10 @@ class GlobalProbeBudget:
                 raise ProbeBudgetError('active authorization must be asserted before physical step')
             if s['pending']:raise ProbeBudgetError('one global step already in-flight')
             local=s['scopes'].get(self.scope_id,_empty_cost())
+            lease=s['capacity_leases'].get(self.scope_id,{})
+            if s['active_capacity']!=self.scope_id or lease.get('status')!='active':raise ProbeBudgetError('active stack capacity lease required')
+            used=_cost_sum(local)['charged']-lease['charged_at_start']
+            if used+samples>lease['required_samples']:raise ProbeBudgetError('stack capacity exhausted')
             if _cost_sum(local)['charged']+samples>limit:raise ProbeBudgetError('local probe stack scope cap exhausted')
             if _cost_sum(s['cost'])['charged']+samples>auth['document']['max_probe_samples']:raise ProbeBudgetError('global probe cap exhausted')
             self._append(f,'reserve',dict(id=scoped,scope=self.scope_id,key=key,samples=samples,details=details or {},authorization_sha256=auth['sha256']))

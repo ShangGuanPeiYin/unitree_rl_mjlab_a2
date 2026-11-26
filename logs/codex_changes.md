@@ -5215,3 +5215,29 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 核对暂存区为空，原scripts/play.py、scripts/train.py、v09/s2_train.py、tests/test_v09_s2_1_train.py的既有修改及原untracked仍保留，未夹带本次提交；无权重上传。
 - 当前无本任务train/probe运行进程、无生产probe授权文件，正式学习和教师评估为0；737280历史probe费用保留。已将提交、统一/独立测试与预算阻断状态回报规划线程。后续只在明确probe总额度授权后按原顺序重探测，不重复询问用户已有的修改/push/正式训练许可。
 - 本次仅补交付状态文档，不改源码指纹、参数或测试结果。当前无行为改善结论。
+
+## 2026-11-27 A2 v1.0：正式只读工程验收启动与发现的接线缺口
+
+- 用户要求当前最终推送版本25575ed逐项验收并独立复核，复用同源码有效证据，不重昂贵物理；已读AGENTS、SDS/Q1-Q4、实际train入口→controller→worker/env/reward/optimizer链，开独立review_preflight复核。
+- 只读核对local/origin均25575edfb47168fa45c1367673fd85f0f64a3962；SDS SHA仍eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0；两教师SHA与指定值一致；从36c08f4以来提交仅本任务文件，无旧dirty四文件或权重夹带。四个dirty文件本轮保护SHA存/tmp/a2_v10_acceptance_baseline_20261127.json，最终再对照。
+- 新裁定：用户要求验收后直接训练；规划授权选项A全局probe cap3833856，历史737280保留，余3096576，不是B增额。已追加裁定；验收通过后直接执行资源/教师/正式课程，不再等待B或询问常规许可。
+- 验收发现1：现run_probes在起步预要求FULL_SEQUENCE_DEMAND3833856，叠加历史后必拒，未符合A逐栈预留；正在最小补完整栈容量lease与逐step charged分离/父子共享/并发互斥/不足报缺额，不能整栈和step双计。
+- 验收发现2：SDS8.1 per-task轨迹长度/失败比例/标签覆盖原仅在内存有元数据，worker只落总计后del，未满足持久出口；正在补原样逐任务/teacher分母、未完快照、shape/finite拒绝和真实collector→worker CPU集成，不改训练配方。
+- 此阶段尚未新增物理probe/教师评估/训练；两个缺口修复和独立复核清零后才签新工程验收。只读检查本身不声称总体行为通过，旧资源失败与未验证项保留。
+
+## 2026-11-27 正式验收：两个范围内缺口修复及审批阻断
+
+- 实际修改：resources.py/probe_budget.py补下一完整栈起步和独占capacity lease，parent/child同scope复用，不把容量当charged；step仍唯一计费，不足发布required/remaining/shortfall，不启动child。runtime.py补每任务真实终止回合长度/失败分母增量、未完回合gauge、每teacher标签覆盖分母及session/rollout身份；坏shape/finite在step和预算前拒绝。学习配置、损失、奖励、物理、容量、保存周期均未改。
+- 验证：A/lease+controller实施者37 passed，日志+保存回归14 passed/1显式fullCPU skip；主对话仅重测变更缺口+身份24 passed、1上游warning，28.65s，原始logs/a2_v10/final_acceptance_gap_tests_20261127.log。未变19个模块相对25575ed字节一致，复用既有83/5skip和完整3GB实际CPU证据，不重新跑物理或完整大payload。
+- 源码冻结实算b48e3fd1601ff2926272ed014d846fd480fe24a8c56d77100d646f933b92991f；新测试test_v10_runtime_task_logging.py，预算tests扩展；本轮dirty四文件前后SHA一致，两教师与SDS实算身份正确。正式映射doc/sds/reviews/v10_sds_evidence_map_20261127.md逐29项列生产调用点/测试证据/通过失败未验证。
+- 自动审批拒绝创建logs/a2_v10/probe_authorization_A_20261127.json，原因为可信用户消息缺明确3833856上限，不能只凭助手转述扩授权；操作未执行、文件不存在，未换路径/工具或让其他agent代写绕过。规划确认没有用户明确数值原话，会向用户获取确认。保留一般修改/push/训练授权，不再重复询问常规许可；只需明确该累计probe数值。
+- 继续完成不受影响工程验收与提交；全局实际charged/executed737280、updated663552、uncertain0，新物理0；资源/教师/DAgger/PPO/导出实际结果仍未通过或未验证，不能称总体通过。
+
+## 2026-11-27 正式工程验收完成（总体行为仍未通过）
+
+- 总验收报告doc/sds/reviews/v10_final_acceptance_20261127.md，SHA eaa8d93fac232d2081d69c226905ca57da2ea76482937201c67f24814ac9f208；SDS→实现→测试映射v10_sds_evidence_map_20261127.md含29项，SHA b41dccf795431ed032789614431f6cc1e68df9ec954830e1d6de85810c3ab1b6。
+- 独立review_preflight新增v10_final_independent_acceptance_20261127.md，27项映射/135个实际行号链接，SHA6acb1311b30d33fb094dd24ba18cca8b13a7862d7ded5175cd521bd70569fd64。它重新从实际CLI核到controller/worker/env/reward/optimizer/证书，逐字节核19未变模块、4 dirty保护、SDS/两权重，并作20连续项双相位CPU代数；未新增物理。旧报告及历史遗漏均保留。
+- 冻结源b48e3fd1601ff2926272ed014d846fd480fe24a8c56d77100d646f933b92991f；本轮缺口24定向测试通过，复用相同19模块原83/5skip及完整3GB CPU实际证据。清单v10_final_acceptance_manifest_20261127.json绑定各文档/日志SHA，并区分全局账本文件SHA84152865…04bb和链末SHAef4684db…ea39（两者含义不同）。
+- 工程两缺口修后通过；原资源失败、新资源未测、教师评估/正式学习/终验0、真实导出播放未验，故总体未通过。新纯工程准入logs/a2_v10/engineering_admission_final_20261127.json仅工程，不构成预算授权。
+- 生产A预算JSON被auto-review拒绝且确认未落盘；规划核对无用户明确3833856数值原话。不会换路径/工具/agent绕过；等待可信用户明确probe累计3833856（含历史737280），非B增额且一般修改/push/训练授权不重问。实际费用和物理状态未变。
+- 本轮修改/新增文件：runtime/resources/probe_budget三源码、预算/保存fixture测试及新test_v10_runtime_task_logging.py；两实施报告和新v10_sds81_task_logging_report.md；总/独立/映射/manifest四验收文档，身份/定向日志/采集回归日志证据，裁定及本日志。未改spec/奖励/损失/物理/速度/优化器参数，未夹带旧dirty和权重。接着仅按项目授权提交推送并核远端。

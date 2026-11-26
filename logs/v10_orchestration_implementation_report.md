@@ -113,3 +113,30 @@ The 12 new budget tests cover historical migration/repeated imports/copy de-dupl
 Integration tests call the **real** `resources.run_probes` selector and feed its actual serialized `selection.json` directly to the **real** controller resource validator, covering 1024 success, 1024-to-512 failure, and missing-authorization refusal before any child. Only the GPU child is a CPU receipt stub. All synthetic approvals and accounting are confined to pytest temporary paths, are explicitly not physical/resource evidence, and cannot certify a real probe. Actual project costs remain the historical **737,280** only.
 
 Independent review, shared modification-log append, commit/push and any future budget-approved real execution remain the main controller's responsibility.
+
+## 2026-11-27 — A authorization entry and exclusive stack capacity
+
+The previous sequence-level preflight incorrectly demanded all 1024/512 DAgger/PPO worst-case work (`3,833,856`) in addition to the already charged `737,280`. Under the clarified **cumulative A cap of 3,833,856**, this blocked even a fundable 1024 pair. Three new real-selector CPU tests first reproduced that entry failure.
+
+The selector now checks only the first required complete 1024 stack, **1,277,952 = 26×1024×48**, at sequence entry. Before every subsequent child it acquires exclusive capacity for that exact complete stack. The child reuses the parent's same-scope lease idempotently rather than reserving a second copy. Another scope cannot hold capacity concurrently.
+
+Capacity acquisition is a separate durable event and does **not** increment charged/executed/uncertain/updated. Q1 physical steps still reserve and debit once, now requiring an active matching stack lease. A step cannot exceed either its stack capacity or the unchanged cumulative global cap. Upon child exit, only `required - charged_since_acquisition` unused capacity is released; executed and uncertain costs remain charged. Unresolved pending steps prevent release until Q1 reconciliation. Duplicate release is harmless, and a released stack cannot silently reacquire its old identity.
+
+A budget shortfall publishes `selection.json` with `passed=false`, the blocked stack, and exact `required_samples`, `remaining_samples`, `shortfall_samples` plus the matching `budget_shortfall` object. It does not launch the unfunded child, increase the authorization or claim resource admission. Missing authorization continues to refuse any child launch.
+
+The A boundary tests use historical **737,280** and cap **3,833,856** in temporary ledgers:
+
+- Two complete 1024 stacks consume **2,555,904** additional samples and can be admitted if both pass, leaving cumulative charged **3,293,184**.
+- If the fully consumed second 1024 stack fails resource qualification, remaining **540,672** cannot fund the necessary 512 stack's **638,976**. The selector reports shortfall **98,304** and does not call a 512 child.
+- The independent first-stack-insufficient case writes a failed receipt without any child.
+
+Additional tests cover parent/child lease reentry with exactly one capacity event, different-scope rejection, early-stop unused-capacity release, retained uncertain charges, boundary insufficiency after release, and refusal of steps without capacity even when the global cap would fit.
+
+Final focused CPU validation:
+
+```text
+python -m pytest -q tests/test_v10_probe_budget.py tests/test_v10_orchestration.py
+37 passed, 1 upstream warning in 46.14s
+```
+
+Owned changes are limited to `resources.py`, `probe_budget.py`, and their budget/selector CPU tests. Module compilation and diff whitespace checks passed. No physical probe, GPU action, real authorization edit, or real global-ledger debit occurred in this task. Resource/behavior effects remain unverified until the independently reviewed, authorized real probe runs. Shared change-log append and commit/push remain the main controller's responsibility.

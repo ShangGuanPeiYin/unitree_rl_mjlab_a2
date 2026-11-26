@@ -54,10 +54,11 @@ def probe_stack(*,num_envs,stack,output_dir,device='cuda:0',global_probe_ledger=
     if num_envs not in (1024,512) or stack not in ('dagger','ppo'):raise ValueError('invalid SDS probe')
     output=Path(output_dir)
     if output.exists() and any(output.iterdir()):raise ValueError('probe output directory must be new or empty')
-    from .probe_budget import GlobalProbeBudget,FULL_SEQUENCE_DEMAND
+    from .probe_budget import GlobalProbeBudget,ProbeBudgetInsufficient
     if not global_probe_ledger or not probe_sequence_id:raise ValueError('global probe budget authorization required')
     ledger=GlobalProbeBudget(global_probe_ledger,authorization_path=probe_budget_authorization,scope_id=f'{probe_sequence_id}:{num_envs}:{stack}')
     authorization=ledger.assert_authorized(probe_sequence_id,required_samples=26*num_envs*48)
+    ledger.acquire_stack_capacity(probe_sequence_id,26*num_envs*48)
     output.mkdir(parents=True,exist_ok=True);seed_all();env=None
     monitor=ResourceMonitor();result=dict(num_envs=num_envs,stack=stack,passed=False,warmup_rounds=5,measurement_rounds=20,sds_sha256=spec.SDS_SHA256,code_sha256=code_fingerprint(),global_probe_ledger=str(Path(global_probe_ledger).resolve()),probe_sequence_id=probe_sequence_id,probe_budget_authorization_sha256=authorization['sha256'])
     try:
@@ -143,15 +144,31 @@ def probe_stack(*,num_envs,stack,output_dir,device='cuda:0',global_probe_ledger=
 def run_probes(output_dir,device='cuda:0',global_probe_ledger=None,probe_budget_authorization=None,probe_sequence_id=None):
     root=Path(output_dir)
     if root.exists() and any(root.iterdir()):raise ValueError('probe root must be new or empty')
-    from .probe_budget import GlobalProbeBudget,FULL_SEQUENCE_DEMAND
+    from .probe_budget import GlobalProbeBudget,ProbeBudgetInsufficient
     if not global_probe_ledger or not probe_sequence_id:raise ValueError('global probe budget authorization required')
     budget=GlobalProbeBudget(global_probe_ledger,authorization_path=probe_budget_authorization)
-    budget.begin_sequence(probe_sequence_id,required_samples=FULL_SEQUENCE_DEMAND)
+    # A authorization is cumulative: admit only the next necessary whole stack.
+    try:budget.begin_sequence(probe_sequence_id,required_samples=26*1024*48)
+    except ProbeBudgetInsufficient as error:
+        return _budget_shortfall_selection(root,budget,probe_sequence_id,error,1024,'dagger',[])
     try:return _run_authorized_probes(root,device,global_probe_ledger,probe_budget_authorization,probe_sequence_id)
     finally:budget.finish_sequence(probe_sequence_id,passed=(root/'selection.json').exists() and json.loads((root/'selection.json').read_text()).get('passed',False),reason='sequence executor finished')
 
+def _budget_shortfall_selection(root,budget,sequence_id,error,num_envs,stack,runs):
+    authorization=budget.validate_authorization()
+    result=dict(passed=False,num_envs=None,runs=runs,sds_sha256=spec.SDS_SHA256,code_sha256=code_fingerprint(),
+                global_probe_ledger=str(budget.path),probe_sequence_id=sequence_id,
+                probe_budget_authorization_sha256=authorization['sha256'],global_probe_totals=budget.global_report()['global_totals'],
+                stopped_for_budget=True,error='insufficient_probe_budget',
+                blocked_stack=dict(num_envs=num_envs,stack=stack),
+                required_samples=error.required_samples,remaining_samples=error.remaining_samples,shortfall_samples=error.shortfall_samples,
+                budget_shortfall=dict(required=error.required_samples,remaining=error.remaining_samples,shortfall=error.shortfall_samples))
+    root.mkdir(parents=True,exist_ok=True);atomic_json(root/'selection.json',result)
+    return result
+
+
 def _run_authorized_probes(root,device,global_probe_ledger,probe_budget_authorization,probe_sequence_id):
-    from .probe_budget import GlobalProbeBudget,FULL_SEQUENCE_DEMAND
+    from .probe_budget import GlobalProbeBudget,ProbeBudgetInsufficient
     budget=GlobalProbeBudget(global_probe_ledger,authorization_path=probe_budget_authorization)
     authorization=budget.assert_authorized(probe_sequence_id)
     receipt=dict(global_probe_ledger=str(Path(global_probe_ledger).resolve()),probe_sequence_id=probe_sequence_id,probe_budget_authorization_sha256=authorization['sha256'])
@@ -159,10 +176,16 @@ def _run_authorized_probes(root,device,global_probe_ledger,probe_budget_authoriz
     for n in (1024,512):
         passed=True
         for stack in ('dagger','ppo'):
+            scope=f'{probe_sequence_id}:{n}:{stack}'
+            try:budget.acquire_stack_capacity(probe_sequence_id,26*n*48,scope_id=scope)
+            except ProbeBudgetInsufficient as error:
+                return _budget_shortfall_selection(root,budget,probe_sequence_id,error,n,stack,runs)
             output=root/f'n{n}_{stack}'
             command=[sys.executable,str(spec.ROOT/'scripts/run_a2_v10.py'),'_probe-stack','--num-envs',str(n),'--stack',stack,'--device',device,'--output-dir',str(output),'--global-probe-ledger',str(global_probe_ledger),'--probe-budget-authorization',str(probe_budget_authorization),'--probe-sequence-id',probe_sequence_id]
-            with (root/f'n{n}_{stack}.log').open('w') as log:
-                completed=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,cwd=spec.ROOT)
+            try:
+                with (root/f'n{n}_{stack}.log').open('w') as log:
+                    completed=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,cwd=spec.ROOT)
+            finally:budget.release_stack_capacity(scope_id=scope,reason='probe child exited')
             result=json.loads((output/'result.json').read_text()) if (output/'result.json').exists() else dict(passed=False,error=f'child exit {completed.returncode}')
             runs.append(result)
             if (not result['passed'] or result.get('sds_sha256')!=spec.SDS_SHA256 or result.get('code_sha256')!=code_fingerprint()):passed=False;break

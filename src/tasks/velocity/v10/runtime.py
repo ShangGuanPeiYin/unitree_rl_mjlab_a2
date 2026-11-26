@@ -67,16 +67,42 @@ def store_rollout_frame(destination,row,start,n):
         elif isinstance(value,torch.Tensor):destination[key][start:start+n].copy_(value.detach())
         else:destination[key][start:start+n]=copy.deepcopy(value)
 
+def length_summary(values):
+    """Episode control-step lengths, never a rollout-length surrogate."""
+    return dict(count=len(values),total=sum(values),min=min(values) if values else None,
+                max=max(values) if values else None,mean=sum(values)/len(values) if values else None)
+
+def collection_task_statistics(metadata,episodes,is_dagger,sample_counts,label_counts,source_counts):
+    result={}
+    for role in spec.ROLES:
+        finished=[e for e in episodes if e['task']==role]
+        lengths=[int(e['steps']) for e in finished]
+        failures=sum(not e['success'] for e in finished)
+        unfinished=[int(step) for task,step in zip(metadata['task'],metadata['control_step']) if task==role and int(step)>0]
+        expected=sample_counts[role] if is_dagger else 0
+        result[role]=dict(collected_samples=sample_counts[role],completed_episodes=len(finished),failures=failures,
+            failure_rate=failures/len(finished) if finished else None,
+            completed_episode_length_steps=length_summary(lengths),
+            unfinished_episodes_at_rollout_end=len(unfinished),unfinished_episode_steps_at_rollout_end=unfinished,unfinished_episode_length_steps=length_summary(unfinished),
+            teacher_labels_applicable=is_dagger,teacher_labels_expected=expected,teacher_labels_labeled=label_counts[role],
+            teacher_label_coverage=label_counts[role]/expected if expected else None,
+            teacher_label_expected_sources=dict(source_counts[role]),teacher_label_sources=source_counts[role])
+    return result
+
 @torch.no_grad()
 def collect_rollout(env,model,teachers,*,phase,ledger=None,kind='learning',budget_limit=None,steps=48):
     """Same o_t labels/means/value; env keeps physical episodes across calls."""
     is_dagger=phase.startswith('D');result=None;rewards=[];values=[];dones=[];logps=[];executed=[];episodes=[]
     key='PPO' if phase.startswith('P') else phase
     attempt=uuid.uuid4().hex
+    sample_counts={role:0 for role in spec.ROLES};label_counts={role:0 for role in spec.ROLES}
+    source_counts={role:{'blind':0,'stairs':0} for role in spec.ROLES}
     for control in range(steps):
         obs=env.observe();meta=env.metadata()
         if is_dagger:
             action=model(obs);label=teachers.label(obs,[t=='stairs' for t in meta['teacher']])
+            if (not isinstance(label,torch.Tensor) or tuple(label.shape)!=(env.num_envs,12) or not torch.isfinite(label).all()):
+                raise ValueError('teacher labels must be finite Tensor[N,12]; engineering failure before physics')
             row=dict(obs=obs,actions=label,**meta)
         else:
             dist=model.action_distribution(obs);action=dist.sample();value=model.evaluate(obs).flatten()
@@ -88,11 +114,15 @@ def collect_rollout(env,model,teachers,*,phase,ledger=None,kind='learning',budge
                 raise RuntimeError('attempted replay of reserved control step')
         _,reward,done,info=env.step(action)
         if ledger is not None:ledger.mark_executed(reservation)
+        for task,teacher in zip(meta['task'],meta['teacher']):
+            sample_counts[task]+=1
+            if is_dagger:
+                label_counts[task]+=1;source_counts[task][teacher]+=1
         if result is None:result=allocate_rollout(row,steps*env.num_envs)
         store_rollout_frame(result,row,control*env.num_envs,env.num_envs)
         rewards.append(reward.detach().cpu());dones.append(done.detach().cpu())
         executed.append(info['frame']['action'].detach().cpu());episodes.extend(info.get('episodes',[]))
-    metrics=dict(rollout_id=attempt,samples=env.num_envs*steps,episodes=episodes,executed_actions=torch.cat(executed),done=torch.stack(dones))
+    metrics=dict(rollout_id=attempt,per_task=collection_task_statistics(env.metadata(),episodes,is_dagger,sample_counts,label_counts,source_counts),samples=env.num_envs*steps,episodes=episodes,executed_actions=torch.cat(executed),done=torch.stack(dones))
     if not is_dagger:
         # observe() is read-only; no reset precedes this true final-state bootstrap.
         last_value=model.evaluate(env.observe()).flatten().detach().cpu()
@@ -117,6 +147,7 @@ def verify_acceptance(path,checkpoint,physical_sha):
 def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,device='cuda:0',ledger_path=None,controller_state=None):
     from .env import V10Env
     output=Path(output_dir);output.mkdir(parents=True,exist_ok=True);seed_all(spec.SEED)
+    physical_session_id=uuid.uuid4().hex
     memory_trace=lambda row:append_json(output/'memory_stages.jsonl',row)
     trace_memory(memory_trace,'worker_start')
     env=V10Env(num_envs=num_envs,course=course,seed=spec.SEED,device=device)
@@ -173,7 +204,8 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
             charged=ledger.totals().get('learning:'+budget_key,0)
             consumed=ledger.report()['executed'].get('learning:'+budget_key,0);rounds[budget_key]=consumed//nstep
             append_json(output/'updates.jsonl',dict(phase=course,round=rounds[budget_key],consumed=consumed,metrics=update,
-                updated_samples=nstep,completed_episodes=len(metrics['episodes']),failures=sum(not e['success'] for e in metrics['episodes'])))
+                updated_samples=nstep,rollout_id=metrics['rollout_id'],physical_session_id=physical_session_id,
+                collection_statistics_scope='training_rollout',per_task=metrics['per_task'],completed_episodes=len(metrics['episodes']),failures=sum(not e['success'] for e in metrics['episodes'])))
             del rollout,metrics
             release_host_memory();trace_memory(memory_trace,'rollout_released')
             if save_due(last_saved_confirmed,consumed):
