@@ -12,11 +12,11 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def select_case(manifest, lesson, vx, case_id):
-    matches = [c for c in manifest['cases'] if c['task'] == 'stairs'
+def select_case(manifest, lesson, vx, case_id, *, scene='stairs'):
+    matches = [c for c in manifest['cases'] if c['task'] == ('flat_walk' if scene == 'flat' else 'stairs')
                and c['lesson'] == lesson and c['speed'] == vx and c['case_id'] == case_id]
     if len(matches) != 1:
-        raise ValueError(f'没有唯一匹配的 S1 楼梯病例: {lesson}, vx={vx}, case_id={case_id}')
+        raise ValueError(f'没有唯一匹配的 S1 病例: {lesson}, vx={vx}, case_id={case_id}')
     return matches[0]
 
 
@@ -97,6 +97,39 @@ def enable_continue_after_success(env):
     env._outcomes = MethodType(V07Env._outcomes, env)
 
 
+def flat_sequence(step, cruise, walk_seconds, stop_seconds, dt=0.02):
+    walk_steps = max(1, round(walk_seconds / dt))
+    stop_steps = max(1, round(stop_seconds / dt))
+    if step < walk_steps:
+        return 'WALK', cruise
+    if step < walk_steps + stop_steps:
+        return 'STOP', 0.0
+    return 'WALK_AGAIN', cruise
+
+
+def enable_flat_sequence(env):
+    """Playback-only continuous flat sequence; keep physical failure resets."""
+    from dataclasses import replace
+    from types import MethodType
+    import torch
+    from src.tasks.velocity.v07.env import V07Env
+
+    if any(case['task'] != 'flat_walk' for case in env.v09_cases):
+        raise ValueError('Flat sequence requires flat_walk cases')
+
+    def task_state(self):
+        state = V07Env._task_state(self)
+        self._flat_outcome = {}
+        self._physical_failure = state.failure.clone()
+        return replace(state, success=torch.zeros_like(state.success),
+                       timeout=torch.zeros_like(state.timeout),
+                       reason=torch.where(state.failure, state.reason, torch.zeros_like(state.reason)))
+
+    env._task_state = MethodType(task_state, env)
+    env._episode_records = MethodType(V07Env._episode_records, env)
+    env._outcomes = MethodType(V07Env._outcomes, env)
+
+
 def playback_course(payload, *, allow_s2):
     meta = payload.get('metadata', {})
     if payload.get('schema') != 11:
@@ -171,6 +204,9 @@ def main(argv=None):
     parser.add_argument('--allow-s2-diagnostic', action='store_true', help='Play S2 weights in the S1 diagnostic scene; not S2 evaluation or resume')
     parser.add_argument('--manifest', type=Path, default=ROOT / 'logs/a2_v09/s1_seed42_r3/cases/S1_DIAG.json')
     parser.add_argument('--lesson', default='L40')
+    parser.add_argument('--scene', choices=['stairs', 'flat'], default='stairs')
+    parser.add_argument('--walk-seconds', type=float, default=8.0)
+    parser.add_argument('--stop-seconds', type=float, default=5.0)
     parser.add_argument('--case-id', type=int, default=0)
     parser.add_argument('--stair-steps', type=int, default=None, help='Temporary playback stair count')
     parser.add_argument('--platform-width', type=float, default=None, help='Temporary landing width in metres; stair width unchanged')
@@ -187,6 +223,10 @@ def main(argv=None):
     parser.add_argument('--duration', type=float, default=None, help='Playback seconds; otherwise until window closes')
     parser.add_argument('--headless-steps', type=int, default=0, help='Finite physics/scan smoke without a window')
     args = parser.parse_args(argv)
+    if not all(math.isfinite(t) and t > 0 for t in (args.walk_seconds, args.stop_seconds)):
+        parser.error('walk-seconds and stop-seconds must be finite and positive')
+    if args.scene == 'flat' and (args.continue_after_success or any(v is not None for v in (args.stair_steps, args.platform_width, args.platform_length))):
+        parser.error('Stair geometry and continue-after-success options do not apply to flat playback')
     if args.platform_length is not None and (not math.isfinite(args.platform_length) or args.platform_length < 2.0):
         parser.error('platform-length must be finite and >= 2 metres')
     if args.stair_steps is not None and args.stair_steps <= 0:
@@ -201,7 +241,8 @@ def main(argv=None):
         parser.error('duration and headless-steps are mutually exclusive')
     if hashlib.sha256(args.checkpoint.read_bytes()).hexdigest() != args.checkpoint_sha256:
         parser.error('Checkpoint SHA256 mismatch')
-    case = select_case(json.loads(args.manifest.read_text()), args.lesson, args.vx, args.case_id)
+    case = select_case(json.loads(args.manifest.read_text()), 'FLAT' if args.scene == 'flat' else args.lesson,
+                       args.vx, args.case_id, scene=args.scene)
     if not args.headless_steps and not (os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')):
         parser.error('Native viewer requires a desktop DISPLAY; use --headless-steps for a smoke check')
 
@@ -230,10 +271,15 @@ def main(argv=None):
         print('DIAGNOSTIC ONLY: S2 weights in the S1 scene; not S2 evaluation/resume.', flush=True)
     if payload.get('architecture') != 'a2-v09-native40x30-route-history':
         parser.error('Incompatible model architecture')
-    played_tile, landing_width = configure_terrain(case, steps=args.stair_steps, width=args.platform_width, length=args.platform_length)
-    print(f'Playback geometry: stairs={played_tile.N}, h={played_tile.h:g}m, depth={played_tile.step_depth:g}m, '
-          f'stair width={played_tile.width:g}m, landing length={played_tile.platform_length:g}m, '
-          f'landing width={landing_width:g}m; demo only, not frozen-case evaluation', flush=True)
+    if args.scene == 'stairs':
+        played_tile, landing_width = configure_terrain(case, steps=args.stair_steps, width=args.platform_width, length=args.platform_length)
+        print(f'Playback geometry: stairs={played_tile.N}, h={played_tile.h:g}m, depth={played_tile.step_depth:g}m, '
+              f'stair width={played_tile.width:g}m, landing length={played_tile.platform_length:g}m, '
+              f'landing width={landing_width:g}m; demo only, not frozen-case evaluation', flush=True)
+    else:
+        print(f'Flat diagnostic sequence: WALK {args.walk_seconds:g}s at {args.vx:g}m/s -> '
+              f'STOP {args.stop_seconds:g}s at 0m/s -> WALK_AGAIN at {args.vx:g}m/s until closed; '
+              'no scheduled resets, physical failures still reset', flush=True)
     torch.manual_seed(args.seed)
     model = V09ActorCritic().to(args.device)
     model.load_state_dict(payload['model'], strict=True)
@@ -246,14 +292,31 @@ def main(argv=None):
           'Cyan=valid, orange=clipped, red=invalid; yellow=scan boundary/forward.', flush=True)
     env = V09S1Env([case], device=args.device, seed=args.seed, course=course)
     try:
-        if args.continue_after_success:
+        if args.scene == 'flat':
+            enable_flat_sequence(env)
+        elif args.continue_after_success:
             enable_continue_after_success(env)
         obs, _ = env.reset()
+        phase_text = ''
+        def advance():
+            nonlocal obs, phase_text
+            if args.scene == 'flat':
+                phase, command = flat_sequence(int(env.episode_length_buf[0]), args.vx,
+                                               args.walk_seconds, args.stop_seconds, CONTROL_DT)
+                if phase != phase_text:
+                    print(f'FLAT PHASE {phase}: vx={command:g}m/s, episode_step={int(env.episode_length_buf[0])}', flush=True)
+                phase_text = phase
+                env.command[:, 0] = command
+                env.command[:, 1:] = 0
+                # Refresh current proprio command without adding history/map samples.
+                obs = env._observations(update=False)
+            obs, _, _, _, _ = env.step(model.act(obs, deterministic=True))
+
         with torch.inference_mode():
             if args.headless_steps:
                 scene = mujoco.MjvScene(env.sim.mj_model, maxgeom=4096)
                 for _ in range(args.headless_steps):
-                    obs, _, _, _, _ = env.step(model.act(obs, deterministic=True))
+                    advance()
                     draw_scan(scene, env)
                 assert torch.isfinite(env.sim.data.qpos).all()
                 print(f'PASS: {args.headless_steps} policy steps, finite qpos, {scene.ngeom} scan decorations', flush=True)
@@ -270,13 +333,17 @@ def main(argv=None):
                 steps = 0
                 while viewer.is_running() and (limit is None or steps < limit):
                     start = time.perf_counter()
-                    obs, _, _, _, _ = env.step(model.act(obs, deterministic=True))
+                    advance()
                     with viewer.lock():
                         data.qpos[:] = env.sim.data.qpos[0].cpu().numpy()
                         data.qvel[:] = env.sim.data.qvel[0].cpu().numpy()
                         mujoco.mj_forward(env.sim.mj_model, data)
                         viewer.cam.lookat[:] = env.robot.data.root_link_pos_w[0].cpu().numpy()
                         draw_scan(viewer.user_scn, env)
+                    if args.scene == 'flat':
+                        viewer.set_texts((mujoco.mjtFontScale.mjFONTSCALE_100, mujoco.mjtGridPos.mjGRID_TOPLEFT,
+                                          scan_text.replace(' | ', '\n'),
+                                          f'{phase_text} | vx={float(env.command[0, 0]):g} m/s'))
                     viewer.sync()
                     steps += 1
                     time.sleep(max(0., CONTROL_DT - (time.perf_counter() - start)))

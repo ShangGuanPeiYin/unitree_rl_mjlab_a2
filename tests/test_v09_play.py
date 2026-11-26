@@ -181,3 +181,20 @@ def test_spawn_seed_changes_pose_reproducibly_without_editing_case():
     assert case == original and a['case_sha256'] != 'original'
     assert a['playback_spawn_seed'] == 43
     assert -.05 <= a['spawn']['local_yaw_radians'] <= .05
+
+
+def test_flat_walk_stop_walk_exact_control_boundaries():
+    player = load_player()
+    assert player.flat_sequence(399, 0.5, 8.0, 5.0) == ('WALK', 0.5)
+    assert player.flat_sequence(400, 0.5, 8.0, 5.0) == ('STOP', 0.0)
+    assert player.flat_sequence(649, 0.5, 8.0, 5.0) == ('STOP', 0.0)
+    assert player.flat_sequence(650, 0.5, 8.0, 5.0) == ('WALK_AGAIN', 0.5)
+    assert player.flat_sequence(2000, 0.5, 8.0, 5.0) == ('WALK_AGAIN', 0.5)
+
+
+def test_flat_case_selection_does_not_pick_stop_or_stairs():
+    player = load_player()
+    cases = [dict(task='stairs', lesson='FLAT', speed=0.5, case_id=0),
+             dict(task='flat_stop', lesson='FLAT', speed=0.5, case_id=0),
+             dict(task='flat_walk', lesson='FLAT', speed=0.5, case_id=0)]
+    assert player.select_case({'cases': cases}, 'FLAT', 0.5, 0, scene='flat') is cases[2]
