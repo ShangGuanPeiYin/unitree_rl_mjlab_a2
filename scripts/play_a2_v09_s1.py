@@ -40,6 +40,19 @@ def resample_spawn(case, seed, *, x_bounds, y_bounds, yaw_bounds):
     return result
 
 
+def configure_air_case(case, *, length, width, height, seed):
+    from copy import deepcopy
+    from dataclasses import asdict
+    from src.tasks.velocity.v07 import terrain, spec
+    terrain.configure_air_platform(length=length, width=width, height=height)
+    tile = terrain.build_terrain_specs()[0]
+    copied = deepcopy(case)
+    copied['geometry'] = asdict(tile)
+    copied['spawn']['frame_origin_world'] = list(tile.frame_origin_world)
+    return resample_spawn(copied, seed, x_bounds=(1., 1.), y_bounds=spec.SPAWN_Y,
+                          yaw_bounds=spec.SPAWN_YAW_RADIANS)
+
+
 def configure_terrain(case, *, steps=None, width=None, length=None):
     """Optional process-local geometry; frozen cases/specs remain unchanged."""
     from src.tasks.velocity.v07 import terrain, spec
@@ -229,6 +242,9 @@ def main(argv=None):
     parser.add_argument('--lesson', default='L40')
     parser.add_argument('--scene', choices=['stairs', 'flat'], default='stairs')
     parser.add_argument('--keyboard', action='store_true', help='Flat manual control: W walk at --vx, S stop; initially stopped')
+    parser.add_argument('--air-platform', action='store_true', help='Elevate the flat tile as an isolated platform')
+    parser.add_argument('--platform-height', type=float, default=2.0)
+    parser.add_argument('--continuous-walk', action='store_true', help='Flat constant forward command, no timed stop')
     parser.add_argument('--walk-seconds', type=float, default=8.0)
     parser.add_argument('--stop-seconds', type=float, default=5.0)
     parser.add_argument('--case-id', type=int, default=0)
@@ -247,11 +263,17 @@ def main(argv=None):
     parser.add_argument('--duration', type=float, default=None, help='Playback seconds; otherwise until window closes')
     parser.add_argument('--headless-steps', type=int, default=0, help='Finite physics/scan smoke without a window')
     args = parser.parse_args(argv)
+    if (args.air_platform or args.continuous_walk) and args.scene != 'flat':
+        parser.error('air-platform and continuous-walk require --scene flat')
+    if args.keyboard and args.continuous_walk:
+        parser.error('keyboard and continuous-walk are mutually exclusive')
+    if args.air_platform and (not math.isfinite(args.platform_height) or args.platform_height <= 0 or args.platform_length is None or args.platform_width is None or args.platform_length < 3):
+        parser.error('air-platform requires explicit length >=3, width and positive height')
     if args.keyboard and args.scene != 'flat':
         parser.error('--keyboard requires --scene flat')
     if not all(math.isfinite(t) and t > 0 for t in (args.walk_seconds, args.stop_seconds)):
         parser.error('walk-seconds and stop-seconds must be finite and positive')
-    if args.scene == 'flat' and (args.continue_after_success or any(v is not None for v in (args.stair_steps, args.platform_width, args.platform_length))):
+    if args.scene == 'flat' and (args.continue_after_success or args.stair_steps is not None or (not args.air_platform and any(v is not None for v in (args.platform_width, args.platform_length)))):
         parser.error('Stair geometry and continue-after-success options do not apply to flat playback')
     if args.platform_length is not None and (not math.isfinite(args.platform_length) or args.platform_length < 2.0):
         parser.error('platform-length must be finite and >= 2 metres')
@@ -281,7 +303,7 @@ def main(argv=None):
     from src.tasks.velocity.v09.spec import CONTROL_DT
     from src.tasks.velocity.v09.map import GRID_X, GRID_Y, GRID_STEP, MAP_HZ, MAP_SHAPE
 
-    if args.spawn_seed is not None:
+    if args.spawn_seed is not None and not args.air_platform:
         from src.tasks.velocity.v07 import spec as original_spec
         case = resample_spawn(case, args.spawn_seed, x_bounds=original_spec.SPAWN_X,
                               y_bounds=original_spec.SPAWN_Y, yaw_bounds=original_spec.SPAWN_YAW_RADIANS)
@@ -297,11 +319,18 @@ def main(argv=None):
         print('DIAGNOSTIC ONLY: S2 weights in the S1 scene; not S2 evaluation/resume.', flush=True)
     if payload.get('architecture') != 'a2-v09-native40x30-route-history':
         parser.error('Incompatible model architecture')
+    if args.air_platform:
+        case = configure_air_case(case, length=args.platform_length, width=args.platform_width,
+                                  height=args.platform_height, seed=args.spawn_seed if args.spawn_seed is not None else args.seed)
+        print(f'Air platform: width={args.platform_width:g}m length={args.platform_length:g}m '
+              f'height={args.platform_height:g}m; spawn x=1m, diagnostic only', flush=True)
     if args.scene == 'stairs':
         played_tile, landing_width = configure_terrain(case, steps=args.stair_steps, width=args.platform_width, length=args.platform_length)
         print(f'Playback geometry: stairs={played_tile.N}, h={played_tile.h:g}m, depth={played_tile.step_depth:g}m, '
               f'stair width={played_tile.width:g}m, landing length={played_tile.platform_length:g}m, '
               f'landing width={landing_width:g}m; demo only, not frozen-case evaluation', flush=True)
+    elif args.continuous_walk:
+        print(f'Continuous flat WALK: vx={args.vx:g}m/s; physical failures still reset', flush=True)
     elif args.keyboard:
         print(f'Flat keyboard control: initially STOP; W=walk at {args.vx:g}m/s, S=stop; click viewer to focus. '
               'Automatic walk/stop timing is disabled.', flush=True)
@@ -333,6 +362,8 @@ def main(argv=None):
             if args.scene == 'flat':
                 if keyboard is not None:
                     phase, command = keyboard.read()
+                elif args.continuous_walk:
+                    phase, command = 'WALK', args.vx
                 else:
                     phase, command = flat_sequence(int(env.episode_length_buf[0]), args.vx,
                                                    args.walk_seconds, args.stop_seconds, CONTROL_DT)

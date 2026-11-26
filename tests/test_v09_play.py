@@ -221,3 +221,29 @@ def test_keyboard_drains_events_in_order():
     assert keys.read() == ('WALK', 0.5)
     keys.on_key(ord('s'))
     assert keys.read() == ('STOP', 0.0)
+
+
+def test_air_platform_pose_and_geometry_are_consistent():
+    code = '''
+import sys
+sys.path.insert(0, 'scripts')
+from a2_v07_bootstrap import activate
+activate()
+from play_a2_v09_s1 import configure_air_case
+from src.tasks.velocity.v07 import terrain, spec
+case = {'geometry': {'tile_id': 0}, 'spawn': {
+ 'local_position_xy': [-1.,0.], 'local_yaw_radians':0., 'frame_origin_world':[0.,0.,0.],
+ 'local_position':[-1.,0.,.4], 'world_position':[-1.,0.,.4]}, 'case_sha256':'original'}
+result = configure_air_case(case, length=10., width=.8, height=2., seed=43)
+played = terrain.build_terrain_specs()[0]
+assert played.N == 0 and played.width == .8
+assert played.valid_bounds_local == (0., 10., -.4, .4)
+assert result['spawn']['local_position_xy'][0] == 1.
+assert result['spawn']['frame_origin_world'] == [0., 0., 2.]
+assert result['spawn']['world_position'][2] == 2.4
+assert spec.terrain_spec(0).frame_origin_world[2] == 0.
+assert case['spawn']['local_position_xy'][0] == -1.
+'''
+    result = subprocess.run([sys.executable, '-c', code], cwd=ROOT,
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr

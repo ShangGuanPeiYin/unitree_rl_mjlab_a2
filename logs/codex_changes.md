@@ -5087,3 +5087,15 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 未验证：无桌面DISPLAY，真实窗口焦点、物理键盘按键和长期停车/步行效果未验证；人工事件注入不等同桌面端到端验证。未运行训练/正式评估/全项目测试。
 - 提交/推送：仅独立本地提交；此前自动审批因受信远端证据不足/源码外传风险拒绝同一origin推送，未绕过重试，远端未同步。既有无关改动保留。
 - 独立只读审查：未发现阻断问题；确认线程安全队列、W/S最新事件语义、初始STOP、仅flat启用及旧自动路径保持，桌面实际按键投递仍待验证。
+
+## 2026-11-26 0.8m×10m悬空平地播放
+
+- 目的：按用户要求给出S2重命名权重与S1权重在0.8m宽、10m长悬空平地上行走的命令。
+- 文件：scripts/play_a2_v09_s1.py、tests/test_v09_play.py、logs/codex_changes.md。
+- 修改：新增 --air-platform（仅flat）复用现有terrain.configure_air_platform进程内覆盖；显式指定platform-width0.8、platform-length10、platform-height2m，height缺省2m。复制flat_walk病例并同步实际geometry、frame_origin和出生坐标；local x=1m、机体world z=2.4m，y/yaw仍按原范围以spawn-seed43采样。不更改冻结清单/训练spec。
+- 指令：新增 --continuous-walk（仅flat，与keyboard互斥），以vx0.5/vy0/wz0持续前进，不执行默认8s/5s停车时序；保留失败reset及扫描点、边界、尺寸显示。普通flat、stairs、keyboard及训练行为默认保持原样。
+- 验证：新增悬空平台实际几何/出生坐标/训练spec不变测试先失败，实现后播放测试14通过；S2重命名权重真实GPU目标场景12步通过，qpos有限、扫描装饰1205个；py_compile、git diff --check通过。遵循用户要求，不额外重复核对权重身份。
+- 未验证：S1权重在新增悬空场景未单独实跑；窗口交互及两个权重整段10m平台步行性能均未验证；未运行训练/正式评估或全项目测试，不声称性能改善。
+- 提交/推送：仅独立本地提交；此前自动审批以受信远端证据不足/源码外传风险拒绝同一origin推送，未绕过重试，远端未同步，既有无关改动保留。
+- 审查状态：已请求独立只读审查，截至提交时尚未返回，未计作通过。
+- 审查补充：提交后收到独立只读审查结果，未发现阻断问题；确认几何与出生坐标一致、原病例/训练spec保留及默认路径不变；验证限制同上。
