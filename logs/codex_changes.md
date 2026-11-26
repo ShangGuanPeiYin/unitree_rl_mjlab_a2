@@ -5108,3 +5108,68 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 范围：仅播放时临时覆盖，不修改训练地形、冻结病例清单、训练设置或权重；保留高程图显示及 --continue-after-success。
 - 验证：新增顶部出生坐标/原病例不变测试先失败，完成后15项播放测试通过（1条既有Torch弃用警告）；实际logs/good/s1_latest.pt、20级、0.8×10m平台GPU12步通过，打印TOP REACHED后继续，qpos有限、扫描装饰1205个；git diff --check通过。桌面交互、整个平台行走效果未验证，未训练/正式评估。
 - 提交/推送：仅独立本地提交；此前自动审批因远端受信证据不足/源码外传风险拒绝同一origin推送，未绕过重试，远端未同步。既有无关改动保留。
+
+
+## 2026-11-26T22:50:38+08:00 SDS v1.1交接落盘
+
+- 修改目的：跨Codex会话读取截断，为执行agent提供完整且可校验的已审查SDS。
+- 涉及文件：doc/sds/SDS_A2_v1.0_DualTeacher_DAgger_PPO_v1.1.md、logs/codex_changes.md。
+- 实际内容及理由：从规划会话唯一完整v1.1最终正文提取，移除proposed_plan展示标签，原文保存为新文件；不覆盖旧SDS，不修改代码或训练参数。正文的“规划模式/尚未发送”描述保留为原发布时状态；用户随后已明确执行，本轮已经向执行会话交接，不构成继续等待授权的要求。
+- 验证：正文逐字符回读一致，14个一级编号章节齐全，SHA256=eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0。
+- 未验证：未运行工程测试、教师准入或训练；不声称训练效果改善。
+- 提交协调：本次仅文档与追加日志，由执行主对话统一管理Git暂存、提交及推送，避免并发操作Git索引。
+
+## 2026-11-26 A2 v1.0实施：冻结协议、病例和质量接口（进行中）
+
+- 目的：执行完整v1.1 SDS，独立新增v10命名空间，保护已有main修改。
+- 文件：src/tasks/velocity/v10/__init__.py、spec.py、cases.py、evaluation.py、tests/test_v10_protocol.py、doc/sds/A2_v10_implementation_ledger.md；环境与学习栈文件由子agent后续分别记录。
+- 内容与设计：固定双教师身份和196608000学习样本预算；六角色最大余数分配（1024为205/102/154/154/102/307，512为102/51/77/77/51/154）；生成D1/D2/D3的154/226/334组及实际初态变化；A/B和两套终验以独立身份派生病例；显式生成零缓存评估费用上界。新增逐回合窗口质量与逐组相对保持判定，缺失窗口不删除分母，紧凑EpisodeMetrics供终点奖励与验收使用。旧课程/奖励/超参均未修改；新版设计尚在集成。
+- 验证：新增协议测试先因模块缺失失败，实现后4项通过，1条既有Torch弃用警告；后续接口增补正在复验。
+- 未验证：物理工程、显存探测、教师准入、正式学习、行为验收全部尚未执行；不能声称效果改善。
+
+## 2026-11-26 A2 v1.0：独立审核修复与Q1裁定
+
+- 文件：src/tasks/velocity/v10/evaluation.py、tests/test_v10_protocol.py、doc/sds/reviews/v10_execution_rulings.md。
+- 内容：独立审核复现重复candidate冒充分母、参考全缺窗口跳过覆盖、completed布尔绕过时长、NaN比较放行四项缺陷；先建立失败回归，再核实两侧唯一病例集合、双方及预期窗口覆盖、实际阶段/命令/时长/净位移，并将非有限物理测量及指标作为工程异常抛出。不是训练配方改变，不修改旧奖励。
+- 验证：当前协议/评估8项通过，1条既有Torch弃用警告；真实端点集成仍待审核。
+- 裁定：规划线程批准Q1预留/执行/不确定费用外账方案，不确定量保守扣预算但不称实际执行、不进梯度；单独记录并关联原SDS，未覆盖SDS。Q2评估并行语义待裁定，尚未执行依赖工作。
+- 未验证：双栈资源probe、教师准入、正式学习和行为改进。
+
+## 2026-11-26 A2 v1.0：环境、学习核心及评估进程集成（进行中）
+
+- 文件：新v10 geometry/tasks/contacts/env、model/teachers/replay/dagger/ppo/rewards及其tests；eval_worker.py；详细证据见logs/v10_env_implementation_report.md、logs/v10_learning_implementation_report.md。
+- 内容/理由：环境独立装配名义资产，primitive同时生成碰撞与真实地图，保留0.01m踏面；三种接触分离及真实稳定判定/真实软限位。六类任务按固定比例持续训练，登顶第二合格帧后下一动作切盲走教师，100间隔减速/1000间隔HOLD不提前reset。学习栈从S2复制全部Actor，先六任务等权DAgger，再独立Critic/P0/P1及固定合格学生保持；不是继续旧PPO课程。独立评估worker按Q2每组20/100真实病例运行，首次终止冻结、零动作padding全批计费，Q1外账保守预扣，每组显式同上限断言，模型/病例/协议/物理SHA缓存参考。增加评估独立GPU/主机峰值核验。
+- 参数：DAgger LR3e-5，逻辑3072(每任务512)，微批<=256，1024每rollout20次更新/512为10次；PPO48步、5epoch×4逻辑批、std0.10初始化后投影[0.05,0.30]，keep系数1，均依原SDS，未修改其配方。
+- 差异：旧stable仅零指令及越限零值接线未沿用；真实安全支撑/运动条件决定稳定、真实关节状态计算越限。新腾空计时明确按C_reward，与旧raw可能差0.02s；不宣称效果改善。
+- 验证：环境CPU6项通过，默认GPU3项显式skip；已实际执行CUDA单环境3步、六环境20步、三高度跌落各1步、Q2终止后padding2步，累计128工程样本，无正式学习。学习核心11项通过（另在补PPO微批对照）；独立评估/协议目前10项通过，含F_STOP仅5s重启回归。均有上游Torch弃用警告1条。
+- 未验证：完整资源probe、教师A/B准入、课程学习、终验/导出。恢复和调度仍在独立审核，不以单元测试绿代替行为验收。
+
+## 2026-11-26 A2 v1.0：外部裁定、恢复隔离与广域测试
+
+- 文件：v10 checkpoint/runtime/resources/identity/gpu_lock、scripts/run_a2_v10.py；主代理eval_worker/evaluation及协议测试；独立调度器仍在最终审核。
+- Q1/Q2/Q3：规划线程批准单step预留不确定费用、20/100评估padding分账，以及固定已验checkpoint字节+sidecar/事件幂等保存方案；原文另存doc/sds/reviews/v10_execution_rulings.md，不覆盖冻结SDS。
+- 设计/修复：Actor恢复后仍单独从指定S2源建立楼梯教师；过滤静态地形body的质量/惯量，机器人/控制/求解器及碰撞展开做物理身份，地形另hash；Critic仅CPU seed独立流不污染CUDA；外账增量读取并区分charged/executed/uncertain/updated；保存按越过样本阈值触发。实际GPU子进程持共享文件锁，parent死后不能并驻另一GPU子进程。评估只在资源监测通过后发布最终result凭据，资源不合的中间结果不能被恢复采纳；缓存同样要求资源凭据。静止最后10秒漂移改从10秒边界状态起算，修正漏掉第一个控制间隔的位移。
+- 验证：学习+运行时23项通过；新增真实6env×48步smoke为288样本，结合环境128样本，工程合计416。实际D1/D3分别构造0step验证机器人SHA一致aa74d2d53526f2025b46054771ec1cf9e785b9dcee7a860e98e2c8303ee58442、地形SHA不同。RNG隔离有实际CUDA前后对照；所有失败构造均0控制样本。
+- 广域测试限制：裸pytest收集历史logs里的before/draft重复测试模块，并触发legacy bootstrap全局包冲突，324项收集错误（当时尚有新调度文件未完成）；仅tests目录亦因旧版本bootstrap与正常src.tasks冲突出现109项收集错误。未修改/清理旧测试或历史日志，不声称全项目测试通过；新版定向套件正在最终复验。
+- 未验证：完整probe、教师能力准入、正式训练、独立终验。尚无行为改善数据。
+
+## 2026-11-26 A2 v1.0：完整调度与身份冻结（工程收尾）
+
+- 文件：v10 orchestration/identity/gpu_lock/checkpoint/eval_worker、scripts/train_a2_v10.py及protocol/orchestration测试；doc/sds/A2_v10_execution_report.md。
+- 内容：自动串行probe→教师A/B→D1/D2/D3→唯一DAgger终验→P0/P1→唯一PPO终验→导出；Q3哈希链事件保存终验开封/验收/回退，恢复幂等；PPO通过门禁后恢复优先对同SHA终验而不再学习。工程准入必须真实独立报告路径+SHA，source身份覆盖所有src依赖及新版脚本/测试，裁定SHA冻结。checkpoint顶层绑定代码身份，评估缓存/结果绑定代码+裁定+SDS/模型/病例/物理。只加载一次大型checkpoint，评估后丢弃不使用replay/优化器，不逐组重载。教师准入首个完整20例组<18时明确partial失败并停止，不能把部分suite当通过。
+- 验证：调度20项通过；主协议截至最后身份补项前13项通过，后续全v10最终冻结套件正在复验。原文件SHA、错配/篡改、事件持久化崩溃恢复、partial rollout计费后门禁overshoot、GPU子进程互斥及资源最终receipt均有回归覆盖。详细结果在独立审核最终报告；未把测试过程中的中间红态当最终通过。
+- 用户最新再次明确允许修改、GitHub push和正式训练，不重复询问。实际正式训练仍依赖完整资源probe及教师准入，不放宽SDS。
+- 未验证：资源选择N/峰值、教师逐组准入、训练课程与终验效果，尚无可声称的改善。
+
+## 2026-11-26 A2 v1.0：冻结验证结果
+
+- 最终源码统一命令：CUDA_VISIBLE_DEVICES='' /home/xxs/anaconda3/envs/a2/bin/python -m pytest -q tests/test_v10_*.py，结果62 passed、4显式GPU skipped、1上游Torch弃用warning，37.70s；原始输出/tmp/a2_v10_frozen_pytest.log。
+- 代码/测试/脚本git diff --cached --check通过。冻结SDS原文存在5处Markdown双空格换行，完整默认whitespace检查会提示trailing whitespace；不改原文/不改SHA，关闭blank-at-eol的完整检查通过。此前未暂存时的diff检查仅覆盖已跟踪差异，现明确此范围差异。
+- 本次暂存只含新v10/SDS/裁定/报告及追加日志，无权重、凭据或原有dirty文件。独立审核最后签署与资源/行为结果后续追加。
+
+## 2026-11-26 A2 v1.0：独立工程审核通过
+
+- 新增独立报告doc/sds/reviews/v10_independent_engineering_review.md，非实现者review_preflight出具，报告SHA bcca516187aae9d84360d51d313727a8d249363c6ae5a11945bda54fd9fa5dc3。
+- 已实际核对当前源码指纹为7f15a529b47f0b9a5512109a9050ad25a5b00c82bb294deaefd0edf0b7cb71a7，与独立报告一致，签发logs/a2_v10/engineering_admission_20261126.json，scope仅v10工程，不宣称资源/教师/行为通过。
+- 最终新版统一62 passed、4 GPU显式skip、1上游warning；审核者另独立运行58项联合测试和33项最后局部复验，报告逐项列证据与局限。
+- 后续按已授权流程提交/push、资源探测、教师准入、训练；每个依赖门禁仍严格执行。当前正式学习样本为0，实际工程416样本。
