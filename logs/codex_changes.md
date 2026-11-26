@@ -5208,3 +5208,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 真实worker CPU集成修复首次保存/恢复跨周期/周期与边界去重，周期仍2457600。采样预分配/直接索引与旧轨迹/RNG逐项对照；stage-only资源不足和RSS高水位被纳入最终判定。并发编辑曾导致CPUfixture代码指纹暂时失配，测试接缝固定测试身份后隔离；生产checkpoint始终严格核真实源指纹，未放宽验证。
 - 全局历史probe实际737280/updated663552/uncertain0完整保留；Q4新增物理0，正式学习0。新增总额度尚未明确批准，不创建授权、不重probe。旧全项目bootstrap收集失败限制仍在，不擅修旧代码。
 - 代码/测试格式检查通过，SDS原文双空格换行保留不改SHA。下一步只提交推送本轮文件，资源/教师/训练结果仍未验证；无效果改善宣称。
+
+## 2026-11-26 A2 v1.0 Q4：远端同步确认与停止状态
+
+- Q4源码/测试/报告提交7c0fa3fb6c7b91021c98af1d77d0d6e9fd2ec10c已push origin/main，本地rev-parse及远端ls-remote逐字一致。先前两提交4b80853及1cb49a8亦已推送。
+- 核对暂存区为空，原scripts/play.py、scripts/train.py、v09/s2_train.py、tests/test_v09_s2_1_train.py的既有修改及原untracked仍保留，未夹带本次提交；无权重上传。
+- 当前无本任务train/probe运行进程、无生产probe授权文件，正式学习和教师评估为0；737280历史probe费用保留。已将提交、统一/独立测试与预算阻断状态回报规划线程。后续只在明确probe总额度授权后按原顺序重探测，不重复询问用户已有的修改/push/正式训练许可。
+- 本次仅补交付状态文档，不改源码指纹、参数或测试结果。当前无行为改善结论。
