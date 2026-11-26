@@ -198,3 +198,26 @@ def test_flat_case_selection_does_not_pick_stop_or_stairs():
              dict(task='flat_stop', lesson='FLAT', speed=0.5, case_id=0),
              dict(task='flat_walk', lesson='FLAT', speed=0.5, case_id=0)]
     assert player.select_case({'cases': cases}, 'FLAT', 0.5, 0, scene='flat') is cases[2]
+
+
+def test_keyboard_walk_stop_resume_and_unrelated_keys():
+    player = load_player()
+    keys = player.KeyboardControl(0.5)
+    assert keys.read() == ('STOP', 0.0)
+    keys.on_key(ord('W'))
+    assert keys.read() == ('WALK', 0.5)
+    keys.on_key(ord('S'))
+    assert keys.read() == ('STOP', 0.0)
+    keys.on_key(ord('W'))
+    assert keys.read() == ('WALK', 0.5)
+    keys.on_key(ord('X'))
+    assert keys.read() == ('WALK', 0.5)
+
+
+def test_keyboard_drains_events_in_order():
+    keys = load_player().KeyboardControl(0.5)
+    for char in 'WsW':
+        keys.on_key(ord(char))
+    assert keys.read() == ('WALK', 0.5)
+    keys.on_key(ord('s'))
+    assert keys.read() == ('STOP', 0.0)

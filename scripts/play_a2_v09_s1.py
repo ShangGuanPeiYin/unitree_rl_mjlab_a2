@@ -97,6 +97,29 @@ def enable_continue_after_success(env):
     env._outcomes = MethodType(V07Env._outcomes, env)
 
 
+class KeyboardControl:
+    """Viewer thread enqueues keys; simulation thread alone changes the command."""
+    def __init__(self, cruise):
+        from queue import SimpleQueue
+        self.cruise = cruise
+        self.walking = False
+        self.events = SimpleQueue()
+
+    def on_key(self, keycode):
+        if keycode in (ord('W'), ord('w'), ord('S'), ord('s')):
+            self.events.put(keycode)
+
+    def read(self):
+        from queue import Empty
+        while True:
+            try:
+                key = self.events.get_nowait()
+            except Empty:
+                break
+            self.walking = key in (ord('W'), ord('w'))
+        return ('WALK', self.cruise) if self.walking else ('STOP', 0.0)
+
+
 def flat_sequence(step, cruise, walk_seconds, stop_seconds, dt=0.02):
     walk_steps = max(1, round(walk_seconds / dt))
     stop_steps = max(1, round(stop_seconds / dt))
@@ -205,6 +228,7 @@ def main(argv=None):
     parser.add_argument('--manifest', type=Path, default=ROOT / 'logs/a2_v09/s1_seed42_r3/cases/S1_DIAG.json')
     parser.add_argument('--lesson', default='L40')
     parser.add_argument('--scene', choices=['stairs', 'flat'], default='stairs')
+    parser.add_argument('--keyboard', action='store_true', help='Flat manual control: W walk at --vx, S stop; initially stopped')
     parser.add_argument('--walk-seconds', type=float, default=8.0)
     parser.add_argument('--stop-seconds', type=float, default=5.0)
     parser.add_argument('--case-id', type=int, default=0)
@@ -223,6 +247,8 @@ def main(argv=None):
     parser.add_argument('--duration', type=float, default=None, help='Playback seconds; otherwise until window closes')
     parser.add_argument('--headless-steps', type=int, default=0, help='Finite physics/scan smoke without a window')
     args = parser.parse_args(argv)
+    if args.keyboard and args.scene != 'flat':
+        parser.error('--keyboard requires --scene flat')
     if not all(math.isfinite(t) and t > 0 for t in (args.walk_seconds, args.stop_seconds)):
         parser.error('walk-seconds and stop-seconds must be finite and positive')
     if args.scene == 'flat' and (args.continue_after_success or any(v is not None for v in (args.stair_steps, args.platform_width, args.platform_length))):
@@ -276,6 +302,9 @@ def main(argv=None):
         print(f'Playback geometry: stairs={played_tile.N}, h={played_tile.h:g}m, depth={played_tile.step_depth:g}m, '
               f'stair width={played_tile.width:g}m, landing length={played_tile.platform_length:g}m, '
               f'landing width={landing_width:g}m; demo only, not frozen-case evaluation', flush=True)
+    elif args.keyboard:
+        print(f'Flat keyboard control: initially STOP; W=walk at {args.vx:g}m/s, S=stop; click viewer to focus. '
+              'Automatic walk/stop timing is disabled.', flush=True)
     else:
         print(f'Flat diagnostic sequence: WALK {args.walk_seconds:g}s at {args.vx:g}m/s -> '
               f'STOP {args.stop_seconds:g}s at 0m/s -> WALK_AGAIN at {args.vx:g}m/s until closed; '
@@ -298,11 +327,15 @@ def main(argv=None):
             enable_continue_after_success(env)
         obs, _ = env.reset()
         phase_text = ''
+        keyboard = KeyboardControl(args.vx) if args.keyboard else None
         def advance():
             nonlocal obs, phase_text
             if args.scene == 'flat':
-                phase, command = flat_sequence(int(env.episode_length_buf[0]), args.vx,
-                                               args.walk_seconds, args.stop_seconds, CONTROL_DT)
+                if keyboard is not None:
+                    phase, command = keyboard.read()
+                else:
+                    phase, command = flat_sequence(int(env.episode_length_buf[0]), args.vx,
+                                                   args.walk_seconds, args.stop_seconds, CONTROL_DT)
                 if phase != phase_text:
                     print(f'FLAT PHASE {phase}: vx={command:g}m/s, episode_step={int(env.episode_length_buf[0])}', flush=True)
                 phase_text = phase
@@ -323,7 +356,8 @@ def main(argv=None):
                 return
             import mujoco.viewer
             data = mujoco.MjData(env.sim.mj_model)
-            with mujoco.viewer.launch_passive(env.sim.mj_model, data) as viewer:
+            with mujoco.viewer.launch_passive(env.sim.mj_model, data,
+                                              key_callback=keyboard.on_key if keyboard is not None else None) as viewer:
                 viewer.cam.azimuth, viewer.cam.elevation, viewer.cam.distance = 120., -20., 3.8
                 viewer.set_texts((mujoco.mjtFontScale.mjFONTSCALE_100,
                                   mujoco.mjtGridPos.mjGRID_TOPLEFT,
@@ -343,7 +377,8 @@ def main(argv=None):
                     if args.scene == 'flat':
                         viewer.set_texts((mujoco.mjtFontScale.mjFONTSCALE_100, mujoco.mjtGridPos.mjGRID_TOPLEFT,
                                           scan_text.replace(' | ', '\n'),
-                                          f'{phase_text} | vx={float(env.command[0, 0]):g} m/s'))
+                                          f'{phase_text} | vx={float(env.command[0, 0]):g} m/s'
+                                          + (' | W: walk / S: stop' if keyboard is not None else '')))
                     viewer.sync()
                     steps += 1
                     time.sleep(max(0., CONTROL_DT - (time.perf_counter() - start)))
