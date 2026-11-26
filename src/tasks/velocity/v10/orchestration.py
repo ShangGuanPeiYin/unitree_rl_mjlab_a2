@@ -22,7 +22,11 @@ RULINGS_PATH=spec.ROOT/'doc/sds/reviews/v10_execution_rulings.md'
 class StopTraining(RuntimeError):pass
 
 
-def file_sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+def file_sha(path):
+    digest=hashlib.sha256()
+    with Path(path).open('rb') as f:
+        for block in iter(lambda:f.read(8*1024*1024),b''):digest.update(block)
+    return digest.hexdigest()
 
 
 def atomic_json(path,value):
@@ -116,11 +120,15 @@ class EventJournal:
 
 
 class Orchestrator:
-    def __init__(self,run_dir,engineering_admission,resource_selection=None,device='cuda:0',resume_reason=None,runner=None):
+    def __init__(self,run_dir,engineering_admission,resource_selection=None,device='cuda:0',resume_reason=None,runner=None,global_probe_ledger=None,probe_budget_authorization=None,probe_sequence_id=None):
         self.root=Path(run_dir).resolve();self.root.mkdir(parents=True,exist_ok=True)
         self.state_path=self.root/'controller_state.json';self.approval=Path(engineering_admission).resolve()
         self.selection=Path(resource_selection).resolve() if resource_selection else None
         self.device=device;self.resume_reason=resume_reason;self.runner=runner or subprocess.run
+        from .probe_budget import DEFAULT_GLOBAL_LEDGER
+        self.global_probe_ledger=Path(global_probe_ledger or DEFAULT_GLOBAL_LEDGER).resolve()
+        self.probe_budget_authorization=Path(probe_budget_authorization).resolve() if probe_budget_authorization else None
+        self.probe_sequence_id=probe_sequence_id
         self.state=(read_json(self.state_path) if self.state_path.exists() else dict(
             schema='a2-v10-controller-v1',sds_sha256=spec.SDS_SHA256,rulings_sha256=file_sha(RULINGS_PATH),code_sha256=code_fingerprint(),
             status='new',operations={},teacher_admission={},gates={},finals={},certificates={},
@@ -259,13 +267,29 @@ class Orchestrator:
         atomic_json(config,frozen);self.frozen=frozen
         self.state['frozen_sha256']=file_sha(config);self.state['evaluation_max_samples']=plan['max_samples']
         self.state['status']='running';self.persist()
+        from .probe_budget import GlobalProbeBudget
+        budget=GlobalProbeBudget(self.global_probe_ledger,self.probe_budget_authorization)
+        authorization=budget.validate_authorization() # No authorization means no child, even on a new run ID.
+        sequence=self.probe_sequence_id or self.state.get('probe_sequence_id') or ('probe-'+cases.digest(str(self.root))[:24])
+        if self.state.get('global_probe_ledger') and self.state['global_probe_ledger']!=str(self.global_probe_ledger):raise StopTraining('global_probe_ledger_changed')
+        if self.state.get('probe_sequence_id') and self.state['probe_sequence_id']!=sequence:raise StopTraining('probe_sequence_identity_changed')
+        self.state.update(global_probe_ledger=str(self.global_probe_ledger),probe_sequence_id=sequence,probe_budget_authorization_sha256=authorization['sha256'])
+        self.persist()
         if self.selection is None:
             out=self.root/'resource_probe'
-            selection=self._launch('resource_probe',[sys.executable,spec.ROOT/'scripts/run_a2_v10.py','probe','--output-dir',out,'--device',self.device],out/'selection.json')
+            selection=self._launch('resource_probe',[sys.executable,spec.ROOT/'scripts/run_a2_v10.py','probe','--output-dir',out,'--device',self.device,'--global-probe-ledger',self.global_probe_ledger,
+                '--probe-budget-authorization',self.probe_budget_authorization,'--probe-sequence-id',sequence],out/'selection.json')
             self.selection=out/'selection.json'
         else:selection=read_json(self.selection)
+        self.admit_resource_selection(selection,authorization,sequence)
+
+    def admit_resource_selection(self,selection,authorization,sequence):
+        """Consume the real selector receipt without constructing GPU state."""
+        validate_engineering(self.approval,self.state['code_sha256'])
         if (selection.get('passed') is not True or selection.get('num_envs') not in (1024,512)
             or selection.get('sds_sha256')!=spec.SDS_SHA256 or selection.get('code_sha256')!=self.state['code_sha256']):raise StopTraining('resource_selection_invalid')
+        if (selection.get('global_probe_ledger')!=str(self.global_probe_ledger) or selection.get('probe_sequence_id')!=sequence
+            or selection.get('probe_budget_authorization_sha256')!=authorization['sha256']):raise StopTraining('resource_selection_global_budget_identity_invalid')
         n=selection['num_envs'];runs=[r for r in selection['runs'] if r.get('num_envs')==n]
         if len(runs)!=2 or {r.get('stack') for r in runs}!={'dagger','ppo'}:raise StopTraining('both_complete_resource_stacks_required')
         for row in runs:

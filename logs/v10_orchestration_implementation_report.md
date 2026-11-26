@@ -51,3 +51,65 @@ Coverage includes fixed schedules/budgets, explicit engineering rejection, code 
 The full protocol tests use CPU-only child receipts to exercise controller decisions. They are explicitly **not physical evidence** and cannot satisfy resource/teacher/behavior gates. `scripts/train_a2_v10.py --help` and Python compilation succeeded. Formal probes and behavioral training remain unverified until run by the controller under the independent admission signed by the main agent.
 
 Final identity integration check: controller evaluation receipts now also require exact frozen `code_sha256` and `rulings_sha256`, matching the evaluator cache identity. Re-ran the same 20-test task suite after this last code edit: **20 passed, 1 upstream warning in 26.42s**. No GPU/physics was advanced. Owned source files are ready for the controller's final independent review and freeze.
+
+## Q4 appendendum — streaming identity and global probe accounting (2026-11-26)
+
+This task performed CPU implementation/auditing only. No GPU, new resource probe, teacher admission or learning was started. The requested additional probe budget is still awaiting explicit user approval; no production authorization file was created.
+
+### Memory change and limits
+
+`orchestration.file_sha` previously allocated the entire checkpoint with `read_bytes()`. It now hashes in **8 MiB** blocks, with byte-identical SHA256. The learner's checkpoint helper is also now 8 MiB streaming. This is not a claim that checkpoint hashing caused the observed resource failure: the previously deployed checkpoint helper was already 1 MiB streaming, and the prior logs did not capture internal stage RSS. No resource-effect improvement is claimed without a newly authorized real probe.
+
+### Historical facts migrated without refund
+
+`probe_budget.py` adds a persistent global ledger at:
+
+`logs/a2_v10/global_probe_costs.jsonl`
+
+Every original legacy JSONL row is parsed and checked for sequence, reservation/finalization identity, probe-only cost, completed-update bounds and source SHA. Each source snapshot is imported once. Repeated imports and byte-identical copies do not charge twice; changed or overlapping nonidentical sources are rejected rather than silently merged.
+
+Actual audited legacy sources:
+
+| Legacy source | Rows | Executed / charged | Completed updates | Uncertain |
+|---|---:|---:|---:|---:|
+| `formal_20261126_approved/resource_probe/n1024_dagger/costs.jsonl` | 193 | 98,304 | 49,152 | 0 |
+| `formal_20261126_approved/resource_probe/n512_dagger/costs.jsonl` | 2,521 | 638,976 | 614,400 | 0 |
+| **Total** | **2,714** | **737,280** | **663,552** | **0** |
+
+The source-file SHA values and matching totals are saved in `logs/a2_v10/global_probe_migration_report.json`. A second real migration call verified that the global journal file SHA and all totals remained unchanged. Migration advances **zero** physical steps and grants **zero** future budget. Formal learning remains zero.
+
+### Explicit future budget, not an inferred cap
+
+The old execution plan did not freeze a global probe cap. `3,833,856 = 26×48×(2×1024+2×512)` appears only as `FULL_SEQUENCE_DEMAND`, a conservative workload demand for one complete sequence, not as a historical or default authorization.
+
+A future probe requires a separately supplied, explicitly user-approved authorization document. The journal checks:
+
+- schema `a2-v10-global-probe-budget-authorization-v1`;
+- `approved=true`, unique `authorization_id`, `scope=probe_only`;
+- SDS and approved-rulings SHA;
+- exact absolute global ledger path;
+- explicit cumulative `max_probe_samples` and audited `prior_charged_samples`;
+- `approval_source.kind=user` and its reference.
+
+No code fills in a production cap. Missing, denied, wrong-scope, wrong-ledger, changed-ID or wrong-baseline approval is rejected before physical launch. Learning/evaluation allowances cannot fund probe samples.
+
+A durable single-active-sequence lease checks the entire requested workload against remaining cumulative budget before children start. Child stacks use the same global ledger as their **only** physical-cost ledger, with separate scope views and the unchanged per-stack `26×N×48` maximum. Every future control step checks both scope and global cap. Q1 single-inflight reserve/execute/uncertain and idempotent completed-update facts survive crashes; no uncertain debit is refunded or replayed. New run IDs and new output directories do not clear global costs.
+
+The train/controller and explicit phase CLI now forward `--global-probe-ledger`, `--probe-budget-authorization` and `--probe-sequence-id`. Resource selection receipts bind those identities and the authorization SHA. `Orchestrator.prepare` consumes the real selector receipt through `admit_resource_selection`, rejecting legacy receipts without global-cost identity.
+
+### CPU evidence
+
+Initial new tests failed import before `probe_budget.py` existed. After implementation, tests exposed a legacy malformed-JSON error escaping the typed audit exception; this was corrected without accepting malformed records.
+
+Final focused run:
+
+```text
+python -m pytest -q tests/test_v10_probe_budget.py tests/test_v10_orchestration.py
+32 passed, 1 upstream warning in 36.62s
+```
+
+The 12 new budget tests cover historical migration/repeated imports/copy de-duplication, source modification rejection, no authorization, explicit denial, wrong scope/ledger/baseline, cross-run and cross-stack cap exhaustion, one inflight step, crash reconciliation, no uncertain refund, update idempotence and evidence bounds, post-new-cost repeated migration, and bounded streaming SHA.
+
+Integration tests call the **real** `resources.run_probes` selector and feed its actual serialized `selection.json` directly to the **real** controller resource validator, covering 1024 success, 1024-to-512 failure, and missing-authorization refusal before any child. Only the GPU child is a CPU receipt stub. All synthetic approvals and accounting are confined to pytest temporary paths, are explicitly not physical/resource evidence, and cannot certify a real probe. Actual project costs remain the historical **737,280** only.
+
+Independent review, shared modification-log append, commit/push and any future budget-approved real execution remain the main controller's responsibility.

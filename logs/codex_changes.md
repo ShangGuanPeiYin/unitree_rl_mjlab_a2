@@ -5180,3 +5180,31 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 已启动自动流程logs/a2_v10/formal_20261126_approved（cuda:0），完整显式命令记在doc/sds/A2_v10_execution_report.md；工程准入绑定独立报告与当前源码指纹。
 - 当前进入1024档完整DAgger资源探测，若失败512回退，两栈同N都通过才教师A/B，教师通过后自动正式学习；未跳过任何依赖门禁。启动时正式学习0样本，工程416样本另列，probe费用由独立外账记录。
 - 修改文件：上述执行报告及本日志；只补状态不改配方/代码/源码身份。实际N、资源峰值、行为结果尚待运行输出，未声称效果改善。
+
+## 2026-11-26 A2 v1.0：真实资源门禁失败及Q4工程修复启动
+
+- 原正式流程严格停止于prepare/resource_selection_invalid，selection passed=false、N=null，teacher_admission={}、learning_checkpoint=null。正式学习0、教师0、PPO probe0。
+- 1024 DAgger执行98304/updated49152，因host最低4283047936B<4GiB失败，整卡/任务峰值2568/1120MiB；512完成5热身+20测量+完整保存恢复，执行638976/updated614400，但host最低2883108864B(2.68GiB)，整卡/任务峰值2154/690MiB，未通过。probe累计charged/executed737280、updated663552、uncertain0；另工程416。原结果在logs/a2_v10/formal_20261126_approved/resource_probe/，不清零不删失败证据。
+- 只读定位：512最低点在最后更新后5.72秒，恢复时旧/新完整replay同时驻留；实际运行checkpoint SHA已1MiB流式，不归因于它整读。此前诊断将旧代码整读混入实际版本，已向规划更正；orchestration整文件哈希是另一潜在开销。旧日志无内部阶段RSS，不声称精确峰值阶段已证明。
+- Q4批准生命周期修复并补全分阶段RSS/available、完整恢复/采样序列等价及失败保源测试。容量、FP32、48步、LR/奖励/门槛均不改。
+- 自查新阻断：实际worker保存条件存在未定义last_save_bucket，原save_due纯函数测试未覆盖真实worker分支；此前工程审核结论发现遗漏，待相关集成测试和独立重审。原独立报告历史保留，不用已有62项通过掩盖遗漏。
+- 全局probe总额原来未显式冻结；3833856仅单项上限推导，规划增额尚待用户答复。当前只做CPU代码修复/等价测试/账本迁移准备，不重probe、不训练，不终止其他进程。涉及文件与最终验证由本轮子agent交付后追加。
+
+## 2026-11-26 A2 v1.0 Q4：全容量CPU证据与全局费用迁移
+
+- 文件：Q4授权路径checkpoint/replay/runtime/resources、orchestration/identity、两CLI、新probe_budget模块及runtime_memory/probe_budget测试；子agent报告后续追加最终清单。
+- 实际CPU证据：V10_FULL_REPLAY_CPU=1的新内存测试8 passed、1上游warning，69.18s；原始logs/a2_v10/q4_cpu_memory_test.log及q4_cpu_full_replay_memory.json。完整6×32768条FP32（45/5×45/3×40×30/3/35观测+label/metadata）真实保存3100924643字节，SHA/CRC→释放→加载→内容/seen/int64/model/Adam/normalizer/RNG/下一256×6批全部一致，验证后不推进sampler RNG。RSS满库4136681472→释放1035042816→加载4152729600B，峰值4214046720B，最低MemAvailable9319485440B。0物理样本，不冒称资源probe通过。
+- 全局账本logs/a2_v10/global_probe_costs.jsonl只迁移历史费用；原两ledger SHA及193/2521行逐条核对，global/migration均charged=executed737280、updated663552、uncertain0，新增物理0，无授权文件。迁移报告logs/a2_v10/global_probe_migration_report.json，重复迁移不重复扣。
+- 调度/账本29项CPU通过，包含实际resources selector（仅GPU child用CPU receipt stub）到真实controller准入的集成，避免两模块各自手工fixture不一致。不是实际资源准入。
+- Q4补充批准采样预分配和只取所需256条临时副本优化，要求逐元素/RNG/时序等价；保留所有核心设置。独立审核仍在完成，资源monitor阶段高水位汇总刚补回归，最终套件后追加。
+- 当前预算增额仍未获明确答复，不创建实际授权、不重probe、不正式学习。历史失败与737280不清零，学习/评估预算不借用。
+
+## 2026-11-26 A2 v1.0 Q4：最终冻结验证及独立复审
+
+- 修改范围：checkpoint.py/replay.py/runtime.py/resources.py/orchestration.py、run/train两CLI、新probe_budget.py、新runtime_memory/probe_budget测试；doc裁定/执行报告/账本、两实施报告和独立审核追加。仅内存/保存/预算身份路径，未改spec、奖励、任务/物理配置、学习率、容量或样本配方。
+- 最终全v10：CUDA_VISIBLE_DEVICES='' /home/xxs/anaconda3/envs/a2/bin/python -m pytest -q tests/test_v10_*.py →83 passed、5 skipped、1上游warning，81.97s；原始logs/a2_v10/q4_all_v10_final.log。5skip=4显式GPU+已单独实际通过的完整3GB CPU项；不把skip当pass、不相加重复测试数。
+- 独立review_preflight冻结轻测41 passed、1完整3GB skip、1warning，72.28s；已核完整CPU8passed原始日志与内容/下一批/RNG/RSS证据。原审核报告只追加Q4更正和新结论，不删首轮遗漏历史；报告SHA a82a34377bd3825fd2168bbe4dfbddf4847aabba137b2ad06a626827a9c97166。
+- 已实际核对源码4005639f5656c64a81fbfa4499216b35f14c8b9eef2442c128f45a974d44b6a9与报告一致，重签logs/a2_v10/engineering_admission_Q4_20261126.json，scope工程、probe_authorization_created=false；旧工程凭据因源码/报告变化不再适用。
+- 真实worker CPU集成修复首次保存/恢复跨周期/周期与边界去重，周期仍2457600。采样预分配/直接索引与旧轨迹/RNG逐项对照；stage-only资源不足和RSS高水位被纳入最终判定。并发编辑曾导致CPUfixture代码指纹暂时失配，测试接缝固定测试身份后隔离；生产checkpoint始终严格核真实源指纹，未放宽验证。
+- 全局历史probe实际737280/updated663552/uncertain0完整保留；Q4新增物理0，正式学习0。新增总额度尚未明确批准，不创建授权、不重probe。旧全项目bootstrap收集失败限制仍在，不擅修旧代码。
+- 代码/测试格式检查通过，SDS原文双空格换行保留不改SHA。下一步只提交推送本轮文件，资源/教师/训练结果仍未验证；无效果改善宣称。

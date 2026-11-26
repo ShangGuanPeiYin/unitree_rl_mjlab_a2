@@ -1,0 +1,113 @@
+{
+  "slots": 196608,
+  "obs_shapes": {
+    "proprio": [
+      45
+    ],
+    "history": [
+      5,
+      45
+    ],
+    "heightmap": [
+      3,
+      40,
+      30
+    ],
+    "route_error": [
+      3
+    ],
+    "privileged": [
+      35
+    ]
+  },
+  "dtype": "torch.float32",
+  "physical_samples": 0,
+  "checkpoint_bytes": 3100924643,
+  "checkpoint_sha256": "356004957e3d268033dd33c6da51e3527ec8a00487f5344b1066ce9bafed78f3",
+  "replay": {
+    "sha256": "ed922a0a37ba10c288ae09f64dc5b088faecd042ef26ffb5be6eacaf0bd08576",
+    "capacity": 32768,
+    "counts": {
+      "F_WALK": 32768,
+      "F_STAND": 32768,
+      "F_STOP": 32768,
+      "P_WALK": 32768,
+      "P_STOP": 32768,
+      "S_ROUTE": 32768
+    },
+    "seen": {
+      "F_WALK": 33768,
+      "F_STAND": 33768,
+      "F_STOP": 33768,
+      "P_WALK": 33768,
+      "P_STOP": 33768,
+      "S_ROUTE": 33768
+    }
+  },
+  "next_sample_manifest": "0f811aa731b4cd7377ec1016bd635bfa41b9b654c6d24f42582dae470cc196fd",
+  "memory_stages": [
+    {
+      "stage": "before_fill",
+      "time": 1795707820.0258427,
+      "process_rss_bytes": 1036738560,
+      "process_peak_rss_bytes": 1035227136,
+      "host_available_bytes": 13106696192
+    },
+    {
+      "stage": "all_196608_slots_filled",
+      "time": 1795707820.655412,
+      "process_rss_bytes": 4136681472,
+      "process_peak_rss_bytes": 4135211008,
+      "host_available_bytes": 9988718592
+    },
+    {
+      "stage": "save_begin",
+      "time": 1795707823.9550169,
+      "process_rss_bytes": 4136919040,
+      "process_peak_rss_bytes": 4182265856,
+      "host_available_bytes": 9943842816
+    },
+    {
+      "stage": "save_serialized",
+      "time": 1795707852.6855102,
+      "process_rss_bytes": 4163436544,
+      "process_peak_rss_bytes": 4182265856,
+      "host_available_bytes": 9319485440
+    },
+    {
+      "stage": "save_disk_validated",
+      "time": 1795707857.497517,
+      "process_rss_bytes": 4163469312,
+      "process_peak_rss_bytes": 4182265856,
+      "host_available_bytes": 9330253824
+    },
+    {
+      "stage": "released_before_load",
+      "time": 1795707857.6937442,
+      "process_rss_bytes": 1035042816,
+      "process_peak_rss_bytes": 4182265856,
+      "host_available_bytes": 12462219264
+    },
+    {
+      "stage": "load_begin",
+      "time": 1795707857.6938832,
+      "process_rss_bytes": 1035042816,
+      "process_peak_rss_bytes": 4182265856,
+      "host_available_bytes": 12462219264
+    },
+    {
+      "stage": "load_complete",
+      "time": 1795707858.5852623,
+      "process_rss_bytes": 4152729600,
+      "process_peak_rss_bytes": 4182265856,
+      "host_available_bytes": 9352335360
+    },
+    {
+      "stage": "restored_unique_owner",
+      "time": 1795707862.0355358,
+      "process_rss_bytes": 4135337984,
+      "process_peak_rss_bytes": 4214046720,
+      "host_available_bytes": 9322500096
+    }
+  ]
+}

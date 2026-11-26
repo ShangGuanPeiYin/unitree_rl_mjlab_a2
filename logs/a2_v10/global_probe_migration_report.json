@@ -1,0 +1,42 @@
+{
+  "authorization_created": false,
+  "global_ledger": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/global_probe_costs.jsonl",
+  "global_totals": {
+    "charged": 737280,
+    "executed": 737280,
+    "uncertain": 0,
+    "updated": 663552
+  },
+  "journal_sha256": "ef4684dbecf1ca696a3151def51ff42733ad8c191b9879868de2a3289c8cea39",
+  "migration_totals": {
+    "charged": 737280,
+    "executed": 737280,
+    "uncertain": 0,
+    "updated": 663552
+  },
+  "physical_steps_executed": 0,
+  "source_ledgers": [
+    {
+      "path": "logs/a2_v10/formal_20261126_approved/resource_probe/n1024_dagger/costs.jsonl",
+      "rows": 193,
+      "sha256": "e7595207e0cf8ca61b339edae6fa0dfbdf758a62f52b006aadb9e3b3491222c4",
+      "totals": {
+        "charged": 98304,
+        "executed": 98304,
+        "uncertain": 0,
+        "updated": 49152
+      }
+    },
+    {
+      "path": "logs/a2_v10/formal_20261126_approved/resource_probe/n512_dagger/costs.jsonl",
+      "rows": 2521,
+      "sha256": "bd5cf48fdf1bcc12b4ccd5384ef09c6e4b3d98afeb2d7dd5e8c7f7f842f0ff0f",
+      "totals": {
+        "charged": 638976,
+        "executed": 638976,
+        "uncertain": 0,
+        "updated": 614400
+      }
+    }
+  ]
+}

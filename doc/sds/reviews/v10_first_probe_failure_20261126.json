@@ -1,0 +1,152 @@
+{
+  "controller": {
+    "accepted_dagger": null,
+    "certificates": {},
+    "code_sha256": "7f15a529b47f0b9a5512109a9050ad25a5b00c82bb294deaefd0edf0b7cb71a7",
+    "evaluation_max_samples": 1685390840,
+    "finals": {},
+    "frozen_sha256": "ea96c476ffc020af6605d0afb10dd0de05975ad26ab01ce8b5c5b8898bc92665",
+    "gates": {},
+    "last_passed_ppo": null,
+    "learning_checkpoint": null,
+    "operations": {
+      "resource_probe": {
+        "attempts": 1,
+        "command": [
+          "/home/xxs/anaconda3/envs/a2/bin/python",
+          "/home/xxs/dog/unitree_rl_mjlab_a2/scripts/run_a2_v10.py",
+          "probe",
+          "--output-dir",
+          "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_20261126_approved/resource_probe",
+          "--device",
+          "cuda:0"
+        ],
+        "result_sha256": "934309eebf5d3f37600f985e009b44d072c8cf2218d3f87aa1f286d14415a314",
+        "status": "succeeded"
+      }
+    },
+    "p0_checkpoint": null,
+    "phase": "prepare",
+    "rerun_reasons": [],
+    "retention": {
+      "consecutive_failures": 0,
+      "failures": 0,
+      "rollbacks": 0
+    },
+    "rulings_sha256": "22cad8a3ca3358997add179164ed6529d0baf733a98ca790b555c0d9ba27fe5c",
+    "schema": "a2-v10-controller-v1",
+    "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+    "status": "stopped",
+    "stop_reason": "StopTraining('resource_selection_invalid')",
+    "teacher_admission": {}
+  },
+  "engineering_samples": 416,
+  "formal_learning_samples": 0,
+  "probe_executed": 737280,
+  "probe_uncertain": 0,
+  "probe_updated": 663552,
+  "selection": {
+    "code_sha256": "7f15a529b47f0b9a5512109a9050ad25a5b00c82bb294deaefd0edf0b7cb71a7",
+    "num_envs": null,
+    "passed": false,
+    "runs": [
+      {
+        "code_sha256": "7f15a529b47f0b9a5512109a9050ad25a5b00c82bb294deaefd0edf0b7cb71a7",
+        "cost": {
+          "charged": {
+            "probe:D3": 98304
+          },
+          "executed": {
+            "probe:D3": 98304
+          },
+          "pending": [],
+          "uncertain": {
+            "probe:D3": 0
+          },
+          "updated": {
+            "probe:D3": 49152
+          }
+        },
+        "error": "RuntimeError('resource ceiling exceeded during full update')",
+        "measurement_rounds": 20,
+        "num_envs": 1024,
+        "passed": false,
+        "sampled_resource_peak": {
+          "gpu_task_mib": 1120,
+          "gpu_total_mib": 2568,
+          "host_available_bytes": 4283047936
+        },
+        "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+        "stack": "dagger",
+        "warmup_rounds": 5
+      },
+      {
+        "checkpoint_sha256": null,
+        "code_sha256": "7f15a529b47f0b9a5512109a9050ad25a5b00c82bb294deaefd0edf0b7cb71a7",
+        "cost": {
+          "charged": {
+            "probe:D3": 638976
+          },
+          "executed": {
+            "probe:D3": 638976
+          },
+          "pending": [],
+          "uncertain": {
+            "probe:D3": 0
+          },
+          "updated": {
+            "probe:D3": 614400
+          }
+        },
+        "cuda_allocated_peak_mib": 78.29638671875,
+        "cuda_reserved_peak_mib": 118.0,
+        "gpu_task_peak_mib": 690,
+        "gpu_task_valid_samples": 1528,
+        "gpu_total_peak_mib": 2154,
+        "host_available_min_bytes": 2883108864,
+        "measured_seconds": [
+          7.019816098967567,
+          6.920981273986399,
+          7.049558829981834,
+          7.035045959986746,
+          6.9993490560445935,
+          7.147668714867905,
+          7.370389818912372,
+          7.204880523029715,
+          6.904790027998388,
+          6.906392046017572,
+          6.916725727031007,
+          6.974577173823491,
+          6.920971299055964,
+          6.993930673925206,
+          8.01454193983227,
+          7.03507484216243,
+          6.832544581033289,
+          6.881052861921489,
+          6.868294984102249,
+          6.801948407897726
+        ],
+        "measurement_rounds": 20,
+        "num_envs": 512,
+        "passed": false,
+        "physical_sha256": "aa74d2d53526f2025b46054771ec1cf9e785b9dcee7a860e98e2c8303ee58442",
+        "replay_counts": {
+          "F_STAND": 95472,
+          "F_STOP": 144144,
+          "F_WALK": 190944,
+          "P_STOP": 95472,
+          "P_WALK": 144144,
+          "S_ROUTE": 288288
+        },
+        "resource_samples": 1528,
+        "restore_checked": true,
+        "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+        "stack": "dagger",
+        "warmup_rounds": 5
+      }
+    ],
+    "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0"
+  },
+  "status": "stopped",
+  "teacher_evaluated_cases": 0
+}

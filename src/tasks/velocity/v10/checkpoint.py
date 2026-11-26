@@ -1,5 +1,8 @@
 """Atomic complete learning state and append-only nonrefundable external costs."""
 import contextlib
+import gc
+import zipfile
+import time
 import hashlib
 import json
 import os
@@ -15,8 +18,50 @@ SCHEMA='a2-v10-state-v1'
 def sha256(path):
     digest=hashlib.sha256()
     with Path(path).open('rb') as f:
-        for block in iter(lambda:f.read(1024*1024),b''):digest.update(block)
+        for block in iter(lambda:f.read(8*1024*1024),b''):digest.update(block)
     return digest.hexdigest()
+def memory_observation(stage):
+    import psutil
+    import resource
+    return dict(stage=stage,time=time.time(),process_rss_bytes=psutil.Process().memory_info().rss,
+        process_peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024,
+        host_available_bytes=psutil.virtual_memory().available)
+
+def release_host_memory():
+    """Drop dead Python/native CPU allocations without changing any live storage."""
+    gc.collect()
+    import ctypes
+    try:ctypes.CDLL(None).malloc_trim(0)
+    except AttributeError:pass
+
+def trace_memory(callback,stage):
+    if callback is not None:callback(memory_observation(stage))
+
+def verify_checkpoint_file(path,expected_sha):
+    if sha256(path)!=expected_sha:raise ValueError('checkpoint disk SHA mismatch')
+    with zipfile.ZipFile(path) as archive:
+        bad=archive.testzip()
+    if bad is not None:raise ValueError('checkpoint disk CRC mismatch: '+bad)
+    return expected_sha
+
+def state_fingerprint(value):
+    """Streaming tensor/tree identity without cloning an entire state tree."""
+    digest=hashlib.sha256()
+    def visit(v):
+        if isinstance(v,torch.Tensor):
+            t=v.detach().cpu().contiguous();digest.update(str((t.dtype,tuple(t.shape))).encode())
+            data=memoryview(t.numpy()).cast('B')
+            for offset in range(0,len(data),8*1024*1024):digest.update(data[offset:offset+8*1024*1024])
+        elif isinstance(v,np.ndarray):
+            digest.update(str((v.dtype,v.shape)).encode());digest.update(memoryview(np.ascontiguousarray(v)).cast('B'))
+        elif isinstance(v,dict):
+            for k in sorted(v,key=repr):digest.update(repr(k).encode());visit(v[k])
+        elif isinstance(v,(list,tuple)):
+            digest.update(type(v).__name__.encode())
+            for x in v:visit(x)
+        else:digest.update(repr(v).encode()+b'\0')
+    visit(value);return digest.hexdigest()
+
 def rng_state():
     return dict(python=random.getstate(),numpy=np.random.get_state(),torch=torch.get_rng_state(),cuda=torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None)
 def restore_rng(state):
@@ -29,17 +74,22 @@ def atomic_json(path,data):
         json.dump(data,f,sort_keys=True,indent=2);f.write('\n');f.flush();os.fsync(f.fileno());temp=f.name
     os.replace(temp,path)
 
-def checkpoint_save(path,state):
+def checkpoint_save(path,state,memory_trace=None):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
     state=dict(state,schema=SCHEMA,sds_sha256=spec.SDS_SHA256,recipe=spec.RECIPE,code_sha256=code_fingerprint(),rng=rng_state(),
                teachers={'blind':spec.BLIND_SHA256,'stairs':spec.STAIRS_SHA256})
+    trace_memory(memory_trace,'save_begin')
     fd,temp=tempfile.mkstemp(dir=path.parent);os.close(fd)
     try:
         with open(temp,'wb') as f:torch.save(state,f);f.flush();os.fsync(f.fileno())
         os.replace(temp,path)
     finally:
         if os.path.exists(temp):os.unlink(temp)
-    return sha256(path)
+    trace_memory(memory_trace,'save_serialized')
+    digest=sha256(path)
+    verify_checkpoint_file(path,digest)
+    trace_memory(memory_trace,'save_disk_validated')
+    return digest
 
 def checkpoint_validate(state,*,num_envs,physical_sha256):
     if (state.get('schema')!=SCHEMA or state.get('sds_sha256')!=spec.SDS_SHA256 or state.get('recipe')!=spec.RECIPE
@@ -48,10 +98,12 @@ def checkpoint_validate(state,*,num_envs,physical_sha256):
     if state.get('num_envs')!=num_envs or state.get('physical_sha256')!=physical_sha256:raise ValueError('checkpoint N/physics mismatch')
     return state
 
-def checkpoint_load(path,*,num_envs,physical_sha256,restore_random=True):
+def checkpoint_load(path,*,num_envs,physical_sha256,restore_random=True,memory_trace=None):
+    trace_memory(memory_trace,'load_begin')
     state=torch.load(path,map_location='cpu',weights_only=False)
     checkpoint_validate(state,num_envs=num_envs,physical_sha256=physical_sha256)
     if restore_random:restore_rng(state['rng'])
+    trace_memory(memory_trace,'load_complete')
     return state
 
 class BudgetLedger:

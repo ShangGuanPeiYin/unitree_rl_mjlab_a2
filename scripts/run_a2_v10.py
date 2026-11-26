@@ -14,6 +14,10 @@ def main():
         if name in ('smoke','worker','_probe-stack'):p.add_argument('--num-envs',type=int,default=6 if name=='smoke' else 1024)
         if name in ('smoke','worker'):p.add_argument('--course',choices=['D1','D2','D3','P0','P1'],default='D3' if name=='smoke' else 'D1')
         if name=='smoke':p.add_argument('--steps',type=int,default=48)
+        if name in ('probe','_probe-stack'):
+            p.add_argument('--global-probe-ledger',default=str(ROOT/'logs/a2_v10/global_probe_costs.jsonl'))
+            p.add_argument('--probe-budget-authorization',required=True)
+            p.add_argument('--probe-sequence-id',required=True)
         if name=='_probe-stack':p.add_argument('--stack',choices=['dagger','ppo'],required=True)
         if name=='worker':
             p.add_argument('--stop-round',type=int,required=True);p.add_argument('--resume');p.add_argument('--acceptance');p.add_argument('--ledger-path');p.add_argument('--controller-state')

@@ -41,3 +41,18 @@ D1/D2/D3分别154/226/334组；A/B每组20例分别>=18，终验100例分别>=95
 - 自动流程已启动：logs/a2_v10/formal_20261126_approved；当前正在资源探测。工程准入logs/a2_v10/engineering_admission_20261126.json，controller_state.json记录运行/停止状态。
 - 启动命令：PYTHONUNBUFFERED=1 MUJOCO_GL=egl /home/xxs/anaconda3/envs/a2/bin/python scripts/train_a2_v10.py --run-dir logs/a2_v10/formal_20261126_approved --engineering-admission logs/a2_v10/engineering_admission_20261126.json --device cuda:0。
 - N选择、峰值、教师逐组结果与正式学习样本以对应运行结果为准；此记录不声称正式学习已经开始。
+
+## Q4资源失败后的修复进展（取代“当前资源探测中”的状态）
+
+首次自动流程已严格停止：1024/512 DAgger均因available<4GiB未通过，实际probe累计737280，updated663552、uncertain0；无PPO probe、教师准入或正式学习。512虽完成25轮及实际保存恢复，最低available2883108864，不能判通过。旧4b80853工程实现还发现worker保存分支未定义变量遗漏，原审核结论标为发现遗漏、待关联集成重验，不删除原历史。
+
+Q4仅修内存所有权/临时副本/8MiB流式哈希和保存状态引用，不改SDS训练配方。完整196608 FP32 CPU测试已实际通过（8 passed69.18s，0物理）：3100924643字节checkpoint完整SHA/CRC、释放旧库、真实加载、完整内容/metadata/int64/model/Adam/normalizer/RNG及下一批等价。RSS满库约4.136GB→释放约1.035GB→加载约4.153GB；这些是CPU测试证据，不是重probe通过。真实worker CPU集成覆盖首次/恢复后保存及阶段末去重。
+
+全局探测账本已从原两份账本逐行核SHA、幂等迁移737280，跨新run不清零，未创建新额度授权。原execution_plan未明确全局B_probe，3833856只是单项上限推导的工作量需求；拟议累计4571136等待用户明确预算授权。新增物理采样停止，当前继续CPU等价和独立审核。最新审核与提交结果将另追加。
+
+## Q4工程交付结果
+
+- 新源码4005639f5656c64a81fbfa4499216b35f14c8b9eef2442c128f45a974d44b6a9；统一测试83 passed、5显式skip、1上游warning，81.97s。完整3GB项已单独实际通过，此处不重复分配；其余4项GPU跳过不当通过。
+- 独立复审41 passed、1完整3GB skip，报告在原文后追加并明确首轮worker保存遗漏；追加后SHA a82a34377bd3825fd2168bbe4dfbddf4847aabba137b2ad06a626827a9c97166。新工程身份仅允许后续合规探测，旧身份已因代码/报告变化失效，不沿用。
+- 首次资源失败的controller与selection完整证据存reviews/v10_first_probe_failure_20261126.json。当前没有任何正式学习checkpoint或教师准入结果，不存在可交付的合格学生模型。
+- 已实现全局probe账本、所有入口缺授权拒绝、跨run不清零。授权总额尚待规划线程获取用户明确答复；未创建生产预算授权，Q4新增物理为0。不声称资源峰值已改善或新N已选定。

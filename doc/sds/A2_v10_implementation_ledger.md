@@ -35,3 +35,11 @@
 - evaluation缺窗及配对覆盖测试：初次因模块不存在失败；实现后4项通过。
 - Torch既有jit.script弃用警告1条。
 - 真实物理、资源、教师准入、训练及终验尚未执行，未声称行为改善。
+
+## Q4冻结交付状态
+
+- 首次工程源码7f15a529…实际资源探测失败，自动流程停止；未产生正式学习/教师结果。
+- Q4源码4005639f5656c64a81fbfa4499216b35f14c8b9eef2442c128f45a974d44b6a9已独立复审；全v10统一83 passed、5 skipped、1上游warning，81.97s。5项skip包括4个GPU测试及单独实际通过的完整3GB CPU测试；不混计为通过。
+- 全容量CPU原始8 passed69.18s，独立轻测41 passed1 skip72.28s。新工程凭据engineering_admission_Q4_20261126.json仅工程，不批准probe或训练。
+- 全局probe账本历史charged/executed737280、updated663552、uncertain0；未来额外采样额度待明确用户授权，尚无生产授权文件。学习/评估额度不借用。
+- 下一执行：收到明确总probe预算后才写授权，使用固定全局账本和新运行目录、Q4工程身份，按1024→512重新完整双栈准入；不得沿用旧selection或旧工程身份。教师/DAgger/PPO门禁依旧严格串行。

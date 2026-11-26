@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from . import spec
-from .checkpoint import BudgetLedger,atomic_json,checkpoint_load,checkpoint_save,restore_rng,sha256
+from .checkpoint import BudgetLedger,atomic_json,checkpoint_load,checkpoint_save,restore_rng,sha256,trace_memory,release_host_memory,memory_observation
 from .model import V10ActorCritic
 from .teachers import DualTeacher
 from .replay import TaskReservoir,concat_batches,snapshot
@@ -52,10 +52,25 @@ def physical_contract(env):
     return dict(sha256=hashlib.sha256(canonical).hexdigest(),contract=contract,
         terrain_sha256=hashlib.sha256(json.dumps(terrain_repr).encode()).hexdigest())
 
+def allocate_rollout(row,total):
+    result={}
+    for key,value in row.items():
+        if key=='obs':result[key]={name:torch.empty((total,*t.shape[1:]),dtype=torch.float32) for name,t in value.items()}
+        elif isinstance(value,torch.Tensor):result[key]=torch.empty((total,*value.shape[1:]),dtype=torch.float32 if value.is_floating_point() else value.dtype)
+        else:result[key]=[None]*total
+    return result
+
+def store_rollout_frame(destination,row,start,n):
+    for key,value in row.items():
+        if key=='obs':
+            for name,t in value.items():destination[key][name][start:start+n].copy_(t.detach())
+        elif isinstance(value,torch.Tensor):destination[key][start:start+n].copy_(value.detach())
+        else:destination[key][start:start+n]=copy.deepcopy(value)
+
 @torch.no_grad()
 def collect_rollout(env,model,teachers,*,phase,ledger=None,kind='learning',budget_limit=None,steps=48):
     """Same o_t labels/means/value; env keeps physical episodes across calls."""
-    is_dagger=phase.startswith('D');rows=[];rewards=[];values=[];dones=[];logps=[];executed=[];episodes=[]
+    is_dagger=phase.startswith('D');result=None;rewards=[];values=[];dones=[];logps=[];executed=[];episodes=[]
     key='PPO' if phase.startswith('P') else phase
     attempt=uuid.uuid4().hex
     for control in range(steps):
@@ -73,9 +88,10 @@ def collect_rollout(env,model,teachers,*,phase,ledger=None,kind='learning',budge
                 raise RuntimeError('attempted replay of reserved control step')
         _,reward,done,info=env.step(action)
         if ledger is not None:ledger.mark_executed(reservation)
-        rows.append(snapshot(row));rewards.append(reward.detach().cpu());dones.append(done.detach().cpu())
+        if result is None:result=allocate_rollout(row,steps*env.num_envs)
+        store_rollout_frame(result,row,control*env.num_envs,env.num_envs)
+        rewards.append(reward.detach().cpu());dones.append(done.detach().cpu())
         executed.append(info['frame']['action'].detach().cpu());episodes.extend(info.get('episodes',[]))
-    result=concat_batches(rows)
     metrics=dict(rollout_id=attempt,samples=env.num_envs*steps,episodes=episodes,executed_actions=torch.cat(executed),done=torch.stack(dones))
     if not is_dagger:
         # observe() is read-only; no reset precedes this true final-state bootstrap.
@@ -84,12 +100,12 @@ def collect_rollout(env,model,teachers,*,phase,ledger=None,kind='learning',budge
         result.update(values=value.flatten(),log_prob=torch.stack(logps).flatten(),returns=ret.flatten(),advantages=adv.flatten())
     return result,metrics
 
-def save_worker(path,model,learner,reservoir,env,ledger,rounds,physical_sha,keep=None,extra=None):
+def save_worker(path,model,learner,reservoir,env,ledger,rounds,physical_sha,keep=None,extra=None,memory_trace=None):
     learner_state=(learner.state_dict() if isinstance(learner,PPOLearner) else dict(optimizer=learner.optimizer.state_dict()))
     state=dict(model=model.state_dict(),learner=learner_state,reservoir=reservoir.state_dict(copy_storage=False),env=env.state_dict(),
         budgets=ledger.totals(),accounting=ledger.report(),rounds=dict(rounds),course=env.course,num_envs=env.num_envs,physical_sha256=physical_sha,
         keep=keep.state_dict() if keep is not None else None,extra=extra or {})
-    return checkpoint_save(path,state)
+    return checkpoint_save(path,state,memory_trace=memory_trace)
 
 def verify_acceptance(path,checkpoint,physical_sha):
     c=json.loads(Path(path).read_text())
@@ -101,14 +117,16 @@ def verify_acceptance(path,checkpoint,physical_sha):
 def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,device='cuda:0',ledger_path=None,controller_state=None):
     from .env import V10Env
     output=Path(output_dir);output.mkdir(parents=True,exist_ok=True);seed_all(spec.SEED)
+    memory_trace=lambda row:append_json(output/'memory_stages.jsonl',row)
+    trace_memory(memory_trace,'worker_start')
     env=V10Env(num_envs=num_envs,course=course,seed=spec.SEED,device=device)
     try:
         physical=physical_contract(env);atomic_json(output/'physical_contract.json',physical)
         ledger=BudgetLedger(ledger_path or output/'costs.jsonl');ledger.reconcile_uncertain();model=V10ActorCritic.from_stairs(device=device)
         reservoir=TaskReservoir();rounds={};keep=None;state=None;extra={}
         if resume:
-            state=checkpoint_load(resume,num_envs=num_envs,physical_sha256=physical['sha256'],restore_random=False)
-            ledger.assert_checkpoint_not_ahead(state['budgets']);model.load_state_dict(state['model']);reservoir.load_state_dict(state['reservoir'],copy_storage=False);rounds=dict(state['rounds']);extra=state.get('extra',{})
+            state=checkpoint_load(resume,num_envs=num_envs,physical_sha256=physical['sha256'],restore_random=False,memory_trace=memory_trace)
+            ledger.assert_checkpoint_not_ahead(state['budgets']);model.load_state_dict(state['model']);reservoir.take_state_dict(state.pop('reservoir'));rounds=dict(state['rounds']);extra=state.get('extra',{})
         if controller_state is not None:
             extra=dict(extra,controller_state=json.loads(Path(controller_state).read_text()) if isinstance(controller_state,(str,Path)) else copy.deepcopy(controller_state))
         if course.startswith('D'):
@@ -141,22 +159,39 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
         if consumed>stop_round*nstep:raise ValueError('stop-round precedes already consumed budget')
         last_path=None
         last_saved_confirmed=(state.get('accounting',{}).get('executed',state['budgets']).get('learning:'+budget_key,0) if state else 0)
+        if state is not None:
+            state.clear();del state;state=None
+            release_host_memory();trace_memory(memory_trace,'worker_restore_transferred')
+        last_saved_path=None;last_saved_consumed=None
         while consumed<stop_round*nstep and charged+nstep<=cap:
+            trace_memory(memory_trace,'sampling_begin')
             rollout,metrics=collect_rollout(env,model,teachers,phase=course,ledger=ledger,budget_limit=cap)
+            trace_memory(memory_trace,'sampling_complete')
             update=(learner.update(rollout,reservoir,num_envs) if course.startswith('D') else learner.update(rollout,keep,reservoir,course))
+            trace_memory(memory_trace,'update_complete')
             ledger.record_update(metrics['rollout_id']+':update',budget_key,nstep)
             charged=ledger.totals().get('learning:'+budget_key,0)
             consumed=ledger.report()['executed'].get('learning:'+budget_key,0);rounds[budget_key]=consumed//nstep
             append_json(output/'updates.jsonl',dict(phase=course,round=rounds[budget_key],consumed=consumed,metrics=update,
                 updated_samples=nstep,completed_episodes=len(metrics['episodes']),failures=sum(not e['success'] for e in metrics['episodes'])))
-            if consumed//spec.SAVE_SAMPLES>last_save_bucket:
-                last_saved_confirmed=(state.get('accounting',{}).get('executed',state['budgets']).get('learning:'+budget_key,0) if state else 0)
+            del rollout,metrics
+            release_host_memory();trace_memory(memory_trace,'rollout_released')
+            if save_due(last_saved_confirmed,consumed):
+                last_saved_confirmed=consumed
                 last_path=output/f'{course}_{rounds[budget_key]:06d}.pt'
-                save_worker(last_path,model,learner,reservoir,env,ledger,rounds,physical['sha256'],keep,extra)
+                save_worker(last_path,model,learner,reservoir,env,ledger,rounds,physical['sha256'],keep,extra,memory_trace)
+                last_saved_path=last_path;last_saved_consumed=consumed
                 retain_latest(output,course)
         # Gate pause always follows complete rollout/update/bootstrap. Entry/exit saves also cover zero-round workers.
         last_path=output/f'{course}_{consumed//nstep:06d}_boundary.pt'
-        digest=save_worker(last_path,model,learner,reservoir,env,ledger,rounds,physical['sha256'],keep,extra)
+        if last_saved_consumed==consumed:
+            # Same immutable learning state: mark the boundary via an on-disk hard link,
+            # never serialize a second 3GB reservoir for an overlapping save event.
+            if last_path.exists():last_path.unlink()
+            os.link(last_saved_path,last_path);digest=sha256(last_path)
+            trace_memory(memory_trace,'boundary_reused_periodic_checkpoint')
+        else:
+            digest=save_worker(last_path,model,learner,reservoir,env,ledger,rounds,physical['sha256'],keep,extra,memory_trace)
         result=dict(checkpoint=str(last_path),checkpoint_sha256=digest,course=course,round=consumed//nstep,
             consumed=consumed,updated_samples=ledger.report()['updated'].get('learning:'+budget_key,0),physical_sha256=physical['sha256'],budget=ledger.report(),gate_reached=consumed>=stop_round*nstep,training_accepted=False)
         atomic_json(output/'worker_result.json',result);return result
