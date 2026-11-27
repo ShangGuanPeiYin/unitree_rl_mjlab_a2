@@ -5318,3 +5318,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新证据logs/a2_v10/A1_v2_engineering_20261127含最终CPU、实际旧源重建2675a08a...、不变证据f4ab6422...、全差异cdd88c3e...、固定最新顺序及原global成本快照。旧2f/D90/8daf证据、失败原result/NPZ和旧SDS保留；不夹带旧dirty或权重。
 - 正常同cap承继元数据logs/a2_v10/probe_authorization_A1_v2_inherited_20261127.json SHA37e3a3c038abb1213433677f6a6f68c8ece098b0fe86d352c78606bac215bdee，父49760...已注册，同3833856/global ledger/SDS/rulings，新prior3391488/rem442368；新叶仅写元数据并校验，尚未注册/claim/采样。签新resource_linkage_contract_A1_v2及engineering_admission_A1_v2_trial，旧03c43合同不覆。工程通过不代表RAM或教师/学习通过。
 - 生产cost仍3391488、learning0、canonical trial guard不存在。待提交推送后只执行真实stdlib启动门禁；低于12GiB则0物理/0claim停止，不因许可执行112/50。无人为清理或终止其他进程。实际门禁结果后续追加。
+
+## 2026-11-27 v2真实启动门禁零样本拒绝与最终停止
+
+- fe5e8df5a98405ab9ab11db239880702a35c9e89已push，并经SSH fetch核HEAD/origin一致；提交后stdlib重算源码仍d542...，四旧dirty/旧SDS未动。原始CPU stdout空格保留，源码/文档/JSON的diffcheck通过。
+- 实际执行probe-a1-v2的stdlib启动门禁：首点MemAvailable10845011968B=10.100204GiB<12GiB，缺2039889920B≈1.899796GiB，立即非零退出；observed32us，不冒称成功连续60s。报告pre_torch_import=true，physical_samples0、protocol_claimed=false；未导src/Torch、无child/selection、无新授权注册/claim、无trial guard，没有实际仿真/学习。
+- 新文件doc/sds/reviews/v10_A1_v2_headroom_stop_20261127.md、原始resource_probe_v2.startup_headroom.json/父probe_v2_parent.log与stage_status_v2.json；前后全局journal末SHA相同0fa1f0cc885cfde7b7c237e4c754d3ab7736a78687741927fa5645d6661583f6。费用仍3391488/余442368，learning0。新37e3元数据未注册，2f失败费用不退。
+- 保持停止：当前真实阻断是RAM余量，不再问常规许可/预算；不降低12GiB/9.5GiB/运行4GiB，不动他进程。112/50轮/AB/PPO未启动，不能宣称新纠偏有效或策略验收通过。最新允许顺序及50轮硬帽已就绪，实际后续仍须先满足已批资源条件。

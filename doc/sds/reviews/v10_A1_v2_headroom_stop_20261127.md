@@ -1,0 +1,13 @@
+# A1 v2当前停止记录（2026-11-27）
+
+源码d54265108c298d5920ae8ea9316fd3d48be4b75ce989ac0507bdbf9a2b91498e已提交fe5e8df5a98405ab9ab11db239880702a35c9e89，push成功且本地HEAD/origin/main一致。工程完整CPU189passed/5skipped，试训护栏和资源v2独立审核通过。工程报告v10_A1_v2_trial_engineering_acceptance_20261127.md及旧已签文件保持不变。
+
+实际执行全新v2 parent CLI启动门禁后，在首次只读采样即拒绝：MemAvailable10845011968B=10.100204GiB，低于12GiB=12884901888B，缺2039889920B≈1.899796GiB。因此没有进入成功的连续60秒窗口；不能把本次32微秒的失败检查写成已完成60秒测量。先前13点60s环境记录是独立只读窗口，其min10.056GiB亦未达标。
+
+报告明确pre_torch_import=true，protocol_claimed=false，physical_samples=0。检查没有导入src/Torch、没有创建资源child/selection、没有注册新37e3授权或申请v2 claim；生产trial guard仍不存在。前后全局journal末SHA精确一致0fa1f0cc885cfde7b7c237e4c754d3ab7736a78687741927fa5645d6661583f6。
+
+费用保持probe charged=executed3391488、updated3170304、uncertain0，原cap3833856余442368。v2所需393216在余额内，但RAM前置条件未满足；阻断不来自新增许可或资金。112诊断、完整教师A/B、D1限额50轮及PPO均未开始，学习0、teacher_admitted=false、accepted=null。没有降门槛、降N、清理/终止其他进程或用试训绕过资源条件。
+
+原始只读启动报告logs/a2_v10/formal_A1_20261127_approved/resource_probe_v2.startup_headroom.json SHA a92304ae8727493e26adcfff293256ee189f190b5611d5fc98625a14a6ced770；父stdout为probe_v2_parent.log，精确状态stage_status_v2.json。2f v1真实资源失败及其98304费用/全部原始证据继续保留，不被此次零样本门禁覆盖。
+
+已批准后续顺序仍为：RAM连续60s>=12GiB→唯一v2两栈（child填库前>=9.5GiB、运行4GiB保持）→固定112每组4/4→原D1内1024×48×最多50完整更新、charged cap2457600，保存停报；完整教师A/B后移但未取消，最终验收不取消，不自动课程/PPO。现在保持停止，不声称纠偏行为或正式训练已验证。
