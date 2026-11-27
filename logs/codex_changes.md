@@ -5241,3 +5241,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 工程两缺口修后通过；原资源失败、新资源未测、教师评估/正式学习/终验0、真实导出播放未验，故总体未通过。新纯工程准入logs/a2_v10/engineering_admission_final_20261127.json仅工程，不构成预算授权。
 - 生产A预算JSON被auto-review拒绝且确认未落盘；规划核对无用户明确3833856数值原话。不会换路径/工具/agent绕过；等待可信用户明确probe累计3833856（含历史737280），非B增额且一般修改/push/训练授权不重问。实际费用和物理状态未变。
 - 本轮修改/新增文件：runtime/resources/probe_budget三源码、预算/保存fixture测试及新test_v10_runtime_task_logging.py；两实施报告和新v10_sds81_task_logging_report.md；总/独立/映射/manifest四验收文档，身份/定向日志/采集回归日志证据，裁定及本日志。未改spec/奖励/损失/物理/速度/优化器参数，未夹带旧dirty和权重。接着仅按项目授权提交推送并核远端。
+
+## 2026-11-27 用户直接确认A预算并准备执行
+
+- 用户在本实施主对话对probe累计3833856（含737280）直接回复yes及全部同意，解除此前仅规划转述导致的审批等待；保留旧拒绝历史，不再重复确认。
+- 文件：doc/sds/reviews/v10_execution_rulings.md、logs/a2_v10/probe_authorization_A_20261127.json、纯工程身份及本日志。预算授权cap3833856、历史737280、余3096576，绑定当前裁定SHA；非B增额。
+- 未改任何源代码/训练配方，工程源码仍b48e3fd1…92991f；下一步核对身份/全局账本后启动1024优先双栈，失败按SDS回退512；资源与教师均通过才正式学习。此记录不声称新探测或学习已通过。

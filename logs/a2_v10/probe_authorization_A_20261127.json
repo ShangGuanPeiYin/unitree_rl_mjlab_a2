@@ -1,0 +1,17 @@
+{
+  "schema": "a2-v10-global-probe-budget-authorization-v1",
+  "approved": true,
+  "authorization_id": "user-direct-A-20261127-cap3833856",
+  "scope": "probe_only",
+  "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+  "rulings_sha256": "ea611e4988ad9fea988f982cdf0430a4d892ff9930fa07093b351a1fc31b9cb9",
+  "global_ledger_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/global_probe_costs.jsonl",
+  "max_probe_samples": 3833856,
+  "prior_charged_samples": 737280,
+  "remaining_at_approval": 3096576,
+  "approval_source": {
+    "kind": "user",
+    "reference": "本实施主对话2026-11-27：针对明确的“probe累计上限3833856，包含历史737280”确认问题，用户直接回复yes并再次全部同意"
+  },
+  "reserve_mode": "exclusive_next_complete_stack_capacity_not_charged"
+}
