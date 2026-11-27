@@ -5254,3 +5254,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 工程身份/SDS/独立报告/源码b48e3fd1…92991f和全局历史737280均只读核对有效；无配方/源码变化。授权文档提交43d117857c7bb86b530023f6e59ada75b1b8fc30已push成功，远端查询遇一次TLS中断，另行核对。
 - 已实际启动logs/a2_v10/formal_A_20261127_approved，sequence user_A_20261127_approved，cuda:0；命令显式传run-dir、engineering-admission、global-probe-ledger、probe-budget-authorization和probe-sequence-id。当前真实1024 DAgger栈已开始更新；仍须完成5预热20测量、完整保存/恢复和同N PPO栈，未称资源通过或正式训练开始。
 - 历史费用保留，capacity占用与逐step charged分开。所有资源/教师/行为门禁仍执行；本次只补状态日志，不改任何训练设置。
+
+## 2026-11-27 A流程：1024双栈真实资源通过，教师准入运行中
+
+- 新报告doc/sds/reviews/v10_A_execution_status_20261127.md记录实测与当前阶段；旧验收/拒绝历史不覆盖。代码未变，source b48e3fd1…92991f。
+- 1024 DAgger/PPO均完整5warm+20measurement、全replay、保存并实际恢复，通过原阈值；Dagger整卡2559/任务1126MiB，host最低5326827520B；PPO整卡2601/任务1134MiB，host最低5157289984B，N固定1024。
+- 新probe各1277952，加旧737280累计charged=executed3293184、updated3121152、uncertain0，上限3833856余540672，probe状态丢弃不带入学习。资源证据在当前run/resource_probe各result与selection.json。
+- 已实际进入teacher_admission_D1_A，当前仍教师准入、正式学习0。独立review_preflight只读监督费用/门禁/失败和启动状态，重要变化唤醒主对话并向规划回报，不额外运行病例或修改设置。
+- 启动日志提交b147eb272bb44020a475255f2ce5963707a06298已通过已有SSH通道push同一GitHub仓库并核远端一致；HTTPS曾TLS/443失败，无force-push或origin更改。
+- 本次仅状态报告/日志，无奖励、损失、速度、LR、课程或物理变化。资源通过不等于教师或行为通过，未声称策略改善。
