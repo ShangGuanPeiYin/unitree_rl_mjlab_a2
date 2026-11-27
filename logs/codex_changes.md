@@ -5441,3 +5441,8 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 本轮17项定向CPU检查通过（dynamic execution/runtime/manual launcher），bash语法与py_compile通过；未跑全套验收或新物理训练。
 - 实际手动入口仅执行 --mode check --num-envs 2048：exit0、executed=false、profile_exists=false；从原50轮保留D1剩450轮，额度D1=46694400、D2=98304000、D3=147456000、PPO=98304000，DAgger每轮20更新。该检查未创建动态profile或启动worker。
 - docs使用说明同步可变N和恢复边界；新N资源/行为未验证，首次切N可用，同N继续恢复，产生动态学习后再次换N明确拒绝。实时终端日志保留。既有四个dirty文件SHA未变，原模型文件不提交。
+
+## 2026-11-27 — 终端动态进度条
+- 用户要求仅稍改脚本增加进度条，不做验收。
+- 文件：scripts/run_sds_manual.sh。显示层从已有updates逐轮记录计算阶段轮次进度；从实际运行命令和冻结病例manifest计算评估组数分母，显示24格进度条与百分比。终端原行刷新、普通日志继续输出并重绘；重定向输出时使用普通文本进度。未记录完整一行JSON时暂存到下一次读取。
+- 训练/模型/预算/源码指纹不变；本次未启动训练或验收，仅bash -n语法检查通过。实际终端显示待用户运行。

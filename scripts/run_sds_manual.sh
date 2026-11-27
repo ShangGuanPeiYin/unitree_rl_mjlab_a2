@@ -24,6 +24,49 @@ from pathlib import Path
 run = Path('logs/a2_v10/formal_A1_20261127_approved')
 positions = {}
 progress = {}
+partials = {}
+bar = ''
+tty = sys.stdout.isatty()
+ROUND_TOTALS = {'D1': 500, 'D2': 1000, 'D3': 1500, 'P0': 100, 'P1': 1000}
+
+def show_bar(label, current, total):
+    global bar
+    if not total:
+        return
+    fraction = min(1., max(0., current / total))
+    filled = int(24 * fraction)
+    bar = f"{label} [{'#' * filled}{'-' * (24-filled)}] {current}/{total} {fraction:6.1%}"
+    if tty:
+        sys.stdout.write('\r\033[2K' + bar)
+        sys.stdout.flush()
+    else:
+        print('[progress] ' + bar, flush=True)
+
+def output(text):
+    if tty and bar:
+        sys.stdout.write('\r\033[2K')
+    print(text, end='', flush=True)
+    if tty and bar:
+        sys.stdout.write('\r\033[2K' + bar)
+        sys.stdout.flush()
+
+def evaluation_total(path):
+    # Use the actual running command and frozen suite, never guess denominators.
+    for parent in path.parents:
+        state_path = parent / 'controller_state.json'
+        if not state_path.is_file():
+            continue
+        state = json.loads(state_path.read_text())
+        for key, operation in state.get('operations', {}).items():
+            if key != path.parent.name or operation.get('status') != 'running':
+                continue
+            command = operation.get('command', [])
+            course = command[command.index('--course') + 1]
+            suite = command[command.index('--suite') + 1]
+            manifest = json.loads((parent/'frozen'/f'{course}_{suite}.json').read_text())
+            return len({row['group_id'] for row in manifest['cases']})
+        return None
+    return None
 
 def files():
     for base in [run, *run.glob('dynamic_N*')]:
@@ -46,7 +89,8 @@ def display():
                     stamp = path.stat().st_mtime_ns
                     if progress.get(path) != stamp:
                         row = json.loads(path.read_text())
-                        print('[progress] ' + str(path.parent.relative_to(run)) + ' ' + json.dumps(row, ensure_ascii=False), flush=True)
+                        output('[progress] ' + str(path.parent.relative_to(run)) + ' ' + json.dumps(row, ensure_ascii=False) + '\n')
+                        show_bar(path.parent.name, row['completed_groups'], evaluation_total(path))
                         progress[path] = stamp
                     continue
                 size = path.stat().st_size
@@ -58,7 +102,18 @@ def display():
                         stream.seek(offset)
                         data = stream.read()
                         positions[path] = stream.tell()
-                    print(data.decode('utf-8', errors='replace'), end='', flush=True)
+                    text = data.decode('utf-8', errors='replace')
+                    output(text)
+                    if path.name == 'updates.jsonl':
+                        text = partials.get(path, '') + text
+                        lines = text.split('\n')
+                        partials[path] = lines.pop()
+                        for line in lines:
+                            if not line.strip():
+                                continue
+                            row = json.loads(line)
+                            phase = row.get('phase', '')
+                            show_bar(phase + ' 训练轮次', row['round'], ROUND_TOTALS.get(phase))
             except (OSError, ValueError):
                 continue
         if stop.wait(0.3):
@@ -79,5 +134,7 @@ finally:
     time.sleep(0.4)
     stop.set()
     thread.join(timeout=2)
+    if tty and bar:
+        print(flush=True)
 sys.exit(code if code >= 0 else 128 - code)
 PYLIVE
