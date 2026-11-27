@@ -20,3 +20,11 @@
 已安排独立只读运行监督，不额外执行病例或占GPU；失败/预算/工程异常时报告原始证据并停止依赖阶段，不私改配方。实际最新状态以controller_state.json与evaluation结果为准。
 
 授权/代码43d1178及启动日志b147eb2已推送；后者因HTTPS网络故障改用已有SSH通道推同一仓库，未改变origin URL，远端实际HEAD与本地b147eb272bb44020a475255f2ce5963707a06298核对一致。未上传权重。资源通过是实际本轮测量结论，不代表策略行为改善或完整任务已经验收。
+
+## 后续实际结论：教师准入失败，已停止
+
+上述“运行中”为当时快照。当前controller.status=stopped，stop_reason=teacher_capability_gap:teacher_admission_D1_A。前10组普通平地200/200通过，第11组P_WALK（H2m/W1.2m/G/vx0.3m/s）0/20，低于18/20；仅220/3080例，suite complete=false，不能签教师通过。正式学习0，无学习checkpoint。
+
+独立只读复核20条失败轨迹：全部首次failure与首次机身y>0.6m越界同帧；此前与同速平地均持续正向侧漂，平台接近边缘后姿态恶化。未记录yaw/raw接触，不能排除未记录同帧原因。详见v10_teacher_platform_failure_diagnostic_20261127.md及独立报告；原始result/NPZ保留未修改。
+
+本次诊断无新增物理。probe累计3293184、余额540672；评估实耗304100（有效302074、padding2026）、uncertain0。学习仍0。路线反馈适配超原SDS范围，当前仅完成只读接口/资源方案文档，未实施、未选增益、未重跑。等待规划对用户范围确认及有上限方案的裁定，保持停止。

@@ -5263,3 +5263,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 已实际进入teacher_admission_D1_A，当前仍教师准入、正式学习0。独立review_preflight只读监督费用/门禁/失败和启动状态，重要变化唤醒主对话并向规划回报，不额外运行病例或修改设置。
 - 启动日志提交b147eb272bb44020a475255f2ce5963707a06298已通过已有SSH通道push同一GitHub仓库并核远端一致；HTTPS曾TLS/443失败，无force-push或origin更改。
 - 本次仅状态报告/日志，无奖励、损失、速度、LR、课程或物理变化。资源通过不等于教师或行为通过，未声称策略改善。
+
+## 2026-11-27 教师准入失败证据保全、只读诊断与修订接口准备
+
+- 目的：教师D1-A首个平台组0/20后定位真实终止原因，独立复核并记录停止状态；不越过门禁、不改配方。
+- 文件：新增doc/sds/reviews/v10_teacher_platform_failure_diagnostic_20261127.md、v10_teacher_platform_failure_independent_20261127.md、v10_teacher_route_adapter_interface_readonly_20261127.md及logs/a2_v10/teacher_platform_failure_diagnostic_20261127.json；向v10_A_execution_status_20261127.md追加最终停止状态。原SDS、源码、原result/NPZ和旧dirty均未修改。
+- 实际内容/理由：主分析与独立审核分别解析现存20例，首次bounds=failure=末帧；按实际测量面/路线高度解释clearance，比较同速度flat侧漂趋势，明确yaw/raw contact等缺失限制，不能虚构唯一接触原因或离线动作重标。适配方案仅列教师私有命令与学生历史隔离、统一可观测规则和资源重验工作量；没有新增控制增益/策略。
+- 验证：现存结果220/3080、前10组200/200、失败平台0/20，独立20例事件核对一致；source fingerprint保持b48e3fd1601ff2926272ed014d846fd480fe24a8c56d77100d646f933b92991f，冻结SDS SHA仍eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0。原结果SHA c4c72b580ca13847b6e9b1170b2b1e70a81613a6a58a9c2c14dccbccf7b31f5e保持，派生JSON通过解析。
+- 实际费用：probe3293184（含历史737280）、余额540672；eval304100=302074有效+2026padding，uncertain0；本次分析新增物理0，正式学习0。controller已stopped。资源通过不代表教师/行为通过。
+- 未验证：路线反馈适配尚未批准/实现，增益、实际行为和新源码资源证书均未验证；未重跑物理或测试套件，未宣称效果改善。保留旧拒绝/失败证据，不借其他预算。后续范围修订由规划裁定。
