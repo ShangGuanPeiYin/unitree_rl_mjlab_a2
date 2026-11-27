@@ -5349,3 +5349,8 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 
 - 新增 v10_A1_v2_sds_resume_resource_20261127.md，归档 A1 v2 独立运行目录下的 startup、selection、linkage 和两栈结果。运行沿用原全局台账、门槛、保留历史证据，未调整源码或训练设置。
 - 验证：60 秒启动内存检查通过；DAgger/PPO 双栈通过，新增计费 393,216，累计 3,784,704、余 49,152、uncertain 0。已开始 112 例诊断，追加报告中的资源结论限于双栈短程补证。
+
+### 2026-11-27 固定112例教师诊断通过
+
+- 归档v10_A1_diagnostic112_pass_20261127.md和诊断result/progress/resource JSON，源码及训练配方未变。
+- 验证28组4/4，共112/112通过，resource_admitted=true，实际执行200,340步含padding272，全部计入同一评估账本，累计504,440。正式教师A/B由既有控制器接续，尚未完成。学生正式行为验收未验证。

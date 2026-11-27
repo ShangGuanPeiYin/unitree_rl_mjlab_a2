@@ -1,0 +1,11 @@
+{
+  "cuda_allocated_peak_mib": 12.79833984375,
+  "cuda_reserved_peak_mib": 16.0,
+  "gpu_task_peak_mib": 856,
+  "gpu_task_valid_samples": 11500,
+  "gpu_total_peak_mib": 2333,
+  "host_available_min_bytes": 9220919296,
+  "passed": true,
+  "process_rss_peak_bytes": 8799903744,
+  "resource_samples": 11501
+}
