@@ -5247,3 +5247,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 用户在本实施主对话对probe累计3833856（含737280）直接回复yes及全部同意，解除此前仅规划转述导致的审批等待；保留旧拒绝历史，不再重复确认。
 - 文件：doc/sds/reviews/v10_execution_rulings.md、logs/a2_v10/probe_authorization_A_20261127.json、纯工程身份及本日志。预算授权cap3833856、历史737280、余3096576，绑定当前裁定SHA；非B增额。
 - 未改任何源代码/训练配方，工程源码仍b48e3fd1…92991f；下一步核对身份/全局账本后启动1024优先双栈，失败按SDS回退512；资源与教师均通过才正式学习。此记录不声称新探测或学习已通过。
+
+## 2026-11-27 已获直接数值授权，A自动流程实际启动
+
+- 生产A授权创建已获自动审批允许，SHA8afde6347fe88002da3a8bf542c080ff65f0ae52fbd47d8660cbd39fa67035e2；用户yes及全部同意对应明确累计3833856含历史737280。不存在继续等待B或常规许可。
+- 工程身份/SDS/独立报告/源码b48e3fd1…92991f和全局历史737280均只读核对有效；无配方/源码变化。授权文档提交43d117857c7bb86b530023f6e59ada75b1b8fc30已push成功，远端查询遇一次TLS中断，另行核对。
+- 已实际启动logs/a2_v10/formal_A_20261127_approved，sequence user_A_20261127_approved，cuda:0；命令显式传run-dir、engineering-admission、global-probe-ledger、probe-budget-authorization和probe-sequence-id。当前真实1024 DAgger栈已开始更新；仍须完成5预热20测量、完整保存/恢复和同N PPO栈，未称资源通过或正式训练开始。
+- 历史费用保留，capacity占用与逐step charged分开。所有资源/教师/行为门禁仍执行；本次只补状态日志，不改任何训练设置。
