@@ -1,0 +1,77 @@
+{
+  "accepted": null,
+  "checkpoint": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/learning/D1_direct_user/D1_000050_boundary.pt",
+  "declared_checkpoint_sha256": "74d9d2de82860fcd806521e4eef20ef74add7899582c987844e80350557010e7",
+  "external_learning_budget": {
+    "learning:D1": 2457600
+  },
+  "full_state_structure_valid": true,
+  "num_envs": 1024,
+  "observation_dtypes": {
+    "F_STAND": {
+      "heightmap": "torch.float32",
+      "history": "torch.float32",
+      "privileged": "torch.float32",
+      "proprio": "torch.float32",
+      "route_error": "torch.float32"
+    },
+    "F_STOP": {
+      "heightmap": "torch.float32",
+      "history": "torch.float32",
+      "privileged": "torch.float32",
+      "proprio": "torch.float32",
+      "route_error": "torch.float32"
+    },
+    "F_WALK": {
+      "heightmap": "torch.float32",
+      "history": "torch.float32",
+      "privileged": "torch.float32",
+      "proprio": "torch.float32",
+      "route_error": "torch.float32"
+    },
+    "P_STOP": {
+      "heightmap": "torch.float32",
+      "history": "torch.float32",
+      "privileged": "torch.float32",
+      "proprio": "torch.float32",
+      "route_error": "torch.float32"
+    },
+    "P_WALK": {
+      "heightmap": "torch.float32",
+      "history": "torch.float32",
+      "privileged": "torch.float32",
+      "proprio": "torch.float32",
+      "route_error": "torch.float32"
+    },
+    "S_ROUTE": {
+      "heightmap": "torch.float32",
+      "history": "torch.float32",
+      "privileged": "torch.float32",
+      "proprio": "torch.float32",
+      "route_error": "torch.float32"
+    }
+  },
+  "optimizer_lr": [
+    3e-05
+  ],
+  "optimizer_state_parameters": 24,
+  "reservoir_counts": {
+    "F_STAND": 32768,
+    "F_STOP": 32768,
+    "F_WALK": 32768,
+    "P_STOP": 32768,
+    "P_WALK": 32768,
+    "S_ROUTE": 32768
+  },
+  "retained_completed_updates": 50,
+  "rng_components": [
+    "cuda",
+    "numpy",
+    "python",
+    "torch"
+  ],
+  "scope": "read-only CPU mmap structure validation, no env construction/step/update/resume",
+  "source_sha256": "d54265108c298d5920ae8ea9316fd3d48be4b75ce989ac0507bdbf9a2b91498e",
+  "teacher_admitted": false,
+  "total_replay_slots": 196608
+}

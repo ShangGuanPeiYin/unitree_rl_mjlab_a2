@@ -5332,3 +5332,15 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 结果：首次MemAvailable11699712000B=10.896206GiB，低于12GiB=12884901888B，差1185189888B≈1.103794GiB，未进入成功连续60秒窗口；pre_torch_import=true，立即非零退出。无src/Torch/资源child、无新authority注册、无v2 claim、0新增物理与费用，学习0。仍不启动112/50/AB/PPO，不动其他进程、不降N或门槛。
 - 文件：保留原失败证据；新增logs/a2_v10/formal_A1_20261127_approved/resource_probe_v2_retry_20261127_123234.startup_headroom.json（SHA59666b9b8d98020899fecaf41898b34e7b672e3722ec2c3dc135427e0aa4386d）、probe_v2_retry_20261127_123234_parent.log及stage_status_v2_retry_20261127_123234.json。
 - 验证：真实CLI启动检查；global journal尾SHA仍0fa1f0cc885cfde7b7c237e4c754d3ab7736a78687741927fa5645d6661583f6，预算仍3391488/余442368，唯一v2机会未消耗。无源码修改，未重复CPU测试；纠偏行为与学习效果仍未验证。
+
+## 2026-11-27 用户直接启动D1限额试训，1024已真实运行
+
+- 用户新明确指令：“直接尝试启动训练”；后补“如果1024环境不行的话就尝试512环境”。按最新用户指令直接启动现有d542 worker的限额D1尝试，替代本次先v2/112的启动顺序；独立doc/sds/reviews/v10_user_direct_trial_20261127.md明确前置未通过、不伪造teacher_admitted/accepted。新ruling不覆盖旧已签rulings/合同/失败证据。
+- 启动前实际MemAvailable约16.5GiB，canonical trial guard与learning ledger尚不存在；本次沿原formal_A1_20261127_approved/learning_costs.jsonl创建唯一学习账本、同trial-id A1-pre-gate-D1-50-20261127和同canonical guard。N1024/course D1/rollout48/stop-round50/chargedcap2457600，保存后停，不自动课程/PPO；奖励/损失/纠偏参数/模型/随机化未改，源码指纹保持d542。
+- 新文件direct_trial_controller_snapshot.json/原始direct_trial_parent.log及learning/D1_direct_user运行产物；初始trial_initial.pt已在首采样前实际保存（权重本机保留不提交）。已观测2轮98304样本，后续17轮835584，loss0.00697124/gradnorm0.02315，各任务当轮标签覆盖1.0；这些只作真实训练采集/优化进度，不冒作独立行为验收，最终费用/任务统计/保存SHA待到限后追加。
+- 用户授权512为1024失败后的备用；当前1024正常，未改源或启512。已只读确认现guard/CP固定N，若实际需fallback须显式同账/同硬帽迁移、不退款/不新id赠额度、不暗改512为100轮；无须提前扩大实现。所有旧费用保留，probe不再增加。
+
+### 2026-11-27 D1 直接试训结果归档
+
+- 归档 v10_user_direct_trial_20261127.md、v10_direct_trial50_report_20261127.md、direct_trial50_summary.json 和 direct_trial50_checkpoint_validation.json，记录直接启动授权和完成证据。
+- 1024×48×50 共 2,457,600 样本，uncertain 为 0，到限保存停止。本次仅归档，训练逻辑和配方未改。只读结构检查通过，实际物理恢复和学生独立行为未验证。
