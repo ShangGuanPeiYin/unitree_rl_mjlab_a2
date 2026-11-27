@@ -11,4 +11,72 @@ case "${1:-}" in
   --all) shift; set -- --mode all "$@" ;;
   --teachers) shift; set -- --mode teachers "$@" ;;
 esac
-exec "$PYTHON" scripts/run_a2_v10_formal.py "$@"
+# Stream newly appended child output and progress while retaining original files.
+# Keep this display-only wrapper outside the scientific Python source fingerprint.
+exec "$PYTHON" - "$@" <<'PYLIVE'
+import json
+import subprocess
+import sys
+import threading
+import time
+from pathlib import Path
+
+run = Path('logs/a2_v10/formal_A1_20261127_approved')
+positions = {}
+progress = {}
+
+def files():
+    for folder, pattern in [('operations', 'attempt_*.log'), ('learning', 'updates.jsonl'), ('evaluation', 'progress.json')]:
+        yield from (run / folder).rglob(pattern)
+
+# Existing output is history; print only activity from this invocation.
+for path in files():
+    if path.name == 'progress.json':
+        progress[path] = path.stat().st_mtime_ns
+    else:
+        positions[path] = path.stat().st_size
+
+stop = threading.Event()
+def display():
+    while True:
+        for path in files():
+            try:
+                if path.name == 'progress.json':
+                    stamp = path.stat().st_mtime_ns
+                    if progress.get(path) != stamp:
+                        row = json.loads(path.read_text())
+                        print('[progress] ' + str(path.parent.relative_to(run)) + ' ' + json.dumps(row, ensure_ascii=False), flush=True)
+                        progress[path] = stamp
+                    continue
+                size = path.stat().st_size
+                offset = positions.get(path, 0)
+                if size < offset:
+                    offset = 0
+                if size > offset:
+                    with path.open('rb') as stream:
+                        stream.seek(offset)
+                        data = stream.read()
+                        positions[path] = stream.tell()
+                    print(data.decode('utf-8', errors='replace'), end='', flush=True)
+            except (OSError, ValueError):
+                continue
+        if stop.wait(0.3):
+            break
+
+thread = threading.Thread(target=display, daemon=True)
+thread.start()
+child = subprocess.Popen([sys.executable, 'scripts/run_a2_v10_formal.py', *sys.argv[1:]])
+try:
+    code = child.wait()
+except KeyboardInterrupt:
+    # Terminal Ctrl+C already reaches the whole foreground process group.
+    try:
+        code = child.wait(timeout=15)
+    except (subprocess.TimeoutExpired, KeyboardInterrupt):
+        code = 130
+finally:
+    time.sleep(0.4)
+    stop.set()
+    thread.join(timeout=2)
+sys.exit(code if code >= 0 else 128 - code)
+PYLIVE
