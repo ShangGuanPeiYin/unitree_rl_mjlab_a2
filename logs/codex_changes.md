@@ -5354,3 +5354,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 
 - 归档v10_A1_diagnostic112_pass_20261127.md和诊断result/progress/resource JSON，源码及训练配方未变。
 - 验证28组4/4，共112/112通过，resource_admitted=true，实际执行200,340步含padding272，全部计入同一评估账本，累计504,440。正式教师A/B由既有控制器接续，尚未完成。学生正式行为验收未验证。
+
+### 2026-11-27 手动入口与用户停止
+
+- 按用户要求 SIGINT 停止教师评估，子进程 exit=-2、父控制器 exit=1，持续目标已暂停。最后完整91组，保留费用与第50轮checkpoint。
+- 新增 scripts/run_sds_manual.sh，显式使用原run、三本账、1024/48、cuda:0、既有资源及112例证据。--teachers通过既有控制器恢复中断的教师准入，--check检查身份，--all明确拒绝尚未实现的trial→formal衔接。
+- 设计理由：当前runtime拒绝带trial的普通resume，D1 entry=0与已耗50轮冲突，不能声称全流程已可运行。奖励/损失/学习参数未改。
+- 验证：bash -n通过，未启动物理评估或训练；端到端正式续训未验证，handoff工程仍待完成。
