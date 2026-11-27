@@ -5344,3 +5344,8 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 
 - 归档 v10_user_direct_trial_20261127.md、v10_direct_trial50_report_20261127.md、direct_trial50_summary.json 和 direct_trial50_checkpoint_validation.json，记录直接启动授权和完成证据。
 - 1024×48×50 共 2,457,600 样本，uncertain 为 0，到限保存停止。本次仅归档，训练逻辑和配方未改。只读结构检查通过，实际物理恢复和学生独立行为未验证。
+
+### 2026-11-27 继续 SDS 并完成 1024 双栈资源补证
+
+- 新增 v10_A1_v2_sds_resume_resource_20261127.md，归档 A1 v2 独立运行目录下的 startup、selection、linkage 和两栈结果。运行沿用原全局台账、门槛、保留历史证据，未调整源码或训练设置。
+- 验证：60 秒启动内存检查通过；DAgger/PPO 双栈通过，新增计费 393,216，累计 3,784,704、余 49,152、uncertain 0。已开始 112 例诊断，追加报告中的资源结论限于双栈短程补证。
