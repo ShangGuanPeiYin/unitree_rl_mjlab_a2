@@ -1,0 +1,36 @@
+{
+  "accepted": null,
+  "code_sha256": "cf4d3a6495569ae8a785a00288acfa1faecb3204c6a5ed675eb1dcd4c3ec4db4",
+  "cpu_result": {
+    "code_sha256": "cf4d3a6495569ae8a785a00288acfa1faecb3204c6a5ed675eb1dcd4c3ec4db4",
+    "failed": 0,
+    "initial_failed_junit_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_handoff_validation_20261127/pytest_initial_failed.xml",
+    "initial_failed_junit_sha256": "f3ec7f799effe2745264f1b4b548b4986b43cdda86be28003b5edf5d32e992b9",
+    "junit_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_handoff_validation_20261127/pytest_final.xml",
+    "junit_sha256": "d56824c8f1b0299ea008860c0e96b6701dba61840d8cb5caef698329b81a342c",
+    "learning_samples": 0,
+    "passed": 219,
+    "physical_samples": 0,
+    "scope": "all test_v10*.py, CPU; CUDA and physical/full-replay opt-ins disabled",
+    "skipped": 5
+  },
+  "engineering_report_path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_formal_handoff_engineering_20261127.md",
+  "engineering_report_sha256": "cdcb8d78a2efb4380b5bb22d61c33858f6d4cbc5819cef5ad9e91be57811d80a",
+  "independent_review": {
+    "passed": true,
+    "report_path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_formal_handoff_independent_20261127.md",
+    "report_sha256": "02db630f4cbccce9cdd8b2d1bb637d78e144e2884221a4624e059877d06d22fb"
+  },
+  "passed": true,
+  "physical_samples_this_change": 0,
+  "physical_sha256": "aa74d2d53526f2025b46054771ec1cf9e785b9dcee7a860e98e2c8303ee58442",
+  "preflight_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_handoff_validation_20261127/preflight.json",
+  "preflight_sha256": "4257ab7817c4cf15eab626d93260d0af26c2be937431e99e7f255121d7310719",
+  "rulings_sha256": "4de1477cbabb7b652cfa2b5bc21a589a2e6282568c1eec715d917673846fd898",
+  "schema": "a2-v10-engineering-admission-v1",
+  "scope": "CPU engineering and explicit evidence inheritance for manual full SDS; behavior gates remain mandatory",
+  "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+  "teacher_admitted": false,
+  "test_evidence_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_handoff_cpu_20261127.json",
+  "test_evidence_sha256": "d88a6054608fddaa3f848211449368d4ce0e55b4673578f64a1a21a5c8f09702"
+}

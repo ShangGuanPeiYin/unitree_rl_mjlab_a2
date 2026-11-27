@@ -94,9 +94,9 @@ _RECORDING_UPDATE = """frame.update(yaw=yaw.clone(),foot_position_local=feet_loc
         route_fall=d.root_link_pos_w[:,2]<route_h-.5,bounds=~bounds,timeout=frame['timeout'].clone()))"""
 
 
-def _env_recording_equivalence(relative):
+def _env_recording_equivalence(relative,source_root=spec.ROOT):
     before=subprocess.check_output(['git','cat-file','blob',f'{OLD_GIT}:{relative}'],cwd=spec.ROOT).decode()
-    old=ast.parse(before);new=ast.parse((spec.ROOT/relative).read_text())
+    old=ast.parse(before);new=ast.parse((Path(source_root)/relative).read_text())
     expected=ast.dump(ast.parse(_RECORDING_UPDATE).body[0],include_attributes=False)
     classes=[n for n in new.body if isinstance(n,ast.ClassDef) and n.name=='V10Env']
     if len(classes)!=1:return False
@@ -114,9 +114,9 @@ def _env_recording_equivalence(relative):
     return ast.dump(new,include_attributes=False)==ast.dump(old,include_attributes=False)
 
 
-def _runtime_probe_equivalence(relative):
+def _runtime_probe_equivalence(relative,source_root=spec.ROOT):
     old=ast.parse(subprocess.check_output(['git','cat-file','blob',f'{OLD_GIT}:{relative}'],cwd=spec.ROOT).decode())
-    new=ast.parse((spec.ROOT/relative).read_text())
+    new=ast.parse((Path(source_root)/relative).read_text())
     old_workers=[n for n in old.body if isinstance(n,ast.FunctionDef) and n.name=='worker']
     new_workers=[n for n in new.body if isinstance(n,ast.FunctionDef) and n.name=='worker']
     if len(old_workers)!=1 or len(new_workers)!=1:return False
@@ -158,14 +158,16 @@ def _failed_context():
     return dict(passed=False,positive_resource_evidence=False,source_sha256=_read(FAILED_CONTEXT_DIR/'selection.json')['code_sha256'],references=refs)
 
 
-def _invariance_record(relative,protocol=A1_PROTOCOL):
-    old=_old_blob_sha(relative);new=streaming_sha256(spec.ROOT/relative)
+def _invariance_record(relative,protocol=A1_PROTOCOL,source_root=spec.ROOT):
+    old=_old_blob_sha(relative);source=Path(source_root)/relative
+    if not relative.endswith('.py'):source=spec.ROOT/relative
+    new=streaming_sha256(source)
     record=dict(baseline_sha256=old,current_sha256=new,unchanged=old is not None and old==new,evidence_type='exact_bytes')
     if relative=='src/tasks/velocity/v10/env.py' and old!=new:
-        record.update(evidence_type='exact_approved_recording_ast_only',recording_only_ast_equivalent=_env_recording_equivalence(relative),
+        record.update(evidence_type='exact_approved_recording_ast_only',recording_only_ast_equivalent=_env_recording_equivalence(relative,source_root),
                       approved_removed_statement_sha256=hashlib.sha256(ast.dump(ast.parse(_RECORDING_UPDATE).body[0],include_attributes=False).encode()).hexdigest())
     if relative=='src/tasks/velocity/v10/runtime.py' and old!=new and protocol==A1_V2_PROTOCOL:
-        record.update(evidence_type='probe_functions_and_module_AST_except_inert_worker_signature',probe_path_ast_equivalent=_runtime_probe_equivalence(relative),excluded_function='worker')
+        record.update(evidence_type='probe_functions_and_module_AST_except_inert_worker_signature',probe_path_ast_equivalent=_runtime_probe_equivalence(relative,source_root),excluded_function='worker')
     return record
 
 
@@ -182,17 +184,18 @@ def build_invariance_evidence(path,protocol=A1_PROTOCOL):
     _write(path,row);return row
 
 
-def _source_difference_document():
-    current=set((spec.ROOT/'src').rglob('*.py'))|set((spec.ROOT/'scripts').glob('*a2_v10*.py'))|set((spec.ROOT/'tests').glob('test_v10*.py'))
-    names={p.relative_to(spec.ROOT).as_posix() for p in current}
+def _source_difference_document(source_root=spec.ROOT):
+    source_root=Path(source_root)
+    current=set((source_root/'src').rglob('*.py'))|set((source_root/'scripts').glob('*a2_v10*.py'))|set((source_root/'tests').glob('test_v10*.py'))
+    names={p.relative_to(source_root).as_posix() for p in current}
     old=subprocess.check_output(['git','ls-tree','-r','--name-only',OLD_GIT,'src','scripts','tests'],cwd=spec.ROOT,text=True).splitlines()
     names.update(p for p in old if p.endswith('.py') and (p.startswith('src/') or '/test_v10' in p or 'a2_v10' in p))
     changed=[]
     for relative in sorted(names):
-        before=_old_blob_sha(relative);source=spec.ROOT/relative;after=streaming_sha256(source) if source.is_file() else None
+        before=_old_blob_sha(relative);source=source_root/relative;after=streaming_sha256(source) if source.is_file() else None
         if before!=after:changed.append(dict(path=relative,baseline_sha256=before,current_sha256=after))
     row=dict(schema='a2-v10-A1-source-diff-v1',baseline_git=OLD_GIT,baseline_code_sha256=OLD_SOURCE,
-             new_code_sha256=code_fingerprint(),changed_files=changed,
+             new_code_sha256=code_fingerprint(source_root),changed_files=changed,
              note='Actual current bytes include protected pre-existing dirty/untracked files; independent review must classify the differences.')
     return row
 
@@ -224,12 +227,12 @@ def _bound_document(ref):
     return _read(path)
 
 
-def validate_a1_contract(path):
+def validate_a1_contract(path,*,source_root=spec.ROOT):
     row=_read(path);profile=_profile(row.get('protocol'));protocol=row['protocol']
     if row.get('approved') is not True:raise ValueError('explicit approved A1 resource reuse approval required')
     if (row.get('schema')!='a2-v10-A1-resource-linkage-v1' or row.get('protocol') not in PROFILES
         or row.get('sds_sha256')!=spec.SDS_SHA256 or row.get('rulings_sha256')!=streaming_sha256(RULINGS)
-        or row.get('new_code_sha256')!=code_fingerprint() or row.get('baseline_git')!=OLD_GIT or row.get('old_evidence')!=OLD_FILES):
+        or row.get('new_code_sha256')!=code_fingerprint(source_root) or row.get('baseline_git')!=OLD_GIT or row.get('old_evidence')!=OLD_FILES):
         raise ValueError('A1 resource contract identity mismatch')
     proposal=row['proposal']
     proposal_path=V2_RULING if protocol==A1_V2_PROTOCOL else PROPOSAL
@@ -242,12 +245,12 @@ def validate_a1_contract(path):
         or evidence.get('invariants_satisfied') is not True or set(evidence['files'])!=set(_invariant_paths())
         or diff.get('baseline_git')!=OLD_GIT or diff.get('new_code_sha256')!=row['new_code_sha256']):raise ValueError('A1 invariance/source difference evidence invalid')
     for relative,record in evidence['files'].items():
-        expected=_invariance_record(relative,protocol)
+        expected=_invariance_record(relative,protocol,source_root)
         if record!=expected or not (expected['unchanged'] or expected.get('recording_only_ast_equivalent') is True or expected.get('probe_path_ast_equivalent') is True):
             raise ValueError('A1 invariant actually changed: '+relative)
-    if diff!=_source_difference_document():raise ValueError('A1 source difference list incomplete or changed')
+    if diff!=_source_difference_document(source_root):raise ValueError('A1 source difference list incomplete or changed')
     for record in diff['changed_files']:
-        source=spec.ROOT/record['path'];actual=streaming_sha256(source) if source.is_file() else None
+        source=Path(source_root)/record['path'];actual=streaming_sha256(source) if source.is_file() else None
         if record.get('baseline_sha256')!=_old_blob_sha(record['path']) or record.get('current_sha256')!=actual:raise ValueError('A1 source difference changed')
     scope=row.get('scope',{})
     if (scope.get('num_envs')!=1024 or scope.get('fill_rollouts')!=1 or scope.get('warmup_rounds')!=profile['warmup'] or scope.get('measurement_rounds')!=profile['measurement']
@@ -336,11 +339,11 @@ def run_a1_probes(*,output_dir,linkage_contract,device='cuda:0',global_probe_led
         budget.finish_sequence(probe_sequence_id,passed=passed,reason='A1 targeted sequence finished; no retries or fallback')
 
 
-def _association_document(link,selection,output):
+def _association_document(link,selection,output,*,source_root=spec.ROOT):
     output=Path(output).resolve();protocol=selection.get('resource_protocol');profile=_profile(protocol)
     if link['contract'].get('protocol',A1_PROTOCOL)!=protocol:raise ValueError('association profile mismatch')
     if (selection.get('passed') is not True or selection.get('resource_protocol') not in PROFILES or selection.get('num_envs')!=1024
-        or selection.get('sds_sha256')!=spec.SDS_SHA256 or selection.get('code_sha256')!=code_fingerprint()
+        or selection.get('sds_sha256')!=spec.SDS_SHA256 or selection.get('code_sha256')!=code_fingerprint(source_root)
         or selection.get('rulings_sha256')!=streaming_sha256(RULINGS) or selection.get('physical_sha256')!=link['old']['physical_sha256']
         or selection.get('probe_state_discarded') is not True or selection.get('full_twenty_measurement_revalidation') is not False
         or selection.get('linkage_contract_path')!=link['contract_path'] or selection.get('linkage_contract_sha256')!=link['contract_sha256']):
@@ -359,7 +362,7 @@ def _association_document(link,selection,output):
         if (row.get('passed') is not True or row.get('resource_protocol')!=protocol or row.get('num_envs')!=1024
             or row.get('sds_sha256')!=spec.SDS_SHA256 or row.get('warmup_rounds')!=profile['warmup'] or row.get('measurement_rounds')!=profile['measurement']
             or row.get('fill_rollouts')!=1 or len(row.get('measured_seconds',[]))!=2
-            or row.get('physical_sha256')!=link['old']['physical_sha256'] or row.get('code_sha256')!=code_fingerprint()
+            or row.get('physical_sha256')!=link['old']['physical_sha256'] or row.get('code_sha256')!=code_fingerprint(source_root)
             or row.get('restore_checked') is not True or any(row.get('replay_counts',{}).get(role,0)<32768 for role in spec.ROLES)
             or row.get('gpu_total_peak_mib',1e9)>7680 or row.get('gpu_task_peak_mib',1e9)>7168 or row.get('host_available_min_bytes',0)<4*1024**3
             or not _required_stages(profile)<=stages or len(row.get('checkpoint_sha256',''))!=64 or len(row.get('next_sample_manifest',''))!=64
@@ -390,7 +393,7 @@ def _association_document(link,selection,output):
     unsigned={k:v for k,v in selection.items() if k not in ('resource_linkage_certificate_path','resource_linkage_certificate_sha256')}
     from .cases import digest
     return dict(schema='a2-v10-A1-resource-association-v1',passed=True,resource_protocol=protocol,
-        sds_sha256=spec.SDS_SHA256,rulings_sha256=streaming_sha256(RULINGS),old_code_sha256=OLD_SOURCE,new_code_sha256=code_fingerprint(),
+        sds_sha256=spec.SDS_SHA256,rulings_sha256=streaming_sha256(RULINGS),old_code_sha256=OLD_SOURCE,new_code_sha256=code_fingerprint(source_root),
         physical_sha256=link['old']['physical_sha256'],num_envs=1024,old_warmup=5,old_measurement=20,new_warmup=profile['warmup'],new_measurement=profile['measurement'],
         full_twenty_measurement_revalidation=False,accepted_evidence='old full long-run + explicitly approved new targeted supplement',
         failed_context=_failed_context() if protocol==A1_V2_PROTOCOL else None,references=references,targeted_results=new_results,selection_content_sha256=digest(unsigned),
@@ -402,12 +405,24 @@ def make_linkage_certificate(link,selection,output):
     _write(Path(output)/'resource_linkage_certificate.json',certificate);return certificate
 
 
-def verify_linkage_selection(selection):
+def verify_linkage_selection(selection,*,source_compatibility=None):
+    source_root=spec.ROOT
+    if source_compatibility is not None:
+        from .source_compatibility import validate_compatibility,validate_compatible_artifact
+        bridge=validate_compatibility(source_compatibility['path'] if isinstance(source_compatibility,dict) else source_compatibility)
+        entries=[r for r in bridge['document']['artifacts'] if r['purpose']=='resource_selection' and _read(r['path'])==selection]
+        if len(entries)!=1:raise ValueError('resource selection is not exact compatible artifact')
+        validate_compatible_artifact(entries[0]['path'],bridge,'resource_selection',operation_id='prepare_resource')
+        source_root=Path(bridge['document']['baseline']['root'])
     certificate_path=Path(selection['resource_linkage_certificate_path']).resolve()
     if streaming_sha256(certificate_path)!=selection['resource_linkage_certificate_sha256']:raise ValueError('A1 association certificate SHA mismatch')
     certificate=_read(certificate_path)
-    link=validate_a1_contract(selection['linkage_contract_path'])
-    expected=_association_document(link,selection,certificate_path.parent)
+    if source_compatibility is None:
+        link=validate_a1_contract(selection['linkage_contract_path'])
+        expected=_association_document(link,selection,certificate_path.parent)
+    else:
+        link=validate_a1_contract(selection['linkage_contract_path'],source_root=source_root)
+        expected=_association_document(link,selection,certificate_path.parent,source_root=source_root)
     if certificate!=expected:raise ValueError('A1 association certificate schema/identity/references/selection mismatch')
     for path,sha in certificate['references'].items():
         if streaming_sha256(path)!=sha:raise ValueError('A1 association reference changed')

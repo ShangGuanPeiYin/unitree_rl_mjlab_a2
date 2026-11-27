@@ -1,0 +1,38 @@
+{
+  "command": [
+    "bash",
+    "scripts/run_sds_manual.sh",
+    "--mode",
+    "check",
+    "--device",
+    "cuda:0",
+    "--num-envs",
+    "1024",
+    "--rollout",
+    "48",
+    "--seed",
+    "42"
+  ],
+  "returncode": 0,
+  "stdout": "{\"mode\": \"check\", \"run\": \"/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved\", \"num_envs\": 1024, \"rollout\": 48, \"seed\": 42, \"device\": \"cuda:0\", \"save_every_rounds\": 50, \"dagger_budget_rounds\": {\"D1\": 500, \"D2\": 1000, \"D3\": 1500}, \"ppo_budget_rounds\": 1000, \"retained_trial_rounds\": 50, \"operation_logs\": \"/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/operations\", \"preflight_passed\": true}\n",
+  "stderr": "/home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.\n  warnings.warn(\n",
+  "readonly_hashes_before": {
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/controller_state.json": "8e5589415cd811c589892155e960327154e27cc606a41aa9d6ddc44567b58353",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/learning_costs.jsonl": "98c52d93bef3d53a0ff706e6a6abb22bfe9c9b6d98730632a199a391cbf25276",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A_20261127_approved/evaluation_costs.jsonl": "06a7d5535668f7b7980620467b65d9e45968c64e7647829baa5c1fed02665c94",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/global_probe_costs.jsonl": "63d7df10441d7e9f2cb835f047673b0d18891b58d0c3e6dd7412ddbce5e7280e",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/pre_gate_adjusted_trial_guard.json": "856ffb60098355a73f4e3ef7a6b1fc1e5183f969810a93aec94e9b588072dca0",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/learning/D1_direct_user/D1_000050_boundary.pt": "74d9d2de82860fcd806521e4eef20ef74add7899582c987844e80350557010e7"
+  },
+  "readonly_hashes_after": {
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/controller_state.json": "8e5589415cd811c589892155e960327154e27cc606a41aa9d6ddc44567b58353",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/learning_costs.jsonl": "98c52d93bef3d53a0ff706e6a6abb22bfe9c9b6d98730632a199a391cbf25276",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A_20261127_approved/evaluation_costs.jsonl": "06a7d5535668f7b7980620467b65d9e45968c64e7647829baa5c1fed02665c94",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/global_probe_costs.jsonl": "63d7df10441d7e9f2cb835f047673b0d18891b58d0c3e6dd7412ddbce5e7280e",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/pre_gate_adjusted_trial_guard.json": "856ffb60098355a73f4e3ef7a6b1fc1e5183f969810a93aec94e9b588072dca0",
+    "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/learning/D1_direct_user/D1_000050_boundary.pt": "74d9d2de82860fcd806521e4eef20ef74add7899582c987844e80350557010e7"
+  },
+  "unchanged": true,
+  "physical_samples": 0,
+  "handoff_created": false
+}

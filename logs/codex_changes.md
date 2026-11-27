@@ -5361,3 +5361,47 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新增 scripts/run_sds_manual.sh，显式使用原run、三本账、1024/48、cuda:0、既有资源及112例证据。--teachers通过既有控制器恢复中断的教师准入，--check检查身份，--all明确拒绝尚未实现的trial→formal衔接。
 - 设计理由：当前runtime拒绝带trial的普通resume，D1 entry=0与已耗50轮冲突，不能声称全流程已可运行。奖励/损失/学习参数未改。
 - 验证：bash -n通过，未启动物理评估或训练；端到端正式续训未验证，handoff工程仍待完成。
+
+## 2026-11-27 — 正式训练手动入口与交接裁定
+- 目的：按用户最新要求停止代跑，补齐完整正式训练入口，交付可手动执行命令，不新增试训。
+- 文件：scripts/run_sds_manual.sh、scripts/run_a2_v10_formal.py、tests/test_v10_manual_launcher.py、doc/sds/reviews/v10_formal_handoff_ruling_20261127.md、doc/sds/reviews/v10_manual_formal_training_20261127.md。
+- 内容：将旧 --all 占位拒绝替换为真实正式编排入口；显式参数绑定已有 N=1024/48步/seed42，--mode check 不构造 controller。完整执行保留原run、学习/评估账本并经教师准入与handoff续接50轮CP。记录规划交接裁定与原spec绝对门禁，不改变配方。兼容实现及验收由本轮后续记录补齐。
+- 验证：bash -n 与 --help 通过；手动入口CPU接线3项测试通过（check不执行、all使用原账本、拒绝未经证据的N变化）。当时完整handoff集成尚未完成；未启动物理或正式训练，效果未验证。
+
+
+## 2026-11-27 — 正式衔接的显式源码兼容与 CPU 控制编排
+
+- 目的：按已批准 formal handoff 裁定交付手动启动所需代码；本次只做代码与 CPU 验证，未运行任何物理、资源探测、教师评估或训练。
+- 文件：新增 `src/tasks/velocity/v10/source_compatibility.py`、`tests/test_v10_source_compatibility.py`、`tests/test_v10_formal_orchestration.py`；修改 `src/tasks/velocity/v10/orchestration.py`、`src/tasks/velocity/v10/resource_a1.py`。handoff/runtime/checkpoint 与正式 shell 由其他代理分别负责，不在此条冒称独立完成。
+- 实现：兼容证书精确绑定原 d542 源码、当前源码、300 文件档案 manifest、完整源码差异、独立审查和裁定，以及 artifact 的原路径/SHA/用途/operation。旧资源以冻结原源码重新验证 contract、invariants、source diff、raw result 与 association；旧证据 code 字段原样保留，默认未显式兼容的验证仍严格当前源码。资源测量入口 AST 与 d542 相同，未改变实际采样协议。
+- 编排：只读 preflight 不创建 controller/ledger、不结算；运行阶段先对精确旧 controller 快照做一次 source-transition，旧 execution_plan 与旧操作文件保留，新 teacher/eval 使用新源码 namespace。新源码六套教师 A/B 全通过后才 finalize handoff 并采纳原 50 轮 checkpoint。D1 跳过 target=0 入口，下一门禁仍是原绝对 200，后续 400/500；未改为 125，未重置试训 2,457,600 学习样本或任何预算。保留原奖励、损失、学习率、随机化、课程和终止规则。
+- 恢复：source-transition 与 handoff-adopt 重放不会清除新操作/教师结果或把后继模型退回第 50 轮；在 controller 锁与 GPU 排他锁下把旧评估 pending 按 Q1 记 uncertain，不退款。仅采用同 operation/target/source/物理/凭据/原学习账匹配且 CP SHA 完整的 worker 恢复 manifest，不扫描信任任意裸 checkpoint。
+- 验证：迁移重放回归先 RED（1 fail/10 pass），修复后调度/兼容/既有资源定向 5 文件 `71 passed, 1 upstream warning`（`/tmp/v10_handoff_controller_green2.log`）；补充快照不符拒迁移与教师失败不签证/不训练后，新两文件 `15 passed, 1 upstream warning`（`/tmp/v10_handoff_freeze_cpu.log`）。实际旧资源档案只读完整重算通过，physical_samples=0；`git diff --check` 与三个生产模块 py_compile 通过。
+- 未验证：真实手动入口凭据需主代理在最终源码与独审冻结后生成；完整全仓 CPU 验证、提交推送由主代理统一处理；实际教师 A/B、试训 checkpoint 的物理恢复及后续正式训练未执行，不声称策略效果改善。
+
+## 2026-11-27：显式 trial→formal 状态续接与可信周期恢复 sidecar
+
+- 目的：按规划续接裁定与用户“本轮仅交付代码/sh、不运行物理”要求，保留原50轮试训成果及同一费用账，正式恢复不能通过删除trial标志绕过。
+- 文件：新增 src/tasks/velocity/v10/handoff.py、tests/test_v10_handoff.py；修改 src/tasks/velocity/v10/runtime.py、checkpoint.py、scripts/run_a2_v10.py。orchestration/source兼容及主sh由其他代理实施，不在本条冒领。
+- 实现：区分只读pending plan与完成凭据；plan绑定原CP/guard/result、明确source兼容许可、1024/D1/50、原学习和评估账本的不可变前缀、资源v2/112完整证据。缺六份新source正式教师A/B完整身份/病例/资源与原grade_group通过时不生成可执行handoff。账本后续合法append保留，prefix改写/截断拒绝，不reconcile或退款。
+- runtime显式 --formal-handoff 完整恢复model/Adam/replay/seen/metadata/RNG/env角色游标；保留历史extra.trial并追加formal_handoff provenance，普通trial省参数resume继续拒绝。公共checkpoint_load只允许按真实凭据路径重验后精确原CP SHA/旧source例外；裸caller dict不能授权。后继CP用当前source，PPO原准入仍不变。仅formal worker成功保存后写绑定source/course/N/physical/ledger/CP SHA/operation/target/confirmed round的恢复manifest，不改checkpoint_save或probe执行体。
+- 参数/核心逻辑：原D1硬帽24576000、总预算、N1024、rollout48、每2457600样本保存、绝对D1门禁200/400/500及奖励/损失/学习率/教师适配/课程均未改变；原2457600试训费用不退不另赠额度。正式首门禁200承接原50，计划新增150轮，不把试训当学生验收。
+- TDD：handoff模块先8个缺模块RED→8 passed；worker未支持formal参数两例RED；独审指出公共loader裸dict缺口后新增测试实际RED（DID NOT RAISE），修后最终 tests/test_v10_handoff.py 为12 passed、1个上游warning、59.72s。覆盖完整状态/RNG/env游标、派生CP恢复、100周期CP保存后中断→manifest恢复不退回50、不可变凭据/原CP、六AB完整病例与身份、ledger prefix及伪造上下文拒绝。既有默认/trial定向回归另在执行，结果后续追加。
+- 边界：CPU模型/Adam/checkpoint与journal真实执行，采集使用明确6条小payload/capacity1及虚拟样本费用的seam，不是1024物理/满3GB replay/教师能力证据。本轮新增物理0；未运行GPU、3GB满库、正式AB或训练，未声称训练/资源效果改善。Git按根代理要求不操作，由主代理统一提交推送。
+
+- 2026-11-27 同次handoff验证补充：既有 tests/test_v10_runtime_core.py + test_real_worker_periodic_resume_and_boundary_save + 原trial正常50/默认拒绕过，合11 passed、1上游warning、26.73s；对应代码/新测试已冻结未再变更。py_compile及git diff --check通过。完整项目/真实训练未运行，由主代理统一全V10 CPU验收。
+
+
+## 2026-11-27 — 修正历史资源授权测试的源码适用范围
+
+- 文件：仅 `tests/test_v10_resource_a1.py`、`tests/test_v10_resource_v2.py`；未改变生产验证、采样或训练逻辑。
+- 原因：正式 handoff 新增 worker 接线后，当前 runtime 已超出旧 v2 所批准的 trial-only 签名范围。原测试误把旧授权当作适用于当前源码，根全 CPU 因此出现 2 fail/217 pass/5 skip。独立审核确认必须保留旧范围拒绝，不能扩大 AST 忽略规则凑绿。
+- 修改：同一测试明确断言当前源码旧 scope 为 false、直接批准旧 scope 仍拒绝；对冻结 d542 档案显式 source_root 校验原 scope 为 true，重新验证原合同，并继续覆盖历史 source_diff 删项拒绝。旧文件未改，兼容正路径仍由精确 source/artifact/operation 证书覆盖。
+- 验证：两资源文件加 source_compatibility 共 30 passed/1 上游 warning，16.19s，日志 `/tmp/v10_handoff_historical_scope_green.log`；`git diff --check` 通过。根后续全 CPU 复验待执行；无物理、无评估、无训练、无预算变化。
+
+## 2026-11-27 — 正式手动入口最终验收与交付
+- 文件：正式handoff工程/独立审核报告、manual说明、logs/a2_v10/formal_handoff_{compatibility,plan,cpu}_20261127.json、engineering_admission_formal_handoff_20261127.json、CPU JUnit与preflight证据；脚本及实现见上方本轮记录。
+- 结果：最终源码cf4d3a6495569ae8a785a00288acfa1faecb3204c6a5ed675eb1dcd4c3ec4db4；完整V10 CPU 219通过/0失败/5跳过，独审通过；保留首轮217通过/2失败/5跳过原始JUnit与历史测试scope修订原因。
+- 真实验证：手动sh --mode check exit0；原CP、guard、controller与三账SHA前后不变。已生成限定旧新source的兼容证据、工程准入、预备plan；六teacher AB未过，未生成可执行handoff或学生接受证书。
+- 实现逻辑：原50轮原账续接→完整教师准入→D1/D2/D3→DAgger终验→P0/P1→PPO终验→导出；同操作有效CP恢复、事件幂等、预算不退。1024/48/seed42，每50轮保存，D1上限500含原50/D2 1000/D3 1500/PPO 1000；奖励、损失、学习率、物理和课程阈值未改。
+- 验证边界：未启动物理/正式学习，未新测学生行为或满3GB资源。旧全项目收集问题未修；所有原dirty文件SHA保持。任务文件统一提交推送，具体提交与远端核对见最终汇报。

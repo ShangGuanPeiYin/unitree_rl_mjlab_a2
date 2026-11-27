@@ -99,10 +99,21 @@ def checkpoint_validate(state,*,num_envs,physical_sha256):
     if state.get('num_envs')!=num_envs or state.get('physical_sha256')!=physical_sha256:raise ValueError('checkpoint N/physics mismatch')
     return state
 
-def checkpoint_load(path,*,num_envs,physical_sha256,restore_random=True,memory_trace=None):
+def checkpoint_load(path,*,num_envs,physical_sha256,restore_random=True,memory_trace=None,formal_handoff=None):
+    if formal_handoff is not None:
+        from .handoff import validate_handoff
+        reference=formal_handoff.get('path') if isinstance(formal_handoff,dict) else formal_handoff
+        if not reference:raise ValueError('verified formal handoff credential path required')
+        checked=validate_handoff(reference,num_envs=num_envs,physical_sha256=physical_sha256)
+        if isinstance(formal_handoff,dict) and formal_handoff.get('sha256')!=checked['sha256']:raise ValueError('formal handoff credential changed')
+        formal_handoff=checked
     trace_memory(memory_trace,'load_begin')
     state=torch.load(path,map_location='cpu',weights_only=False)
-    checkpoint_validate(state,num_envs=num_envs,physical_sha256=physical_sha256)
+    try:checkpoint_validate(state,num_envs=num_envs,physical_sha256=physical_sha256)
+    except ValueError:
+        if formal_handoff is None:raise
+        from .handoff import authorize_origin_checkpoint
+        authorize_origin_checkpoint(state,formal_handoff,checkpoint_path=path,num_envs=num_envs,physical_sha256=physical_sha256)
     if restore_random:restore_rng(state['rng'])
     trace_memory(memory_trace,'load_complete')
     return state

@@ -145,12 +145,17 @@ def verify_acceptance(path,checkpoint,physical_sha):
     return c
 
 def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,device='cuda:0',ledger_path=None,controller_state=None,
-           trial_charged_cap=None,trial_id=None,trial_guard=None):
+           trial_charged_cap=None,trial_id=None,trial_guard=None,formal_handoff=None):
     trial=None
     if any(v is not None for v in (trial_charged_cap,trial_id,trial_guard)):
         from .trial_guard import TrialGuard
         trial=TrialGuard.open(course=course,num_envs=num_envs,stop_round=stop_round,cap=trial_charged_cap,
             trial_id=trial_id,guard_path=trial_guard,ledger_path=ledger_path,resume=resume)
+    handoff=None
+    if formal_handoff is not None:
+        if trial is not None or not resume or not ledger_path:raise ValueError('formal handoff requires explicit resume/ledger and no trial flags')
+        from .handoff import validate_handoff,bind_handoff
+        handoff=validate_handoff(formal_handoff,ledger_path=ledger_path,num_envs=num_envs)
     from .env import V10Env
     output=Path(output_dir);output.mkdir(parents=True,exist_ok=True);seed_all(spec.SEED)
     physical_session_id=uuid.uuid4().hex
@@ -159,18 +164,31 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
     env=V10Env(num_envs=num_envs,course=course,seed=spec.SEED,device=device)
     try:
         physical=physical_contract(env);atomic_json(output/'physical_contract.json',physical)
+        if handoff and physical['sha256']!=handoff['plan_document']['physical_sha256']:raise ValueError('formal handoff physics differs')
         ledger=BudgetLedger(ledger_path or output/'costs.jsonl');ledger.reconcile_uncertain();model=V10ActorCritic.from_stairs(device=device)
         reservoir=TaskReservoir();rounds={};keep=None;state=None;extra={}
         if resume:
-            state=checkpoint_load(resume,num_envs=num_envs,physical_sha256=physical['sha256'],restore_random=False,memory_trace=memory_trace)
-            ledger.assert_checkpoint_not_ahead(state['budgets']);model.load_state_dict(state['model']);reservoir.take_state_dict(state.pop('reservoir'));rounds=dict(state['rounds']);extra=state.get('extra',{})
+            load_options=dict(formal_handoff=handoff) if handoff else {}
+            state=checkpoint_load(resume,num_envs=num_envs,physical_sha256=physical['sha256'],restore_random=False,memory_trace=memory_trace,**load_options)
+            extra=bind_handoff(state,handoff,checkpoint_path=resume,course=course) if handoff else state.get('extra',{})
+            ledger.assert_checkpoint_not_ahead(state['budgets']);model.load_state_dict(state['model']);reservoir.take_state_dict(state.pop('reservoir'));rounds=dict(state['rounds'])
         if trial:
             if state:trial.restore(extra)
             extra=dict(extra,trial=trial.checkpoint_state())
-        elif 'trial' in extra:
+        elif 'trial' in extra and handoff is None:
             raise ValueError('trial checkpoint requires explicit trial charged guard')
         if controller_state is not None:
             extra=dict(extra,controller_state=json.loads(Path(controller_state).read_text()) if isinstance(controller_state,(str,Path)) else copy.deepcopy(controller_state))
+        operation_id=extra.get('controller_state',{}).get('worker_operation_id')
+        if handoff and (not isinstance(operation_id,str) or not operation_id):raise ValueError('formal worker operation identity required')
+        def record_saved_checkpoint(path,digest,confirmed):
+            if handoff is None:return
+            from .identity import code_fingerprint
+            atomic_json(output/'worker_checkpoint_manifest.json',dict(schema='a2-v10-worker-recovery-v1',
+                checkpoint=dict(path=str(Path(path).resolve()),sha256=digest),course=course,num_envs=num_envs,
+                physical_sha256=physical['sha256'],code_sha256=code_fingerprint(),learning_ledger_path=str(Path(ledger_path).resolve()),
+                operation_id=operation_id,target_round=stop_round,confirmed_samples=confirmed,round=confirmed//(num_envs*spec.ROLLOUT),
+                formal_handoff_sha256=handoff['sha256']))
         if course.startswith('D'):
             if state and state['course'] not in ('D1','D2','D3'):raise ValueError('cannot resume DAgger from PPO')
             model.set_phase(course);learner=DAggerLearner(model);teachers=frozen_teachers(device)
@@ -229,7 +247,8 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
             if save_due(last_saved_confirmed,consumed):
                 last_saved_confirmed=consumed
                 last_path=output/f'{course}_{rounds[budget_key]:06d}.pt'
-                save_worker(last_path,model,learner,reservoir,env,ledger,rounds,physical['sha256'],keep,extra,memory_trace)
+                saved_digest=save_worker(last_path,model,learner,reservoir,env,ledger,rounds,physical['sha256'],keep,extra,memory_trace)
+                record_saved_checkpoint(last_path,saved_digest,consumed)
                 last_saved_path=last_path;last_saved_consumed=consumed
                 retain_latest(output,course)
         # Gate pause always follows complete rollout/update/bootstrap. Entry/exit saves also cover zero-round workers.
@@ -242,6 +261,7 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
             trace_memory(memory_trace,'boundary_reused_periodic_checkpoint')
         else:
             digest=save_worker(last_path,model,learner,reservoir,env,ledger,rounds,physical['sha256'],keep,extra,memory_trace)
+        record_saved_checkpoint(last_path,digest,consumed)
         result=dict(checkpoint=str(last_path),checkpoint_sha256=digest,course=course,round=consumed//nstep,
             consumed=consumed,updated_samples=ledger.report()['updated'].get('learning:'+budget_key,0),physical_sha256=physical['sha256'],budget=ledger.report(),gate_reached=consumed>=stop_round*nstep,training_accepted=False)
         if trial:

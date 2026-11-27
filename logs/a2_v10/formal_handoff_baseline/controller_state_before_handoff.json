@@ -1,0 +1,96 @@
+{
+  "accepted_dagger": null,
+  "certificates": {},
+  "code_sha256": "d54265108c298d5920ae8ea9316fd3d48be4b75ce989ac0507bdbf9a2b91498e",
+  "evaluation_ledger": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A_20261127_approved/evaluation_costs.jsonl",
+  "evaluation_max_samples": 1685390840,
+  "finals": {},
+  "frozen_sha256": "6aff24bc4c667f4f209227aa8b519452fbd9148756afddbc4b86cd0c333efe75",
+  "gates": {},
+  "global_probe_ledger": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/global_probe_costs.jsonl",
+  "last_passed_ppo": null,
+  "learning_checkpoint": null,
+  "num_envs": 1024,
+  "operations": {
+    "teacher_admission_D1_A": {
+      "attempts": 1,
+      "command": [
+        "/home/xxs/anaconda3/envs/a2/bin/python",
+        "-m",
+        "src.tasks.velocity.v10.eval_worker",
+        "--course",
+        "D1",
+        "--suite",
+        "A",
+        "--replicas",
+        "20",
+        "--reference",
+        "teachers",
+        "--output-dir",
+        "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/evaluation/teacher_admission_D1_A",
+        "--ledger",
+        "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A_20261127_approved/evaluation_costs.jsonl",
+        "--eval-limit",
+        "1685390840",
+        "--device",
+        "cuda:0",
+        "--stop-on-failed-group"
+      ],
+      "error": "StopTraining('child_no_result:teacher_admission_D1_A:exit=-2')",
+      "status": "failed"
+    }
+  },
+  "p0_checkpoint": null,
+  "phase": "teacher_admission",
+  "physical_sha256": "aa74d2d53526f2025b46054771ec1cf9e785b9dcee7a860e98e2c8303ee58442",
+  "probe_budget_authorization_sha256": "37e3a3c038abb1213433677f6a6f68c8ece098b0fe86d352c78606bac215bdee",
+  "probe_sequence_id": "A1-v2-sds-resume-resource_probe_v2_sds_resume_20261127_183400",
+  "rerun_reasons": [],
+  "resource_selection_sha256": "3bc1db9bf3c898f6471316c15848bac059825bd99f06c1bdf7dacaca654c26e9",
+  "retention": {
+    "consecutive_failures": 0,
+    "failures": 0,
+    "rollbacks": 0
+  },
+  "rulings_sha256": "4de1477cbabb7b652cfa2b5bc21a589a2e6282568c1eec715d917673846fd898",
+  "schedule": {
+    "gates": {
+      "D1": [
+        200,
+        400,
+        500
+      ],
+      "D2": [
+        400,
+        800,
+        1000
+      ],
+      "D3": [
+        600,
+        1200,
+        1500
+      ],
+      "PPO": [
+        250,
+        500,
+        750,
+        1000
+      ]
+    },
+    "learning_budgets": {
+      "D1": 24576000,
+      "D2": 49152000,
+      "D3": 73728000,
+      "PPO": 49152000
+    },
+    "num_envs": 1024,
+    "p0_rounds": 100,
+    "rollout": 48,
+    "save_every_rounds": 50
+  },
+  "schema": "a2-v10-controller-v1",
+  "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+  "status": "stopped",
+  "stop_reason": "StopTraining('child_no_result:teacher_admission_D1_A:exit=-2')",
+  "teacher_admission": {}
+}

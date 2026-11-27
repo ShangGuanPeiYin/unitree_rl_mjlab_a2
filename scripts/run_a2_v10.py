@@ -23,7 +23,7 @@ def main():
         if name=='_probe-a1-stack-v2':p.add_argument('--startup-headroom',required=True)
         if name=='worker':
             p.add_argument('--stop-round',type=int,required=True);p.add_argument('--resume');p.add_argument('--acceptance');p.add_argument('--ledger-path');p.add_argument('--controller-state')
-            p.add_argument('--trial-charged-cap',type=int);p.add_argument('--trial-id');p.add_argument('--trial-guard')
+            p.add_argument('--trial-charged-cap',type=int);p.add_argument('--trial-id');p.add_argument('--trial-guard');p.add_argument('--formal-handoff')
     p=sub.add_parser('export');p.add_argument('--checkpoint',required=True);p.add_argument('--acceptance',required=True);p.add_argument('--output-dir',required=True)
     args=vars(parser.parse_args());command=args.pop('command')
     if command in ('probe-a1-v2','_probe-a1-stack-v2'):

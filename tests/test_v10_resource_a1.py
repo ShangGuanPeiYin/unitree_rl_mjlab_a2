@@ -142,19 +142,31 @@ def test_targeted_parent_exact_budget_and_first_failure_stops(association_receip
 def test_real_invariants_keep_env_byte_difference_and_exact_recording_ast(tmp_path):
     from src.tasks.velocity.v10 import resource_a1 as a
     from src.tasks.velocity.v10.probe_budget import streaming_sha256
+    baseline=spec.ROOT/'logs/a2_v10/formal_handoff_baseline'
     path=tmp_path/'contract.json';row=a.build_a1_contract_template(path,tmp_path/'proof',protocol=a.A1_V2_PROTOCOL)
     proof=json.loads(Path(row['invariance_evidence']['path']).read_text())
-    assert proof['invariants_satisfied'] is True
+    # Formal handoff extends worker beyond the old v2 scope. Direct old-scope
+    # approval on current source must fail; only the explicit bridge may reuse it.
+    assert proof['invariants_satisfied'] is False
+    assert proof['files']['src/tasks/velocity/v10/runtime.py']['probe_path_ast_equivalent'] is False
     env=proof['files']['src/tasks/velocity/v10/env.py']
     assert env['unchanged'] is False and env['recording_only_ast_equivalent'] is True
     assert env['baseline_sha256']!=env['current_sha256']
     report=tmp_path/'independent-fixture.md';report.write_text('CPU verifier fixture only; no production approval')
     row.update(approved=True,independent_review=dict(passed=True,report_path=str(report),report_sha256=streaming_sha256(report)))
     path.write_text(json.dumps(row))
-    assert a.validate_a1_contract(path)['contract']['approved']
-    diff_path=Path(row['source_diff']['path']);diff=json.loads(diff_path.read_text());assert diff['changed_files']
-    diff['changed_files'].pop();diff_path.write_text(json.dumps(diff));row['source_diff']['sha256']=streaming_sha256(diff_path);path.write_text(json.dumps(row))
-    with pytest.raises(ValueError,match='list incomplete'):a.validate_a1_contract(path)
+    with pytest.raises(ValueError,match='invariance/source difference'):a.validate_a1_contract(path)
+    # Revalidate the real immutable d542 evidence against its actual archived
+    # bytes, including the old exact source-difference proof.
+    archived=json.loads((spec.ROOT/'logs/a2_v10/resource_linkage_contract_A1_v2_20261127.json').read_text())
+    archived['independent_review']=row['independent_review']
+    diff_path=tmp_path/'historical_diff.json';diff=json.loads(Path(archived['source_diff']['path']).read_text())
+    diff_path.write_text(json.dumps(diff));archived['source_diff']=dict(path=str(diff_path),sha256=streaming_sha256(diff_path))
+    path.write_text(json.dumps(archived))
+    assert a.validate_a1_contract(path,source_root=baseline)['contract']['approved']
+    assert diff['changed_files'];diff['changed_files'].pop();diff_path.write_text(json.dumps(diff))
+    archived['source_diff']['sha256']=streaming_sha256(diff_path);path.write_text(json.dumps(archived))
+    with pytest.raises(ValueError,match='list incomplete'):a.validate_a1_contract(path,source_root=baseline)
 
 
 @pytest.mark.parametrize('mutation',['extra_field','extra_expression','duplicate','wrong_position'])

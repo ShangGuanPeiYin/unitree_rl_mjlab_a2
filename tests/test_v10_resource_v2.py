@@ -21,7 +21,10 @@ def test_v2_fixed_profile_and_probe_function_ast_only():
     assert a.PROFILES[a.A1_V2_PROTOCOL]==dict(warmup=1,measurement=2,stack_samples=196608,total_samples=393216)
     assert a.PROFILES[a.A1_PROTOCOL]['warmup']==2
     r=a._invariance_record('src/tasks/velocity/v10/runtime.py',a.A1_V2_PROTOCOL)
-    assert not r['unchanged'] and r['probe_path_ast_equivalent'] is True
+    assert not r['unchanged'] and r['probe_path_ast_equivalent'] is False
+    baseline=spec.ROOT/'logs/a2_v10/formal_handoff_baseline'
+    historical=a._invariance_record('src/tasks/velocity/v10/runtime.py',a.A1_V2_PROTOCOL,source_root=baseline)
+    assert not historical['unchanged'] and historical['probe_path_ast_equivalent'] is True
     assert a._failed_context()['passed'] is False and a._failed_context()['positive_resource_evidence'] is False
 
 

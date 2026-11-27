@@ -61,6 +61,18 @@ def validate_engineering(path,code_sha):
     return row
 
 
+
+def preflight_formal_handoff(plan_path,engineering_admission,source_compatibility):
+    """Read-only admission: no controller/ledger creation, reconciliation or child."""
+    from .source_compatibility import validate_compatibility
+    from .handoff import validate_plan
+    bridge=validate_compatibility(source_compatibility)
+    validate_engineering(engineering_admission,bridge['to_code_sha256'])
+    plan=validate_plan(plan_path)
+    if plan['compatibility']['sha256']!=bridge['sha256']:raise StopTraining('handoff_compatibility_mismatch')
+    return dict(passed=True,executed=False,plan=plan,compatibility=bridge,
+                initial_round=plan['initial_round'],next_D1_gate=spec.gate_rounds('D1',1024)[0])
+
 def is_retention_failure(comparison):
     return any(reason=='relative_success' or reason.startswith(('relative_metric:','pair_coverage:'))
                for row in comparison['groups'].values() for reason in row['reasons'])
@@ -120,9 +132,13 @@ class EventJournal:
 
 
 class Orchestrator:
-    def __init__(self,run_dir,engineering_admission,resource_selection=None,device='cuda:0',resume_reason=None,runner=None,global_probe_ledger=None,probe_budget_authorization=None,probe_sequence_id=None,evaluation_ledger=None):
+    def __init__(self,run_dir,engineering_admission,resource_selection=None,device='cuda:0',resume_reason=None,runner=None,global_probe_ledger=None,probe_budget_authorization=None,probe_sequence_id=None,evaluation_ledger=None,formal_handoff_plan=None,source_compatibility=None,learning_ledger=None):
         self.root=Path(run_dir).resolve();self.root.mkdir(parents=True,exist_ok=True)
         self.evaluation_ledger=Path(evaluation_ledger).resolve() if evaluation_ledger else self.root/'evaluation_costs.jsonl'
+        self.learning_ledger=Path(learning_ledger).resolve() if learning_ledger else self.root/'learning_costs.jsonl'
+        self.handoff_plan=Path(formal_handoff_plan).resolve() if formal_handoff_plan else None
+        self.source_compatibility=Path(source_compatibility).resolve() if source_compatibility else None
+        self.handoff=None
         self.state_path=self.root/'controller_state.json';self.approval=Path(engineering_admission).resolve()
         self.selection=Path(resource_selection).resolve() if resource_selection else None
         self.device=device;self.resume_reason=resume_reason;self.runner=runner or subprocess.run
@@ -153,7 +169,11 @@ class Orchestrator:
             if path.exists() and read_json(path)!=certificate:raise StopTraining('acceptance_certificate_changed')
             if not path.exists():atomic_json(path,certificate)
         if event['seq']<=self.state.get('event_sequence',0):return
-        patch=payload['patch']
+        patch=copy.deepcopy(payload['patch'])
+        if event['id'].startswith('formal-source-transition:') and self.state.get('code_sha256')==patch.get('code_sha256'):
+            for field in ('operations','teacher_admission','teacher_admitted'):patch.pop(field,None)
+        if event['id'].startswith('formal-handoff-adopt:') and self.state.get('formal_handoff')==patch.get('formal_handoff'):
+            patch.pop('learning_checkpoint',None)
         if 'retention' in patch:
             for field in ('rollbacks','failures'):
                 if patch['retention'][field]<self.state['retention'][field]:raise StopTraining('rollback_counters_went_backwards')
@@ -187,12 +207,45 @@ class Orchestrator:
 
     def persist(self):atomic_json(self.state_path,self.state)
 
+    def _operation_dir(self,key):
+        base=self.root/'operations'
+        if self.state.get('source_transition'):base=base/('handoff_'+self.state['code_sha256'][:16])
+        return base/key
+
+    def _evaluation_root(self):
+        base=self.root/'evaluation'
+        if self.state.get('source_transition'):base=base/('handoff_'+self.state['code_sha256'][:16])
+        return base
+
+    def _migrate_controller_source(self):
+        if self.state.get('code_sha256')==code_fingerprint():return
+        if not self.handoff_plan or not self.source_compatibility:raise StopTraining('controller_code_or_SDS_changed')
+        from .source_compatibility import validate_compatibility,validate_compatible_artifact
+        bridge=validate_compatibility(self.source_compatibility)
+        if self.state.get('code_sha256')!=bridge['from_code_sha256']:raise StopTraining('unapproved_controller_origin_source')
+        validate_engineering(self.approval,bridge['to_code_sha256'])
+        refs={}
+        for purpose,operation in [('controller_state','controller_resume'),('frozen_execution_plan','freeze_plan')]:
+            entries=[r for r in bridge['document']['artifacts'] if r['purpose']==purpose and operation in r['operation_ids']]
+            if len(entries)!=1:raise StopTraining('exact_controller_source_transition_artifacts_required')
+            value=validate_compatible_artifact(entries[0]['path'],bridge,purpose,operation_id=operation)
+            if purpose=='controller_state' and value!=self.state:raise StopTraining('controller_origin_snapshot_mismatch')
+            if purpose=='frozen_execution_plan' and value.get('code_sha256')!=bridge['from_code_sha256']:raise StopTraining('old_execution_plan_source_mismatch')
+            refs[entries[0]['path']]=entries[0]['sha256']
+        transition=dict(from_code_sha256=bridge['from_code_sha256'],to_code_sha256=bridge['to_code_sha256'],compatibility_sha256=bridge['sha256'],
+                        prior_operations=copy.deepcopy(self.state['operations']),prior_teacher_admission=copy.deepcopy(self.state['teacher_admission']))
+        refs[bridge['path']]=bridge['sha256']
+        self.commit_event('formal-source-transition:'+bridge['sha256'],dict(code_sha256=bridge['to_code_sha256'],source_transition=transition,
+            operations={},teacher_admission={},teacher_admitted=False),refs)
+
     def _assert_identity(self):
         if self.state.get('sds_sha256')!=spec.SDS_SHA256 or self.state.get('code_sha256')!=code_fingerprint():
             raise StopTraining('controller_code_or_SDS_changed')
         if file_sha(spec.SDS_PATH)!=spec.SDS_SHA256:raise StopTraining('SDS_file_changed')
         if self.state.get('rulings_sha256')!=file_sha(RULINGS_PATH):raise StopTraining('frozen_rulings_changed')
         validate_engineering(self.approval,self.state['code_sha256'])
+        if self.state.get('learning_ledger') and self.state['learning_ledger']!=str(self.learning_ledger):raise StopTraining('learning_ledger_changed')
+        self.state['learning_ledger']=str(self.learning_ledger)
         if self.state.get('evaluation_ledger') and self.state['evaluation_ledger']!=str(self.evaluation_ledger):raise StopTraining('evaluation_ledger_changed')
         self.state['evaluation_ledger']=str(self.evaluation_ledger)
 
@@ -212,7 +265,7 @@ class Orchestrator:
         """Durable idempotent child invocation, with no automatic resource reruns."""
         self._assert_identity()
         operation=self.state['operations'].get(key)
-        op_dir=self.root/'operations'/key;op_dir.mkdir(parents=True,exist_ok=True)
+        op_dir=self._operation_dir(key);op_dir.mkdir(parents=True,exist_ok=True)
         durable=op_dir/'result.json';result_path=Path(result_path)
         if operation and operation['status']=='succeeded':
             if not durable.exists() or file_sha(durable)!=operation['result_sha256']:raise StopTraining('operation_receipt_changed:'+key)
@@ -231,7 +284,7 @@ class Orchestrator:
         attempt=(operation or {}).get('attempts',0)+1
         self.state['operations'][key]=dict(status='running',command=list(map(str,command)),attempts=attempt)
         self.persist()
-        snapshot=op_dir/'controller_snapshot.json';atomic_json(snapshot,self.state)
+        snapshot=op_dir/'controller_snapshot.json';atomic_json(snapshot,dict(self.state,worker_operation_id=key))
         command=[str(x).replace('__CONTROLLER_STATE__',str(snapshot)) for x in command]
         env=dict(os.environ,MUJOCO_GL=os.environ.get('MUJOCO_GL','egl'),PYTHONUNBUFFERED='1')
         try:
@@ -250,6 +303,12 @@ class Orchestrator:
 
     def prepare(self):
         self._assert_identity()
+        if self.handoff_plan:
+            if not self.source_compatibility:raise StopTraining('formal_handoff_requires_compatibility')
+            checked=preflight_formal_handoff(self.handoff_plan,self.approval,self.source_compatibility)
+            self.pending_handoff=checked['plan']
+            if (self.pending_handoff['learning_ledger_path']!=str(self.learning_ledger) or self.pending_handoff['evaluation_ledger_path']!=str(self.evaluation_ledger)):
+                raise StopTraining('handoff_original_ledgers_required')
         # Freeze actual suites before opening any A/B or final set; all worker regenerations
         # are checked against these hashes. TRAIN is an RNG-defined flow, not an eval set.
         freeze=self.root/'frozen';freeze.mkdir(exist_ok=True)
@@ -265,7 +324,7 @@ class Orchestrator:
                 if path.exists() and read_json(path)!=document:raise StopTraining('frozen_case_manifest_changed:'+key)
                 if not path.exists():atomic_json(path,document)
                 frozen['suites'][key]=dict(sha256=digest,path=str(path),replicas=replicas,groups=len(cases.groups(c)),max_samples=sum(r['max_steps'] for r in manifest))
-        config=freeze/'execution_plan.json'
+        config=freeze/(('execution_plan_handoff_'+self.state['code_sha256']+'.json') if self.state.get('source_transition') else 'execution_plan.json')
         if config.exists() and read_json(config)!=frozen:raise StopTraining('frozen_execution_plan_changed')
         atomic_json(config,frozen);self.frozen=frozen
         self.state['frozen_sha256']=file_sha(config);self.state['evaluation_max_samples']=plan['max_samples']
@@ -289,14 +348,20 @@ class Orchestrator:
     def admit_resource_selection(self,selection,authorization,sequence):
         """Consume the real selector receipt without constructing GPU state."""
         validate_engineering(self.approval,self.state['code_sha256'])
+        expected_source=self.state['code_sha256']
+        if self.source_compatibility:
+            from .source_compatibility import validate_compatible_resource
+            inherited=validate_compatible_resource(self.selection,self.source_compatibility)
+            if inherited!=selection:raise StopTraining('inherited_resource_selection_changed')
+            expected_source=inherited['code_sha256']
         if (selection.get('passed') is not True or selection.get('num_envs') not in (1024,512)
-            or selection.get('sds_sha256')!=spec.SDS_SHA256 or selection.get('code_sha256')!=self.state['code_sha256']):raise StopTraining('resource_selection_invalid')
+            or selection.get('sds_sha256')!=spec.SDS_SHA256 or selection.get('code_sha256')!=expected_source):raise StopTraining('resource_selection_invalid')
         if (selection.get('global_probe_ledger')!=str(self.global_probe_ledger) or selection.get('probe_sequence_id')!=sequence
             or selection.get('probe_budget_authorization_sha256')!=authorization['sha256']):raise StopTraining('resource_selection_global_budget_identity_invalid')
         targeted=selection.get('resource_protocol') in ('A1-targeted-resource-v1','A1-targeted-resource-v2')
         if targeted:
             from .resource_a1 import verify_linkage_selection
-            try:verify_linkage_selection(selection)
+            try:verify_linkage_selection(selection,source_compatibility=self.source_compatibility)
             except (ValueError,OSError,KeyError) as error:raise StopTraining('A1_resource_linkage_invalid') from error
             if selection['num_envs']!=1024:raise StopTraining('A1_resource_N_changed')
         expected_warmup,expected_measurement=((1,2) if selection.get('resource_protocol')=='A1-targeted-resource-v2' else (2,2)) if targeted else (5,20)
@@ -304,7 +369,7 @@ class Orchestrator:
         if len(runs)!=2 or {r.get('stack') for r in runs}!={'dagger','ppo'}:raise StopTraining('both_complete_resource_stacks_required')
         for row in runs:
             if (row.get('passed') is not True or row.get('restore_checked') is not True or row.get('sds_sha256')!=spec.SDS_SHA256
-                or row.get('code_sha256')!=self.state['code_sha256'] or row.get('gpu_total_peak_mib',1e9)>7680
+                or row.get('code_sha256')!=expected_source or row.get('gpu_total_peak_mib',1e9)>7680
                 or row.get('gpu_task_peak_mib',1e9)>7168 or row.get('host_available_min_bytes',0)<4*1024**3
                 or row.get('warmup_rounds')!=expected_warmup or row.get('measurement_rounds')!=expected_measurement
                 or any(row.get('replay_counts',{}).get(role,0)<32768 for role in spec.ROLES)):
@@ -320,7 +385,7 @@ class Orchestrator:
 
     def evaluate(self,key,course,suite,model_path,reference):
         replicas=100 if suite.endswith('FINAL') else 20
-        out=self.root/'evaluation'/key
+        out=self._evaluation_root()/key
         command=[sys.executable,'-m','src.tasks.velocity.v10.eval_worker','--course',course,'--suite',suite,'--replicas',str(replicas),
                  '--reference',reference,'--output-dir',out,'--ledger',self.evaluation_ledger,
                  '--eval-limit',str(self.state['evaluation_max_samples']),'--device',self.device]
@@ -333,11 +398,36 @@ class Orchestrator:
             raise StopTraining('evaluation_worker_receipt_mismatch:'+key)
         return result
 
+    def _recover_worker_checkpoint(self,key,course,target,out,resume):
+        if not self.handoff or key not in self.state['operations']:return resume
+        path=Path(out)/'worker_checkpoint_manifest.json'
+        if not path.exists():return resume
+        row=read_json(path)
+        if row.get('operation_id')!=key:return resume
+        expected=dict(schema='a2-v10-worker-recovery-v1',course=course,num_envs=self.state['num_envs'],
+            physical_sha256=self.state['physical_sha256'],code_sha256=self.state['code_sha256'],
+            learning_ledger_path=str(self.learning_ledger),operation_id=key,target_round=target,
+            formal_handoff_sha256=self.handoff['sha256'])
+        cp=row.get('checkpoint',{})
+        if any(row.get(k)!=v for k,v in expected.items()):raise StopTraining('worker_recovery_manifest_identity_mismatch')
+        candidate=Path(cp.get('path','')).resolve()
+        if candidate.parent!=Path(out).resolve() or not candidate.is_file() or file_sha(candidate)!=cp.get('sha256'):
+            raise StopTraining('worker_recovery_checkpoint_changed')
+        nstep=self.state['num_envs']*48
+        if (not isinstance(row.get('round'),int) or not 0<=row['round']<=target
+            or not isinstance(row.get('confirmed_samples'),int) or row['confirmed_samples']//nstep!=row['round']):raise StopTraining('worker_recovery_progress_invalid')
+        from .checkpoint import BudgetLedger
+        budget=BudgetLedger(self.learning_ledger).report();budget_key='learning:'+('PPO' if course.startswith('P') else course)
+        if budget['executed'].get(budget_key,0)<row['confirmed_samples']:raise StopTraining('worker_recovery_external_ledger_behind')
+        return str(candidate)
+
     def worker(self,key,course,target,resume=None,acceptance=None):
         out=self.root/'learning'/course
+        resume=self._recover_worker_checkpoint(key,course,target,out,resume)
         command=[sys.executable,spec.ROOT/'scripts/run_a2_v10.py','worker','--output-dir',out,'--device',self.device,
                  '--num-envs',str(self.state['num_envs']),'--course',course,'--stop-round',str(target),
-                 '--ledger-path',self.root/'learning_costs.jsonl','--controller-state','__CONTROLLER_STATE__']
+                 '--ledger-path',self.learning_ledger,'--controller-state','__CONTROLLER_STATE__']
+        if self.handoff:command+=['--formal-handoff',self.handoff['path']]
         if resume:command+=['--resume',resume]
         if acceptance:command+=['--acceptance',acceptance]
         result=self._launch(key,command,out/'worker_result.json')
@@ -414,7 +504,7 @@ class Orchestrator:
         """A durable, resource-qualified exact complete result saves capacity."""
         try:
             operation=self.state['operations'].get(key,{})
-            path=self.root/'operations'/key/'result.json'
+            path=self._operation_dir(key)/'result.json'
             if operation.get('status')!='succeeded' or not path.is_file() or operation.get('result_sha256')!=file_sha(path):return False
             row=read_json(path);self._validate_receipt(key,row)
             return self._evaluation_identity_matches(row,course,suite,reference,model_path)
@@ -481,7 +571,7 @@ class Orchestrator:
             return existing
         if existing:
             candidate_op=self.state['operations'].get(f'final_{name}_candidate',{})
-            artifact=self.root/'evaluation'/f'final_{name}_candidate'/'result.json'
+            artifact=self._evaluation_root()/f'final_{name}_candidate'/'result.json'
             if (existing['status']!='opened' or existing['candidate_sha256']!=digest
                 or not (candidate_op.get('status')=='succeeded' or candidate_op.get('status')=='running' and artifact.exists())):
                 raise StopTraining('final_already_opened:'+name)
@@ -495,7 +585,7 @@ class Orchestrator:
                 checks[reference]=compare_results(candidate,ref,final=True)
             passed=all(row['passed'] for row in checks.values())
             result=dict(status='passed' if passed else 'failed',candidate_sha256=digest,comparisons=checks,
-                        suite_sha256=candidate['suite_sha256'],candidate_result_sha256=file_sha(self.root/'evaluation'/f'final_{name}_candidate'/'result.json'))
+                        suite_sha256=candidate['suite_sha256'],candidate_result_sha256=file_sha(self._evaluation_root()/f'final_{name}_candidate'/'result.json'))
             verdict_path=self.root/'final_results'/(name+'.json');atomic_json(verdict_path,result)
             result['result_sha256']=file_sha(verdict_path)
             if not passed:
@@ -518,7 +608,7 @@ class Orchestrator:
             result_sha256=final['result_sha256'],frozen_plan_sha256=self.state['frozen_sha256'])
         path=self.root/(name+'.json')
         refs={str(checkpoint):file_sha(checkpoint),str(self.root/'final_results'/(final_name+'.json')):final['result_sha256']}
-        for receipt in (self.root/'evaluation').glob(f'final_{final_name}_*/result.json'):
+        for receipt in self._evaluation_root().glob(f'final_{final_name}_*/result.json'):
             refs[str(receipt)]=file_sha(receipt)
         accepted='accepted_dagger' if final_name=='DAGGER_FINAL' else 'accepted_ppo'
         cert_key='dagger_certificate' if final_name=='DAGGER_FINAL' else 'ppo_certificate'
@@ -574,7 +664,8 @@ class Orchestrator:
             completed=self.state.get('courses',{}).get(course)
             if completed:
                 checkpoint=completed['checkpoint'];continue
-            checkpoint=self.worker(f'entry_{course}',course,0,checkpoint)
+            if not (course=='D1' and self.state.get('formal_handoff')):
+                checkpoint=self.worker(f'entry_{course}',course,0,checkpoint)
             promoted=False
             for target in self.state['schedule']['gates'][course]:
                 checkpoint=self.worker(f'learning_{course}_{target}',course,target,checkpoint)
@@ -633,14 +724,54 @@ class Orchestrator:
             if stop:raise stop
         raise StopTraining('PPO_budget_exhausted')
 
-    def run(self):
+    def _recover_evaluation_accounting(self):
+        """Only the GPU lease proves an orphan child cannot still execute its step."""
+        if not self.handoff_plan:return
+        from .gpu_lock import gpu_execution_lock
+        from .checkpoint import BudgetLedger
+        ledger=BudgetLedger(self.evaluation_ledger)
+        with gpu_execution_lock(blocking=False):
+            before=ledger.report()
+            ledger.reconcile_uncertain()
+            after=ledger.report()
+        if before['pending']:
+            self.commit_event('handoff-evaluation-recovery:'+cases.digest(before),dict(evaluation_recovery=dict(
+                charged_before=before['charged'],charged_after=after['charged'],uncertain=after['uncertain'],refund=0)),
+                {str(self.handoff_plan):file_sha(self.handoff_plan)})
+
+    def _finalize_formal_handoff(self):
+        if not self.handoff_plan:return
+        from .handoff import finalize_handoff,validate_handoff
+        from .source_compatibility import validate_compatibility
+        bridge=validate_compatibility(self.source_compatibility)
+        if self.state.get('formal_handoff'):
+            self.handoff=validate_handoff(self.state['formal_handoff']['path'],ledger_path=self.learning_ledger,num_envs=1024,physical_sha256=self.state['physical_sha256'])
+            if self.handoff['sha256']!=self.state['formal_handoff']['sha256']:raise StopTraining('adopted_handoff_changed')
+            return
+        receipts={}
+        for course in ('D1','D2','D3'):
+            for suite in ('A','B'):
+                key=f'teacher_admission_{course}_{suite}'
+                path=self._operation_dir(key)/'result.json'
+                receipts[key]=dict(path=str(path),sha256=file_sha(path))
+        self.handoff=finalize_handoff(self.handoff_plan,receipts)
+        if self.handoff['compatibility']['sha256']!=bridge['sha256']:raise StopTraining('handoff_source_bridge_changed')
+        origin=self.handoff['origin_checkpoint']
+        self.commit_event('formal-handoff-adopt:'+self.handoff['sha256'],dict(
+            formal_handoff=dict(path=self.handoff['path'],sha256=self.handoff['sha256'],initial_round=self.handoff['initial_round']),
+            learning_checkpoint=origin['path']),{self.handoff['path']:self.handoff['sha256'],origin['path']:origin['sha256']})
+
+    def run(self,teachers_only=False):
         import fcntl
         # One controller owns GPU scheduling and all persistent transactions at a time.
         with (self.root/'controller.lock').open('a+') as lock:
             try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
             except BlockingIOError as error:raise StopTraining('another_controller_is_running') from error
             try:
-                self.prepare();self.teacher_admission()
+                self._migrate_controller_source();self.prepare();self._recover_evaluation_accounting();self.teacher_admission()
+                if teachers_only:
+                    return dict(passed=True,teacher_admitted=True,training_executed=False,state=str(self.state_path))
+                self._finalize_formal_handoff()
                 dagger=self._train_dagger();ppo=self._train_ppo(dagger)
                 export=self.root/'deployment'
                 result=self._launch('export_student',[sys.executable,spec.ROOT/'scripts/run_a2_v10.py','export','--checkpoint',ppo,
