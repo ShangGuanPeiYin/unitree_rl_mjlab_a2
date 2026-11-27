@@ -1,0 +1,56 @@
+{
+  "approval_source": {
+    "kind": "planning_ruling",
+    "reference": "\u552f\u4e00v2\u4e24\u6808\u54041fill+1warm+2measure\u5171393216\uff0c\u539f3833856 cap\u5185\uff1bprelaunch60s>=12GiB\uff0cprefill>=9.5GiB\uff1b\u8fd0\u884c4GiB\u4fdd\u6301\uff0c\u4e0d\u91cd\u8bd5",
+    "thread_id": "01a217c8-d825-7922-bd23-eb6ba2e37bfb"
+  },
+  "approved": true,
+  "baseline_dir": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A_20261127_approved/resource_probe",
+  "baseline_git": "07fe14fe753ade340f3d64e06dbae51a9ad0bdb5",
+  "failed_context": {
+    "passed": false,
+    "positive_resource_evidence": false,
+    "references": {
+      "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/resource_probe/n1024_dagger/result.json": "25dcaf003c752e2de5d5fffee74087ea74413a586d33d991328f06094c3583e3",
+      "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/resource_probe/selection.json": "be01e2618fba9765259a68c2f1f870d91c843db6f101ac02f973ac2226910cd9"
+    },
+    "source_sha256": "2f82589e805b2579843a4381089467d40931300aff8a80f466becf90dcc4fbcb"
+  },
+  "independent_review": {
+    "passed": true,
+    "report_path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_A1_v2_resource_independent_20261127.md",
+    "report_sha256": "19e4bd4534675439b95b39c34e823a77cf2c1eb049240124366cbbc9b8501f18"
+  },
+  "invariance_evidence": {
+    "path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/A1_v2_engineering_20261127/resource_evidence/invariants.json",
+    "sha256": "f4ab64229f2e0633cf0c9de6f2ccd1f0dada8ef271434dd0c9519787c4180811"
+  },
+  "new_code_sha256": "d54265108c298d5920ae8ea9316fd3d48be4b75ce989ac0507bdbf9a2b91498e",
+  "old_evidence": {
+    "n1024_dagger/result.json": "37d422907bd3305ab10ac3da78223b49404b1b96e9446f6415055d8d27d0383e",
+    "n1024_ppo/result.json": "6ccbbf3d5a0cb784cba91416721a6a9c6078536b3abd4674945d4447b2b072db",
+    "selection.json": "4f1e2c2738e1ad6cb8a2431f434c23634db4f232ac3023e56ad178d0dd7ecc04"
+  },
+  "proposal": {
+    "path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_A1_trial50_resource_v2_ruling_20261127.md",
+    "sha256": "4ae096ea3e16e80daf6414d4976231f051873c27fbdfa3ec16383bd6e7d3248e"
+  },
+  "protocol": "A1-targeted-resource-v2",
+  "rulings_sha256": "4de1477cbabb7b652cfa2b5bc21a589a2e6282568c1eec715d917673846fd898",
+  "schema": "a2-v10-A1-resource-linkage-v1",
+  "scope": {
+    "fill_rollouts": 1,
+    "full_twenty_measurement_revalidation": false,
+    "measurement_rounds": 2,
+    "num_envs": 1024,
+    "per_stack_samples": 196608,
+    "probe_state_discarded": true,
+    "total_samples": 393216,
+    "warmup_rounds": 1
+  },
+  "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+  "source_diff": {
+    "path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/A1_v2_engineering_20261127/resource_evidence/source_diff.json",
+    "sha256": "cdd88c3e60295fd2e0c646d98a0c242181d57f53d013d674bf0104d3aa816646"
+  }
+}

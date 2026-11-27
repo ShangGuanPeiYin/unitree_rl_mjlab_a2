@@ -1,0 +1,36 @@
+...F                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_runtime_probe_ast_rejects_changed_execution_or_import_side_effect[worker_return_annotation] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7190fd6f6f50>
+mutation = 'worker_return_annotation'
+
+    @pytest.mark.parametrize('mutation',['collect','save','module_side_effect','worker_return_annotation'])
+    def test_runtime_probe_ast_rejects_changed_execution_or_import_side_effect(monkeypatch,mutation):
+        import ast
+        path=spec.ROOT/'src/tasks/velocity/v10/runtime.py';original=Path.read_text;tree=ast.parse(original(path))
+        if mutation in ('collect','save'):
+            name='collect_rollout' if mutation=='collect' else 'save_worker'
+            function=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==name)
+            function.body.insert(0,ast.parse('env.reset()').body[0])
+        elif mutation=='module_side_effect':tree.body.append(ast.parse('unapproved_global_call()').body[0])
+        else:
+            worker=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='worker')
+            worker.returns=ast.parse('unapproved_global_call()',mode='eval').body
+        text=ast.unparse(ast.fix_missing_locations(tree))
+        monkeypatch.setattr(Path,'read_text',lambda p,*args,**kw:text if p==path else original(p,*args,**kw))
+>       assert a._runtime_probe_equivalence('src/tasks/velocity/v10/runtime.py') is False
+E       AssertionError: assert True is False
+E        +  where True = <function _runtime_probe_equivalence at 0x7190fd4d5e40>('src/tasks/velocity/v10/runtime.py')
+E        +    where <function _runtime_probe_equivalence at 0x7190fd4d5e40> = a._runtime_probe_equivalence
+
+tests/test_v10_resource_v2.py:148: AssertionError
+=============================== warnings summary ===============================
+../../anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491
+  /home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_v10_resource_v2.py::test_runtime_probe_ast_rejects_changed_execution_or_import_side_effect[worker_return_annotation]
+1 failed, 3 passed, 5 deselected, 1 warning in 12.29s

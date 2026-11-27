@@ -306,5 +306,50 @@ def test_superseding_A1_authorization_preserves_cap_and_requires_registered_pare
     assert b.begin_sequence('a1',required_samples=4)==first
     assert len(b.global_report()['authorizations'])==2
     assert b.global_report()['global_totals']['charged']==0
-    with pytest.raises(ProbeBudgetError,match='active'):old.begin_sequence('concurrent-old',required_samples=4)
+    with pytest.raises(ProbeBudgetError,match='active|retired'):old.begin_sequence('concurrent-old',required_samples=4)
     b.finish_sequence('a1')
+
+
+def test_retired_parent_cannot_reopen_after_successor_finished_same_rulings(tmp_path):
+    path=tmp_path/'global.jsonl';parent=authorization(tmp_path,path,cap=8)
+    base=json.loads(parent.read_text());old=GlobalProbeBudget(path,parent);old.begin_sequence('old',required_samples=4);old.finish_sequence('old')
+    child=tmp_path/'successor.json';new=dict(base,authorization_id='v2-successor',supersedes=dict(authorization_id=base['authorization_id'],path=str(parent.resolve()),sha256=hashlib.sha256(parent.read_bytes()).hexdigest()))
+    child.write_text(json.dumps(new));b=GlobalProbeBudget(path,child);b.begin_sequence('new',required_samples=4);b.finish_sequence('new')
+    assert old.global_report()['global_totals']['charged']==0
+    for _ in range(2):
+        with pytest.raises(ProbeBudgetError,match='retired'):old.begin_sequence('reopen-old',required_samples=4)
+    assert hashlib.sha256(parent.read_bytes()).hexdigest() in b.global_report()['retired_authorizations']
+    b.begin_sequence('new-sequence-same-successor',required_samples=4);b.finish_sequence('new-sequence-same-successor')
+    assert len(b.global_report()['authorizations'])==2
+
+@pytest.mark.parametrize('operation',['begin','assert','acquire','claim','reserve','validate'])
+def test_retired_authorization_stale_precheck_rejected_inside_transaction(tmp_path,monkeypatch,operation):
+    path=tmp_path/'global.jsonl';parent=authorization(tmp_path,path,cap=20)
+    old=GlobalProbeBudget(path,parent,scope_id='old:1024:dagger')
+    old.begin_sequence('old',4);old.assert_authorized('old');old.acquire_stack_capacity('old',4)
+    old.reserve('done','D3',1,limit=4,kind='probe');old.mark_executed('done')
+    old.release_stack_capacity();old.finish_sequence('old')
+    stale=old._authorization();base=json.loads(parent.read_text())
+    child=tmp_path/'successor.json'
+    child.write_text(json.dumps(dict(base,authorization_id='successor',prior_charged_samples=1,supersedes=dict(authorization_id=base['authorization_id'],path=str(parent.resolve()),sha256=stale['sha256']))))
+    new=GlobalProbeBudget(path,child);new.begin_sequence('new',4);new.finish_sequence('new')
+    monkeypatch.setattr(old,'_authorization',lambda:stale)
+    calls={'begin':lambda:old.begin_sequence('stale',1),'assert':lambda:old.assert_authorized('old'),
+           'acquire':lambda:old.acquire_stack_capacity('old',4),'claim':lambda:old.claim_protocol_attempt('v2','a'*64,'old',tmp_path/'out'),
+           'reserve':lambda:old.reserve('done','D3',1,limit=4,kind='probe'),'validate':old.validate_authorization}
+    before=path.read_bytes()
+    with pytest.raises(ProbeBudgetError,match='retired'):calls[operation]()
+    assert path.read_bytes()==before
+
+
+def test_exclusive_protocol_attempt_blocks_changed_contract_even_if_flag_omitted(tmp_path):
+    path=tmp_path/'global.jsonl';auth=authorization(tmp_path,path,cap=20)
+    b=GlobalProbeBudget(path,auth);b.begin_sequence('first',4)
+    claim=b.claim_protocol_attempt('v2','a'*64,'first',tmp_path/'one',exclusive_protocol=True)
+    assert claim['exclusive_protocol'] is True
+    b.finish_protocol_attempt('v2','a'*64,passed=False);b.finish_sequence('first')
+    b.begin_sequence('second',4)
+    for exclusive in (False,True):
+        with pytest.raises(ProbeBudgetError,match='already claimed'):
+            b.claim_protocol_attempt('v2','b'*64,'second',tmp_path/'two',exclusive_protocol=exclusive)
+    assert b.global_report()['global_totals']['charged']==0

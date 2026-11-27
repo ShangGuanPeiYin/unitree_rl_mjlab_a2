@@ -144,7 +144,13 @@ def verify_acceptance(path,checkpoint,physical_sha):
         or not c.get('suite_sha256') or not c.get('result_sha256')):raise ValueError('valid DAgger acceptance certificate required')
     return c
 
-def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,device='cuda:0',ledger_path=None,controller_state=None):
+def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,device='cuda:0',ledger_path=None,controller_state=None,
+           trial_charged_cap=None,trial_id=None,trial_guard=None):
+    trial=None
+    if any(v is not None for v in (trial_charged_cap,trial_id,trial_guard)):
+        from .trial_guard import TrialGuard
+        trial=TrialGuard.open(course=course,num_envs=num_envs,stop_round=stop_round,cap=trial_charged_cap,
+            trial_id=trial_id,guard_path=trial_guard,ledger_path=ledger_path,resume=resume)
     from .env import V10Env
     output=Path(output_dir);output.mkdir(parents=True,exist_ok=True);seed_all(spec.SEED)
     physical_session_id=uuid.uuid4().hex
@@ -158,6 +164,11 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
         if resume:
             state=checkpoint_load(resume,num_envs=num_envs,physical_sha256=physical['sha256'],restore_random=False,memory_trace=memory_trace)
             ledger.assert_checkpoint_not_ahead(state['budgets']);model.load_state_dict(state['model']);reservoir.take_state_dict(state.pop('reservoir'));rounds=dict(state['rounds']);extra=state.get('extra',{})
+        if trial:
+            if state:trial.restore(extra)
+            extra=dict(extra,trial=trial.checkpoint_state())
+        elif 'trial' in extra:
+            raise ValueError('trial checkpoint requires explicit trial charged guard')
         if controller_state is not None:
             extra=dict(extra,controller_state=json.loads(Path(controller_state).read_text()) if isinstance(controller_state,(str,Path)) else copy.deepcopy(controller_state))
         if course.startswith('D'):
@@ -184,6 +195,7 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
         charged=ledger.totals().get('learning:'+budget_key,0)
         consumed=ledger.report()['executed'].get('learning:'+budget_key,0);nstep=num_envs*spec.ROLLOUT
         if course=='P0':cap=spec.P0_BUDGET
+        if trial:cap=min(cap,trial.cap)
         max_round=cap//nstep
         if stop_round<0 or stop_round>max_round:raise ValueError('stop-round beyond phase budget')
         if course=='P1' and consumed<spec.P0_BUDGET:raise ValueError('P0 budget incomplete')
@@ -194,12 +206,18 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
             state.clear();del state;state=None
             release_host_memory();trace_memory(memory_trace,'worker_restore_transferred')
         last_saved_path=None;last_saved_consumed=None
-        while consumed<stop_round*nstep and charged+nstep<=cap:
+        if trial and not resume:
+            # Durable zero-update entry permits explicit crash recovery without a quota reset.
+            save_worker(output/'trial_initial.pt',model,learner,reservoir,env,ledger,rounds,physical['sha256'],keep,extra,memory_trace)
+        while (trial.can_collect(charged) if trial else consumed<stop_round*nstep and charged+nstep<=cap):
             trace_memory(memory_trace,'sampling_begin')
             rollout,metrics=collect_rollout(env,model,teachers,phase=course,ledger=ledger,budget_limit=cap)
             trace_memory(memory_trace,'sampling_complete')
             update=(learner.update(rollout,reservoir,num_envs) if course.startswith('D') else learner.update(rollout,keep,reservoir,course))
             trace_memory(memory_trace,'update_complete')
+            if trial:
+                trial.retained+=1
+                extra=dict(extra,trial=trial.checkpoint_state())
             ledger.record_update(metrics['rollout_id']+':update',budget_key,nstep)
             charged=ledger.totals().get('learning:'+budget_key,0)
             consumed=ledger.report()['executed'].get('learning:'+budget_key,0);rounds[budget_key]=consumed//nstep
@@ -226,6 +244,9 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
             digest=save_worker(last_path,model,learner,reservoir,env,ledger,rounds,physical['sha256'],keep,extra,memory_trace)
         result=dict(checkpoint=str(last_path),checkpoint_sha256=digest,course=course,round=consumed//nstep,
             consumed=consumed,updated_samples=ledger.report()['updated'].get('learning:'+budget_key,0),physical_sha256=physical['sha256'],budget=ledger.report(),gate_reached=consumed>=stop_round*nstep,training_accepted=False)
+        if trial:
+            result.update(trial.status(),stop_reason=trial.stop_reason,round=trial.retained,confirmed_sample_round=consumed//nstep,updated_samples=trial.retained*nstep,
+                historical_updated_samples=ledger.report()['updated'].get('learning:'+budget_key,0))
         atomic_json(output/'worker_result.json',result);return result
     finally:env.close()
 

@@ -1,0 +1,28 @@
+{
+  "approval_source": {
+    "amendment_path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_A1_trial50_resource_v2_ruling_20261127.md",
+    "amendment_sha256": "4ae096ea3e16e80daf6414d4976231f051873c27fbdfa3ec16383bd6e7d3248e",
+    "kind": "user",
+    "planning_authority": "用户授权全部统一/同意/由规划直接裁定；规划线程01a217c8-d825-7922-bd23-eb6ba2e37bfb批准唯一v2两栈393216及原cap不变，必须先满足内存前置门禁",
+    "reference": "本实施主对话2026-11-27：针对明确的“probe累计上限3833856，包含历史737280”确认问题，用户直接回复yes并再次全部同意"
+  },
+  "approved": true,
+  "approved_maximum_next_validation_samples": 393216,
+  "authorization_id": "user-A1-v2-inherited-20261127-cap3833856",
+  "global_ledger_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/global_probe_costs.jsonl",
+  "inheritance_kind": "same_cap_same_global_ledger_all_history_preserved_no_new_pool",
+  "max_probe_samples": 3833856,
+  "prior_charged_samples": 3391488,
+  "remaining_at_approval": 442368,
+  "reserve_mode": "exclusive_next_complete_stack_capacity_not_charged",
+  "rulings_sha256": "4de1477cbabb7b652cfa2b5bc21a589a2e6282568c1eec715d917673846fd898",
+  "schema": "a2-v10-global-probe-budget-authorization-v1",
+  "scope": "probe_only",
+  "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+  "supersedes": {
+    "authorization_id": "user-A1-inherited-20261127-cap3833856",
+    "path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/probe_authorization_A1_inherited_20261127.json",
+    "sha256": "49760a42facac7017b88db514b3beb09f8c7fb9b75458ac932a3a7bcc86d2d6c"
+  },
+  "validation_protocol": "A1-targeted-resource-v2"
+}

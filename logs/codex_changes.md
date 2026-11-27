@@ -5300,3 +5300,21 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新文件doc/sds/reviews/v10_A1_resource_failure_status_20261127.md、独立v10_A1_resource_failure_independent_20261127.md；派生logs/a2_v10/formal_A1_20261127_approved/resource_failure_readonly_diagnostic.json及host_stability_readonly_60s.json。只读比较同阶段新worker RSS/HWM反略低、初始host少约1.77GiB，未证实新GB级重复驻留；缺历史父子PSS，不能归因具体进程，不输出敏感命令行。tracebuffer在probe未实例化，teacher clone/rollout/replay逻辑batch尺寸逐源核对。60s可用RAM min10.056GiB，未达新前置12GiB，0新增物理。
 - 新独立裁定文件v10_A1_trial50_resource_v2_ruling_20261127.md关联旧SDS/2f/规划授权，不改旧已签rulings/证据。用户授权调整为资源→112均通过后原D1最多50轮×1024×48=2457600试训并停报，完整A/B后移、不自动课程/PPO、不伪造accepted。后续批准worker自身trial charged硬帽含uncertain、同guard/ledger恢复，不赠50；已委派最小CPU TDD/独审，未称工程已完成。
 - 新v2资源已获规划批准：各1fill+1warm+2measure共393216，原cap内预期3784704余49152；新source/contract独审并冻结后，prelaunch连续60s>=12GiB及child填库前>=9.5GiB才启动，原运行4GiB硬门槛不变。任栈失败停止、不余量重试；当前v2未启动。新guard/runtime与v2接线仍工程中，不能拿旧2f验收当新source通过。
+
+## 2026-11-27 试训charged硬帽模块与独立CPU审核（无新物理）
+
+- 按新独立裁定最小新增src/tasks/velocity/v10/trial_guard.py及tests/test_v10_trial_guard.py；runtime.py只worker显式trial可选分支改变，所有其他函数及模块top-level AST保持；run_a2_v10.py新增trial-charged-cap/trial-id/trial-guard三参数。原正常流程/奖励/损失/速度/模型/rollout/周期不变，v2接线仍独立工程中。
+- trial固定D1/N1024/stop50/cap2457600，canonical guard绑定id与同ledger防换run赠额；worker以min(原D1,trial)强制逐stepQ1上限，每完整rollout前剩额>=49152。恢复uncertain不退，旧checkpoint的retained_completed_updates不借外账historical_updated虚报成果；无resume但账本有已耗拒绝，省trial参数续trial cp拒绝。checkpoint初始retained0在首采样前实存，50周期/边界按原规则去重，保存失败非零；结果trial_limit或trial_budget_exhausted，gate_reached=false/teacher_admitted=false/accepted=null/training_accepted=false，不自动课程/PPO。
+- 真实CPU工程证据：作者最终10passed/34.92s，先前含默认worker周期/恢复回归18passed/42.88s；独立review_preflight执行trial+logging+protocol29passed/55.83s，报告doc/sds/reviews/v10_A1_trial_guard_independent_20261127.md SHAaa292eb878e33237e41211a121c9c553a79a8ba94526c3b66eb051ccb438ab94。CPU使用小模型真实Adam/真实checkpoint和明确virtual collector，非物理/行为证据；旧首次逐step fsync版中断仅部分pass未冒称通过。所有guard测试在tmp，生产canonical guard未创建。
+- 新资源v2模块在收尾：父startup纯stdlib无Torch/src/claim前60s>=12GiB；child填库前>=9.5GiB，不二次要求12或重计60；运行4GiB保持。新授权退休TOCTOU已独立CPU重现并交修：锁外预读旧auth后继任退休，旧事务仍可begin；要求授权依赖事务同journal锁内重新确认，不把预检当原子防线。只用临时账本重现，无生产费用/序列变化。最终整源/证书须待v2独审与新指纹，不沿用旧2f工程签字。
+- 生产费用仍probe3391488/余442368，formal learning0；112/50轮/v2均未启动，不调参数或终止其他进程。
+
+## 2026-11-27 v2及试训护栏最终工程收口（尚未物理）
+
+- 最终source d54265108c298d5920ae8ea9316fd3d48be4b75ce989ac0507bdbf9a2b91498e；完整18个test_v10*.py CPU回归189passed/5skipped/1上游warning，116.26s；GPU/3GB专项未执行不冒称通过，原全项目收集冲突仍未整体通过。source/doc diffcheck、编译及CLI help通过，原始stdout原样保留。
+- 资源v2实现定向87passed/53.93s，独立22passed/19.98s；最终独立报告doc/sds/reviews/v10_A1_v2_resource_independent_20261127.md SHA19e4bd4534675439b95b39c34e823a77cf2c1eb049240124366cbbc9b8501f18，试训独立另引用aa292报告而非实现者自批。新完整报告v10_A1_v2_trial_engineering_acceptance_20261127.md记录前后硬帽、预算/RAM门禁、恢复成果分离和既有失败状态。
+- 文件：新增v10/headroom.py及tests/test_v10_headroom.py/test_v10_resource_v2.py；更新resource_a1.py/resources.py/probe_budget.py/orchestration.py/run_a2_v10.py和直接关联resource/probe_budget测试；trial_guard/runtime-worker/对应试训测试见上条。v1及原full协议保留；新v2固定393216，不开放任意轮数，父preTorch 60s12GiB、child填库前9.5GiB、运行原4GiB全程峰值；唯一claim跨contract/False逃逸均拒绝。
+- 真实授权退休竞态已以临时账本重现并修：预读旧auth后继任退休，旧begin仍可开；锁内共用退休复验覆盖各授权依赖事务（reserve幂等uid前亦验），新增6种stale快照边界CPU拒绝；历史和上限不动。实际source300文件逐逆A1重建旧b48精准：13modified+16new+271实际原字节；42核心证据40byte同+env精确记录AST+runtime实际probe函数/模块AST同（worker仅新trial可选分支），未假称整runtime byte同。
+- 新证据logs/a2_v10/A1_v2_engineering_20261127含最终CPU、实际旧源重建2675a08a...、不变证据f4ab6422...、全差异cdd88c3e...、固定最新顺序及原global成本快照。旧2f/D90/8daf证据、失败原result/NPZ和旧SDS保留；不夹带旧dirty或权重。
+- 正常同cap承继元数据logs/a2_v10/probe_authorization_A1_v2_inherited_20261127.json SHA37e3a3c038abb1213433677f6a6f68c8ece098b0fe86d352c78606bac215bdee，父49760...已注册，同3833856/global ledger/SDS/rulings，新prior3391488/rem442368；新叶仅写元数据并校验，尚未注册/claim/采样。签新resource_linkage_contract_A1_v2及engineering_admission_A1_v2_trial，旧03c43合同不覆。工程通过不代表RAM或教师/学习通过。
+- 生产cost仍3391488、learning0、canonical trial guard不存在。待提交推送后只执行真实stdlib启动门禁；低于12GiB则0物理/0claim停止，不因许可执行112/50。无人为清理或终止其他进程。实际门禁结果后续追加。

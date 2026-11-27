@@ -1,0 +1,191 @@
+FFFFFFF                                                                  [100%]
+=================================== FAILURES ===================================
+_ test_retired_authorization_stale_precheck_rejected_inside_transaction[begin] _
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1174/test_retired_authorization_sta0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x780139f4bb50>
+operation = 'begin'
+
+    @pytest.mark.parametrize('operation',['begin','assert','acquire','claim','reserve','validate'])
+    def test_retired_authorization_stale_precheck_rejected_inside_transaction(tmp_path,monkeypatch,operation):
+        path=tmp_path/'global.jsonl';parent=authorization(tmp_path,path,cap=20)
+        old=GlobalProbeBudget(path,parent,scope_id='old:1024:dagger')
+        old.begin_sequence('old',4);old.assert_authorized('old');old.acquire_stack_capacity('old',4)
+        old.reserve('done','D3',1,limit=4,kind='probe');old.mark_executed('done')
+        old.release_stack_capacity();old.finish_sequence('old')
+        stale=old._authorization();base=json.loads(parent.read_text())
+        child=tmp_path/'successor.json'
+        child.write_text(json.dumps(dict(base,authorization_id='successor',prior_charged_samples=1,supersedes=dict(authorization_id=base['authorization_id'],path=str(parent.resolve()),sha256=stale['sha256']))))
+        new=GlobalProbeBudget(path,child);new.begin_sequence('new',4);new.finish_sequence('new')
+        monkeypatch.setattr(old,'_authorization',lambda:stale)
+        calls={'begin':lambda:old.begin_sequence('stale',1),'assert':lambda:old.assert_authorized('old'),
+               'acquire':lambda:old.acquire_stack_capacity('old',4),'claim':lambda:old.claim_protocol_attempt('v2','a'*64,'old',tmp_path/'out'),
+               'reserve':lambda:old.reserve('done','D3',1,limit=4,kind='probe'),'validate':old.validate_authorization}
+        before=path.read_bytes()
+>       with pytest.raises(ProbeBudgetError,match='retired'):calls[operation]()
+E       Failed: DID NOT RAISE ProbeBudgetError
+
+tests/test_v10_probe_budget.py:341: Failed
+_ test_retired_authorization_stale_precheck_rejected_inside_transaction[assert] _
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1174/test_retired_authorization_sta1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x780139f4b910>
+operation = 'assert'
+
+    @pytest.mark.parametrize('operation',['begin','assert','acquire','claim','reserve','validate'])
+    def test_retired_authorization_stale_precheck_rejected_inside_transaction(tmp_path,monkeypatch,operation):
+        path=tmp_path/'global.jsonl';parent=authorization(tmp_path,path,cap=20)
+        old=GlobalProbeBudget(path,parent,scope_id='old:1024:dagger')
+        old.begin_sequence('old',4);old.assert_authorized('old');old.acquire_stack_capacity('old',4)
+        old.reserve('done','D3',1,limit=4,kind='probe');old.mark_executed('done')
+        old.release_stack_capacity();old.finish_sequence('old')
+        stale=old._authorization();base=json.loads(parent.read_text())
+        child=tmp_path/'successor.json'
+        child.write_text(json.dumps(dict(base,authorization_id='successor',prior_charged_samples=1,supersedes=dict(authorization_id=base['authorization_id'],path=str(parent.resolve()),sha256=stale['sha256']))))
+        new=GlobalProbeBudget(path,child);new.begin_sequence('new',4);new.finish_sequence('new')
+        monkeypatch.setattr(old,'_authorization',lambda:stale)
+        calls={'begin':lambda:old.begin_sequence('stale',1),'assert':lambda:old.assert_authorized('old'),
+               'acquire':lambda:old.acquire_stack_capacity('old',4),'claim':lambda:old.claim_protocol_attempt('v2','a'*64,'old',tmp_path/'out'),
+               'reserve':lambda:old.reserve('done','D3',1,limit=4,kind='probe'),'validate':old.validate_authorization}
+        before=path.read_bytes()
+>       with pytest.raises(ProbeBudgetError,match='retired'):calls[operation]()
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'retired'
+E         Actual message: 'active authorized probe sequence required'
+
+tests/test_v10_probe_budget.py:341: AssertionError
+_ test_retired_authorization_stale_precheck_rejected_inside_transaction[acquire] _
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1174/test_retired_authorization_sta2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x780139ce21d0>
+operation = 'acquire'
+
+    @pytest.mark.parametrize('operation',['begin','assert','acquire','claim','reserve','validate'])
+    def test_retired_authorization_stale_precheck_rejected_inside_transaction(tmp_path,monkeypatch,operation):
+        path=tmp_path/'global.jsonl';parent=authorization(tmp_path,path,cap=20)
+        old=GlobalProbeBudget(path,parent,scope_id='old:1024:dagger')
+        old.begin_sequence('old',4);old.assert_authorized('old');old.acquire_stack_capacity('old',4)
+        old.reserve('done','D3',1,limit=4,kind='probe');old.mark_executed('done')
+        old.release_stack_capacity();old.finish_sequence('old')
+        stale=old._authorization();base=json.loads(parent.read_text())
+        child=tmp_path/'successor.json'
+        child.write_text(json.dumps(dict(base,authorization_id='successor',prior_charged_samples=1,supersedes=dict(authorization_id=base['authorization_id'],path=str(parent.resolve()),sha256=stale['sha256']))))
+        new=GlobalProbeBudget(path,child);new.begin_sequence('new',4);new.finish_sequence('new')
+        monkeypatch.setattr(old,'_authorization',lambda:stale)
+        calls={'begin':lambda:old.begin_sequence('stale',1),'assert':lambda:old.assert_authorized('old'),
+               'acquire':lambda:old.acquire_stack_capacity('old',4),'claim':lambda:old.claim_protocol_attempt('v2','a'*64,'old',tmp_path/'out'),
+               'reserve':lambda:old.reserve('done','D3',1,limit=4,kind='probe'),'validate':old.validate_authorization}
+        before=path.read_bytes()
+>       with pytest.raises(ProbeBudgetError,match='retired'):calls[operation]()
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'retired'
+E         Actual message: 'active authorized sequence required'
+
+tests/test_v10_probe_budget.py:341: AssertionError
+_ test_retired_authorization_stale_precheck_rejected_inside_transaction[claim] _
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1174/test_retired_authorization_sta3')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x780139cf39d0>
+operation = 'claim'
+
+    @pytest.mark.parametrize('operation',['begin','assert','acquire','claim','reserve','validate'])
+    def test_retired_authorization_stale_precheck_rejected_inside_transaction(tmp_path,monkeypatch,operation):
+        path=tmp_path/'global.jsonl';parent=authorization(tmp_path,path,cap=20)
+        old=GlobalProbeBudget(path,parent,scope_id='old:1024:dagger')
+        old.begin_sequence('old',4);old.assert_authorized('old');old.acquire_stack_capacity('old',4)
+        old.reserve('done','D3',1,limit=4,kind='probe');old.mark_executed('done')
+        old.release_stack_capacity();old.finish_sequence('old')
+        stale=old._authorization();base=json.loads(parent.read_text())
+        child=tmp_path/'successor.json'
+        child.write_text(json.dumps(dict(base,authorization_id='successor',prior_charged_samples=1,supersedes=dict(authorization_id=base['authorization_id'],path=str(parent.resolve()),sha256=stale['sha256']))))
+        new=GlobalProbeBudget(path,child);new.begin_sequence('new',4);new.finish_sequence('new')
+        monkeypatch.setattr(old,'_authorization',lambda:stale)
+        calls={'begin':lambda:old.begin_sequence('stale',1),'assert':lambda:old.assert_authorized('old'),
+               'acquire':lambda:old.acquire_stack_capacity('old',4),'claim':lambda:old.claim_protocol_attempt('v2','a'*64,'old',tmp_path/'out'),
+               'reserve':lambda:old.reserve('done','D3',1,limit=4,kind='probe'),'validate':old.validate_authorization}
+        before=path.read_bytes()
+>       with pytest.raises(ProbeBudgetError,match='retired'):calls[operation]()
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'retired'
+E         Actual message: 'authorized active protocol sequence required'
+
+tests/test_v10_probe_budget.py:341: AssertionError
+_ test_retired_authorization_stale_precheck_rejected_inside_transaction[reserve] _
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1174/test_retired_authorization_sta4')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x780139d00390>
+operation = 'reserve'
+
+    @pytest.mark.parametrize('operation',['begin','assert','acquire','claim','reserve','validate'])
+    def test_retired_authorization_stale_precheck_rejected_inside_transaction(tmp_path,monkeypatch,operation):
+        path=tmp_path/'global.jsonl';parent=authorization(tmp_path,path,cap=20)
+        old=GlobalProbeBudget(path,parent,scope_id='old:1024:dagger')
+        old.begin_sequence('old',4);old.assert_authorized('old');old.acquire_stack_capacity('old',4)
+        old.reserve('done','D3',1,limit=4,kind='probe');old.mark_executed('done')
+        old.release_stack_capacity();old.finish_sequence('old')
+        stale=old._authorization();base=json.loads(parent.read_text())
+        child=tmp_path/'successor.json'
+        child.write_text(json.dumps(dict(base,authorization_id='successor',prior_charged_samples=1,supersedes=dict(authorization_id=base['authorization_id'],path=str(parent.resolve()),sha256=stale['sha256']))))
+        new=GlobalProbeBudget(path,child);new.begin_sequence('new',4);new.finish_sequence('new')
+        monkeypatch.setattr(old,'_authorization',lambda:stale)
+        calls={'begin':lambda:old.begin_sequence('stale',1),'assert':lambda:old.assert_authorized('old'),
+               'acquire':lambda:old.acquire_stack_capacity('old',4),'claim':lambda:old.claim_protocol_attempt('v2','a'*64,'old',tmp_path/'out'),
+               'reserve':lambda:old.reserve('done','D3',1,limit=4,kind='probe'),'validate':old.validate_authorization}
+        before=path.read_bytes()
+>       with pytest.raises(ProbeBudgetError,match='retired'):calls[operation]()
+E       Failed: DID NOT RAISE ProbeBudgetError
+
+tests/test_v10_probe_budget.py:341: Failed
+_ test_retired_authorization_stale_precheck_rejected_inside_transaction[validate] _
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1174/test_retired_authorization_sta5')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x780139de1c50>
+operation = 'validate'
+
+    @pytest.mark.parametrize('operation',['begin','assert','acquire','claim','reserve','validate'])
+    def test_retired_authorization_stale_precheck_rejected_inside_transaction(tmp_path,monkeypatch,operation):
+        path=tmp_path/'global.jsonl';parent=authorization(tmp_path,path,cap=20)
+        old=GlobalProbeBudget(path,parent,scope_id='old:1024:dagger')
+        old.begin_sequence('old',4);old.assert_authorized('old');old.acquire_stack_capacity('old',4)
+        old.reserve('done','D3',1,limit=4,kind='probe');old.mark_executed('done')
+        old.release_stack_capacity();old.finish_sequence('old')
+        stale=old._authorization();base=json.loads(parent.read_text())
+        child=tmp_path/'successor.json'
+        child.write_text(json.dumps(dict(base,authorization_id='successor',prior_charged_samples=1,supersedes=dict(authorization_id=base['authorization_id'],path=str(parent.resolve()),sha256=stale['sha256']))))
+        new=GlobalProbeBudget(path,child);new.begin_sequence('new',4);new.finish_sequence('new')
+        monkeypatch.setattr(old,'_authorization',lambda:stale)
+        calls={'begin':lambda:old.begin_sequence('stale',1),'assert':lambda:old.assert_authorized('old'),
+               'acquire':lambda:old.acquire_stack_capacity('old',4),'claim':lambda:old.claim_protocol_attempt('v2','a'*64,'old',tmp_path/'out'),
+               'reserve':lambda:old.reserve('done','D3',1,limit=4,kind='probe'),'validate':old.validate_authorization}
+        before=path.read_bytes()
+>       with pytest.raises(ProbeBudgetError,match='retired'):calls[operation]()
+E       Failed: DID NOT RAISE ProbeBudgetError
+
+tests/test_v10_probe_budget.py:341: Failed
+_ test_exclusive_protocol_attempt_blocks_changed_contract_even_if_flag_omitted _
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1174/test_exclusive_protocol_attemp0')
+
+    def test_exclusive_protocol_attempt_blocks_changed_contract_even_if_flag_omitted(tmp_path):
+        path=tmp_path/'global.jsonl';auth=authorization(tmp_path,path,cap=20)
+        b=GlobalProbeBudget(path,auth);b.begin_sequence('first',4)
+>       claim=b.claim_protocol_attempt('v2','a'*64,'first',tmp_path/'one',exclusive_protocol=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: GlobalProbeBudget.claim_protocol_attempt() got an unexpected keyword argument 'exclusive_protocol'
+
+tests/test_v10_probe_budget.py:348: TypeError
+=============================== warnings summary ===============================
+../../anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491
+  /home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_v10_probe_budget.py::test_retired_authorization_stale_precheck_rejected_inside_transaction[begin]
+FAILED tests/test_v10_probe_budget.py::test_retired_authorization_stale_precheck_rejected_inside_transaction[assert]
+FAILED tests/test_v10_probe_budget.py::test_retired_authorization_stale_precheck_rejected_inside_transaction[acquire]
+FAILED tests/test_v10_probe_budget.py::test_retired_authorization_stale_precheck_rejected_inside_transaction[claim]
+FAILED tests/test_v10_probe_budget.py::test_retired_authorization_stale_precheck_rejected_inside_transaction[reserve]
+FAILED tests/test_v10_probe_budget.py::test_retired_authorization_stale_precheck_rejected_inside_transaction[validate]
+FAILED tests/test_v10_probe_budget.py::test_exclusive_protocol_attempt_blocks_changed_contract_even_if_flag_omitted
+7 failed, 19 deselected, 1 warning in 12.22s

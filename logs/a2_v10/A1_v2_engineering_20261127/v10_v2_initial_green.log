@@ -1,0 +1,24 @@
+...........................F.....                                        [100%]
+=================================== FAILURES ===================================
+____ test_real_invariants_keep_env_byte_difference_and_exact_recording_ast _____
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1168/test_real_invariants_keep_env_0')
+
+    def test_real_invariants_keep_env_byte_difference_and_exact_recording_ast(tmp_path):
+        from src.tasks.velocity.v10 import resource_a1 as a
+        from src.tasks.velocity.v10.probe_budget import streaming_sha256
+        path=tmp_path/'contract.json';row=a.build_a1_contract_template(path,tmp_path/'proof')
+        proof=json.loads(Path(row['invariance_evidence']['path']).read_text())
+>       assert proof['invariants_satisfied'] is True
+E       assert False is True
+
+tests/test_v10_resource_a1.py:147: AssertionError
+=============================== warnings summary ===============================
+../../anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491
+  /home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_v10_resource_a1.py::test_real_invariants_keep_env_byte_difference_and_exact_recording_ast
+1 failed, 32 passed, 1 warning in 18.39s

@@ -293,13 +293,13 @@ class Orchestrator:
             or selection.get('sds_sha256')!=spec.SDS_SHA256 or selection.get('code_sha256')!=self.state['code_sha256']):raise StopTraining('resource_selection_invalid')
         if (selection.get('global_probe_ledger')!=str(self.global_probe_ledger) or selection.get('probe_sequence_id')!=sequence
             or selection.get('probe_budget_authorization_sha256')!=authorization['sha256']):raise StopTraining('resource_selection_global_budget_identity_invalid')
-        targeted=selection.get('resource_protocol')=='A1-targeted-resource-v1'
+        targeted=selection.get('resource_protocol') in ('A1-targeted-resource-v1','A1-targeted-resource-v2')
         if targeted:
             from .resource_a1 import verify_linkage_selection
             try:verify_linkage_selection(selection)
             except (ValueError,OSError,KeyError) as error:raise StopTraining('A1_resource_linkage_invalid') from error
             if selection['num_envs']!=1024:raise StopTraining('A1_resource_N_changed')
-        expected_warmup,expected_measurement=(2,2) if targeted else (5,20)
+        expected_warmup,expected_measurement=((1,2) if selection.get('resource_protocol')=='A1-targeted-resource-v2' else (2,2)) if targeted else (5,20)
         n=selection['num_envs'];runs=[r for r in selection['runs'] if r.get('num_envs')==n]
         if len(runs)!=2 or {r.get('stack') for r in runs}!={'dagger','ppo'}:raise StopTraining('both_complete_resource_stacks_required')
         for row in runs:

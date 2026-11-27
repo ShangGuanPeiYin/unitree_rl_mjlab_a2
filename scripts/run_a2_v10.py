@@ -9,22 +9,39 @@ sys.path.insert(0,str(ROOT))
 
 def main():
     parser=argparse.ArgumentParser();sub=parser.add_subparsers(dest='command',required=True)
-    for name in ('smoke','probe','_probe-stack','probe-a1','_probe-a1-stack','worker'):
+    for name in ('smoke','probe','_probe-stack','probe-a1','_probe-a1-stack','probe-a1-v2','_probe-a1-stack-v2','worker'):
         p=sub.add_parser(name);p.add_argument('--output-dir',required=True);p.add_argument('--device',default='cuda:0')
-        if name in ('smoke','worker','_probe-stack','_probe-a1-stack'):p.add_argument('--num-envs',type=int,default=6 if name=='smoke' else 1024)
+        if name in ('smoke','worker','_probe-stack','_probe-a1-stack','_probe-a1-stack-v2'):p.add_argument('--num-envs',type=int,default=6 if name=='smoke' else 1024)
         if name in ('smoke','worker'):p.add_argument('--course',choices=['D1','D2','D3','P0','P1'],default='D3' if name=='smoke' else 'D1')
         if name=='smoke':p.add_argument('--steps',type=int,default=48)
-        if name in ('probe','_probe-stack','probe-a1','_probe-a1-stack'):
+        if name in ('probe','_probe-stack','probe-a1','_probe-a1-stack','probe-a1-v2','_probe-a1-stack-v2'):
             p.add_argument('--global-probe-ledger',default=str(ROOT/'logs/a2_v10/global_probe_costs.jsonl'))
             p.add_argument('--probe-budget-authorization',required=True)
             p.add_argument('--probe-sequence-id',required=True)
-        if name in ('_probe-stack','_probe-a1-stack'):p.add_argument('--stack',choices=['dagger','ppo'],required=True)
-        if name in ('probe-a1','_probe-a1-stack'):p.add_argument('--linkage-contract',required=True)
+        if name in ('_probe-stack','_probe-a1-stack','_probe-a1-stack-v2'):p.add_argument('--stack',choices=['dagger','ppo'],required=True)
+        if name in ('probe-a1','_probe-a1-stack','probe-a1-v2','_probe-a1-stack-v2'):p.add_argument('--linkage-contract',required=True)
+        if name=='_probe-a1-stack-v2':p.add_argument('--startup-headroom',required=True)
         if name=='worker':
             p.add_argument('--stop-round',type=int,required=True);p.add_argument('--resume');p.add_argument('--acceptance');p.add_argument('--ledger-path');p.add_argument('--controller-state')
+            p.add_argument('--trial-charged-cap',type=int);p.add_argument('--trial-id');p.add_argument('--trial-guard')
     p=sub.add_parser('export');p.add_argument('--checkpoint',required=True);p.add_argument('--acceptance',required=True);p.add_argument('--output-dir',required=True)
     args=vars(parser.parse_args());command=args.pop('command')
-    if command in ('smoke','worker','_probe-stack','_probe-a1-stack'):
+    if command in ('probe-a1-v2','_probe-a1-stack-v2'):
+        # Import by file path: importing src.tasks would load Torch via auto-registration.
+        import importlib.util,os
+        if 'torch' in sys.modules:raise RuntimeError('v2 startup must precede Torch import')
+        helper_spec=importlib.util.spec_from_file_location('v10_headroom_preimport',ROOT/'src/tasks/velocity/v10/headroom.py')
+        helper=importlib.util.module_from_spec(helper_spec);helper_spec.loader.exec_module(helper)
+        if command=='probe-a1-v2':
+            report=helper.wait_for_headroom()
+            path=Path(str(Path(args['output_dir']).resolve())+'.startup_headroom.json');path.parent.mkdir(parents=True,exist_ok=True)
+            with path.open('x') as f:json.dump(report,f,sort_keys=True);f.write('\n');f.flush();os.fsync(f.fileno())
+            if not report['passed']:
+                print(json.dumps(dict(passed=False,reason='startup_headroom_below_12GiB_continuous_60s',headroom_report=str(path),physical_samples=0,protocol_claimed=False)))
+                return 1
+            args['startup_headroom']=str(path)
+        else:helper.validate_startup_report(args['startup_headroom'],live=True)
+    if command in ('smoke','worker','_probe-stack','_probe-a1-stack','_probe-a1-stack-v2'):
         from src.tasks.velocity.v10.gpu_lock import gpu_execution_lock
     if command=='smoke':
         from src.tasks.velocity.v10.runtime import smoke
@@ -41,6 +58,12 @@ def main():
     elif command=='_probe-a1-stack':
         from src.tasks.velocity.v10.resource_a1 import a1_probe_stack
         with gpu_execution_lock():result=a1_probe_stack(**args)
+    elif command=='probe-a1-v2':
+        from src.tasks.velocity.v10.resource_a1 import run_a1_v2_probes
+        result=run_a1_v2_probes(**args)
+    elif command=='_probe-a1-stack-v2':
+        from src.tasks.velocity.v10.resource_a1 import a1_v2_probe_stack
+        with gpu_execution_lock():result=a1_v2_probe_stack(**args)
     elif command=='_probe-stack':
         from src.tasks.velocity.v10.resources import probe_stack
         with gpu_execution_lock():result=probe_stack(**args)

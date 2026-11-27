@@ -1,0 +1,11 @@
+{
+  "formal_learning": 0,
+  "global_journal_sha256": "0fa1f0cc885cfde7b7c237e4c754d3ab7736a78687741927fa5645d6661583f6",
+  "physical_samples_added_by_this_engineering": 0,
+  "probe": {
+    "charged": 3391488,
+    "executed": 3391488,
+    "uncertain": 0,
+    "updated": 3170304
+  }
+}

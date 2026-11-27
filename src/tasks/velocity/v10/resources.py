@@ -56,7 +56,7 @@ def probe_stack(*,num_envs,stack,output_dir,device='cuda:0',global_probe_ledger=
 
 
 def _probe_stack_impl(*,num_envs,stack,output_dir,device='cuda:0',global_probe_ledger=None,
-        probe_budget_authorization=None,probe_sequence_id=None,warmup_rounds,measurement_rounds,protocol,expected_physical_sha256=None):
+        probe_budget_authorization=None,probe_sequence_id=None,warmup_rounds,measurement_rounds,protocol,expected_physical_sha256=None,require_prefill_headroom=False):
     """One fresh process for one N/stack, never exports a formal learner state."""
     from .env import V10Env
     updates=warmup_rounds+measurement_rounds
@@ -83,6 +83,11 @@ def _probe_stack_impl(*,num_envs,stack,output_dir,device='cuda:0',global_probe_l
             limit=total_rollouts*num_envs*48
             # Real same-frame data fill every allocated reservoir slot; repeated observations
             # are admitted only for resource stress, never carried into formal training.
+            if require_prefill_headroom:
+                from .headroom import prefill_headroom
+                result['prefill_headroom']=prefill_headroom()
+                trace_memory(monitor.memory_stage,'prefill_headroom_check')
+                if not result['prefill_headroom']['passed']:raise RuntimeError('prefill MemAvailable below 9.5 GiB; zero physical samples')
             trace_memory(monitor.memory_stage,'sampling_initial_begin')
             initial,_=collect_rollout(env,model,teachers,phase='D3',ledger=ledger,kind='probe',budget_limit=limit)
             while min(reservoir.seen.values())<reservoir.capacity:reservoir.add(initial)

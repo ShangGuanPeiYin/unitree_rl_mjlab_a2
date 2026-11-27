@@ -1,0 +1,34 @@
+{
+  "accepted": null,
+  "code_sha256": "d54265108c298d5920ae8ea9316fd3d48be4b75ce989ac0507bdbf9a2b91498e",
+  "cpu_result": {
+    "failed": 0,
+    "passed": 189,
+    "skipped": 5
+  },
+  "engineering_report_path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_A1_v2_trial_engineering_acceptance_20261127.md",
+  "engineering_report_sha256": "847a9f05accbbf7c8ac2bf845885fb77dc864f1ac2ea1db18c36655e034ddd4a",
+  "fixed_plan_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/A1_v2_engineering_20261127/fixed_execution_plan.json",
+  "fixed_plan_sha256": "3e129b575e7b6747cc7e72c718d7e3a964a583db33e88dffb8fb38cb8d24bdf6",
+  "independent_review": {
+    "passed": true,
+    "report_path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_A1_v2_resource_independent_20261127.md",
+    "report_sha256": "19e4bd4534675439b95b39c34e823a77cf2c1eb049240124366cbbc9b8501f18"
+  },
+  "learning_samples": 0,
+  "passed": true,
+  "physical_sha256": "aa74d2d53526f2025b46054771ec1cf9e785b9dcee7a860e98e2c8303ee58442",
+  "resource_admitted": false,
+  "rulings_sha256": "4de1477cbabb7b652cfa2b5bc21a589a2e6282568c1eec715d917673846fd898",
+  "schema": "a2-v10-engineering-admission-v1",
+  "scope": "CPU engineering only; v2 resources then fixed112 required before one D1 trial50; no full course/PPO approval",
+  "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+  "teacher_admitted": false,
+  "test_evidence_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/A1_v2_engineering_20261127/final_cpu_evidence.json",
+  "test_evidence_sha256": "138085caf41796792d7cfcaca550e010b893b9baccb779fb2250ad8255208a83",
+  "trial_independent_review": {
+    "passed": true,
+    "report_path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_A1_trial_guard_independent_20261127.md",
+    "report_sha256": "aa292eb878e33237e41211a121c9c553a79a8ba94526c3b66eb051ccb438ab94"
+  }
+}

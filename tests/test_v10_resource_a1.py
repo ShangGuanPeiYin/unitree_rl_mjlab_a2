@@ -142,7 +142,7 @@ def test_targeted_parent_exact_budget_and_first_failure_stops(association_receip
 def test_real_invariants_keep_env_byte_difference_and_exact_recording_ast(tmp_path):
     from src.tasks.velocity.v10 import resource_a1 as a
     from src.tasks.velocity.v10.probe_budget import streaming_sha256
-    path=tmp_path/'contract.json';row=a.build_a1_contract_template(path,tmp_path/'proof')
+    path=tmp_path/'contract.json';row=a.build_a1_contract_template(path,tmp_path/'proof',protocol=a.A1_V2_PROTOCOL)
     proof=json.loads(Path(row['invariance_evidence']['path']).read_text())
     assert proof['invariants_satisfied'] is True
     env=proof['files']['src/tasks/velocity/v10/env.py']

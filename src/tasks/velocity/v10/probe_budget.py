@@ -91,7 +91,7 @@ class GlobalProbeBudget:
         self.scope_id=scope_id;self.sequence_id=None
         self._cache=None
         self._state=dict(cost=_empty_cost(),scopes={},entries={},pending=set(),sources={},source_paths={},
-                         legacy_ids=set(),authorizations={},sequences={},active_sequence=None,capacity_leases={},active_capacity=None,protocol_attempts={},last_sha='0'*64,seq=0)
+                         legacy_ids=set(),authorizations={},retired_authorizations=set(),sequences={},active_sequence=None,capacity_leases={},active_capacity=None,protocol_attempts={},last_sha='0'*64,seq=0)
 
     def _apply(self,row):
         s=self._state;p=row['payload'];op=row['op']
@@ -103,7 +103,10 @@ class GlobalProbeBudget:
             s['scopes'][scope]=copy.deepcopy(p['cost'])
             for field in s['cost']:_add(s['cost'][field],p['cost'][field])
         elif op=='source_alias':s['source_paths'][p['source_path']]=p['source_sha256']
-        elif op=='authorization':s['authorizations'][p['sha256']]=p
+        elif op=='authorization':
+            s['authorizations'][p['sha256']]=p
+            parent=p['document'].get('supersedes')
+            if parent:s['retired_authorizations'].add(parent['sha256'])
         elif op=='sequence_begin':
             if s['active_sequence'] is not None:raise ProbeBudgetError('two active probe sequences in journal')
             s['sequences'][p['id']]=dict(p,status='active');s['active_sequence']=p['id']
@@ -177,7 +180,7 @@ class GlobalProbeBudget:
     def global_report(self):
         def report(f,s):
             result=copy.deepcopy(s['cost']);result['global_totals']=_cost_sum(s['cost']);result['pending']=sorted(s['pending'])
-            result.update(protocol_attempts=copy.deepcopy(s['protocol_attempts']),active_capacity=s['active_capacity'],capacity_leases=copy.deepcopy(s['capacity_leases']),authorizations=copy.deepcopy(s['authorizations']),sources=copy.deepcopy(s['sources']),source_paths=dict(s['source_paths']),sequences=copy.deepcopy(s['sequences']),active_sequence=s['active_sequence'],journal_sha256=s['last_sha'])
+            result.update(retired_authorizations=sorted(s['retired_authorizations']),protocol_attempts=copy.deepcopy(s['protocol_attempts']),active_capacity=s['active_capacity'],capacity_leases=copy.deepcopy(s['capacity_leases']),authorizations=copy.deepcopy(s['authorizations']),sources=copy.deepcopy(s['sources']),source_paths=dict(s['source_paths']),sequences=copy.deepcopy(s['sequences']),active_sequence=s['active_sequence'],journal_sha256=s['last_sha'])
             return result
         return self._locked(report)
 
@@ -226,9 +229,16 @@ class GlobalProbeBudget:
                     and doc['authorization_id']!=parent['authorization_id'])
             except (OSError,ValueError,KeyError):valid=False
             if not valid:raise ProbeBudgetError('invalid supersedes parent SHA/id/cap/ledger/SDS identity')
+        if self._locked(lambda f,s:before in s['retired_authorizations']):raise ProbeBudgetError('authorization retired by registered successor')
         return dict(document=doc,sha256=before,path=str(self.authorization_path))
 
+    @staticmethod
+    def _assert_current_authorization(s,auth):
+        if auth['sha256'] in s['retired_authorizations']:
+            raise ProbeBudgetError('authorization retired by registered successor')
+
     def _register_authorization(self,f,s,auth):
+        self._assert_current_authorization(s,auth)
         doc=auth['document']
         existing=[r for r in s['authorizations'].values() if r['document']['authorization_id']==doc['authorization_id']]
         if existing and existing[0]['sha256']!=auth['sha256']:raise ProbeBudgetError('authorization ID reused with changed approval')
@@ -236,6 +246,7 @@ class GlobalProbeBudget:
             parent=doc.get('supersedes')
             if parent is not None:
                 registered=s['authorizations'].get(parent['sha256'])
+                if parent['sha256'] in s['retired_authorizations']:raise ProbeBudgetError('supersedes parent already retired')
                 if not registered or registered['document']['authorization_id']!=parent['authorization_id']:
                     raise ProbeBudgetError('supersedes parent must already be registered in global history')
                 if any(doc.get(k)!=registered['document'].get(k) for k in ('max_probe_samples','global_ledger_path','sds_sha256','scope')):
@@ -263,12 +274,17 @@ class GlobalProbeBudget:
         return self._locked(perform)
 
     def validate_authorization(self):
-        return self._authorization()
+        auth=self._authorization()
+        def perform(f,s):
+            self._assert_current_authorization(s,auth)
+            return auth
+        return self._locked(perform)
 
     def assert_authorized(self,sequence_id,required_samples=0):
         if not isinstance(required_samples,int) or isinstance(required_samples,bool) or required_samples<0:raise ProbeBudgetError('nonnegative probe demand required')
         auth=self._authorization()
         def perform(f,s):
+            self._assert_current_authorization(s,auth)
             seq=s['sequences'].get(sequence_id)
             if s['pending']:raise ProbeBudgetError('global in-flight physical step unresolved')
             if (not seq or seq['status']!='active' or s['active_sequence']!=sequence_id or seq['authorization_sha256']!=auth['sha256']):raise ProbeBudgetError('active authorized probe sequence required')
@@ -288,6 +304,7 @@ class GlobalProbeBudget:
         auth=self._authorization();scope=scope_id or self.scope_id
         if not scope or not scope.startswith(sequence_id+':') or not _positive(required_samples):raise ProbeBudgetError('explicit stack scope/capacity required')
         def perform(f,s):
+            self._assert_current_authorization(s,auth)
             seq=s['sequences'].get(sequence_id)
             if not seq or seq['status']!='active' or seq['authorization_sha256']!=auth['sha256']:raise ProbeBudgetError('active authorized sequence required')
             old=s['capacity_leases'].get(scope)
@@ -318,14 +335,17 @@ class GlobalProbeBudget:
             return unused
         return self._locked(perform)
 
-    def claim_protocol_attempt(self,protocol,contract_sha256,sequence_id,output_dir):
+    def claim_protocol_attempt(self,protocol,contract_sha256,sequence_id,output_dir,admission_evidence=None,exclusive_protocol=False):
         if len(contract_sha256)!=64:raise ProbeBudgetError('protocol contract SHA required')
         auth=self._authorization();key=protocol+':'+contract_sha256
         def perform(f,s):
+            self._assert_current_authorization(s,auth)
             seq=s['sequences'].get(sequence_id)
             if not seq or seq['status']!='active' or seq['authorization_sha256']!=auth['sha256']:raise ProbeBudgetError('authorized active protocol sequence required')
-            if key in s['protocol_attempts']:raise ProbeBudgetError('protocol validation attempt already claimed; no remeasure')
-            self._append(f,'protocol_attempt_claim',dict(key=key,protocol=protocol,contract_sha256=contract_sha256,sequence_id=sequence_id,output_dir=str(Path(output_dir).resolve())))
+            previous=[entry for entry in s['protocol_attempts'].values() if entry['protocol']==protocol]
+            if key in s['protocol_attempts'] or (previous and (exclusive_protocol or any(entry.get('exclusive_protocol',False) for entry in previous))):
+                raise ProbeBudgetError('protocol validation attempt already claimed; no remeasure')
+            self._append(f,'protocol_attempt_claim',dict(key=key,protocol=protocol,contract_sha256=contract_sha256,sequence_id=sequence_id,output_dir=str(Path(output_dir).resolve()),admission_evidence=admission_evidence,exclusive_protocol=bool(exclusive_protocol)))
             return copy.deepcopy(s['protocol_attempts'][key])
         return self._locked(perform)
 
@@ -369,6 +389,7 @@ class GlobalProbeBudget:
         if kind!='probe' or not _positive(samples) or not _positive(limit):raise ProbeBudgetError('probe-only positive sample reservation required')
         key='probe:'+str(course)
         def perform(f,s):
+            self._assert_current_authorization(s,auth)
             if scoped in s['entries']:
                 e=s['entries'][scoped]
                 if e['key']!=key or e['samples']!=samples:raise ProbeBudgetError('reservation identity mismatch')

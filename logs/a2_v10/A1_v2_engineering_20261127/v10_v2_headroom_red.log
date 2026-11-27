@@ -1,0 +1,54 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+________________ test_continuous_sixty_seconds_and_dip_refuses _________________
+
+    def test_continuous_sixty_seconds_and_dip_refuses():
+>       h=load_helper();clock=[0.]
+          ^^^^^^^^^^^^^
+
+tests/test_v10_headroom.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_v10_headroom.py:10: in load_helper
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap_external>:936: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1073: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_frozen_importlib_external.SourceFileLoader object at 0x7f84bffa2890>
+path = '/home/xxs/dog/unitree_rl_mjlab_a2/src/tasks/velocity/v10/headroom.py'
+
+>   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/xxs/dog/unitree_rl_mjlab_a2/src/tasks/velocity/v10/headroom.py'
+
+<frozen importlib._bootstrap_external>:1130: FileNotFoundError
+____________________ test_prefill_guard_threshold_no_delay _____________________
+
+    def test_prefill_guard_threshold_no_delay():
+>       h=load_helper()
+          ^^^^^^^^^^^^^
+
+tests/test_v10_headroom.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_v10_headroom.py:10: in load_helper
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap_external>:936: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1073: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_frozen_importlib_external.SourceFileLoader object at 0x7f84bffa0dd0>
+path = '/home/xxs/dog/unitree_rl_mjlab_a2/src/tasks/velocity/v10/headroom.py'
+
+>   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/xxs/dog/unitree_rl_mjlab_a2/src/tasks/velocity/v10/headroom.py'
+
+<frozen importlib._bootstrap_external>:1130: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_v10_headroom.py::test_continuous_sixty_seconds_and_dip_refuses
+FAILED tests/test_v10_headroom.py::test_prefill_guard_threshold_no_delay - Fi...
+2 failed in 0.03s
