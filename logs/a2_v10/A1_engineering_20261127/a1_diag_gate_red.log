@@ -1,0 +1,25 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_diagnostic_rejects_unlinked_resource_receipt _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1142/test_diagnostic_rejects_unlink0')
+
+    def test_diagnostic_rejects_unlinked_resource_receipt(tmp_path):
+        import pytest
+        diag=importlib.import_module('src.tasks.velocity.v10.diagnostic_a1')
+        receipt=tmp_path/'selection.json';receipt.write_text('{}')
+        with pytest.raises(ValueError,match='resource'):
+>           diag.validate_diagnostic_resource(receipt)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'src.tasks.velocity.v10.diagnostic_a1' has no attribute 'validate_diagnostic_resource'
+
+tests/test_v10_a1_diagnostic.py:75: AttributeError
+=============================== warnings summary ===============================
+tests/test_v10_a1_diagnostic.py::test_diagnostic_rejects_unlinked_resource_receipt
+  /home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_v10_a1_diagnostic.py::test_diagnostic_rejects_unlinked_resource_receipt
+1 failed, 1 warning in 12.52s

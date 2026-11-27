@@ -1,0 +1,27 @@
+{
+  "evaluation": {
+    "charged": {
+      "evaluation:ALL": 304100
+    },
+    "executed": {
+      "evaluation:ALL": 304100
+    },
+    "pending": [],
+    "uncertain": {
+      "evaluation:ALL": 0
+    },
+    "updated": {}
+  },
+  "evaluation_ledger_sha256": "d8fec03d261bec912131ea46a93c511f0f9af8db91246e4dd2f12f3381746eca",
+  "formal_learning": 0,
+  "inherited_authorization_sha256": "49760a42facac7017b88db514b3beb09f8c7fb9b75458ac932a3a7bcc86d2d6c",
+  "physical_samples_added": 0,
+  "probe": {
+    "charged": 3293184,
+    "executed": 3293184,
+    "uncertain": 0,
+    "updated": 3121152
+  },
+  "probe_ledger_sha256": "5ebfb92dbcf44fd7e1e1f469cb46cb17752583301ea6bfb9d45caae9ab8841f5",
+  "remaining_probe": 540672
+}

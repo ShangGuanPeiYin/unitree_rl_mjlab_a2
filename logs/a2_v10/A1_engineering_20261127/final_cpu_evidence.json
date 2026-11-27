@@ -1,0 +1,79 @@
+{
+  "source_sha256": "2f82589e805b2579843a4381089467d40931300aff8a80f466becf90dcc4fbcb",
+  "test_files": [
+    {
+      "path": "tests/test_v10_a1_diagnostic.py",
+      "sha256": "3ee3cfcaf791da1aca29d39836d04a8ab1ed2d50d30b5f1d5bfb242a924cfdb3"
+    },
+    {
+      "path": "tests/test_v10_a1_identity.py",
+      "sha256": "743b584514bd05bda87332fc14137a7c924634e58392c2454e4484dbea12f0b1"
+    },
+    {
+      "path": "tests/test_v10_env_contract.py",
+      "sha256": "6dd9fa6b7255f333c06ed542d7958ccb4111d47d3a3d30d4ac04d3a291ed1f6b"
+    },
+    {
+      "path": "tests/test_v10_env_gpu.py",
+      "sha256": "3eeb3d274df00a581c39c9ee1c72d8574ca5599778ab2448242df78d62ca4849"
+    },
+    {
+      "path": "tests/test_v10_env_recording.py",
+      "sha256": "8a2b975a36705be786deaceea630f6fa8d895d2a46b9fd6e63985d407c66c336"
+    },
+    {
+      "path": "tests/test_v10_learning_core.py",
+      "sha256": "bd16462bbe94b1714857a821c527079dca2d8309f2ceede01bc4954b4224d418"
+    },
+    {
+      "path": "tests/test_v10_orchestration.py",
+      "sha256": "d6ce84a6fcc115535c6569286ea3293db4bc8b11b641ab62ee35412582fc7aac"
+    },
+    {
+      "path": "tests/test_v10_probe_budget.py",
+      "sha256": "206a43e78b956c35fa94860176c746415c83f73c193e4cf413953bcfe504cfac"
+    },
+    {
+      "path": "tests/test_v10_protocol.py",
+      "sha256": "d998ea75db6a71d5a3eb12fc285e69c5992c41916d6c6eb8d20fa904af659274"
+    },
+    {
+      "path": "tests/test_v10_resource_a1.py",
+      "sha256": "9b68f858dda41dc9495a86083e02b4570b888539e51903e3f3332610109586d3"
+    },
+    {
+      "path": "tests/test_v10_runtime_core.py",
+      "sha256": "70337f8fe7e85be3e03ad3a02924cb6035f62f2c5319a998c66cfad2326c4b82"
+    },
+    {
+      "path": "tests/test_v10_runtime_memory.py",
+      "sha256": "18bdb93240ff110262beb5b229419b8f920b982006e536f95bdae76c8eb0f45d"
+    },
+    {
+      "path": "tests/test_v10_runtime_task_logging.py",
+      "sha256": "c96977fe7d0cbe71c42303a95251270f4443403e9ee3348f8063ce75cb1ce5e2"
+    },
+    {
+      "path": "tests/test_v10_teacher_yaw.py",
+      "sha256": "3fa29c1cc3a762bf2b1a4eb79864bbcd6aa546b0b60bea0fc1b1c4d60a586003"
+    },
+    {
+      "path": "tests/test_v10_trace.py",
+      "sha256": "23dd22bbcc7adf97733eb774d11e53e5085d3bb436fd86073b3ec133bd893b83"
+    }
+  ],
+  "final_result": {
+    "passed": 159,
+    "skipped": 5,
+    "failed": 0,
+    "duration_seconds": 87.45,
+    "scope": "all test_v10*.py CPU only after all required changes"
+  },
+  "final_log_sha256": "e75b8f6e60d17ed4536365262cd82927d2a570fca49f2cac366cc1890fa0c0e8",
+  "skipped_scopes": [
+    "3 explicit GPU environment tests",
+    "1 explicit 3GB full CPU replay save/restore",
+    "1 CUDA microbatch memory test"
+  ],
+  "old_project_collection_status": "previous full-project collection conflict unverified; scoped instruction forbids unrelated repair"
+}

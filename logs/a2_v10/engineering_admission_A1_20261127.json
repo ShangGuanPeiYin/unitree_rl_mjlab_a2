@@ -1,0 +1,27 @@
+{
+  "code_sha256": "2f82589e805b2579843a4381089467d40931300aff8a80f466becf90dcc4fbcb",
+  "cpu_result": {
+    "failed": 0,
+    "passed": 159,
+    "skipped": 5
+  },
+  "engineering_report_path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_A1_engineering_acceptance_20261127.md",
+  "engineering_report_sha256": "5b871013932534f7a1ee7fc940e3d56ed669add38e03777cdb99b43e827d9920",
+  "fixed_plan_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/A1_engineering_20261127/fixed_A1_execution_plan.json",
+  "fixed_plan_sha256": "e7a118a1e7cdf478f8cf1b39332aeb52132ef28f9f45c5171ecd75c358c5f399",
+  "independent_review": {
+    "passed": true,
+    "report_path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_A1_final_independent_20261127.md",
+    "report_sha256": "9238010c0500ae1587f3cbd659fddf6137b49106e16fab2eb96a836032dc33af"
+  },
+  "learning_samples": 0,
+  "passed": true,
+  "physical_samples_added_at_signature": 0,
+  "physical_sha256": "aa74d2d53526f2025b46054771ec1cf9e785b9dcee7a860e98e2c8303ee58442",
+  "rulings_sha256": "4de1477cbabb7b652cfa2b5bc21a589a2e6282568c1eec715d917673846fd898",
+  "schema": "a2-v10-engineering-admission-v1",
+  "scope": "A1 CPU engineering only; actual resource linkage and teacher admission required before learning",
+  "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+  "test_evidence_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/A1_engineering_20261127/final_cpu_evidence.json",
+  "test_evidence_sha256": "4518226d59a9f321874b64c0071ff0bc3c1533c9f3a78617ac14063ad227d149"
+}

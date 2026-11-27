@@ -1,0 +1,11 @@
+FINAL CPU-only verification after promotion events; no GPU/full replay opt-ins; files: ['tests/test_v10_a1_diagnostic.py', 'tests/test_v10_a1_identity.py', 'tests/test_v10_env_contract.py', 'tests/test_v10_env_gpu.py', 'tests/test_v10_env_recording.py', 'tests/test_v10_learning_core.py', 'tests/test_v10_orchestration.py', 'tests/test_v10_probe_budget.py', 'tests/test_v10_protocol.py', 'tests/test_v10_resource_a1.py', 'tests/test_v10_runtime_core.py', 'tests/test_v10_runtime_memory.py', 'tests/test_v10_runtime_task_logging.py', 'tests/test_v10_teacher_yaw.py', 'tests/test_v10_trace.py']
+.............sss..............s......................................... [ 43%]
+........................................................s............... [ 87%]
+....................                                                     [100%]
+=============================== warnings summary ===============================
+../../anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491
+  /home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+159 passed, 5 skipped, 1 warning in 87.45s (0:01:27)

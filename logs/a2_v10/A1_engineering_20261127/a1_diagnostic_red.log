@@ -1,0 +1,116 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_________ test_fixed_diagnostic_has_112_original_cases_and_exact_bound _________
+
+    def test_fixed_diagnostic_has_112_original_cases_and_exact_bound():
+>       diag=importlib.import_module('src.tasks.velocity.v10.diagnostic_a1')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_v10_a1_diagnostic.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../anaconda3/envs/a2/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1204: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1176: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'src.tasks.velocity.v10.diagnostic_a1'
+import_ = <function _gcd_import at 0x76369c34fd80>
+
+>   ???
+E   ModuleNotFoundError: No module named 'src.tasks.velocity.v10.diagnostic_a1'
+
+<frozen importlib._bootstrap>:1140: ModuleNotFoundError
+_________ test_diagnostic_preserves_original_case_identity_and_timeout _________
+
+    def test_diagnostic_preserves_original_case_identity_and_timeout():
+>       diag=importlib.import_module('src.tasks.velocity.v10.diagnostic_a1')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_v10_a1_diagnostic.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../anaconda3/envs/a2/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1204: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1176: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'src.tasks.velocity.v10.diagnostic_a1'
+import_ = <function _gcd_import at 0x76369c34fd80>
+
+>   ???
+E   ModuleNotFoundError: No module named 'src.tasks.velocity.v10.diagnostic_a1'
+
+<frozen importlib._bootstrap>:1140: ModuleNotFoundError
+____ test_capacity_preserves_historical_charges_and_releases_only_capacity _____
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1127/test_capacity_preserves_histor0')
+
+    def test_capacity_preserves_historical_charges_and_releases_only_capacity(tmp_path):
+        from src.tasks.velocity.v10.checkpoint import BudgetLedger
+>       cap=importlib.import_module('src.tasks.velocity.v10.evaluation_capacity')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_v10_a1_diagnostic.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../anaconda3/envs/a2/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1204: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1176: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'src.tasks.velocity.v10.evaluation_capacity'
+import_ = <function _gcd_import at 0x76369c34fd80>
+
+>   ???
+E   ModuleNotFoundError: No module named 'src.tasks.velocity.v10.evaluation_capacity'
+
+<frozen importlib._bootstrap>:1140: ModuleNotFoundError
+_____________ test_capacity_refuses_shortfall_and_competing_stage ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1127/test_capacity_refuses_shortfal0')
+
+    def test_capacity_refuses_shortfall_and_competing_stage(tmp_path):
+        import pytest
+>       cap=importlib.import_module('src.tasks.velocity.v10.evaluation_capacity')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_v10_a1_diagnostic.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../anaconda3/envs/a2/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1204: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1176: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'src.tasks.velocity.v10.evaluation_capacity'
+import_ = <function _gcd_import at 0x76369c34fd80>
+
+>   ???
+E   ModuleNotFoundError: No module named 'src.tasks.velocity.v10.evaluation_capacity'
+
+<frozen importlib._bootstrap>:1140: ModuleNotFoundError
+=============================== warnings summary ===============================
+tests/test_v10_a1_diagnostic.py::test_fixed_diagnostic_has_112_original_cases_and_exact_bound
+  /home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_v10_a1_diagnostic.py::test_fixed_diagnostic_has_112_original_cases_and_exact_bound
+FAILED tests/test_v10_a1_diagnostic.py::test_diagnostic_preserves_original_case_identity_and_timeout
+FAILED tests/test_v10_a1_diagnostic.py::test_capacity_preserves_historical_charges_and_releases_only_capacity
+FAILED tests/test_v10_a1_diagnostic.py::test_capacity_refuses_shortfall_and_competing_stage
+4 failed, 1 warning in 13.07s

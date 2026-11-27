@@ -1,0 +1,24 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_diagnostic_claim_is_persistent_across_output_paths ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1138/test_diagnostic_claim_is_persi0')
+
+    def test_diagnostic_claim_is_persistent_across_output_paths(tmp_path):
+        import pytest
+        diag=importlib.import_module('src.tasks.velocity.v10.diagnostic_a1')
+        ledger=tmp_path/'eval.jsonl'
+>       diag.claim_diagnostic_once(ledger,tmp_path/'first',diag.diagnostic_plan())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'src.tasks.velocity.v10.diagnostic_a1' has no attribute 'claim_diagnostic_once'
+
+tests/test_v10_a1_diagnostic.py:65: AttributeError
+=============================== warnings summary ===============================
+tests/test_v10_a1_diagnostic.py::test_diagnostic_claim_is_persistent_across_output_paths
+  /home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_v10_a1_diagnostic.py::test_diagnostic_claim_is_persistent_across_output_paths
+1 failed, 1 warning in 13.47s

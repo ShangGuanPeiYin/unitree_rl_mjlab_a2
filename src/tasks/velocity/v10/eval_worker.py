@@ -11,6 +11,7 @@ from . import cases,spec
 from .checkpoint import BudgetLedger,atomic_json,sha256,checkpoint_validate
 from .evaluation import EpisodeMetrics,grade_group
 from .identity import code_fingerprint
+from .trace import TraceBatchV2,action_snapshot
 
 
 class BatchAccounting:
@@ -38,20 +39,29 @@ def teacher_group_failed(results):
     return sum(bool(r['passed']) for r in results)<18
 
 
-def run_suite(*,course,suite_name,replicas,model_path,reference,output_dir,ledger_path,eval_limit,device='cuda:0',stop_on_failed_group=False):
+def validate_trace_mode(manifest,reference,suite_name,replicas,stop_on_failed_group):
+    if manifest is None:return False
+    if (reference!='teachers' or suite_name!='A' or replicas!=4 or not stop_on_failed_group
+        or not manifest or len(manifest)%4):
+        raise ValueError('diagnostic manifest requires teachers/A/four cases per group/early stop')
+    return True
+
+
+def run_suite(*,course,suite_name,replicas,model_path,reference,output_dir,ledger_path,eval_limit,device='cuda:0',stop_on_failed_group=False,diagnostic_manifest=None):
     """One bounded suite. Teachers use their task routing; candidates use only the student."""
     from .env import V10Env
     from .model import V10ActorCritic
-    from .teachers import DualTeacher
+    from .teachers import DualTeacher,teacher_identity
     from .runtime import physical_contract
-    if stop_on_failed_group and (reference!='teachers' or suite_name not in ('A','B') or replicas!=20):
+    diagnostic=validate_trace_mode(diagnostic_manifest,reference,suite_name,replicas,stop_on_failed_group)
+    if not diagnostic and stop_on_failed_group and (reference!='teachers' or suite_name not in ('A','B') or replicas!=20):
         raise ValueError('early stopping only applies to teacher admission A/B')
     out=Path(output_dir);out.mkdir(parents=True,exist_ok=True)
-    manifest=cases.suite(course,suite_name,replicas)
+    manifest=list(diagnostic_manifest) if diagnostic else cases.suite(course,suite_name,replicas)
     suite_sha=cases.digest(manifest)
     atomic_json(out/'cases.json',dict(sds_sha256=spec.SDS_SHA256,sha256=suite_sha,cases=manifest))
     code_sha=code_fingerprint();rulings_sha=sha256(spec.ROOT/'doc/sds/reviews/v10_execution_rulings.md')
-    model_sha=(cases.digest({'blind':spec.BLIND_SHA256,'stairs':spec.STAIRS_SHA256}) if reference=='teachers' else sha256(model_path))
+    model_sha=(cases.digest(teacher_identity()) if reference=='teachers' else sha256(model_path))
     model=V10ActorCritic.from_stairs(device=device)
     state=None
     if reference!='teachers':
@@ -79,7 +89,7 @@ def run_suite(*,course,suite_name,replicas,model_path,reference,output_dir,ledge
                 checkpoint_validate(state,num_envs=state['num_envs'],physical_sha256=physical_sha)
             key=cases.digest(dict(model=model_sha,cases=cases.digest(batch),protocol=spec.SDS_SHA256,code=code_sha,rulings=rulings_sha,physics=physical_sha))
             cache=out.parent/'cache'/f'{key}.json'
-            if cache.exists():
+            if not diagnostic and cache.exists():
                 cached=json.loads(cache.read_text())
                 if cached.get('key')!=key:raise RuntimeError('damaged reference cache')
                 report=Path(cached.get('resource_report_path','__missing__'))
@@ -89,14 +99,18 @@ def run_suite(*,course,suite_name,replicas,model_path,reference,output_dir,ledge
                     if stop_on_failed_group and teacher_group_failed(cached['results']):
                         aborted=True;break
                     continue
-            metrics=[EpisodeMetrics(c) for c in batch];first={}
+            metrics=[EpisodeMetrics(c) for c in batch];first={};traces=TraceBatchV2(len(batch),[c['max_steps'] for c in batch])
             obs=env.observe()
             while account.active:
                 active=set(account.active)
                 with torch.no_grad():
                     if teachers is not None:
-                        action=teachers.label(obs,[t=='stairs' for t in env.metadata()['teacher']])
-                    else:action=model(obs)
+                        stairs_mask=[t=='stairs' for t in env.metadata()['teacher']]
+                        trace_action=action_snapshot(obs,stairs_mask)
+                        action=teachers.label(obs,stairs_mask)
+                    else:
+                        trace_action=action_snapshot(obs)
+                        action=model(obs)
                     for i in range(len(batch)):
                         if i not in active:action[i]=0.
                 step_uid=f'eval:{uid}:{offset}:{account.steps}'
@@ -105,27 +119,28 @@ def run_suite(*,course,suite_name,replicas,model_path,reference,output_dir,ledge
                 obs,_,done,info=env.step(action)
                 ledger.mark_executed(step_uid)
                 rows=_frame_rows(info['frame'],len(batch))
+                traces.append(trace_action,info['frame'],active)
                 for i in active:metrics[i].update(rows[i])
                 terminal=[int(ep['env_id']) for ep in info['episodes'] if int(ep['env_id']) in active]
                 for i in terminal:
                     # Verify actual trace endpoints; do not trust environment success boolean.
                     result=metrics[i].finish(completed=True)
                     first[i]=result
-                    np.savez_compressed(out/f'trace_{batch[i]["case_sha256"]}.npz',rows=metrics[i].rows[:metrics[i].count])
+                    traces.save(i,out/f'trace_{batch[i]["case_sha256"]}.npz',metrics[i].rows[:metrics[i].count])
                 account.step(terminal)
             ordered=[first[i] for i in range(len(batch))]
             group_results[batch[0]['group_id']]=ordered;results+=ordered
             executed+=account.total;effective+=account.effective;padding+=account.padding
-            if reference in ('teachers','dagger'):
+            if not diagnostic and reference in ('teachers','dagger'):
                 atomic_json(cache,dict(key=key,results=ordered))
                 new_caches.append(str(cache))
             atomic_json(out/'progress.json',dict(completed_groups=len(group_results),physical_samples=executed,effective_samples=effective,padding_samples=padding))
-            if stop_on_failed_group and teacher_group_failed(ordered):
+            if stop_on_failed_group and ((not all(r['passed'] for r in ordered)) if diagnostic else teacher_group_failed(ordered)):
                 aborted=True;break
         finally:env.close()
     result=dict(sds_sha256=spec.SDS_SHA256,code_sha256=code_sha,rulings_sha256=rulings_sha,suite_sha256=suite_sha,model_sha256=model_sha,
                 physical_sha256=physical_sha,course=course,suite=suite_name,replicas=replicas,reference=reference,
-                results=results,groups=group_results,aborted_for_teacher_failure=aborted,complete=not aborted,
+                results=results,groups=group_results,aborted_for_teacher_failure=aborted,complete=not aborted,diagnostic_only=diagnostic,
                 tested_case_count=len(results),planned_case_count=len(manifest),physical_samples=executed,effective_samples=effective,padding_samples=padding,
                 ledger_before=before,ledger_after=ledger.report(),elapsed_seconds=time.monotonic()-start,_new_caches=new_caches)
     atomic_json(out/'result_unadmitted.json',result)

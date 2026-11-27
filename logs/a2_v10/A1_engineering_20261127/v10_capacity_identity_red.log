@@ -1,0 +1,274 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+_____ test_capacity_never_deducts_wrong_identity_completed_receipt[suite] ______
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1152/test_capacity_never_deducts_wr0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f00f4488710>
+mutation = 'suite'
+
+    @pytest.mark.parametrize('mutation',['suite','model','code','rulings','partial','cases'])
+    def test_capacity_never_deducts_wrong_identity_completed_receipt(tmp_path,monkeypatch,mutation):
+        from contextlib import contextmanager
+        from src.tasks.velocity.v10 import cases,evaluation_capacity
+        from src.tasks.velocity.v10.orchestration import file_sha,atomic_json
+        o=FakeProtocol(tmp_path/'run');o.prepare();checkpoint=o.worker('candidate','D3',600)
+        suite='DAGGER_FINAL';key='final_DAGGER_FINAL_candidate'
+        manifest=[dict(case_sha256=str(i),group_id='g',course='D3',suite=suite) for i in range(100)]
+        path=tmp_path/'frozen.json';atomic_json(path,dict(sha256=cases.digest(manifest),cases=manifest))
+        o.frozen={'suites':{'D3_DAGGER_FINAL':dict(sha256=cases.digest(manifest),path=str(path))}}
+        row=o.evaluate(key,'D3',suite,checkpoint,'candidate')
+        row.update(course='D3',suite=suite,reference='candidate',suite_sha256=cases.digest(manifest),complete=True,
+                   code_sha256=o.state['code_sha256'],rulings_sha256=o.state['rulings_sha256'])
+        for r in row['groups']['g']:r['group_id']='g'
+        report=tmp_path/'resources.json';report.write_text(json.dumps({'passed':True}))
+        row.update(resource_admitted=True,resource_report_path=str(report.resolve()),resource_report_sha256=file_sha(report))
+        if mutation=='suite':row['suite']='PPO_FINAL'
+        elif mutation=='model':row['model_sha256']='wrong-model'
+        elif mutation=='code':row['code_sha256']='wrong-code'
+        elif mutation=='rulings':row['rulings_sha256']='wrong-ruling'
+        elif mutation=='partial':row['complete']=False
+        else:row['groups']['g'][0]['case_sha256']='wrong-case'
+        receipt=o.root/'operations'/key/'result.json';atomic_json(receipt,row)
+        o.state['operations'][key]=dict(status='succeeded',result_sha256=file_sha(receipt))
+        recorded=[]
+        @contextmanager
+        def capacity(path,stage,required,limit):recorded.append(required);yield
+        monkeypatch.setattr(evaluation_capacity,'evaluation_capacity',capacity)
+        with o._stage_capacity('test','D3',(suite,),{'candidate':checkpoint,'teachers':None},'final_DAGGER_FINAL'):pass
+        full=sum(cases.max_steps(g)*100 for g in cases.groups('D3'))
+>       assert recorded==[2*full]
+E       assert [113847800] == [227695600]
+E         
+E         At index 0 diff: 113847800 != 227695600
+E         Use -v to get more diff
+
+tests/test_v10_orchestration.py:359: AssertionError
+_____ test_capacity_never_deducts_wrong_identity_completed_receipt[model] ______
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1152/test_capacity_never_deducts_wr1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f00f3477f50>
+mutation = 'model'
+
+    @pytest.mark.parametrize('mutation',['suite','model','code','rulings','partial','cases'])
+    def test_capacity_never_deducts_wrong_identity_completed_receipt(tmp_path,monkeypatch,mutation):
+        from contextlib import contextmanager
+        from src.tasks.velocity.v10 import cases,evaluation_capacity
+        from src.tasks.velocity.v10.orchestration import file_sha,atomic_json
+        o=FakeProtocol(tmp_path/'run');o.prepare();checkpoint=o.worker('candidate','D3',600)
+        suite='DAGGER_FINAL';key='final_DAGGER_FINAL_candidate'
+        manifest=[dict(case_sha256=str(i),group_id='g',course='D3',suite=suite) for i in range(100)]
+        path=tmp_path/'frozen.json';atomic_json(path,dict(sha256=cases.digest(manifest),cases=manifest))
+        o.frozen={'suites':{'D3_DAGGER_FINAL':dict(sha256=cases.digest(manifest),path=str(path))}}
+        row=o.evaluate(key,'D3',suite,checkpoint,'candidate')
+        row.update(course='D3',suite=suite,reference='candidate',suite_sha256=cases.digest(manifest),complete=True,
+                   code_sha256=o.state['code_sha256'],rulings_sha256=o.state['rulings_sha256'])
+        for r in row['groups']['g']:r['group_id']='g'
+        report=tmp_path/'resources.json';report.write_text(json.dumps({'passed':True}))
+        row.update(resource_admitted=True,resource_report_path=str(report.resolve()),resource_report_sha256=file_sha(report))
+        if mutation=='suite':row['suite']='PPO_FINAL'
+        elif mutation=='model':row['model_sha256']='wrong-model'
+        elif mutation=='code':row['code_sha256']='wrong-code'
+        elif mutation=='rulings':row['rulings_sha256']='wrong-ruling'
+        elif mutation=='partial':row['complete']=False
+        else:row['groups']['g'][0]['case_sha256']='wrong-case'
+        receipt=o.root/'operations'/key/'result.json';atomic_json(receipt,row)
+        o.state['operations'][key]=dict(status='succeeded',result_sha256=file_sha(receipt))
+        recorded=[]
+        @contextmanager
+        def capacity(path,stage,required,limit):recorded.append(required);yield
+        monkeypatch.setattr(evaluation_capacity,'evaluation_capacity',capacity)
+        with o._stage_capacity('test','D3',(suite,),{'candidate':checkpoint,'teachers':None},'final_DAGGER_FINAL'):pass
+        full=sum(cases.max_steps(g)*100 for g in cases.groups('D3'))
+>       assert recorded==[2*full]
+E       assert [113847800] == [227695600]
+E         
+E         At index 0 diff: 113847800 != 227695600
+E         Use -v to get more diff
+
+tests/test_v10_orchestration.py:359: AssertionError
+______ test_capacity_never_deducts_wrong_identity_completed_receipt[code] ______
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1152/test_capacity_never_deducts_wr2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f00f346bdd0>
+mutation = 'code'
+
+    @pytest.mark.parametrize('mutation',['suite','model','code','rulings','partial','cases'])
+    def test_capacity_never_deducts_wrong_identity_completed_receipt(tmp_path,monkeypatch,mutation):
+        from contextlib import contextmanager
+        from src.tasks.velocity.v10 import cases,evaluation_capacity
+        from src.tasks.velocity.v10.orchestration import file_sha,atomic_json
+        o=FakeProtocol(tmp_path/'run');o.prepare();checkpoint=o.worker('candidate','D3',600)
+        suite='DAGGER_FINAL';key='final_DAGGER_FINAL_candidate'
+        manifest=[dict(case_sha256=str(i),group_id='g',course='D3',suite=suite) for i in range(100)]
+        path=tmp_path/'frozen.json';atomic_json(path,dict(sha256=cases.digest(manifest),cases=manifest))
+        o.frozen={'suites':{'D3_DAGGER_FINAL':dict(sha256=cases.digest(manifest),path=str(path))}}
+        row=o.evaluate(key,'D3',suite,checkpoint,'candidate')
+        row.update(course='D3',suite=suite,reference='candidate',suite_sha256=cases.digest(manifest),complete=True,
+                   code_sha256=o.state['code_sha256'],rulings_sha256=o.state['rulings_sha256'])
+        for r in row['groups']['g']:r['group_id']='g'
+        report=tmp_path/'resources.json';report.write_text(json.dumps({'passed':True}))
+        row.update(resource_admitted=True,resource_report_path=str(report.resolve()),resource_report_sha256=file_sha(report))
+        if mutation=='suite':row['suite']='PPO_FINAL'
+        elif mutation=='model':row['model_sha256']='wrong-model'
+        elif mutation=='code':row['code_sha256']='wrong-code'
+        elif mutation=='rulings':row['rulings_sha256']='wrong-ruling'
+        elif mutation=='partial':row['complete']=False
+        else:row['groups']['g'][0]['case_sha256']='wrong-case'
+        receipt=o.root/'operations'/key/'result.json';atomic_json(receipt,row)
+        o.state['operations'][key]=dict(status='succeeded',result_sha256=file_sha(receipt))
+        recorded=[]
+        @contextmanager
+        def capacity(path,stage,required,limit):recorded.append(required);yield
+        monkeypatch.setattr(evaluation_capacity,'evaluation_capacity',capacity)
+        with o._stage_capacity('test','D3',(suite,),{'candidate':checkpoint,'teachers':None},'final_DAGGER_FINAL'):pass
+        full=sum(cases.max_steps(g)*100 for g in cases.groups('D3'))
+>       assert recorded==[2*full]
+E       assert [113847800] == [227695600]
+E         
+E         At index 0 diff: 113847800 != 227695600
+E         Use -v to get more diff
+
+tests/test_v10_orchestration.py:359: AssertionError
+____ test_capacity_never_deducts_wrong_identity_completed_receipt[rulings] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1152/test_capacity_never_deducts_wr3')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f00f3483790>
+mutation = 'rulings'
+
+    @pytest.mark.parametrize('mutation',['suite','model','code','rulings','partial','cases'])
+    def test_capacity_never_deducts_wrong_identity_completed_receipt(tmp_path,monkeypatch,mutation):
+        from contextlib import contextmanager
+        from src.tasks.velocity.v10 import cases,evaluation_capacity
+        from src.tasks.velocity.v10.orchestration import file_sha,atomic_json
+        o=FakeProtocol(tmp_path/'run');o.prepare();checkpoint=o.worker('candidate','D3',600)
+        suite='DAGGER_FINAL';key='final_DAGGER_FINAL_candidate'
+        manifest=[dict(case_sha256=str(i),group_id='g',course='D3',suite=suite) for i in range(100)]
+        path=tmp_path/'frozen.json';atomic_json(path,dict(sha256=cases.digest(manifest),cases=manifest))
+        o.frozen={'suites':{'D3_DAGGER_FINAL':dict(sha256=cases.digest(manifest),path=str(path))}}
+        row=o.evaluate(key,'D3',suite,checkpoint,'candidate')
+        row.update(course='D3',suite=suite,reference='candidate',suite_sha256=cases.digest(manifest),complete=True,
+                   code_sha256=o.state['code_sha256'],rulings_sha256=o.state['rulings_sha256'])
+        for r in row['groups']['g']:r['group_id']='g'
+        report=tmp_path/'resources.json';report.write_text(json.dumps({'passed':True}))
+        row.update(resource_admitted=True,resource_report_path=str(report.resolve()),resource_report_sha256=file_sha(report))
+        if mutation=='suite':row['suite']='PPO_FINAL'
+        elif mutation=='model':row['model_sha256']='wrong-model'
+        elif mutation=='code':row['code_sha256']='wrong-code'
+        elif mutation=='rulings':row['rulings_sha256']='wrong-ruling'
+        elif mutation=='partial':row['complete']=False
+        else:row['groups']['g'][0]['case_sha256']='wrong-case'
+        receipt=o.root/'operations'/key/'result.json';atomic_json(receipt,row)
+        o.state['operations'][key]=dict(status='succeeded',result_sha256=file_sha(receipt))
+        recorded=[]
+        @contextmanager
+        def capacity(path,stage,required,limit):recorded.append(required);yield
+        monkeypatch.setattr(evaluation_capacity,'evaluation_capacity',capacity)
+        with o._stage_capacity('test','D3',(suite,),{'candidate':checkpoint,'teachers':None},'final_DAGGER_FINAL'):pass
+        full=sum(cases.max_steps(g)*100 for g in cases.groups('D3'))
+>       assert recorded==[2*full]
+E       assert [113847800] == [227695600]
+E         
+E         At index 0 diff: 113847800 != 227695600
+E         Use -v to get more diff
+
+tests/test_v10_orchestration.py:359: AssertionError
+____ test_capacity_never_deducts_wrong_identity_completed_receipt[partial] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1152/test_capacity_never_deducts_wr4')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f00f33c5250>
+mutation = 'partial'
+
+    @pytest.mark.parametrize('mutation',['suite','model','code','rulings','partial','cases'])
+    def test_capacity_never_deducts_wrong_identity_completed_receipt(tmp_path,monkeypatch,mutation):
+        from contextlib import contextmanager
+        from src.tasks.velocity.v10 import cases,evaluation_capacity
+        from src.tasks.velocity.v10.orchestration import file_sha,atomic_json
+        o=FakeProtocol(tmp_path/'run');o.prepare();checkpoint=o.worker('candidate','D3',600)
+        suite='DAGGER_FINAL';key='final_DAGGER_FINAL_candidate'
+        manifest=[dict(case_sha256=str(i),group_id='g',course='D3',suite=suite) for i in range(100)]
+        path=tmp_path/'frozen.json';atomic_json(path,dict(sha256=cases.digest(manifest),cases=manifest))
+        o.frozen={'suites':{'D3_DAGGER_FINAL':dict(sha256=cases.digest(manifest),path=str(path))}}
+        row=o.evaluate(key,'D3',suite,checkpoint,'candidate')
+        row.update(course='D3',suite=suite,reference='candidate',suite_sha256=cases.digest(manifest),complete=True,
+                   code_sha256=o.state['code_sha256'],rulings_sha256=o.state['rulings_sha256'])
+        for r in row['groups']['g']:r['group_id']='g'
+        report=tmp_path/'resources.json';report.write_text(json.dumps({'passed':True}))
+        row.update(resource_admitted=True,resource_report_path=str(report.resolve()),resource_report_sha256=file_sha(report))
+        if mutation=='suite':row['suite']='PPO_FINAL'
+        elif mutation=='model':row['model_sha256']='wrong-model'
+        elif mutation=='code':row['code_sha256']='wrong-code'
+        elif mutation=='rulings':row['rulings_sha256']='wrong-ruling'
+        elif mutation=='partial':row['complete']=False
+        else:row['groups']['g'][0]['case_sha256']='wrong-case'
+        receipt=o.root/'operations'/key/'result.json';atomic_json(receipt,row)
+        o.state['operations'][key]=dict(status='succeeded',result_sha256=file_sha(receipt))
+        recorded=[]
+        @contextmanager
+        def capacity(path,stage,required,limit):recorded.append(required);yield
+        monkeypatch.setattr(evaluation_capacity,'evaluation_capacity',capacity)
+        with o._stage_capacity('test','D3',(suite,),{'candidate':checkpoint,'teachers':None},'final_DAGGER_FINAL'):pass
+        full=sum(cases.max_steps(g)*100 for g in cases.groups('D3'))
+>       assert recorded==[2*full]
+E       assert [113847800] == [227695600]
+E         
+E         At index 0 diff: 113847800 != 227695600
+E         Use -v to get more diff
+
+tests/test_v10_orchestration.py:359: AssertionError
+_____ test_capacity_never_deducts_wrong_identity_completed_receipt[cases] ______
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1152/test_capacity_never_deducts_wr5')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f00f353e490>
+mutation = 'cases'
+
+    @pytest.mark.parametrize('mutation',['suite','model','code','rulings','partial','cases'])
+    def test_capacity_never_deducts_wrong_identity_completed_receipt(tmp_path,monkeypatch,mutation):
+        from contextlib import contextmanager
+        from src.tasks.velocity.v10 import cases,evaluation_capacity
+        from src.tasks.velocity.v10.orchestration import file_sha,atomic_json
+        o=FakeProtocol(tmp_path/'run');o.prepare();checkpoint=o.worker('candidate','D3',600)
+        suite='DAGGER_FINAL';key='final_DAGGER_FINAL_candidate'
+        manifest=[dict(case_sha256=str(i),group_id='g',course='D3',suite=suite) for i in range(100)]
+        path=tmp_path/'frozen.json';atomic_json(path,dict(sha256=cases.digest(manifest),cases=manifest))
+        o.frozen={'suites':{'D3_DAGGER_FINAL':dict(sha256=cases.digest(manifest),path=str(path))}}
+        row=o.evaluate(key,'D3',suite,checkpoint,'candidate')
+        row.update(course='D3',suite=suite,reference='candidate',suite_sha256=cases.digest(manifest),complete=True,
+                   code_sha256=o.state['code_sha256'],rulings_sha256=o.state['rulings_sha256'])
+        for r in row['groups']['g']:r['group_id']='g'
+        report=tmp_path/'resources.json';report.write_text(json.dumps({'passed':True}))
+        row.update(resource_admitted=True,resource_report_path=str(report.resolve()),resource_report_sha256=file_sha(report))
+        if mutation=='suite':row['suite']='PPO_FINAL'
+        elif mutation=='model':row['model_sha256']='wrong-model'
+        elif mutation=='code':row['code_sha256']='wrong-code'
+        elif mutation=='rulings':row['rulings_sha256']='wrong-ruling'
+        elif mutation=='partial':row['complete']=False
+        else:row['groups']['g'][0]['case_sha256']='wrong-case'
+        receipt=o.root/'operations'/key/'result.json';atomic_json(receipt,row)
+        o.state['operations'][key]=dict(status='succeeded',result_sha256=file_sha(receipt))
+        recorded=[]
+        @contextmanager
+        def capacity(path,stage,required,limit):recorded.append(required);yield
+        monkeypatch.setattr(evaluation_capacity,'evaluation_capacity',capacity)
+        with o._stage_capacity('test','D3',(suite,),{'candidate':checkpoint,'teachers':None},'final_DAGGER_FINAL'):pass
+        full=sum(cases.max_steps(g)*100 for g in cases.groups('D3'))
+>       assert recorded==[2*full]
+E       assert [113847800] == [227695600]
+E         
+E         At index 0 diff: 113847800 != 227695600
+E         Use -v to get more diff
+
+tests/test_v10_orchestration.py:359: AssertionError
+=============================== warnings summary ===============================
+../../anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491
+  /home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_v10_orchestration.py::test_capacity_never_deducts_wrong_identity_completed_receipt[suite]
+FAILED tests/test_v10_orchestration.py::test_capacity_never_deducts_wrong_identity_completed_receipt[model]
+FAILED tests/test_v10_orchestration.py::test_capacity_never_deducts_wrong_identity_completed_receipt[code]
+FAILED tests/test_v10_orchestration.py::test_capacity_never_deducts_wrong_identity_completed_receipt[rulings]
+FAILED tests/test_v10_orchestration.py::test_capacity_never_deducts_wrong_identity_completed_receipt[partial]
+FAILED tests/test_v10_orchestration.py::test_capacity_never_deducts_wrong_identity_completed_receipt[cases]
+6 failed, 23 deselected, 1 warning in 12.80s

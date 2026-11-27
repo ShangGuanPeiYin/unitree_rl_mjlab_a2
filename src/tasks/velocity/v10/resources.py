@@ -49,27 +49,38 @@ class ResourceMonitor:
             resource_samples=len(self.rows),gpu_task_valid_samples=sum(r['gpu_task_seen'] for r in self.rows),passed=peak_own>0 and peak_total<=7680 and peak_own<=7168 and host>=4*1024**3)
 
 def probe_stack(*,num_envs,stack,output_dir,device='cuda:0',global_probe_ledger=None,probe_budget_authorization=None,probe_sequence_id=None):
+    """Original SDS entry: always 1 fill + 5 warm + 20 measured rollouts."""
+    return _probe_stack_impl(num_envs=num_envs,stack=stack,output_dir=output_dir,device=device,
+        global_probe_ledger=global_probe_ledger,probe_budget_authorization=probe_budget_authorization,
+        probe_sequence_id=probe_sequence_id,warmup_rounds=5,measurement_rounds=20,protocol='SDS-v1.1-full-resource')
+
+
+def _probe_stack_impl(*,num_envs,stack,output_dir,device='cuda:0',global_probe_ledger=None,
+        probe_budget_authorization=None,probe_sequence_id=None,warmup_rounds,measurement_rounds,protocol,expected_physical_sha256=None):
     """One fresh process for one N/stack, never exports a formal learner state."""
     from .env import V10Env
+    updates=warmup_rounds+measurement_rounds
+    total_rollouts=1+updates
     if num_envs not in (1024,512) or stack not in ('dagger','ppo'):raise ValueError('invalid SDS probe')
     output=Path(output_dir)
     if output.exists() and any(output.iterdir()):raise ValueError('probe output directory must be new or empty')
     from .probe_budget import GlobalProbeBudget,ProbeBudgetInsufficient
     if not global_probe_ledger or not probe_sequence_id:raise ValueError('global probe budget authorization required')
     ledger=GlobalProbeBudget(global_probe_ledger,authorization_path=probe_budget_authorization,scope_id=f'{probe_sequence_id}:{num_envs}:{stack}')
-    authorization=ledger.assert_authorized(probe_sequence_id,required_samples=26*num_envs*48)
-    ledger.acquire_stack_capacity(probe_sequence_id,26*num_envs*48)
+    authorization=ledger.assert_authorized(probe_sequence_id,required_samples=total_rollouts*num_envs*48)
+    ledger.acquire_stack_capacity(probe_sequence_id,total_rollouts*num_envs*48)
     output.mkdir(parents=True,exist_ok=True);seed_all();env=None
-    monitor=ResourceMonitor();result=dict(num_envs=num_envs,stack=stack,passed=False,warmup_rounds=5,measurement_rounds=20,sds_sha256=spec.SDS_SHA256,code_sha256=code_fingerprint(),global_probe_ledger=str(Path(global_probe_ledger).resolve()),probe_sequence_id=probe_sequence_id,probe_budget_authorization_sha256=authorization['sha256'])
+    monitor=ResourceMonitor();result=dict(num_envs=num_envs,stack=stack,passed=False,warmup_rounds=warmup_rounds,measurement_rounds=measurement_rounds,fill_rollouts=1,resource_protocol=protocol,sds_sha256=spec.SDS_SHA256,code_sha256=code_fingerprint(),global_probe_ledger=str(Path(global_probe_ledger).resolve()),probe_sequence_id=probe_sequence_id,probe_budget_authorization_sha256=authorization['sha256'])
     try:
         with monitor:
             torch.cuda.reset_peak_memory_stats()
             env=V10Env(num_envs,'D3',42,device)
             physical=physical_contract(env);atomic_json(output/'physical_contract.json',physical)
+            if expected_physical_sha256 and physical['sha256']!=expected_physical_sha256:raise RuntimeError('A1 physical contract differs from old full probe')
             model=V10ActorCritic.from_stairs(device=device);reservoir=TaskReservoir()
             teachers=DualTeacher(model).to(device)
             atomic_json(output/'cost_receipt.json',dict(global_ledger_path=str(global_probe_ledger),scope_id=f'{probe_sequence_id}:{num_envs}:{stack}'))
-            limit=26*num_envs*48
+            limit=total_rollouts*num_envs*48
             # Real same-frame data fill every allocated reservoir slot; repeated observations
             # are admitted only for resource stress, never carried into formal training.
             trace_memory(monitor.memory_stage,'sampling_initial_begin')
@@ -82,7 +93,7 @@ def probe_stack(*,num_envs,stack,output_dir,device='cuda:0',global_probe_ledger=
                 del teachers;teachers=None;gc.collect();torch.cuda.empty_cache()
                 keep=model.initialize_ppo();model.set_phase('P1');learner=PPOLearner(model);phase='P1'
             durations=[]
-            for iteration in range(25):
+            for iteration in range(updates):
                 torch.cuda.synchronize();start=time.monotonic()
                 trace_memory(monitor.memory_stage,f'sampling_{iteration}_begin')
                 rollout,rollout_metrics=collect_rollout(env,model,teachers if stack=='dagger' else None,phase=phase,ledger=ledger,kind='probe',budget_limit=limit)
@@ -95,13 +106,13 @@ def probe_stack(*,num_envs,stack,output_dir,device='cuda:0',global_probe_ledger=
                 release_host_memory();trace_memory(monitor.memory_stage,f'rollout_{iteration}_released')
                 torch.cuda.synchronize();durations.append(time.monotonic()-start)
                 if not monitor.summary()['passed']:raise RuntimeError('resource ceiling exceeded during full update')
-                atomic_json(output/'progress.json',dict(iteration=iteration+1,measurement=iteration>=5,metrics=metrics))
+                atomic_json(output/'progress.json',dict(iteration=iteration+1,measurement=iteration>=warmup_rounds,metrics=metrics))
             checkpoint=output/'probe_restore.pt'
             expected_replay=reservoir.integrity_manifest();expected_next=reservoir.next_sample_manifest()
             learner_state=learner.state_dict() if stack=='ppo' else dict(optimizer=learner.optimizer.state_dict())
             expected_model=state_fingerprint(model.state_dict());expected_learner=state_fingerprint(learner_state)
             expected_rng=state_fingerprint(rng_state());del learner_state
-            digest=save_worker(checkpoint,model,learner,reservoir,env,ledger,{'probe':25},physical['sha256'],keep,memory_trace=monitor.memory_stage)
+            digest=save_worker(checkpoint,model,learner,reservoir,env,ledger,{'probe':updates},physical['sha256'],keep,memory_trace=monitor.memory_stage)
             # save_worker performs complete disk SHA + ZIP CRC validation before release.
             reservoir.release_storage();release_host_memory()
             trace_memory(monitor.memory_stage,'old_replay_released_before_load')
@@ -120,7 +131,7 @@ def probe_stack(*,num_envs,stack,output_dir,device='cuda:0',global_probe_ledger=
                 if reservoir.seen[task]<reservoir.capacity:raise RuntimeError('probe replay not filled')
             restored.clear();del restored;release_host_memory()
             trace_memory(monitor.memory_stage,'restored_state_transferred_and_released')
-            result.update(measured_seconds=durations[5:],cost=ledger.report(),physical_sha256=physical['sha256'],
+            result.update(measured_seconds=durations[warmup_rounds:],cost=ledger.report(),physical_sha256=physical['sha256'],
                 restore_checked=True,replay_counts=dict(reservoir.seen),checkpoint_sha256=digest,
                 restored_replay_manifest=expected_replay,next_sample_manifest=expected_next)
             # Unlink only after a successful real restore and equality checks.

@@ -1,0 +1,47 @@
+{
+  "approval_source": {
+    "kind": "planning_ruling",
+    "reference": "2026-11-27\u6279\u51c6A1\u53cc\u6808\u54041fill+2warm+2measure\u3001\u663e\u5f0f\u5173\u8054\u65e7\u5b8c\u6574probe\uff0c\u4e0d\u662f20\u6d4b\u91cf\u5b8c\u6574\u590d\u9a8c\uff1b\u539fcap\u4e0d\u53d8",
+    "thread_id": "01a217c8-d825-7922-bd23-eb6ba2e37bfb"
+  },
+  "approved": true,
+  "baseline_dir": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A_20261127_approved/resource_probe",
+  "baseline_git": "07fe14fe753ade340f3d64e06dbae51a9ad0bdb5",
+  "independent_review": {
+    "passed": true,
+    "report_path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_A1_final_independent_20261127.md",
+    "report_sha256": "9238010c0500ae1587f3cbd659fddf6137b49106e16fab2eb96a836032dc33af"
+  },
+  "invariance_evidence": {
+    "path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/A1_engineering_20261127/resource_evidence/invariants.json",
+    "sha256": "9bb100392a210d2c49b3a50a6a8b28cd6e5b6cfda3db64795e0d7c44e3788ee5"
+  },
+  "new_code_sha256": "2f82589e805b2579843a4381089467d40931300aff8a80f466becf90dcc4fbcb",
+  "old_evidence": {
+    "n1024_dagger/result.json": "37d422907bd3305ab10ac3da78223b49404b1b96e9446f6415055d8d27d0383e",
+    "n1024_ppo/result.json": "6ccbbf3d5a0cb784cba91416721a6a9c6078536b3abd4674945d4447b2b072db",
+    "selection.json": "4f1e2c2738e1ad6cb8a2431f434c23634db4f232ac3023e56ad178d0dd7ecc04"
+  },
+  "proposal": {
+    "path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_A1_validation_budget_proposal_20261127.md",
+    "sha256": "8f62fe02abc2f89659c0e064b0a06676780c6fb7d1cf6ab8042294dfa8de464c"
+  },
+  "protocol": "A1-targeted-resource-v1",
+  "rulings_sha256": "4de1477cbabb7b652cfa2b5bc21a589a2e6282568c1eec715d917673846fd898",
+  "schema": "a2-v10-A1-resource-linkage-v1",
+  "scope": {
+    "fill_rollouts": 1,
+    "full_twenty_measurement_revalidation": false,
+    "measurement_rounds": 2,
+    "num_envs": 1024,
+    "per_stack_samples": 245760,
+    "probe_state_discarded": true,
+    "total_samples": 491520,
+    "warmup_rounds": 2
+  },
+  "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+  "source_diff": {
+    "path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/A1_engineering_20261127/resource_evidence/source_diff.json",
+    "sha256": "420aab6f9d7c3d47dc8c167fc0b756ff3a560890425df9953a1b1d1af709af93"
+  }
+}

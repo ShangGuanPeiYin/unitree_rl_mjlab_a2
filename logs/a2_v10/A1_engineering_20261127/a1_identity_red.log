@@ -1,0 +1,28 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_checkpoint_binds_adapter_and_rejects_weights_only_identity ________
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1131/test_checkpoint_binds_adapter_0')
+
+    def test_checkpoint_binds_adapter_and_rejects_weights_only_identity(tmp_path):
+        path=tmp_path/'small.pt'
+        cp.checkpoint_save(path,dict(model={},learner={},num_envs=1024,physical_sha256='physics'))
+        saved=torch.load(path,map_location='cpu',weights_only=False)
+>       assert saved['teachers']==teacher_identity()
+E       AssertionError: assert {'blind': '8e...615670684831'} == {'blind': '8e...3805e240a147'}
+E         
+E         Omitting 2 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {'blind_adapter': '45a3dd5ef48cc2c851a18352433f9242a7296921fe447b09a1f03805e240a147'}
+E         Use -v to get more diff
+
+tests/test_v10_a1_identity.py:12: AssertionError
+=============================== warnings summary ===============================
+../../anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491
+  /home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_v10_a1_identity.py::test_checkpoint_binds_adapter_and_rejects_weights_only_identity
+1 failed, 1 warning in 11.62s

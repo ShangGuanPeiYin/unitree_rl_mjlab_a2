@@ -282,3 +282,29 @@ def test_probe_step_without_capacity_is_rejected_even_when_cap_fits(tmp_path):
     with pytest.raises(ProbeBudgetError,match='capacity lease'):
         child.reserve('step','D3',1,limit=8,kind='probe')
     assert parent.global_report()['global_totals']['charged']==0
+
+
+def test_superseding_A1_authorization_preserves_cap_and_requires_registered_parent(tmp_path):
+    import copy
+    path=tmp_path/'global.jsonl';parent=authorization(tmp_path,path,cap=8)
+    base=json.loads(parent.read_text());parent_sha=hashlib.sha256(parent.read_bytes()).hexdigest()
+    child=tmp_path/'A1.json';inherited=copy.deepcopy(base)
+    inherited.update(authorization_id='A1-new-id',supersedes=dict(authorization_id=base['authorization_id'],path=str(parent.resolve()),sha256=parent_sha))
+    child.write_text(json.dumps(inherited))
+    b=GlobalProbeBudget(path,child)
+    with pytest.raises(ProbeBudgetError,match='registered'):b.begin_sequence('a1',required_samples=4)
+    old=GlobalProbeBudget(path,parent);old.begin_sequence('old',required_samples=4)
+    with pytest.raises(ProbeBudgetError,match='active sequence'):b.begin_sequence('a1',required_samples=4)
+    old.finish_sequence('old')
+    for field,value in [('max_probe_samples',9),('global_ledger_path',str(tmp_path/'different.jsonl'))]:
+        bad=copy.deepcopy(inherited);bad[field]=value;child.write_text(json.dumps(bad))
+        with pytest.raises(ProbeBudgetError):GlobalProbeBudget(path,child).begin_sequence('a1',required_samples=4)
+    bad=copy.deepcopy(inherited);bad['supersedes']['sha256']='0'*64;child.write_text(json.dumps(bad))
+    with pytest.raises(ProbeBudgetError,match='supersedes'):GlobalProbeBudget(path,child).begin_sequence('a1',required_samples=4)
+    child.write_text(json.dumps(inherited))
+    b=GlobalProbeBudget(path,child);first=b.begin_sequence('a1',required_samples=4)
+    assert b.begin_sequence('a1',required_samples=4)==first
+    assert len(b.global_report()['authorizations'])==2
+    assert b.global_report()['global_totals']['charged']==0
+    with pytest.raises(ProbeBudgetError,match='active'):old.begin_sequence('concurrent-old',required_samples=4)
+    b.finish_sequence('a1')

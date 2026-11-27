@@ -5272,3 +5272,23 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 验证：现存结果220/3080、前10组200/200、失败平台0/20，独立20例事件核对一致；source fingerprint保持b48e3fd1601ff2926272ed014d846fd480fe24a8c56d77100d646f933b92991f，冻结SDS SHA仍eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0。原结果SHA c4c72b580ca13847b6e9b1170b2b1e70a81613a6a58a9c2c14dccbccf7b31f5e保持，派生JSON通过解析。
 - 实际费用：probe3293184（含历史737280）、余额540672；eval304100=302074有效+2026padding，uncertain0；本次分析新增物理0，正式学习0。controller已stopped。资源通过不代表教师/行为通过。
 - 未验证：路线反馈适配尚未批准/实现，增益、实际行为和新源码资源证书均未验证；未重跑物理或测试套件，未宣称效果改善。保留旧拒绝/失败证据，不借其他预算。后续范围修订由规划裁定。
+
+## 2026-11-27 A1统一blind yaw-only实现与限额验证接线（工程阶段）
+
+- 授权/目的：用户批准统一纠偏并交规划裁定；规划A1批准精确yaw-only公式、原cap内491520双栈短补测、112例251288诊断及同cap授权承继。先完成工程与独立审核，实际物理结果另追加，不将CPU通过写成行为改善。
+- 文件：teachers.py、checkpoint.py增加A1输入适配及显式teacher配置身份；env.py/eval_worker.py与新trace.py补只读trace v2；新diagnostic_a1.py/evaluation_capacity.py和scripts/diagnose_a2_v10_a1.py实现固定清单/一次性诊断/容量预留；resources.py、新resource_a1.py、probe_budget.py、orchestration.py及run/train_a2_v10.py接针对性资源协议、承继校验、共享历史评估账本及A/B阶段预留。新增相应test_v10_teacher_yaw/trace/a1_diagnostic/a1_identity/resource_a1并仅更新直接受合同变化影响的learning_core/probe_budget测试。计划docs/superpowers/plans/2026-11-27-a2-blind-yaw-A1.md及doc/sds/reviews/v10_A1_*契约/预算文档、v10_execution_rulings.md追加裁定；独立审核报告按实际完成留存。
+- 核心前后：旧盲走直接吃学生零vy/wz原请求；新盲走仅私有clone命令6:9，按y=.2route0、psi=atan2(route1,route2)、psi_d=clip(-atan2(.2y,max(vx,.1)),±.15)、wz=clip(.5wrap(psi_d-psi),±.15)*clip(vx/.3,0,1)；vx>0给(vx,0,wz)，否则全零。统一所有blind调用，不看隐藏task，不加反馈状态，S2不变。学生请求/history/上一实际动作、Actor结构、奖励/损失/LR/随机化/课程/门槛全部保持。新增经验参数无物理效果结论，原ETH训练范围未能从原cfg证明。
+- 验证：教师20项CPU通过且独立审核；根独立trace+诊断/identity15项CPU通过。CPU证明精确公式、别名隔离、真实冻结网络适配输入一致、112原case SHA/max_steps、首终止冻结/padding隔离和旧weights-only身份拒绝。修复独立发现的跨目录重复诊断风险，固定ledger旁O_EXCL/fsync claim；trace由逐帧小对象改定长字段数组，纯日志不改物理。资源/承继工程仍待统一最终回归和独立审核，最终结果另追加。
+- 预算：probe原cap3833856不变、历史3293184、余540672，短补测拟耗491520；eval原cap1685390840不变、历史304100。112诊断251288；新零缓存全部计划1685946228潜在缺555388，规划批准按阶段预留、不保证全程足额、不借额。现工程分析新增物理0，旧run仍stopped、学习0。
+- 保护/未验证：旧SDS SHA与四个旧dirty文件逐一核对不变；旧result/NPZ不改。未新物理、未宣称资源/教师/行为通过；裸全项目历史收集冲突沿用原未验证说明，不扩修旧测试。完成统一审核/提交后才按已授权序列推进。
+
+## 2026-11-27 A1最终工程验收收口（物理启动前）
+
+- 最终源2f82589e805b2579843a4381089467d40931300aff8a80f466becf90dcc4fbcb；统一全部15个test_v10*.py CPU回归159 passed、5 skipped、1上游warning，87.45s，diff --check通过。GPU/3GB完整CPU专项跳过并未冒称通过；旧裸项目收集冲突仍未整体通过，沿既有证据不扩修。
+- 完整报告doc/sds/reviews/v10_A1_engineering_acceptance_20261127.md（含SDS→源码→测试映射、精确公式、课程N1024/48步/保存50轮及预算）；最终独立聚合v10_A1_final_independent_20261127.md SHA9238010c0500ae1587f3cbd659fddf6137b49106e16fab2eb96a836032dc33af。另保留根模块、教师/trace与D90资源/承继独立报告原文件；独立角色不自签自己实现。根对trace额外精确AST/同合成状态张量version、obs/teacher输入/RNG核对通过，无新physics。
+- 追加修复明确工程遗漏：selector关联证书严格重建真实两栈result及全部引用；同cap授权supersedes父链/并发/幂等；容量减额与实际消费共用完整身份（含A1、精确唯一病例全集、complete）；预算不足在final开集前拒绝，恢复不重复预留已完成candidate。课程提前同SHA A/B通过时新单一promotion事件同时记录courses和仅未启动的后续本课gate取消，保存不可变grade及原病例上界，不全局删除共享教师cache、0扣费0退款0转额，旧snapshot重放幂等。相关RED/GREEN日志均保存在logs/a2_v10/A1_engineering_20261127，8daf/146与d90/156已单独归档为中间证据，未冒作最终版本。
+- 实际源码范围共12个已有文件改动：scripts/run_a2_v10.py、scripts/train_a2_v10.py；v10/checkpoint.py、env.py、eval_worker.py、orchestration.py、probe_budget.py、resources.py、teachers.py；tests/test_v10_learning_core.py、test_v10_probe_budget.py、test_v10_orchestration.py。新增11源码文件：scripts/diagnose_a2_v10_a1.py；v10/diagnostic_a1.py、evaluation_capacity.py、resource_a1.py、trace.py；tests/test_v10_a1_diagnostic.py、test_v10_a1_identity.py、test_v10_env_recording.py、test_v10_resource_a1.py、test_v10_teacher_yaw.py、test_v10_trace.py。另为已批范围新增契约/预算/验收/计划文档及CPU/身份JSON证据。
+- 严格保护旧修改：对295源码保留272实际旧字节，仅还原12 A1变动并排除11新增后精准重建旧probe b48；四个旧dirty SHA及原SDS SHA保持。41项byte invariant+1项env唯一recording AST等价诚实记录（env整文件并非字节相同）。没有夹带旧dirty、旧脚本/旧SDS或权重。
+- 正常审批并原子落同cap承继授权logs/a2_v10/probe_authorization_A1_inherited_20261127.json SHA49760a42facac7017b88db514b3beb09f8c7fb9b75458ac932a3a7bcc86d2d6c；父原授权ID/SHA、同全局ledger/cap3833856、当前rulings绑定均独立核验，无rulings通配例外。签最终engineering_admission_A1_20261127.json及resource_linkage_contract_A1_20261127.json，仅批准限额工程验证链，不代表资源或教师通过。
+- 启动前生产账本只读核对：probe charged/executed3293184、uncertain0、updated3121152、余540672，无pending/active sequence；eval旧304100不退，正式学习0。本次CPU/审核新增物理0。后续按两栈491520→112例251288→全新教师A/B→SDS课程执行；真实物理结果另追加，任门禁或预算失败停止，不搜索新增益/扩额。原始失败证据保持。
+- 提交打包核对：原始pytest RED stdout包含框架打印的行尾空格，原样保留证据及SHA，不为样式改写日志；暂存的源码、文档和JSON执行diff --check（仅排除原始*.log）通过。此项不改源码/身份/测试结论。

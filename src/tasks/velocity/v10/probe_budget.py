@@ -91,7 +91,7 @@ class GlobalProbeBudget:
         self.scope_id=scope_id;self.sequence_id=None
         self._cache=None
         self._state=dict(cost=_empty_cost(),scopes={},entries={},pending=set(),sources={},source_paths={},
-                         legacy_ids=set(),authorizations={},sequences={},active_sequence=None,capacity_leases={},active_capacity=None,last_sha='0'*64,seq=0)
+                         legacy_ids=set(),authorizations={},sequences={},active_sequence=None,capacity_leases={},active_capacity=None,protocol_attempts={},last_sha='0'*64,seq=0)
 
     def _apply(self,row):
         s=self._state;p=row['payload'];op=row['op']
@@ -110,6 +110,13 @@ class GlobalProbeBudget:
         elif op=='sequence_end':
             if s['active_sequence']!=p['id']:raise ProbeBudgetError('invalid sequence close')
             s['sequences'][p['id']].update(p,status='finished');s['active_sequence']=None
+        elif op=='protocol_attempt_claim':
+            if p['key'] in s['protocol_attempts']:raise ProbeBudgetError('duplicate protocol attempt')
+            s['protocol_attempts'][p['key']]=dict(p,status='active')
+        elif op=='protocol_attempt_end':
+            entry=s['protocol_attempts'].get(p['key'])
+            if not entry or entry['status']!='active':raise ProbeBudgetError('invalid protocol attempt close')
+            entry.update(p,status='finished')
         elif op=='stack_capacity_acquire':
             if s['active_capacity'] is not None:raise ProbeBudgetError('two active stack capacity leases')
             s['capacity_leases'][p['scope']]=dict(p,status='active');s['active_capacity']=p['scope']
@@ -170,7 +177,7 @@ class GlobalProbeBudget:
     def global_report(self):
         def report(f,s):
             result=copy.deepcopy(s['cost']);result['global_totals']=_cost_sum(s['cost']);result['pending']=sorted(s['pending'])
-            result.update(active_capacity=s['active_capacity'],capacity_leases=copy.deepcopy(s['capacity_leases']),authorizations=copy.deepcopy(s['authorizations']),sources=copy.deepcopy(s['sources']),source_paths=dict(s['source_paths']),sequences=copy.deepcopy(s['sequences']),active_sequence=s['active_sequence'],journal_sha256=s['last_sha'])
+            result.update(protocol_attempts=copy.deepcopy(s['protocol_attempts']),active_capacity=s['active_capacity'],capacity_leases=copy.deepcopy(s['capacity_leases']),authorizations=copy.deepcopy(s['authorizations']),sources=copy.deepcopy(s['sources']),source_paths=dict(s['source_paths']),sequences=copy.deepcopy(s['sequences']),active_sequence=s['active_sequence'],journal_sha256=s['last_sha'])
             return result
         return self._locked(report)
 
@@ -209,6 +216,16 @@ class GlobalProbeBudget:
             or not isinstance(doc.get('prior_charged_samples'),int) or isinstance(doc.get('prior_charged_samples'),bool) or doc['prior_charged_samples']<0
             or doc.get('approval_source',{}).get('kind')!='user' or not doc.get('approval_source',{}).get('reference')):
             raise ProbeBudgetError('explicit user-approved probe-only budget authorization invalid')
+        parent=doc.get('supersedes')
+        if parent is not None:
+            try:
+                parent_path=Path(parent['path']);parent_doc=json.loads(parent_path.read_text())
+                valid=(parent_path.is_absolute() and streaming_sha256(parent_path)==parent['sha256']
+                    and parent_doc.get('authorization_id')==parent['authorization_id']
+                    and all(doc.get(k)==parent_doc.get(k) for k in ('max_probe_samples','global_ledger_path','sds_sha256','scope'))
+                    and doc['authorization_id']!=parent['authorization_id'])
+            except (OSError,ValueError,KeyError):valid=False
+            if not valid:raise ProbeBudgetError('invalid supersedes parent SHA/id/cap/ledger/SDS identity')
         return dict(document=doc,sha256=before,path=str(self.authorization_path))
 
     def _register_authorization(self,f,s,auth):
@@ -216,6 +233,14 @@ class GlobalProbeBudget:
         existing=[r for r in s['authorizations'].values() if r['document']['authorization_id']==doc['authorization_id']]
         if existing and existing[0]['sha256']!=auth['sha256']:raise ProbeBudgetError('authorization ID reused with changed approval')
         if auth['sha256'] not in s['authorizations']:
+            parent=doc.get('supersedes')
+            if parent is not None:
+                registered=s['authorizations'].get(parent['sha256'])
+                if not registered or registered['document']['authorization_id']!=parent['authorization_id']:
+                    raise ProbeBudgetError('supersedes parent must already be registered in global history')
+                if any(doc.get(k)!=registered['document'].get(k) for k in ('max_probe_samples','global_ledger_path','sds_sha256','scope')):
+                    raise ProbeBudgetError('supersedes cannot change cap/ledger/SDS/scope')
+                if s['active_sequence'] is not None:raise ProbeBudgetError('cannot supersede authorization during active sequence')
             if _cost_sum(s['cost'])['charged']!=doc['prior_charged_samples']:raise ProbeBudgetError('authorization prior charged baseline mismatch; migrate history first')
             self._append(f,'authorization',auth)
 
@@ -291,6 +316,35 @@ class GlobalProbeBudget:
             if unused<0:raise ProbeBudgetError('stack capacity overconsumed')
             self._append(f,'stack_capacity_release',dict(scope=scope,released_unused_samples=unused,consumed_charged_samples=used,reason=str(reason)))
             return unused
+        return self._locked(perform)
+
+    def claim_protocol_attempt(self,protocol,contract_sha256,sequence_id,output_dir):
+        if len(contract_sha256)!=64:raise ProbeBudgetError('protocol contract SHA required')
+        auth=self._authorization();key=protocol+':'+contract_sha256
+        def perform(f,s):
+            seq=s['sequences'].get(sequence_id)
+            if not seq or seq['status']!='active' or seq['authorization_sha256']!=auth['sha256']:raise ProbeBudgetError('authorized active protocol sequence required')
+            if key in s['protocol_attempts']:raise ProbeBudgetError('protocol validation attempt already claimed; no remeasure')
+            self._append(f,'protocol_attempt_claim',dict(key=key,protocol=protocol,contract_sha256=contract_sha256,sequence_id=sequence_id,output_dir=str(Path(output_dir).resolve())))
+            return copy.deepcopy(s['protocol_attempts'][key])
+        return self._locked(perform)
+
+    def require_protocol_attempt(self,protocol,contract_sha256,sequence_id,output_dir=None):
+        key=protocol+':'+contract_sha256
+        def perform(f,s):
+            entry=s['protocol_attempts'].get(key)
+            if not entry or entry['status']!='active' or entry['sequence_id']!=sequence_id:raise ProbeBudgetError('active original protocol attempt required')
+            if output_dir is not None and str(Path(output_dir).resolve())!=entry['output_dir']:raise ProbeBudgetError('protocol attempt output changed')
+            return copy.deepcopy(entry)
+        return self._locked(perform)
+
+    def finish_protocol_attempt(self,protocol,contract_sha256,passed=False):
+        key=protocol+':'+contract_sha256
+        def perform(f,s):
+            entry=s['protocol_attempts'].get(key)
+            if not entry:raise ProbeBudgetError('protocol attempt missing')
+            if entry['status']=='finished':return False
+            self._append(f,'protocol_attempt_end',dict(key=key,passed=bool(passed)));return True
         return self._locked(perform)
 
     def finish_sequence(self,sequence_id,passed=False,reason=''):

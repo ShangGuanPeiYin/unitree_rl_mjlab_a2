@@ -295,6 +295,12 @@ class V10Env:
             position=local.clone(),v_body=d.root_link_lin_vel_b.clone(),v_world=d.root_link_lin_vel_w.clone(),roll_deg=roll*180/math.pi,pitch_deg=pitch*180/math.pi,
             clearance=clearance,step=tensor(steps,torch.long),top_event=top,feet_local=feet_local.clone(),foot_force=self.contacts.foot_force.clone(),upward_force=upward,
             action_clip=(actual-actions).abs().amax(-1),padding=padding)
+        # Recording only: expose already-computed physical signals without changing
+        # termination, reward, command, observation, or task state.
+        frame.update(yaw=yaw.clone(),foot_position_local=feet_local.clone(),top_upward_force=upward.clone(),
+            failure_masks=dict(body_hit=body_hit.clone(),long_hit=long_hit.clone(),
+                attitude=(roll.abs()>math.radians(70))|(pitch.abs()>math.radians(70)),
+                route_fall=d.root_link_pos_w[:,2]<route_h-.5,bounds=~bounds,timeout=frame['timeout'].clone()))
         reward,terms=compute_reward(frame)
         reward=torch.where(padding,torch.zeros_like(reward),reward)
         terms={kind:{k:torch.where(padding,torch.zeros_like(v),v) for k,v in values.items()} for kind,values in terms.items()}

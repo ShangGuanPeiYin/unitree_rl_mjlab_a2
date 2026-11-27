@@ -1,0 +1,41 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+______ test_early_course_promotion_logs_only_unstarted_future_gate_calls _______
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1158/test_early_course_promotion_lo0')
+
+    def test_early_course_promotion_logs_only_unstarted_future_gate_calls(tmp_path):
+        from src.tasks.velocity.v10.orchestration import file_sha
+        o=FakeProtocol(tmp_path/'run');o.prepare();checkpoint=o.worker('candidate','D1',200)
+        grade=o.gate('D1',200,checkpoint,{'teachers':None});before=file_sha(checkpoint)
+        started='gate_D1_400_A_teachers';o.state['operations'][started]={'status':'running'}
+        cache=o.root/'evaluation/cache/shared.json';cache.parent.mkdir(parents=True,exist_ok=True);cache.write_text('shared reference cache')
+>       o._promote_course('D1',200,checkpoint,grade)
+        ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'FakeProtocol' object has no attribute '_promote_course'
+
+tests/test_v10_orchestration.py:407: AttributeError
+_________ test_promotion_and_cancellation_event_recovery_is_idempotent _________
+
+tmp_path = PosixPath('/tmp/pytest-of-xxs/pytest-1158/test_promotion_and_cancellatio0')
+
+    def test_promotion_and_cancellation_event_recovery_is_idempotent(tmp_path):
+        import copy
+        from src.tasks.velocity.v10.orchestration import file_sha
+        o=FakeProtocol(tmp_path/'run');o.prepare();checkpoint=o.worker('candidate','D1',200)
+        grade=o.gate('D1',200,checkpoint,{'teachers':None});snapshot=copy.deepcopy(o.state)
+>       o._promote_course('D1',200,checkpoint,grade);count=len(o.events.read())
+        ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'FakeProtocol' object has no attribute '_promote_course'
+
+tests/test_v10_orchestration.py:433: AttributeError
+=============================== warnings summary ===============================
+../../anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491
+  /home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_v10_orchestration.py::test_early_course_promotion_logs_only_unstarted_future_gate_calls
+FAILED tests/test_v10_orchestration.py::test_promotion_and_cancellation_event_recovery_is_idempotent
+2 failed, 34 deselected, 1 warning in 11.57s

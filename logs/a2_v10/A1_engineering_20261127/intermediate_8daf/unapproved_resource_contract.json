@@ -1,0 +1,42 @@
+{
+  "approved": false,
+  "baseline_dir": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A_20261127_approved/resource_probe",
+  "baseline_git": "07fe14fe753ade340f3d64e06dbae51a9ad0bdb5",
+  "independent_review": {
+    "passed": false,
+    "report_path": null,
+    "report_sha256": null
+  },
+  "invariance_evidence": {
+    "path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/A1_engineering_20261127/resource_evidence/invariants.json",
+    "sha256": "ba17d3e0a489f9047373e59aec7a2ae8bff8f8f93799a39f4a9f3ae9a2700295"
+  },
+  "new_code_sha256": "8daf0658fb0e2dd62ce96c33fff56d51711c0279230ecc6ce35f3ff58d68afa5",
+  "old_evidence": {
+    "n1024_dagger/result.json": "37d422907bd3305ab10ac3da78223b49404b1b96e9446f6415055d8d27d0383e",
+    "n1024_ppo/result.json": "6ccbbf3d5a0cb784cba91416721a6a9c6078536b3abd4674945d4447b2b072db",
+    "selection.json": "4f1e2c2738e1ad6cb8a2431f434c23634db4f232ac3023e56ad178d0dd7ecc04"
+  },
+  "proposal": {
+    "path": "/home/xxs/dog/unitree_rl_mjlab_a2/doc/sds/reviews/v10_A1_validation_budget_proposal_20261127.md",
+    "sha256": "8f62fe02abc2f89659c0e064b0a06676780c6fb7d1cf6ab8042294dfa8de464c"
+  },
+  "protocol": "A1-targeted-resource-v1",
+  "rulings_sha256": "4de1477cbabb7b652cfa2b5bc21a589a2e6282568c1eec715d917673846fd898",
+  "schema": "a2-v10-A1-resource-linkage-v1",
+  "scope": {
+    "fill_rollouts": 1,
+    "full_twenty_measurement_revalidation": false,
+    "measurement_rounds": 2,
+    "num_envs": 1024,
+    "per_stack_samples": 245760,
+    "probe_state_discarded": true,
+    "total_samples": 491520,
+    "warmup_rounds": 2
+  },
+  "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0",
+  "source_diff": {
+    "path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/A1_engineering_20261127/resource_evidence/source_diff.json",
+    "sha256": "9c7d3262af52f560eba6c505da25be27df2bad021d555606400e607a03dd3916"
+  }
+}

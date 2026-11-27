@@ -1,0 +1,1811 @@
+{
+  "baseline_actual_code_sha256": "b48e3fd1601ff2926272ed014d846fd480fe24a8c56d77100d646f933b92991f",
+  "baseline_git": "07fe14fe753ade340f3d64e06dbae51a9ad0bdb5",
+  "excluded": [
+    "scripts/diagnose_a2_v10_a1.py",
+    "src/tasks/velocity/v10/diagnostic_a1.py",
+    "src/tasks/velocity/v10/evaluation_capacity.py",
+    "src/tasks/velocity/v10/resource_a1.py",
+    "src/tasks/velocity/v10/trace.py",
+    "tests/test_v10_a1_diagnostic.py",
+    "tests/test_v10_a1_identity.py",
+    "tests/test_v10_env_recording.py",
+    "tests/test_v10_resource_a1.py",
+    "tests/test_v10_teacher_yaw.py",
+    "tests/test_v10_trace.py"
+  ],
+  "files": [
+    {
+      "baseline_sha256": null,
+      "change": "A1_new",
+      "current_sha256": "0b86273e28d892e72d031f3133d704aee2721af8ae5d8d865274c2479f7df96c",
+      "path": "scripts/diagnose_a2_v10_a1.py"
+    },
+    {
+      "baseline_sha256": "25150e4b4ede44e6140707bfdefed4519f92e8d835d61ff978a2fe2f41f84023",
+      "change": "A1_modified",
+      "current_sha256": "92d213406cd5cbc72b42d0762b2765ac03080d685eaddbfc1eb4f950262f4762",
+      "path": "scripts/run_a2_v10.py"
+    },
+    {
+      "baseline_sha256": "fdaefcde4681b74b88fdf24eca29a658a43a50d16652393a2c55b5e95dccaa1a",
+      "change": "A1_modified",
+      "current_sha256": "ba47defb1269c5507bdf8a813b00ad2718a862c1aa4b5d06605f200d724259c1",
+      "path": "scripts/train_a2_v10.py"
+    },
+    {
+      "baseline_sha256": "cfa1a7f468fbedc17cbd25a2b52ab5b824cd5f5bcaaffcf8ddbf8c75837ee6f0",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "cfa1a7f468fbedc17cbd25a2b52ab5b824cd5f5bcaaffcf8ddbf8c75837ee6f0",
+      "path": "src/__init__.py"
+    },
+    {
+      "baseline_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path": "src/assets/__init__.py"
+    },
+    {
+      "baseline_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path": "src/assets/motions/__init__.py"
+    },
+    {
+      "baseline_sha256": "9f45d1126dc5fe58e9673adb5f3c8b4eaa6f20d4a4af5a75e0f9a183ecc7095e",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "9f45d1126dc5fe58e9673adb5f3c8b4eaa6f20d4a4af5a75e0f9a183ecc7095e",
+      "path": "src/assets/robots/__init__.py"
+    },
+    {
+      "baseline_sha256": "be77f5ef193ce72df657a7b0c66530394dcf9c5c60e77526d820d16b8dca6667",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "be77f5ef193ce72df657a7b0c66530394dcf9c5c60e77526d820d16b8dca6667",
+      "path": "src/assets/robots/unitree_a2/__init__.py"
+    },
+    {
+      "baseline_sha256": "551b2e4456aff4af1671c7d9986b86b7d8180e351acc56da3096207087c8b94e",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "551b2e4456aff4af1671c7d9986b86b7d8180e351acc56da3096207087c8b94e",
+      "path": "src/assets/robots/unitree_a2/a2_constants.py"
+    },
+    {
+      "baseline_sha256": "58c7ca7082d5e4514f6059f06e4702d098c17ee187aad00c16a983000dad9dd9",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "58c7ca7082d5e4514f6059f06e4702d098c17ee187aad00c16a983000dad9dd9",
+      "path": "src/assets/robots/unitree_as2/__init__.py"
+    },
+    {
+      "baseline_sha256": "4e0099a1b3557e049fe2f5679e22bf3f64c061ae0d26c329fb029ef3e78c87e7",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "4e0099a1b3557e049fe2f5679e22bf3f64c061ae0d26c329fb029ef3e78c87e7",
+      "path": "src/assets/robots/unitree_as2/as2_constants.py"
+    },
+    {
+      "baseline_sha256": "c11e649d6d5209becaf6dbca2d09dee83c17844b5d941c2e1cc6f16ba618bf14",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c11e649d6d5209becaf6dbca2d09dee83c17844b5d941c2e1cc6f16ba618bf14",
+      "path": "src/assets/robots/unitree_g1/__init__.py"
+    },
+    {
+      "baseline_sha256": "962ef56e1d8897d88b46c288cd71308dff986fc576ade51d26ec6471ae0efb94",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "962ef56e1d8897d88b46c288cd71308dff986fc576ade51d26ec6471ae0efb94",
+      "path": "src/assets/robots/unitree_g1/g1_23dof_constants.py"
+    },
+    {
+      "baseline_sha256": "136b59af97082a74fd3a2a4250bc2e290b3ba6a26533b1492be52114dd844c5d",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "136b59af97082a74fd3a2a4250bc2e290b3ba6a26533b1492be52114dd844c5d",
+      "path": "src/assets/robots/unitree_g1/g1_constants.py"
+    },
+    {
+      "baseline_sha256": "d52bb3e1a2f7acf191ee18c78b421c7a7e8da63379db8224e08900526b8653f5",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d52bb3e1a2f7acf191ee18c78b421c7a7e8da63379db8224e08900526b8653f5",
+      "path": "src/assets/robots/unitree_go2/__init__.py"
+    },
+    {
+      "baseline_sha256": "c1406f6e469b8b6bb24bb7f9b122612c74cec412a8b9b5d9cddf64e37fb19a0f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c1406f6e469b8b6bb24bb7f9b122612c74cec412a8b9b5d9cddf64e37fb19a0f",
+      "path": "src/assets/robots/unitree_go2/go2_constants.py"
+    },
+    {
+      "baseline_sha256": "c6c2bd34c3290d48239d89d048a3662542f19763b99f316969b8e01ca70c3fba",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c6c2bd34c3290d48239d89d048a3662542f19763b99f316969b8e01ca70c3fba",
+      "path": "src/assets/robots/unitree_h1_2/__init__.py"
+    },
+    {
+      "baseline_sha256": "7834dce95d01c54551110431f3f09e2860f995d594cd465a2e243d3ffeef4c2f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "7834dce95d01c54551110431f3f09e2860f995d594cd465a2e243d3ffeef4c2f",
+      "path": "src/assets/robots/unitree_h1_2/h1_2_constants.py"
+    },
+    {
+      "baseline_sha256": "34f8273e6e0edbd9d6d5c90e75af75c02856c7a8adc8ad3c9a570059c8b307db",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "34f8273e6e0edbd9d6d5c90e75af75c02856c7a8adc8ad3c9a570059c8b307db",
+      "path": "src/assets/robots/unitree_h2/__init__.py"
+    },
+    {
+      "baseline_sha256": "a8d9f9f0a84a87f4abbb8b258bc581c41e15ca5b7aefe2bfcefdd5fe805f6c9f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a8d9f9f0a84a87f4abbb8b258bc581c41e15ca5b7aefe2bfcefdd5fe805f6c9f",
+      "path": "src/assets/robots/unitree_h2/h2_constants.py"
+    },
+    {
+      "baseline_sha256": "7b1d0e60e1920b150aef7b0649d2d89fb75e094ffcf181df2e2d1d4347ffece1",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "7b1d0e60e1920b150aef7b0649d2d89fb75e094ffcf181df2e2d1d4347ffece1",
+      "path": "src/assets/robots/unitree_r1/__init__.py"
+    },
+    {
+      "baseline_sha256": "ec9627e18def3b0cee7789260f2a7a844d7c70a69341fefcf907a6b3d845f559",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ec9627e18def3b0cee7789260f2a7a844d7c70a69341fefcf907a6b3d845f559",
+      "path": "src/assets/robots/unitree_r1/r1_constants.py"
+    },
+    {
+      "baseline_sha256": "310ff3bbeed45f4792394e36ff98eb4b5b70e0657c2e5ef67dd363d510133d9b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "310ff3bbeed45f4792394e36ff98eb4b5b70e0657c2e5ef67dd363d510133d9b",
+      "path": "src/tasks/__init__.py"
+    },
+    {
+      "baseline_sha256": "269e19fac2c24adc6064d7c868741fa265f12d78ca07dd12ef7333febde21adf",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "269e19fac2c24adc6064d7c868741fa265f12d78ca07dd12ef7333febde21adf",
+      "path": "src/tasks/tracking/__init__.py"
+    },
+    {
+      "baseline_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path": "src/tasks/tracking/config/__init__.py"
+    },
+    {
+      "baseline_sha256": "998bab278196167af9f704fa6227e42627cbdbc9af14749db0ba0a74054a519f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "998bab278196167af9f704fa6227e42627cbdbc9af14749db0ba0a74054a519f",
+      "path": "src/tasks/tracking/config/g1/__init__.py"
+    },
+    {
+      "baseline_sha256": "b2553171eb96a671d14409c1bdd6cd91db10ff9ea080c938c9fe73f5e43784db",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b2553171eb96a671d14409c1bdd6cd91db10ff9ea080c938c9fe73f5e43784db",
+      "path": "src/tasks/tracking/config/g1/env_cfgs.py"
+    },
+    {
+      "baseline_sha256": "48e98843e3063e2e5798522108add56442cd1885b1255ec172d6e00e32ab586e",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "48e98843e3063e2e5798522108add56442cd1885b1255ec172d6e00e32ab586e",
+      "path": "src/tasks/tracking/config/g1/rl_cfg.py"
+    },
+    {
+      "baseline_sha256": "aeafa17a4af4d0792f4e2fad8241236eb247a3ae2ae1045bb272f71dc3d05704",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "aeafa17a4af4d0792f4e2fad8241236eb247a3ae2ae1045bb272f71dc3d05704",
+      "path": "src/tasks/tracking/config/g1_23dof/__init__.py"
+    },
+    {
+      "baseline_sha256": "212b42d0d19aead1a47aedc1c91521caaafb5f332e341f17017ac72c9fedbf49",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "212b42d0d19aead1a47aedc1c91521caaafb5f332e341f17017ac72c9fedbf49",
+      "path": "src/tasks/tracking/config/g1_23dof/env_cfgs.py"
+    },
+    {
+      "baseline_sha256": "98640f5127b05d477f7490a8ee31f9b84925cc5ab2e99abb4d90268c9808f181",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "98640f5127b05d477f7490a8ee31f9b84925cc5ab2e99abb4d90268c9808f181",
+      "path": "src/tasks/tracking/config/g1_23dof/rl_cfg.py"
+    },
+    {
+      "baseline_sha256": "1c2637ed117786d35fc7a8b72fa36e11134268d8a2aaefa7109ed826c7eb75bf",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "1c2637ed117786d35fc7a8b72fa36e11134268d8a2aaefa7109ed826c7eb75bf",
+      "path": "src/tasks/tracking/mdp/__init__.py"
+    },
+    {
+      "baseline_sha256": "334fed0ba9c1438c09f096d2a44e2a856042d3d695eb82a125509b9f75c700c5",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "334fed0ba9c1438c09f096d2a44e2a856042d3d695eb82a125509b9f75c700c5",
+      "path": "src/tasks/tracking/mdp/commands.py"
+    },
+    {
+      "baseline_sha256": "8724118a6f8c0873ebea7d773cefa68ecfc3c2892227bb3f4d2380b1db2415a8",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "8724118a6f8c0873ebea7d773cefa68ecfc3c2892227bb3f4d2380b1db2415a8",
+      "path": "src/tasks/tracking/mdp/metrics.py"
+    },
+    {
+      "baseline_sha256": "af2cf6613d657529455eb254c7b13892ab67a0cf8ea5aec2d4df5fad6b4a5330",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "af2cf6613d657529455eb254c7b13892ab67a0cf8ea5aec2d4df5fad6b4a5330",
+      "path": "src/tasks/tracking/mdp/observations.py"
+    },
+    {
+      "baseline_sha256": "c70dd1652b3021e4a8416c85ec692e2e124f2dbaf4dc7606e0bc4909dc5f71dc",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c70dd1652b3021e4a8416c85ec692e2e124f2dbaf4dc7606e0bc4909dc5f71dc",
+      "path": "src/tasks/tracking/mdp/rewards.py"
+    },
+    {
+      "baseline_sha256": "5f88576b5995408a744cde451c7e43982d2f03284cfeebb8856969ca3dc76019",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5f88576b5995408a744cde451c7e43982d2f03284cfeebb8856969ca3dc76019",
+      "path": "src/tasks/tracking/mdp/terminations.py"
+    },
+    {
+      "baseline_sha256": "408350c14b2d4edb70916de697c05282600b0929d3acf4005891a2c2ddc8a511",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "408350c14b2d4edb70916de697c05282600b0929d3acf4005891a2c2ddc8a511",
+      "path": "src/tasks/tracking/rl/__init__.py"
+    },
+    {
+      "baseline_sha256": "e3965be06ffd40f4dc034be3f7f2c2753d1c492ecfbe01e64140cc96442884ed",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "e3965be06ffd40f4dc034be3f7f2c2753d1c492ecfbe01e64140cc96442884ed",
+      "path": "src/tasks/tracking/rl/runner.py"
+    },
+    {
+      "baseline_sha256": "b49b012c344d4df0ff6fc7cdd5ee3ddc76d135cd7738b7ea3490ce9aa3d6f984",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b49b012c344d4df0ff6fc7cdd5ee3ddc76d135cd7738b7ea3490ce9aa3d6f984",
+      "path": "src/tasks/tracking/tracking_env_cfg.py"
+    },
+    {
+      "baseline_sha256": "479a0ae48d56e95521d9cfd6ccb3bbcebc2bf985355d96879ce3a50d20a142ea",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "479a0ae48d56e95521d9cfd6ccb3bbcebc2bf985355d96879ce3a50d20a142ea",
+      "path": "src/tasks/velocity/__init__.py"
+    },
+    {
+      "baseline_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path": "src/tasks/velocity/config/__init__.py"
+    },
+    {
+      "baseline_sha256": "d3260027ff970b32dd4913b9977083c8e693fdb0a0d4bae497fed90e951ba485",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d3260027ff970b32dd4913b9977083c8e693fdb0a0d4bae497fed90e951ba485",
+      "path": "src/tasks/velocity/config/a2/__init__.py"
+    },
+    {
+      "baseline_sha256": "130878ca621c04f9ae245aefd9a66e290409df290f3fe6ed3248ff696526a7ab",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "130878ca621c04f9ae245aefd9a66e290409df290f3fe6ed3248ff696526a7ab",
+      "path": "src/tasks/velocity/config/a2/env_cfgs.py"
+    },
+    {
+      "baseline_sha256": "f9c0b7057ceef28432077ce4461d76b935f3ecb39461679914bb7d7701c11859",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "f9c0b7057ceef28432077ce4461d76b935f3ecb39461679914bb7d7701c11859",
+      "path": "src/tasks/velocity/config/a2/eth_env_cfg.py"
+    },
+    {
+      "baseline_sha256": "f0561d5200a348f26e48928247334463cc843b4e519585b7e6c87769e1741ad5",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "f0561d5200a348f26e48928247334463cc843b4e519585b7e6c87769e1741ad5",
+      "path": "src/tasks/velocity/config/a2/ideal_stairs_env_cfg.py"
+    },
+    {
+      "baseline_sha256": "13c6c13b9cfc8023f58887fe49fa0d6ffbc4a2f30796974aa4d79f3e17bbe39b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "13c6c13b9cfc8023f58887fe49fa0d6ffbc4a2f30796974aa4d79f3e17bbe39b",
+      "path": "src/tasks/velocity/config/a2/rl_cfg.py"
+    },
+    {
+      "baseline_sha256": "1bd4ec954eed6ba7147ca52551cce153f554ea14002ddd2978bf3f2c9084d85b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "1bd4ec954eed6ba7147ca52551cce153f554ea14002ddd2978bf3f2c9084d85b",
+      "path": "src/tasks/velocity/config/as2/__init__.py"
+    },
+    {
+      "baseline_sha256": "4b979f27070295f3f46885f156afd0f5f2e4e27aae5852649a3a343e58b43b6f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "4b979f27070295f3f46885f156afd0f5f2e4e27aae5852649a3a343e58b43b6f",
+      "path": "src/tasks/velocity/config/as2/env_cfgs.py"
+    },
+    {
+      "baseline_sha256": "0bf124c14e466e3f5121584aed46b3071693e25c5df80b646b50c9fbf8c7e4be",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "0bf124c14e466e3f5121584aed46b3071693e25c5df80b646b50c9fbf8c7e4be",
+      "path": "src/tasks/velocity/config/as2/rl_cfg.py"
+    },
+    {
+      "baseline_sha256": "83517a5221dfa27bc746a0a75f502bdd2fb5ce7c24266fd20a4eb22d09862ca8",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "83517a5221dfa27bc746a0a75f502bdd2fb5ce7c24266fd20a4eb22d09862ca8",
+      "path": "src/tasks/velocity/config/g1/__init__.py"
+    },
+    {
+      "baseline_sha256": "c3ec7ec2730ee0ecbc9da21e493c89161da6a6142084b7400b39ce34492dbed0",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c3ec7ec2730ee0ecbc9da21e493c89161da6a6142084b7400b39ce34492dbed0",
+      "path": "src/tasks/velocity/config/g1/env_cfgs.py"
+    },
+    {
+      "baseline_sha256": "816d29bc673326ab75d949c542eb7cb8f0f4bbb334a575e316e699ea66f55f7c",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "816d29bc673326ab75d949c542eb7cb8f0f4bbb334a575e316e699ea66f55f7c",
+      "path": "src/tasks/velocity/config/g1/rl_cfg.py"
+    },
+    {
+      "baseline_sha256": "6acb67b0e0935367172dfb6e3d9a8d44152816f79f4aec6ba82c4c8f4c0f764d",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "6acb67b0e0935367172dfb6e3d9a8d44152816f79f4aec6ba82c4c8f4c0f764d",
+      "path": "src/tasks/velocity/config/g1_23dof/__init__.py"
+    },
+    {
+      "baseline_sha256": "8e35151c8a916bd1d52af765f50ba4c996538d70e542c3b874302a2a7601088c",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "8e35151c8a916bd1d52af765f50ba4c996538d70e542c3b874302a2a7601088c",
+      "path": "src/tasks/velocity/config/g1_23dof/env_cfgs.py"
+    },
+    {
+      "baseline_sha256": "5c8270d663f26c40e56128f360028e63ab33ea41d412658c1280e1e7a87d4703",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5c8270d663f26c40e56128f360028e63ab33ea41d412658c1280e1e7a87d4703",
+      "path": "src/tasks/velocity/config/g1_23dof/rl_cfg.py"
+    },
+    {
+      "baseline_sha256": "b9694f745b3135396301a621dd57c1d4dbd16fc7e24995cfa378a7a517467771",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b9694f745b3135396301a621dd57c1d4dbd16fc7e24995cfa378a7a517467771",
+      "path": "src/tasks/velocity/config/go2/__init__.py"
+    },
+    {
+      "baseline_sha256": "98defb863edccf071070074c31cb77790f83a40276e0589cf2982137c44cd293",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "98defb863edccf071070074c31cb77790f83a40276e0589cf2982137c44cd293",
+      "path": "src/tasks/velocity/config/go2/env_cfgs.py"
+    },
+    {
+      "baseline_sha256": "8850b0544c50731a30d34995a887c79dca625411b3bf2f0317ab5eaf32f50bdc",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "8850b0544c50731a30d34995a887c79dca625411b3bf2f0317ab5eaf32f50bdc",
+      "path": "src/tasks/velocity/config/go2/rl_cfg.py"
+    },
+    {
+      "baseline_sha256": "9e7fdfd68d136ab362a82e024815ee4fd94a4dfb51ca346d04d41f23926932a2",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "9e7fdfd68d136ab362a82e024815ee4fd94a4dfb51ca346d04d41f23926932a2",
+      "path": "src/tasks/velocity/config/h1_2/__init__.py"
+    },
+    {
+      "baseline_sha256": "c3d64b28090d6a77f3c5d72f3d5b2fbb9b80e52759e6697a075cd20f2577ef34",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c3d64b28090d6a77f3c5d72f3d5b2fbb9b80e52759e6697a075cd20f2577ef34",
+      "path": "src/tasks/velocity/config/h1_2/env_cfgs.py"
+    },
+    {
+      "baseline_sha256": "ec77d26ecec8af153c8b38726a44f920c767b34859c736f4cd82ce3e0fb4c871",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ec77d26ecec8af153c8b38726a44f920c767b34859c736f4cd82ce3e0fb4c871",
+      "path": "src/tasks/velocity/config/h1_2/rl_cfg.py"
+    },
+    {
+      "baseline_sha256": "536322fbf2fa1e7841de84368e3de6aed8aad153ac9aa7b28122c04894e1bc8a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "536322fbf2fa1e7841de84368e3de6aed8aad153ac9aa7b28122c04894e1bc8a",
+      "path": "src/tasks/velocity/config/h2/__init__.py"
+    },
+    {
+      "baseline_sha256": "448f2349ab51636d390efb59c9650ce4df82c47c8825db4157daf106ba8b0692",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "448f2349ab51636d390efb59c9650ce4df82c47c8825db4157daf106ba8b0692",
+      "path": "src/tasks/velocity/config/h2/env_cfgs.py"
+    },
+    {
+      "baseline_sha256": "1e3e6600b58f396fa9e6b3d8f7bbe2e010c24537dd2a5b7da6a98258c0b16e47",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "1e3e6600b58f396fa9e6b3d8f7bbe2e010c24537dd2a5b7da6a98258c0b16e47",
+      "path": "src/tasks/velocity/config/h2/rl_cfg.py"
+    },
+    {
+      "baseline_sha256": "1661339b28fd419fe370b246d29a5095c8e15416865a89857f0c01351ea7987b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "1661339b28fd419fe370b246d29a5095c8e15416865a89857f0c01351ea7987b",
+      "path": "src/tasks/velocity/config/r1/__init__.py"
+    },
+    {
+      "baseline_sha256": "c1d761d8ed0e737f007d4d3968af481b3c00f0de050ff67285b126f488b6a4a1",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c1d761d8ed0e737f007d4d3968af481b3c00f0de050ff67285b126f488b6a4a1",
+      "path": "src/tasks/velocity/config/r1/env_cfgs.py"
+    },
+    {
+      "baseline_sha256": "391035799b1778d596e4607b829ca88d45f3ac8ea8157e890cc221270c02df3b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "391035799b1778d596e4607b829ca88d45f3ac8ea8157e890cc221270c02df3b",
+      "path": "src/tasks/velocity/config/r1/rl_cfg.py"
+    },
+    {
+      "baseline_sha256": "231f35d88929e89ae17dbf403b6d049dd9f1f8bba21bfaf74a087bb9435e7dfe",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "231f35d88929e89ae17dbf403b6d049dd9f1f8bba21bfaf74a087bb9435e7dfe",
+      "path": "src/tasks/velocity/mdp/__init__.py"
+    },
+    {
+      "baseline_sha256": "1577cd47b45d6812bee934c4edf89cfaec1b07e16e1acbc21de28049a8324f35",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "1577cd47b45d6812bee934c4edf89cfaec1b07e16e1acbc21de28049a8324f35",
+      "path": "src/tasks/velocity/mdp/curriculums.py"
+    },
+    {
+      "baseline_sha256": "45fa2150f446d92f045e49eb05c832f9ecab8c59d12abe97966f64c85a9aab62",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "45fa2150f446d92f045e49eb05c832f9ecab8c59d12abe97966f64c85a9aab62",
+      "path": "src/tasks/velocity/mdp/ideal_heightmap.py"
+    },
+    {
+      "baseline_sha256": "7a23488079640eab4a07120f7a2ab96d05e0a03a1d5250a3c1d0fa43b92d58ea",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "7a23488079640eab4a07120f7a2ab96d05e0a03a1d5250a3c1d0fa43b92d58ea",
+      "path": "src/tasks/velocity/mdp/ideal_stairs_contacts.py"
+    },
+    {
+      "baseline_sha256": "cadb25c4b05d56e42cd18d56c0a045889a44aaa266c720d1f76442adbf4cda80",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "cadb25c4b05d56e42cd18d56c0a045889a44aaa266c720d1f76442adbf4cda80",
+      "path": "src/tasks/velocity/mdp/ideal_stairs_env.py"
+    },
+    {
+      "baseline_sha256": "1207e5bdd8b780fcfdf140ee4dc1d0aa787d4df40e0038ccb6f049748e7355df",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "1207e5bdd8b780fcfdf140ee4dc1d0aa787d4df40e0038ccb6f049748e7355df",
+      "path": "src/tasks/velocity/mdp/observations.py"
+    },
+    {
+      "baseline_sha256": "5deb9a9ef2bffba30a29c757cf7cb833280e6d18d3e69f430dfa519680ff0034",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5deb9a9ef2bffba30a29c757cf7cb833280e6d18d3e69f430dfa519680ff0034",
+      "path": "src/tasks/velocity/mdp/rewards.py"
+    },
+    {
+      "baseline_sha256": "24d0abf600372026327d32d10f133f9a7cba117de85604515d20eeb7884ba13d",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "24d0abf600372026327d32d10f133f9a7cba117de85604515d20eeb7884ba13d",
+      "path": "src/tasks/velocity/mdp/terminations.py"
+    },
+    {
+      "baseline_sha256": "f9f55d5507e318494a690cb7929d4e4ae92419cea76425fbab0873914b279482",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "f9f55d5507e318494a690cb7929d4e4ae92419cea76425fbab0873914b279482",
+      "path": "src/tasks/velocity/mdp/velocity_command.py"
+    },
+    {
+      "baseline_sha256": "c0df1a85535f191511cf7ee3d45c6bf9236081e8a72903e0b52e0a017a07d6df",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c0df1a85535f191511cf7ee3d45c6bf9236081e8a72903e0b52e0a017a07d6df",
+      "path": "src/tasks/velocity/rl/__init__.py"
+    },
+    {
+      "baseline_sha256": "fd921392ad409c4fa4009c8e9ac8d7e36898a56f623c100a769e8bce13db51d3",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "fd921392ad409c4fa4009c8e9ac8d7e36898a56f623c100a769e8bce13db51d3",
+      "path": "src/tasks/velocity/rl/eth_actor.py"
+    },
+    {
+      "baseline_sha256": "3d9a6d5cfaa266e3e5ce8cb1c8a499cc0fb26936a95653ec8f94557b88c85a8d",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "3d9a6d5cfaa266e3e5ce8cb1c8a499cc0fb26936a95653ec8f94557b88c85a8d",
+      "path": "src/tasks/velocity/rl/ideal_heightmap_actor_critic.py"
+    },
+    {
+      "baseline_sha256": "ceb01537bab97a2f4e032c6bd388f18839801756fc3986ddf7ec7230a40d2a4e",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ceb01537bab97a2f4e032c6bd388f18839801756fc3986ddf7ec7230a40d2a4e",
+      "path": "src/tasks/velocity/rl/ideal_stairs_resources.py"
+    },
+    {
+      "baseline_sha256": "85ffb711fa75edd9da3db497bf11232f28c4b990a0db0fe7793182bf9b13802a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "85ffb711fa75edd9da3db497bf11232f28c4b990a0db0fe7793182bf9b13802a",
+      "path": "src/tasks/velocity/rl/ideal_stairs_runner.py"
+    },
+    {
+      "baseline_sha256": "1a12eb152cb307b57e024814a3a3f9026458759bab6cf43a5cfcccc0b9a0e0cf",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "1a12eb152cb307b57e024814a3a3f9026458759bab6cf43a5cfcccc0b9a0e0cf",
+      "path": "src/tasks/velocity/rl/runner.py"
+    },
+    {
+      "baseline_sha256": "15c36bb13ff010b20169a864fbad48683e3a3223bcf4f810643da35e87bfccf2",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "15c36bb13ff010b20169a864fbad48683e3a3223bcf4f810643da35e87bfccf2",
+      "path": "src/tasks/velocity/v02/__init__.py"
+    },
+    {
+      "baseline_sha256": "631811c944a388599ae64c192d0b22bc53477ddbc2d7f054588e444c63e8e650",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "631811c944a388599ae64c192d0b22bc53477ddbc2d7f054588e444c63e8e650",
+      "path": "src/tasks/velocity/v02/contacts.py"
+    },
+    {
+      "baseline_sha256": "d3877e679511e0268d3b451e87fa1b9f0bfa81eb29f5df5fa676da69090b1c4f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d3877e679511e0268d3b451e87fa1b9f0bfa81eb29f5df5fa676da69090b1c4f",
+      "path": "src/tasks/velocity/v02/env.py"
+    },
+    {
+      "baseline_sha256": "e01f20a2355d0d51c9e681a5b4bdcd0c6bf5d4febf0587640363e5b1f189f224",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "e01f20a2355d0d51c9e681a5b4bdcd0c6bf5d4febf0587640363e5b1f189f224",
+      "path": "src/tasks/velocity/v02/env_cfg.py"
+    },
+    {
+      "baseline_sha256": "4bfaa5fa00d89f6c4183c7c02a8b27ce6a72e30bc6ae030276805413426d41ba",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "4bfaa5fa00d89f6c4183c7c02a8b27ce6a72e30bc6ae030276805413426d41ba",
+      "path": "src/tasks/velocity/v02/map.py"
+    },
+    {
+      "baseline_sha256": "d5e443cafba3a19000513843ee2e5885aa657a5a8f08d7c7e56eae070efec7ea",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d5e443cafba3a19000513843ee2e5885aa657a5a8f08d7c7e56eae070efec7ea",
+      "path": "src/tasks/velocity/v02/model.py"
+    },
+    {
+      "baseline_sha256": "18ba8e33b362d2fc81bccb2092b80f71f85a650d164800e96897a4622cb50d0b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "18ba8e33b362d2fc81bccb2092b80f71f85a650d164800e96897a4622cb50d0b",
+      "path": "src/tasks/velocity/v02/recovery.py"
+    },
+    {
+      "baseline_sha256": "80721e83516d246086e2605c3b6c2c38c33b7a12590016d38afbc64b9701b137",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "80721e83516d246086e2605c3b6c2c38c33b7a12590016d38afbc64b9701b137",
+      "path": "src/tasks/velocity/v02/rewards.py"
+    },
+    {
+      "baseline_sha256": "f9bc9ce3dd294c38ea823f18c41e55e50b9611c9826cf8e6c50b673b240a6802",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "f9bc9ce3dd294c38ea823f18c41e55e50b9611c9826cf8e6c50b673b240a6802",
+      "path": "src/tasks/velocity/v02/runner.py"
+    },
+    {
+      "baseline_sha256": "4d1755c93bb6b2f9ff8398711254f8b771a569aa24bacb5c3b7c48c755913ae5",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "4d1755c93bb6b2f9ff8398711254f8b771a569aa24bacb5c3b7c48c755913ae5",
+      "path": "src/tasks/velocity/v02/spec.py"
+    },
+    {
+      "baseline_sha256": "0f151687714c3724355ca86faa723f2f08288ffd135cb5049a63de2b750ea993",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "0f151687714c3724355ca86faa723f2f08288ffd135cb5049a63de2b750ea993",
+      "path": "src/tasks/velocity/v02/terrain.py"
+    },
+    {
+      "baseline_sha256": "a40ad534a4f7f1499605d464059bd69b31444afbe151da786c8047f7e9d7336c",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a40ad534a4f7f1499605d464059bd69b31444afbe151da786c8047f7e9d7336c",
+      "path": "src/tasks/velocity/v02_formal/__init__.py"
+    },
+    {
+      "baseline_sha256": "bb2eec8d712941d529b7024ed689d9b03633c929cf150c7a2e32cf6e5f84e4f4",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "bb2eec8d712941d529b7024ed689d9b03633c929cf150c7a2e32cf6e5f84e4f4",
+      "path": "src/tasks/velocity/v02_formal/env.py"
+    },
+    {
+      "baseline_sha256": "b6ccb870ff1eebd3b4ba955484a0d15fe3a3b27e188d96c7d034240e3a011138",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b6ccb870ff1eebd3b4ba955484a0d15fe3a3b27e188d96c7d034240e3a011138",
+      "path": "src/tasks/velocity/v02_formal/evaluation.py"
+    },
+    {
+      "baseline_sha256": "a54523506a85d4bc62ee6eb7a1808a28dfb7c8aa4efaf18688c54ce942610a4f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a54523506a85d4bc62ee6eb7a1808a28dfb7c8aa4efaf18688c54ce942610a4f",
+      "path": "src/tasks/velocity/v02_formal/model.py"
+    },
+    {
+      "baseline_sha256": "7b71554d56a4eae2f40c73baa8dbb097d39389c996c30b7c0d1b713e6715a9ae",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "7b71554d56a4eae2f40c73baa8dbb097d39389c996c30b7c0d1b713e6715a9ae",
+      "path": "src/tasks/velocity/v02_formal/orchestration.py"
+    },
+    {
+      "baseline_sha256": "e23c86e9f63c6dd01f151cf8ffa600843fe80d1099eb5f5c80a2cac7c3814c17",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "e23c86e9f63c6dd01f151cf8ffa600843fe80d1099eb5f5c80a2cac7c3814c17",
+      "path": "src/tasks/velocity/v02_formal/recovery.py"
+    },
+    {
+      "baseline_sha256": "5cef35b302d3df5eee7bd5b2dcd077dd14a98eae716463105d174457ccee5c51",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5cef35b302d3df5eee7bd5b2dcd077dd14a98eae716463105d174457ccee5c51",
+      "path": "src/tasks/velocity/v02_formal/runner.py"
+    },
+    {
+      "baseline_sha256": "a434dfff55e907837da81811352e7de76fcacb13b5f8c4e91bcd1fbaa0b0aa14",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a434dfff55e907837da81811352e7de76fcacb13b5f8c4e91bcd1fbaa0b0aa14",
+      "path": "src/tasks/velocity/v02_formal/spec.py"
+    },
+    {
+      "baseline_sha256": "e69ee0145f2e7845b6e0abed6eb3b07f7f9735b0d0a741f53ebced8485c5f921",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "e69ee0145f2e7845b6e0abed6eb3b07f7f9735b0d0a741f53ebced8485c5f921",
+      "path": "src/tasks/velocity/v02_formal/success.py"
+    },
+    {
+      "baseline_sha256": "7f226c46b9f80e4b892829e657c01eee8f1b041f0f0e2a831031a66f1dc150a0",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "7f226c46b9f80e4b892829e657c01eee8f1b041f0f0e2a831031a66f1dc150a0",
+      "path": "src/tasks/velocity/v02_formal/telemetry.py"
+    },
+    {
+      "baseline_sha256": "5dfadae490cbef010bfe4a719ea7e84f67d1be51aab131d09dabd845999eefc4",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5dfadae490cbef010bfe4a719ea7e84f67d1be51aab131d09dabd845999eefc4",
+      "path": "src/tasks/velocity/v03/__init__.py"
+    },
+    {
+      "baseline_sha256": "c025496d03b0fedc98aba434fb3d12dfd005aec36c21abb93cc4c94c0461f07e",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c025496d03b0fedc98aba434fb3d12dfd005aec36c21abb93cc4c94c0461f07e",
+      "path": "src/tasks/velocity/v03/env.py"
+    },
+    {
+      "baseline_sha256": "442ad024ba4463a6f99c8adb7876dd72521b5c603c62bd193a680e0ba79f1a1a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "442ad024ba4463a6f99c8adb7876dd72521b5c603c62bd193a680e0ba79f1a1a",
+      "path": "src/tasks/velocity/v03/evaluation.py"
+    },
+    {
+      "baseline_sha256": "c78017a5b156b82ab8f025cbb77717b441c716976307edade8ea30f34cf81db6",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c78017a5b156b82ab8f025cbb77717b441c716976307edade8ea30f34cf81db6",
+      "path": "src/tasks/velocity/v03/model.py"
+    },
+    {
+      "baseline_sha256": "42da0049535e143ccde6b1f6d78faa1b845b698042787f71df6ab1a2c096ee87",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "42da0049535e143ccde6b1f6d78faa1b845b698042787f71df6ab1a2c096ee87",
+      "path": "src/tasks/velocity/v03/orchestration.py"
+    },
+    {
+      "baseline_sha256": "757cc08c47e9da34a86c6de0ed105eda30bbf3da38b8c621350b4d72b10f9c9f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "757cc08c47e9da34a86c6de0ed105eda30bbf3da38b8c621350b4d72b10f9c9f",
+      "path": "src/tasks/velocity/v03/ppo.py"
+    },
+    {
+      "baseline_sha256": "85645f0673028aaa7b1bb2ab7e334e94e128070ba6161a24ddeabc66079b913c",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "85645f0673028aaa7b1bb2ab7e334e94e128070ba6161a24ddeabc66079b913c",
+      "path": "src/tasks/velocity/v03/recovery.py"
+    },
+    {
+      "baseline_sha256": "8419a3990d80f56539c3e41cc3ceb9ab77c9fde8f5c35dd0e00e76926f03c249",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "8419a3990d80f56539c3e41cc3ceb9ab77c9fde8f5c35dd0e00e76926f03c249",
+      "path": "src/tasks/velocity/v03/rewards.py"
+    },
+    {
+      "baseline_sha256": "ac7d0f7be2fff2690922060e950d8cd709fdc08d5af2934499a4f69b0b27de0e",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ac7d0f7be2fff2690922060e950d8cd709fdc08d5af2934499a4f69b0b27de0e",
+      "path": "src/tasks/velocity/v03/runner.py"
+    },
+    {
+      "baseline_sha256": "77f8ea338427214af98f02618de84d9a6245aa870c60674a9279dd897dd91c27",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "77f8ea338427214af98f02618de84d9a6245aa870c60674a9279dd897dd91c27",
+      "path": "src/tasks/velocity/v03/spec.py"
+    },
+    {
+      "baseline_sha256": "7a5fc947bf8432ffc55baee2d2187fc25c62b33ed73eec6a1776cd7eb5529451",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "7a5fc947bf8432ffc55baee2d2187fc25c62b33ed73eec6a1776cd7eb5529451",
+      "path": "src/tasks/velocity/v03/speed.py"
+    },
+    {
+      "baseline_sha256": "351f0488a3b71b68d5e540751e3e88d90789d744cc190033536e2e730bb75408",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "351f0488a3b71b68d5e540751e3e88d90789d744cc190033536e2e730bb75408",
+      "path": "src/tasks/velocity/v03/telemetry.py"
+    },
+    {
+      "baseline_sha256": "424c1d16bfd96e71b0bba18fa84c1ca52457163d7fdfd28bbb7bb52773ce92ac",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "424c1d16bfd96e71b0bba18fa84c1ca52457163d7fdfd28bbb7bb52773ce92ac",
+      "path": "src/tasks/velocity/v04/__init__.py"
+    },
+    {
+      "baseline_sha256": "30305ae27285f78b458e051529dd75de80eacbbe0328fe30c528c639061b7805",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "30305ae27285f78b458e051529dd75de80eacbbe0328fe30c528c639061b7805",
+      "path": "src/tasks/velocity/v04/connection.py"
+    },
+    {
+      "baseline_sha256": "2c40ebc3ee351fb5c2893e4c80cfb1c30293df371e31794cae99d40379feeeb0",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "2c40ebc3ee351fb5c2893e4c80cfb1c30293df371e31794cae99d40379feeeb0",
+      "path": "src/tasks/velocity/v04/env.py"
+    },
+    {
+      "baseline_sha256": "d90d5efedcb817d7dabb2cd6633864840f41c66ae1e282db85187dca69bf5e39",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d90d5efedcb817d7dabb2cd6633864840f41c66ae1e282db85187dca69bf5e39",
+      "path": "src/tasks/velocity/v04/evaluation.py"
+    },
+    {
+      "baseline_sha256": "fe2d7035b50bcf923580eb7c8df67d0da20363690414b5ae61aabe8ce2ca2a1d",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "fe2d7035b50bcf923580eb7c8df67d0da20363690414b5ae61aabe8ce2ca2a1d",
+      "path": "src/tasks/velocity/v04/model.py"
+    },
+    {
+      "baseline_sha256": "766dd66ece766b197f75b7acdd717fc16be92514012c5fa0f02536b461a0b061",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "766dd66ece766b197f75b7acdd717fc16be92514012c5fa0f02536b461a0b061",
+      "path": "src/tasks/velocity/v04/orchestration.py"
+    },
+    {
+      "baseline_sha256": "758557a6a0b2792f20ef35b1c2909f6a4efcc372219ec17fe7a1dc2078d4d4f6",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "758557a6a0b2792f20ef35b1c2909f6a4efcc372219ec17fe7a1dc2078d4d4f6",
+      "path": "src/tasks/velocity/v04/recovery.py"
+    },
+    {
+      "baseline_sha256": "397bc5c9e1e4195f6769e5e4563f0c34f60afae3aa7c14eb9ec61f3a61f9cf8b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "397bc5c9e1e4195f6769e5e4563f0c34f60afae3aa7c14eb9ec61f3a61f9cf8b",
+      "path": "src/tasks/velocity/v04/rewards.py"
+    },
+    {
+      "baseline_sha256": "d0cdbbb4b4d4e28d92559b8035d5ef307f7d8da4358545f4e6e7038cbd85ac1b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d0cdbbb4b4d4e28d92559b8035d5ef307f7d8da4358545f4e6e7038cbd85ac1b",
+      "path": "src/tasks/velocity/v04/runner.py"
+    },
+    {
+      "baseline_sha256": "101eaa46096117907d9af566a829918e464436412ec347285ac8eff34a0fa938",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "101eaa46096117907d9af566a829918e464436412ec347285ac8eff34a0fa938",
+      "path": "src/tasks/velocity/v04/spec.py"
+    },
+    {
+      "baseline_sha256": "309fa89f1da75d667ba1a9ad0a9e92d5ebd7cfd2c89407da64004fc37291ce06",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "309fa89f1da75d667ba1a9ad0a9e92d5ebd7cfd2c89407da64004fc37291ce06",
+      "path": "src/tasks/velocity/v04/speed.py"
+    },
+    {
+      "baseline_sha256": "dc6e1a1a0f067982ff3b80c647565964f31ec8e7ab3bd15fff3a58cc572d7d06",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "dc6e1a1a0f067982ff3b80c647565964f31ec8e7ab3bd15fff3a58cc572d7d06",
+      "path": "src/tasks/velocity/v04/telemetry.py"
+    },
+    {
+      "baseline_sha256": "5eb73252f7f286a9d2ff6ed7cfb2540b5162614de4a82ea2cb0a1c37243c54ab",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5eb73252f7f286a9d2ff6ed7cfb2540b5162614de4a82ea2cb0a1c37243c54ab",
+      "path": "src/tasks/velocity/v05/__init__.py"
+    },
+    {
+      "baseline_sha256": "5a51388c01a013e89abdc3a2f782cdd3122d5a2cff0e6fad7c9316686e3d3b1b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5a51388c01a013e89abdc3a2f782cdd3122d5a2cff0e6fad7c9316686e3d3b1b",
+      "path": "src/tasks/velocity/v05/connection.py"
+    },
+    {
+      "baseline_sha256": "b27ad7f8c2287da72220406618b78227bb4025567538ea57a4851b75a275d441",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b27ad7f8c2287da72220406618b78227bb4025567538ea57a4851b75a275d441",
+      "path": "src/tasks/velocity/v05/env.py"
+    },
+    {
+      "baseline_sha256": "befb81cd5188e6907ebc5ab8d006666261e374ae18d567d25bbb0d1345daf43d",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "befb81cd5188e6907ebc5ab8d006666261e374ae18d567d25bbb0d1345daf43d",
+      "path": "src/tasks/velocity/v05/evaluation.py"
+    },
+    {
+      "baseline_sha256": "122dc30068119abbbaba257a644eb98d52ac88c84bc316c4551a472a93675f01",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "122dc30068119abbbaba257a644eb98d52ac88c84bc316c4551a472a93675f01",
+      "path": "src/tasks/velocity/v05/model.py"
+    },
+    {
+      "baseline_sha256": "86b8e889aca8f863c72b27c7e4d89671b4b8d6e56393dbc43ef19a53876cbf8f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "86b8e889aca8f863c72b27c7e4d89671b4b8d6e56393dbc43ef19a53876cbf8f",
+      "path": "src/tasks/velocity/v05/orchestration.py"
+    },
+    {
+      "baseline_sha256": "118105f17088e3f8d826be5f15c2ec23b4d7cf6849c65f3e1e7396547ccecd43",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "118105f17088e3f8d826be5f15c2ec23b4d7cf6849c65f3e1e7396547ccecd43",
+      "path": "src/tasks/velocity/v05/ppo.py"
+    },
+    {
+      "baseline_sha256": "5f74efd334622064589e89e24c4cdee956c9907a8947715b4d954fcf28f55b25",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5f74efd334622064589e89e24c4cdee956c9907a8947715b4d954fcf28f55b25",
+      "path": "src/tasks/velocity/v05/recovery.py"
+    },
+    {
+      "baseline_sha256": "f48c4b9bda0f90cbc6a1eebb0bd3e6a55e5e5dfa19037cb4beeaa8ee8622f9c4",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "f48c4b9bda0f90cbc6a1eebb0bd3e6a55e5e5dfa19037cb4beeaa8ee8622f9c4",
+      "path": "src/tasks/velocity/v05/rewards.py"
+    },
+    {
+      "baseline_sha256": "6118df5ad2f6abdf3f748f8bd170962078407bc17837efc72772050d42b906af",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "6118df5ad2f6abdf3f748f8bd170962078407bc17837efc72772050d42b906af",
+      "path": "src/tasks/velocity/v05/runner.py"
+    },
+    {
+      "baseline_sha256": "b070d9bfd13ddf37f08c2f6aef7b48a934609f509e59b80dc72907ede5071b44",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b070d9bfd13ddf37f08c2f6aef7b48a934609f509e59b80dc72907ede5071b44",
+      "path": "src/tasks/velocity/v05/spec.py"
+    },
+    {
+      "baseline_sha256": "4594ae9a34b06b9b5f1577ab71dc04b80a112b4c52f77b0160ee17782c0c80f2",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "4594ae9a34b06b9b5f1577ab71dc04b80a112b4c52f77b0160ee17782c0c80f2",
+      "path": "src/tasks/velocity/v05/speed.py"
+    },
+    {
+      "baseline_sha256": "325d77dcdc7942e36de812e51e42b454cfc8fcfbaa71856424884ff93505e24a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "325d77dcdc7942e36de812e51e42b454cfc8fcfbaa71856424884ff93505e24a",
+      "path": "src/tasks/velocity/v05/telemetry.py"
+    },
+    {
+      "baseline_sha256": "d3af20b1a5e904be163fdadc00d42e0909e85a979f8a1f8b405546ccba9514e6",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d3af20b1a5e904be163fdadc00d42e0909e85a979f8a1f8b405546ccba9514e6",
+      "path": "src/tasks/velocity/v05_r2/__init__.py"
+    },
+    {
+      "baseline_sha256": "b5eec4511443dacf30b65477fb1e6b4969ab6ebde91abf3aee3cad58be296666",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b5eec4511443dacf30b65477fb1e6b4969ab6ebde91abf3aee3cad58be296666",
+      "path": "src/tasks/velocity/v05_r2/connection.py"
+    },
+    {
+      "baseline_sha256": "aa383403e57c7e64a78e62f08cdbdcd28eed19499c09496fcb5209452c734efe",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "aa383403e57c7e64a78e62f08cdbdcd28eed19499c09496fcb5209452c734efe",
+      "path": "src/tasks/velocity/v05_r2/env.py"
+    },
+    {
+      "baseline_sha256": "98ee8f9c33f38d2cc9c2575f8a2929053a30629fd19579bf0789137fe0b894a1",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "98ee8f9c33f38d2cc9c2575f8a2929053a30629fd19579bf0789137fe0b894a1",
+      "path": "src/tasks/velocity/v05_r2/evaluation.py"
+    },
+    {
+      "baseline_sha256": "b81e40ad23741d4e5024552adcf0a159df076c50898c77446fc1e1c30cb8ee49",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b81e40ad23741d4e5024552adcf0a159df076c50898c77446fc1e1c30cb8ee49",
+      "path": "src/tasks/velocity/v05_r2/model.py"
+    },
+    {
+      "baseline_sha256": "ef84575cb5e0415f1a410a3341c5ce6720d3c90291dcd581bff514366ef68d8f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ef84575cb5e0415f1a410a3341c5ce6720d3c90291dcd581bff514366ef68d8f",
+      "path": "src/tasks/velocity/v05_r2/orchestration.py"
+    },
+    {
+      "baseline_sha256": "850b882b720db675b11ac4629e6db6e6dbd3f24f1c86b49c99fadff43b10916f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "850b882b720db675b11ac4629e6db6e6dbd3f24f1c86b49c99fadff43b10916f",
+      "path": "src/tasks/velocity/v05_r2/ppo.py"
+    },
+    {
+      "baseline_sha256": "22b2ee89dc58fce859d6d16a6012f27bf11925589dd718244eb100e81df04982",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "22b2ee89dc58fce859d6d16a6012f27bf11925589dd718244eb100e81df04982",
+      "path": "src/tasks/velocity/v05_r2/recovery.py"
+    },
+    {
+      "baseline_sha256": "8dcbfc4ba760f87a4fe45e46c893579ef8670cd9c646688e5873dba115b336e6",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "8dcbfc4ba760f87a4fe45e46c893579ef8670cd9c646688e5873dba115b336e6",
+      "path": "src/tasks/velocity/v05_r2/rewards.py"
+    },
+    {
+      "baseline_sha256": "f5ded428786ca092bc1c8c9635c23d17405b3d04fa008959f5176232c491ce34",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "f5ded428786ca092bc1c8c9635c23d17405b3d04fa008959f5176232c491ce34",
+      "path": "src/tasks/velocity/v05_r2/runner.py"
+    },
+    {
+      "baseline_sha256": "8dd3366022f70c91aecc412cb7480ba51dfbdebfebf713713c5ed741ed980489",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "8dd3366022f70c91aecc412cb7480ba51dfbdebfebf713713c5ed741ed980489",
+      "path": "src/tasks/velocity/v05_r2/spec.py"
+    },
+    {
+      "baseline_sha256": "70cffffae8efdfab9dc042ac3857733ec753982210d9f424dd52ca2a9cc7ff59",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "70cffffae8efdfab9dc042ac3857733ec753982210d9f424dd52ca2a9cc7ff59",
+      "path": "src/tasks/velocity/v05_r2/speed.py"
+    },
+    {
+      "baseline_sha256": "9ed210728506f927d2a050a6569459004993c51de1538297b4d2dbfcdf5a3b33",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "9ed210728506f927d2a050a6569459004993c51de1538297b4d2dbfcdf5a3b33",
+      "path": "src/tasks/velocity/v05_r2/telemetry.py"
+    },
+    {
+      "baseline_sha256": "faacd5f31bf355d95d75b45fda16eab8c6383242941fe6d021b43ef308fce93b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "faacd5f31bf355d95d75b45fda16eab8c6383242941fe6d021b43ef308fce93b",
+      "path": "src/tasks/velocity/v06/__init__.py"
+    },
+    {
+      "baseline_sha256": "9fc7144a9bab75745d2f5676e8dc93b56921bec5561d9eed3b01c366e8f4081a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "9fc7144a9bab75745d2f5676e8dc93b56921bec5561d9eed3b01c366e8f4081a",
+      "path": "src/tasks/velocity/v06/c1_contract.py"
+    },
+    {
+      "baseline_sha256": "97c88fca179ddd2f3715388d98f77065b9f0201465c1c81e0978d5a662a69802",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "97c88fca179ddd2f3715388d98f77065b9f0201465c1c81e0978d5a662a69802",
+      "path": "src/tasks/velocity/v06/c1_runtime.py"
+    },
+    {
+      "baseline_sha256": "663b69d192a7a894ec38e1a56e5d660e514801d44b1340a15a3a765654ddf24c",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "663b69d192a7a894ec38e1a56e5d660e514801d44b1340a15a3a765654ddf24c",
+      "path": "src/tasks/velocity/v06/connection.py"
+    },
+    {
+      "baseline_sha256": "c528ee08b3b01cd1d013c6242db535a5fc59a22917a7f974af9f949cb1ccf076",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c528ee08b3b01cd1d013c6242db535a5fc59a22917a7f974af9f949cb1ccf076",
+      "path": "src/tasks/velocity/v06/contacts.py"
+    },
+    {
+      "baseline_sha256": "2d893bbe9aea5005007548080debd9bdf83b4fa377b9356c83a0ec26d289fc0b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "2d893bbe9aea5005007548080debd9bdf83b4fa377b9356c83a0ec26d289fc0b",
+      "path": "src/tasks/velocity/v06/continuation_c1.py"
+    },
+    {
+      "baseline_sha256": "c784d84f95b394c78183e3c2c600df5062708ec5c170b078bf7497a56a114954",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c784d84f95b394c78183e3c2c600df5062708ec5c170b078bf7497a56a114954",
+      "path": "src/tasks/velocity/v06/curriculum.py"
+    },
+    {
+      "baseline_sha256": "36a7e2aab2191f7a1f21b46910efc4efa539e9a68906fcebc862c8f334ef585d",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "36a7e2aab2191f7a1f21b46910efc4efa539e9a68906fcebc862c8f334ef585d",
+      "path": "src/tasks/velocity/v06/env.py"
+    },
+    {
+      "baseline_sha256": "0574a60afbc36d0beed8e6a168f027caa74bf2faca316234c867945718dc0d79",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "0574a60afbc36d0beed8e6a168f027caa74bf2faca316234c867945718dc0d79",
+      "path": "src/tasks/velocity/v06/env_cfg.py"
+    },
+    {
+      "baseline_sha256": "0d28b6c6a19af4e916b381909f281342023026a16633c89606ddc9333665f814",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "0d28b6c6a19af4e916b381909f281342023026a16633c89606ddc9333665f814",
+      "path": "src/tasks/velocity/v06/evaluation.py"
+    },
+    {
+      "baseline_sha256": "293046f6deddbddbef903f6b2a4059e363f487c687b435c2b2afb5bd91df9500",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "293046f6deddbddbef903f6b2a4059e363f487c687b435c2b2afb5bd91df9500",
+      "path": "src/tasks/velocity/v06/evaluation_records.py"
+    },
+    {
+      "baseline_sha256": "503d22c85877ecc0ef568212dc391f07c70b47f4f13f1166633dde69083ca3ef",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "503d22c85877ecc0ef568212dc391f07c70b47f4f13f1166633dde69083ca3ef",
+      "path": "src/tasks/velocity/v06/events.py"
+    },
+    {
+      "baseline_sha256": "6205dd86d5b5903612d3641c861ba50ba36b9f9c0e8e9893a6ebaafe265c97bc",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "6205dd86d5b5903612d3641c861ba50ba36b9f9c0e8e9893a6ebaafe265c97bc",
+      "path": "src/tasks/velocity/v06/ledger.py"
+    },
+    {
+      "baseline_sha256": "30bb462699e9224a535d02eb809f2bcd1d309f149de897d24ccd5a348d03319e",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "30bb462699e9224a535d02eb809f2bcd1d309f149de897d24ccd5a348d03319e",
+      "path": "src/tasks/velocity/v06/map.py"
+    },
+    {
+      "baseline_sha256": "a08b50f8c10bc20280a0ce0e39fd07c8ebb6f64526f5c69bce4b062c3e032e7a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a08b50f8c10bc20280a0ce0e39fd07c8ebb6f64526f5c69bce4b062c3e032e7a",
+      "path": "src/tasks/velocity/v06/model.py"
+    },
+    {
+      "baseline_sha256": "7ca34d8ee49bd842985fbf73282089e5506502809732843415cf2ccfc1d78de7",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "7ca34d8ee49bd842985fbf73282089e5506502809732843415cf2ccfc1d78de7",
+      "path": "src/tasks/velocity/v06/orchestration.py"
+    },
+    {
+      "baseline_sha256": "d03afd4e53131e78b6d1324da416edc084f1e24939dda1f3c781003c3285d2b2",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d03afd4e53131e78b6d1324da416edc084f1e24939dda1f3c781003c3285d2b2",
+      "path": "src/tasks/velocity/v06/ppo.py"
+    },
+    {
+      "baseline_sha256": "5c9720ca68b1e5581b846a5d12592cfbc279de2858a2d939d13ec6cb2b9481f1",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5c9720ca68b1e5581b846a5d12592cfbc279de2858a2d939d13ec6cb2b9481f1",
+      "path": "src/tasks/velocity/v06/recovery.py"
+    },
+    {
+      "baseline_sha256": "326ff3580cf6924f08bcc3d62b7ee0105fdc2ab501f58fb9afcc65b1a02227e6",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "326ff3580cf6924f08bcc3d62b7ee0105fdc2ab501f58fb9afcc65b1a02227e6",
+      "path": "src/tasks/velocity/v06/rewards.py"
+    },
+    {
+      "baseline_sha256": "ffee82477362de6ce4ba39e55939b99c680750eb56574eab37f6afcdbae51002",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ffee82477362de6ce4ba39e55939b99c680750eb56574eab37f6afcdbae51002",
+      "path": "src/tasks/velocity/v06/runner.py"
+    },
+    {
+      "baseline_sha256": "a3f7acd92ca670f14cbe1de2a77ee1c2c5fb07b5e97a414c7939c5f0d9a2c3c7",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a3f7acd92ca670f14cbe1de2a77ee1c2c5fb07b5e97a414c7939c5f0d9a2c3c7",
+      "path": "src/tasks/velocity/v06/spec.py"
+    },
+    {
+      "baseline_sha256": "532055374aff4ef16e69f3d5960050bd6ea01488cf11875bae43eebde5daa539",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "532055374aff4ef16e69f3d5960050bd6ea01488cf11875bae43eebde5daa539",
+      "path": "src/tasks/velocity/v06/speed.py"
+    },
+    {
+      "baseline_sha256": "08810dfd1813ae36ecf3caaf92d083f49d35fcd0876e111a9f1bc950580b2692",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "08810dfd1813ae36ecf3caaf92d083f49d35fcd0876e111a9f1bc950580b2692",
+      "path": "src/tasks/velocity/v06/telemetry.py"
+    },
+    {
+      "baseline_sha256": "bada26734530068c14c565c1fd65bbfff7df3e6c3336d927ec7aa97a09ff8b57",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "bada26734530068c14c565c1fd65bbfff7df3e6c3336d927ec7aa97a09ff8b57",
+      "path": "src/tasks/velocity/v06/terrain.py"
+    },
+    {
+      "baseline_sha256": "1ca1a2adf643b46f7ce8776cb4cfc610aa199cb5fe78a8d311735f1578c46be2",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "1ca1a2adf643b46f7ce8776cb4cfc610aa199cb5fe78a8d311735f1578c46be2",
+      "path": "src/tasks/velocity/v07/__init__.py"
+    },
+    {
+      "baseline_sha256": "df690608aecd2675cc5cbb44165e1bf0dbc8639c9836af742f975e1dc2f884cd",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "df690608aecd2675cc5cbb44165e1bf0dbc8639c9836af742f975e1dc2f884cd",
+      "path": "src/tasks/velocity/v07/connection.py"
+    },
+    {
+      "baseline_sha256": "ff0e5c1b8b991633f16d151a2f27bc8bcea66092f6278c5650e627d5749234e0",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ff0e5c1b8b991633f16d151a2f27bc8bcea66092f6278c5650e627d5749234e0",
+      "path": "src/tasks/velocity/v07/contacts.py"
+    },
+    {
+      "baseline_sha256": "fd4ed219e499ce3fd58ee5b66471649994c94063148589aa395dc7386a9b8b51",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "fd4ed219e499ce3fd58ee5b66471649994c94063148589aa395dc7386a9b8b51",
+      "path": "src/tasks/velocity/v07/continuation_v07.py"
+    },
+    {
+      "baseline_sha256": "a744970c2f0e3bd044c4dbb6acd54424c65098aebe6a201f86b2faf91202126d",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a744970c2f0e3bd044c4dbb6acd54424c65098aebe6a201f86b2faf91202126d",
+      "path": "src/tasks/velocity/v07/curriculum.py"
+    },
+    {
+      "baseline_sha256": "e40cf56cbeb276e6f5cc3054f5bf3ebfea1c6a48edb0e0bb89eb73d4882f01f2",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "e40cf56cbeb276e6f5cc3054f5bf3ebfea1c6a48edb0e0bb89eb73d4882f01f2",
+      "path": "src/tasks/velocity/v07/env.py"
+    },
+    {
+      "baseline_sha256": "0f8be2bbb652ba0dd7572008a5b43e7589a48a5c88861c2b8744e72da1927cbc",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "0f8be2bbb652ba0dd7572008a5b43e7589a48a5c88861c2b8744e72da1927cbc",
+      "path": "src/tasks/velocity/v07/env_cfg.py"
+    },
+    {
+      "baseline_sha256": "6573f256c1b09875cc3494dcc0e72173695168ee27e584c92ddeb96c07dcb897",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "6573f256c1b09875cc3494dcc0e72173695168ee27e584c92ddeb96c07dcb897",
+      "path": "src/tasks/velocity/v07/evaluation.py"
+    },
+    {
+      "baseline_sha256": "5bc4c9a8e69c3cce7e23d98b8f013f4c25b0f62bb8dc71a4de069cbc78bcafba",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5bc4c9a8e69c3cce7e23d98b8f013f4c25b0f62bb8dc71a4de069cbc78bcafba",
+      "path": "src/tasks/velocity/v07/evaluation_records.py"
+    },
+    {
+      "baseline_sha256": "c126d8537a9ec5c4fee934568b44348c5aede751e82d38328132068ca4ea5610",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c126d8537a9ec5c4fee934568b44348c5aede751e82d38328132068ca4ea5610",
+      "path": "src/tasks/velocity/v07/events.py"
+    },
+    {
+      "baseline_sha256": "42dabb2206f80c59dfcecb794bd79210b97c8f51158f802e8db5a6f7605fb9f6",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "42dabb2206f80c59dfcecb794bd79210b97c8f51158f802e8db5a6f7605fb9f6",
+      "path": "src/tasks/velocity/v07/ledger.py"
+    },
+    {
+      "baseline_sha256": "14719bb47efe6519ca619b27af314355cb6b227c087e13b5c548138ab554658a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "14719bb47efe6519ca619b27af314355cb6b227c087e13b5c548138ab554658a",
+      "path": "src/tasks/velocity/v07/map.py"
+    },
+    {
+      "baseline_sha256": "6f24a6f4a0f39b1073e003b71433003e685a97552184ae1aa3ccbc64982351ab",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "6f24a6f4a0f39b1073e003b71433003e685a97552184ae1aa3ccbc64982351ab",
+      "path": "src/tasks/velocity/v07/model.py"
+    },
+    {
+      "baseline_sha256": "9f752f6e5744a354c6fb01bbf3237ebc6e36192df2a2b65eda326e8d7169848b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "9f752f6e5744a354c6fb01bbf3237ebc6e36192df2a2b65eda326e8d7169848b",
+      "path": "src/tasks/velocity/v07/operator_control.py"
+    },
+    {
+      "baseline_sha256": "b3dd3cbf3cff40dd1f98064f4b7d1dc0049847c070099988d9a991ca745ba3d3",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b3dd3cbf3cff40dd1f98064f4b7d1dc0049847c070099988d9a991ca745ba3d3",
+      "path": "src/tasks/velocity/v07/orchestration.py"
+    },
+    {
+      "baseline_sha256": "c69b6b4bc2785a6edb71e67af0d4c283c4aee473f2667b3a4f29bc22a13f15b4",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c69b6b4bc2785a6edb71e67af0d4c283c4aee473f2667b3a4f29bc22a13f15b4",
+      "path": "src/tasks/velocity/v07/ppo.py"
+    },
+    {
+      "baseline_sha256": "65b10f1a27c0369aa63924eb274fde9f27dc563da121fd0ff71db80f8fc9e695",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "65b10f1a27c0369aa63924eb274fde9f27dc563da121fd0ff71db80f8fc9e695",
+      "path": "src/tasks/velocity/v07/recovery.py"
+    },
+    {
+      "baseline_sha256": "c0ae8ca976501d4050f9377222b47f743c4d88c9d0c923dddee6cdaef208c8e4",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c0ae8ca976501d4050f9377222b47f743c4d88c9d0c923dddee6cdaef208c8e4",
+      "path": "src/tasks/velocity/v07/regression_policy.py"
+    },
+    {
+      "baseline_sha256": "418d48009689048384cdeb2f92ab0e0c1ce490fd33b43278e15562ef1d60b34a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "418d48009689048384cdeb2f92ab0e0c1ce490fd33b43278e15562ef1d60b34a",
+      "path": "src/tasks/velocity/v07/rewards.py"
+    },
+    {
+      "baseline_sha256": "537a1cd850b09e536bf3454ef3c6da4d945b35a901d2cf33356af9cdba4f4d00",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "537a1cd850b09e536bf3454ef3c6da4d945b35a901d2cf33356af9cdba4f4d00",
+      "path": "src/tasks/velocity/v07/runner.py"
+    },
+    {
+      "baseline_sha256": "20092bd3c26e63c4b15c2bf6aa6f7b26f06cb752a7992dcff907cd3e63c34a81",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "20092bd3c26e63c4b15c2bf6aa6f7b26f06cb752a7992dcff907cd3e63c34a81",
+      "path": "src/tasks/velocity/v07/runtime.py"
+    },
+    {
+      "baseline_sha256": "c79a0afec8daa1f8ab67e3e7d9991997c49d5f4c77a8ed83ef6891b6089e07c0",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c79a0afec8daa1f8ab67e3e7d9991997c49d5f4c77a8ed83ef6891b6089e07c0",
+      "path": "src/tasks/velocity/v07/spec.py"
+    },
+    {
+      "baseline_sha256": "d6f8caab4b77503e68f675a78b5492d606155e1363cdc0f67499c290128b54e7",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d6f8caab4b77503e68f675a78b5492d606155e1363cdc0f67499c290128b54e7",
+      "path": "src/tasks/velocity/v07/speed.py"
+    },
+    {
+      "baseline_sha256": "e84ed6b36aaf8ab5ce8898e798b5ebf726af907807c383a55fe02ef44f29cf21",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "e84ed6b36aaf8ab5ce8898e798b5ebf726af907807c383a55fe02ef44f29cf21",
+      "path": "src/tasks/velocity/v07/telemetry.py"
+    },
+    {
+      "baseline_sha256": "d2b74d6d86ad28f8975e0b6d07e5636a0ccc1563d47695188fd099e05828df93",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d2b74d6d86ad28f8975e0b6d07e5636a0ccc1563d47695188fd099e05828df93",
+      "path": "src/tasks/velocity/v07/terrain.py"
+    },
+    {
+      "baseline_sha256": "665382b02df90f0ca6f436e8990f9a3eb0b876a1e31cc10dfa5bd2ba6f49b533",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "665382b02df90f0ca6f436e8990f9a3eb0b876a1e31cc10dfa5bd2ba6f49b533",
+      "path": "src/tasks/velocity/v07/window_evidence.py"
+    },
+    {
+      "baseline_sha256": "ca66d319d75ed35780b7c22a5b6dbe0476b6bec9ed955a83b0d54b09a2ea370a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ca66d319d75ed35780b7c22a5b6dbe0476b6bec9ed955a83b0d54b09a2ea370a",
+      "path": "src/tasks/velocity/v09/__init__.py"
+    },
+    {
+      "baseline_sha256": "db5429582c0ebe97a94da3652cda27e062a2cff582ad15f07d2f06e7cfa0ce5b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "db5429582c0ebe97a94da3652cda27e062a2cff582ad15f07d2f06e7cfa0ce5b",
+      "path": "src/tasks/velocity/v09/acceptance.py"
+    },
+    {
+      "baseline_sha256": "2abb7fcb4e7e1e74f894a555643c3e06fc26dffd36d2e5caf290584536d6c7e9",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "2abb7fcb4e7e1e74f894a555643c3e06fc26dffd36d2e5caf290584536d6c7e9",
+      "path": "src/tasks/velocity/v09/budget.py"
+    },
+    {
+      "baseline_sha256": "89c36b100fa113ec6a36e0b2553c62929590306997c45caa05d709746386b15d",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "89c36b100fa113ec6a36e0b2553c62929590306997c45caa05d709746386b15d",
+      "path": "src/tasks/velocity/v09/cases.py"
+    },
+    {
+      "baseline_sha256": "ec7ba235152bf8aafd9c674ecc58c7556bdfd7cc0ef16d17685858cb0e675f46",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ec7ba235152bf8aafd9c674ecc58c7556bdfd7cc0ef16d17685858cb0e675f46",
+      "path": "src/tasks/velocity/v09/checkpoint.py"
+    },
+    {
+      "baseline_sha256": "ecba1b3b58ba807662b45f7008cc8d6fdc3c3e87028c243c7d850745b5ec3c8a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ecba1b3b58ba807662b45f7008cc8d6fdc3c3e87028c243c7d850745b5ec3c8a",
+      "path": "src/tasks/velocity/v09/diagnostics.py"
+    },
+    {
+      "baseline_sha256": "b9853f027c0c4887b1f47109876a65629b91441e19f0bcb922d874ba7294acd7",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b9853f027c0c4887b1f47109876a65629b91441e19f0bcb922d874ba7294acd7",
+      "path": "src/tasks/velocity/v09/distillation.py"
+    },
+    {
+      "baseline_sha256": "98009028199c06182655d576881d70a9b38d900a10d9de4c110550e076cd4b95",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "98009028199c06182655d576881d70a9b38d900a10d9de4c110550e076cd4b95",
+      "path": "src/tasks/velocity/v09/env.py"
+    },
+    {
+      "baseline_sha256": "7afc473fad762fb3a95f742716aa76bebaf16c2da8c3f87a18fd04e680d3df0a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "7afc473fad762fb3a95f742716aa76bebaf16c2da8c3f87a18fd04e680d3df0a",
+      "path": "src/tasks/velocity/v09/evidence_identity.py"
+    },
+    {
+      "baseline_sha256": "2a98d2b07b7142d10d30071264fa3ab5dad29b80514a9eaaaecec622653a28d3",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "2a98d2b07b7142d10d30071264fa3ab5dad29b80514a9eaaaecec622653a28d3",
+      "path": "src/tasks/velocity/v09/geometry.py"
+    },
+    {
+      "baseline_sha256": "41b4e6fcbe2e5e34f349c7ba00ce1275e8f0bdfbdd2c74f9f30592dd00ad2b42",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "41b4e6fcbe2e5e34f349c7ba00ce1275e8f0bdfbdd2c74f9f30592dd00ad2b42",
+      "path": "src/tasks/velocity/v09/map.py"
+    },
+    {
+      "baseline_sha256": "de00d160b9e4930e4665e50c6420a5edfe9f6c9888abab1aa9f824821061da83",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "de00d160b9e4930e4665e50c6420a5edfe9f6c9888abab1aa9f824821061da83",
+      "path": "src/tasks/velocity/v09/metrics.py"
+    },
+    {
+      "baseline_sha256": "a9e6bbcbe4813daca4a030ec10f912c01da062ad80e55b54952b219de33310ad",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a9e6bbcbe4813daca4a030ec10f912c01da062ad80e55b54952b219de33310ad",
+      "path": "src/tasks/velocity/v09/model.py"
+    },
+    {
+      "baseline_sha256": "0756c3d879c97973f840fd043d503c295d321689c28c8bcf106bfd9f9d554542",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "0756c3d879c97973f840fd043d503c295d321689c28c8bcf106bfd9f9d554542",
+      "path": "src/tasks/velocity/v09/resources.py"
+    },
+    {
+      "baseline_sha256": "49e844e02f70470155f9f6e6fb824f241f80e41e6be58e959d9a2a787aab6297",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "49e844e02f70470155f9f6e6fb824f241f80e41e6be58e959d9a2a787aab6297",
+      "path": "src/tasks/velocity/v09/runtime.py"
+    },
+    {
+      "baseline_sha256": "6186f8ee375f98e86e54d4be4f329d0ac3f0cbd9df5d2a3ef6cf15b02f307434",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "6186f8ee375f98e86e54d4be4f329d0ac3f0cbd9df5d2a3ef6cf15b02f307434",
+      "path": "src/tasks/velocity/v09/s1_runner.py"
+    },
+    {
+      "baseline_sha256": "3c6b3d8574b6167a05212de6a83d0cdb0b345a04dafc317e4ca4a07f444af451",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "3c6b3d8574b6167a05212de6a83d0cdb0b345a04dafc317e4ca4a07f444af451",
+      "path": "src/tasks/velocity/v09/s2_acceptance.py"
+    },
+    {
+      "baseline_sha256": "c7a3d321d5b78b3a1d329c6bd01d405eb43ff9ac48737c44bd0cc8a4a971dc34",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c7a3d321d5b78b3a1d329c6bd01d405eb43ff9ac48737c44bd0cc8a4a971dc34",
+      "path": "src/tasks/velocity/v09/s2_budget.py"
+    },
+    {
+      "baseline_sha256": "647ffb5aa6a34e6b1f64a74c2f556d46cea8ada56b9aa1740be438e520c0de4a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "647ffb5aa6a34e6b1f64a74c2f556d46cea8ada56b9aa1740be438e520c0de4a",
+      "path": "src/tasks/velocity/v09/s2_cases.py"
+    },
+    {
+      "baseline_sha256": "a8f8307a6ed1d182717992eb3769d3df50ead537847780a705fcc272ee2938ac",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a8f8307a6ed1d182717992eb3769d3df50ead537847780a705fcc272ee2938ac",
+      "path": "src/tasks/velocity/v09/s2_checkpoint.py"
+    },
+    {
+      "baseline_sha256": "99bff8809e3d88c745ec5486d431206e9abbe32eca8a68dcc79f593d51d32dd3",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "99bff8809e3d88c745ec5486d431206e9abbe32eca8a68dcc79f593d51d32dd3",
+      "path": "src/tasks/velocity/v09/s2_concurrency.py"
+    },
+    {
+      "baseline_sha256": "9c62b386674a948db568db4ebf91b7b6b015c80e9b4d38b10af4778fc3642fb6",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "9c62b386674a948db568db4ebf91b7b6b015c80e9b4d38b10af4778fc3642fb6",
+      "path": "src/tasks/velocity/v09/s2_counterfactual.py"
+    },
+    {
+      "baseline_sha256": "0b1942cc050dda0e975fe63062779dc92e877098d5258d98c8e793f6739a35c0",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "0b1942cc050dda0e975fe63062779dc92e877098d5258d98c8e793f6739a35c0",
+      "path": "src/tasks/velocity/v09/s2_course.py"
+    },
+    {
+      "baseline_sha256": "4e72e9fc200959c9326f03d4fbeee8a14dfa48674c10ac73a210d5395d111188",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "4e72e9fc200959c9326f03d4fbeee8a14dfa48674c10ac73a210d5395d111188",
+      "path": "src/tasks/velocity/v09/s2_env.py"
+    },
+    {
+      "baseline_sha256": "5cbb1f798ec39d5c7be0de2752e4ab866aa2daccdb5a3917dc942b8735838084",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5cbb1f798ec39d5c7be0de2752e4ab866aa2daccdb5a3917dc942b8735838084",
+      "path": "src/tasks/velocity/v09/s2_execute.py"
+    },
+    {
+      "baseline_sha256": "e866363e357243c81fa60217f943230815092f3f7b72f418aaa57e00b185e1bd",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "e866363e357243c81fa60217f943230815092f3f7b72f418aaa57e00b185e1bd",
+      "path": "src/tasks/velocity/v09/s2_gate_cases.py"
+    },
+    {
+      "baseline_sha256": "a348bbb522f7089e9e2c8751b1b931e51c6dad95403b5223137f8e1fb511d614",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a348bbb522f7089e9e2c8751b1b931e51c6dad95403b5223137f8e1fb511d614",
+      "path": "src/tasks/velocity/v09/s2_ledger.py"
+    },
+    {
+      "baseline_sha256": "ab679d1197335083d497b57d52e87fa36d0823e75cb3b57aa0426771168c3a63",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ab679d1197335083d497b57d52e87fa36d0823e75cb3b57aa0426771168c3a63",
+      "path": "src/tasks/velocity/v09/s2_lifecycle.py"
+    },
+    {
+      "baseline_sha256": "305953390a0727f02e04ececc624a05370955654c71797141f65148d9700ee6c",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "305953390a0727f02e04ececc624a05370955654c71797141f65148d9700ee6c",
+      "path": "src/tasks/velocity/v09/s2_loss.py"
+    },
+    {
+      "baseline_sha256": "164746c313f967ca7f8a27f9f6bfc8144b143a2924892b1d468dd05d3e136e36",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "164746c313f967ca7f8a27f9f6bfc8144b143a2924892b1d468dd05d3e136e36",
+      "path": "src/tasks/velocity/v09/s2_map_ablation.py"
+    },
+    {
+      "baseline_sha256": "2cb73170218b54f2765122809ade1d9a642093e7620d1ff4a6a721da64a2930a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "2cb73170218b54f2765122809ade1d9a642093e7620d1ff4a6a721da64a2930a",
+      "path": "src/tasks/velocity/v09/s2_metrics.py"
+    },
+    {
+      "baseline_sha256": "118bcaf13c09e26b29d7d6900a7fc02d809e37bbd0a169428cf1f6d5aafccbde",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "118bcaf13c09e26b29d7d6900a7fc02d809e37bbd0a169428cf1f6d5aafccbde",
+      "path": "src/tasks/velocity/v09/s2_parity.py"
+    },
+    {
+      "baseline_sha256": "242ca72960d70e8eef647253ce84f4e9aa12e572db13c60ac42f6e2552c0d917",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "242ca72960d70e8eef647253ce84f4e9aa12e572db13c60ac42f6e2552c0d917",
+      "path": "src/tasks/velocity/v09/s2_physics.py"
+    },
+    {
+      "baseline_sha256": "8433b06de6b5aa29bc0f4e9f9e3242817ed153b846545d2641c0ec3b762691ab",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "8433b06de6b5aa29bc0f4e9f9e3242817ed153b846545d2641c0ec3b762691ab",
+      "path": "src/tasks/velocity/v09/s2_quality.py"
+    },
+    {
+      "baseline_sha256": "a18534f306318122680450e2cec2482ae46b62e46e18b55e3ad40c716acc7db8",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a18534f306318122680450e2cec2482ae46b62e46e18b55e3ad40c716acc7db8",
+      "path": "src/tasks/velocity/v09/s2_r1.py"
+    },
+    {
+      "baseline_sha256": "86ad7e9b1150ba64fea3aa18f4ce31dffb807876519a8cf7063d3cde3f40e652",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "86ad7e9b1150ba64fea3aa18f4ce31dffb807876519a8cf7063d3cde3f40e652",
+      "path": "src/tasks/velocity/v09/s2_resources.py"
+    },
+    {
+      "baseline_sha256": "b78ea0fd01b93bf0873cd44ac505da9c7c3901d9f996bd148bbee9f44bddf856",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b78ea0fd01b93bf0873cd44ac505da9c7c3901d9f996bd148bbee9f44bddf856",
+      "path": "src/tasks/velocity/v09/s2_rewards.py"
+    },
+    {
+      "baseline_sha256": "9879cd1f0dcee8fecba004d646c5bc96006d5ccc49a1b960de741075519b9347",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "9879cd1f0dcee8fecba004d646c5bc96006d5ccc49a1b960de741075519b9347",
+      "path": "src/tasks/velocity/v09/s2_runner.py"
+    },
+    {
+      "baseline_sha256": "6afffb7018d708cd9ba25ef642a9c32659a5162d50563d447338bbb16c0c17dc",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "6afffb7018d708cd9ba25ef642a9c32659a5162d50563d447338bbb16c0c17dc",
+      "path": "src/tasks/velocity/v09/s2_spec.py"
+    },
+    {
+      "baseline_sha256": "4e7e626299f6af34031e8bdbba91ca0aeccbe068ab052aea4eb831cc9a5210ba",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "4e7e626299f6af34031e8bdbba91ca0aeccbe068ab052aea4eb831cc9a5210ba",
+      "path": "src/tasks/velocity/v09/s2_state.py"
+    },
+    {
+      "baseline_sha256": "5f1cf278991ba3993a0464d607d77501888caab526f3f4d43c86cafec2b6683e",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5f1cf278991ba3993a0464d607d77501888caab526f3f4d43c86cafec2b6683e",
+      "path": "src/tasks/velocity/v09/s2_terrain.py"
+    },
+    {
+      "baseline_sha256": "22d46a364909dbb893ec1609ba73d0120e033b2b3fe991b768863f1458d6816c",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "22d46a364909dbb893ec1609ba73d0120e033b2b3fe991b768863f1458d6816c",
+      "path": "src/tasks/velocity/v09/s2_train.py"
+    },
+    {
+      "baseline_sha256": "b46adb2fed7c74b9c275ad60ebae59cb603108c022b195fbc03055bc4d1ec678",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "b46adb2fed7c74b9c275ad60ebae59cb603108c022b195fbc03055bc4d1ec678",
+      "path": "src/tasks/velocity/v09/s2_train_env.py"
+    },
+    {
+      "baseline_sha256": "5ee70704ff2d18eb5e4d400a6cbb1758d63002aaf69d49236f9900164ef0b426",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "5ee70704ff2d18eb5e4d400a6cbb1758d63002aaf69d49236f9900164ef0b426",
+      "path": "src/tasks/velocity/v09/s2_train_real.py"
+    },
+    {
+      "baseline_sha256": "3d5beb83a5d6600f46a6257ef0fabad2dd8a134b289905e9be5aadfc08222fa9",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "3d5beb83a5d6600f46a6257ef0fabad2dd8a134b289905e9be5aadfc08222fa9",
+      "path": "src/tasks/velocity/v09/spec.py"
+    },
+    {
+      "baseline_sha256": "dd201ef1acc92b2cfa88360cee9df2850c5c8d4db382b4ebd2a66bd6177a6920",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "dd201ef1acc92b2cfa88360cee9df2850c5c8d4db382b4ebd2a66bd6177a6920",
+      "path": "src/tasks/velocity/v09/video.py"
+    },
+    {
+      "baseline_sha256": "a6fb9c0b99b4964894546b07e3c8f8585da6d87bd1f6769ce20f3c64f784bb96",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a6fb9c0b99b4964894546b07e3c8f8585da6d87bd1f6769ce20f3c64f784bb96",
+      "path": "src/tasks/velocity/v10/__init__.py"
+    },
+    {
+      "baseline_sha256": "dafa8b0e2603f08fd8896f821c2b8018e5f4f8293945b10e62f69a17e9969a1c",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "dafa8b0e2603f08fd8896f821c2b8018e5f4f8293945b10e62f69a17e9969a1c",
+      "path": "src/tasks/velocity/v10/cases.py"
+    },
+    {
+      "baseline_sha256": "2ea32888ec80878aa901677991436a3493cbba81dde4357a2da67fb6834fc787",
+      "change": "A1_modified",
+      "current_sha256": "12620a96dd69db42ad4c5769519cb89d7c65367b99dda38e581dfcb99675c737",
+      "path": "src/tasks/velocity/v10/checkpoint.py"
+    },
+    {
+      "baseline_sha256": "28d9e72fc9a552169acb9954e5429802f30151054321daeb538e111e7d3fe7b5",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "28d9e72fc9a552169acb9954e5429802f30151054321daeb538e111e7d3fe7b5",
+      "path": "src/tasks/velocity/v10/contacts.py"
+    },
+    {
+      "baseline_sha256": "de0c42a3b3652fcb078651bb78877a188b885ba84ae846158d9ec47c7ea500a3",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "de0c42a3b3652fcb078651bb78877a188b885ba84ae846158d9ec47c7ea500a3",
+      "path": "src/tasks/velocity/v10/dagger.py"
+    },
+    {
+      "baseline_sha256": null,
+      "change": "A1_new",
+      "current_sha256": "9fb5c774251535893f6d33300209f1ab75238e68d474fb2a9d4f3143ca252d72",
+      "path": "src/tasks/velocity/v10/diagnostic_a1.py"
+    },
+    {
+      "baseline_sha256": "d7b0fc95e8fa5cba8fe7d800581a3f13c65e452d882b9d023de4130d12404a13",
+      "change": "A1_modified",
+      "current_sha256": "788aadda084acb6588f5f1845c5d85c6b606ffff1ae7dea3b469630814c672b2",
+      "path": "src/tasks/velocity/v10/env.py"
+    },
+    {
+      "baseline_sha256": "23055cf04337cf7618101c2a942d6f30706a0bd2cb463c85a289f2616059c83a",
+      "change": "A1_modified",
+      "current_sha256": "7ae615709692af5807cd92968e04c3713d3541d7ed910f5c970d383849429a5e",
+      "path": "src/tasks/velocity/v10/eval_worker.py"
+    },
+    {
+      "baseline_sha256": "07f7c42a694c3cc29b0960a33f23294c1b40a9378d1c01863bd643baf4c9e396",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "07f7c42a694c3cc29b0960a33f23294c1b40a9378d1c01863bd643baf4c9e396",
+      "path": "src/tasks/velocity/v10/evaluation.py"
+    },
+    {
+      "baseline_sha256": null,
+      "change": "A1_new",
+      "current_sha256": "221d49491f1d470944bab67d729e62bed49bbc1b139bf377aae10a1c34409c32",
+      "path": "src/tasks/velocity/v10/evaluation_capacity.py"
+    },
+    {
+      "baseline_sha256": "ab6eb2a5772bb39656517a0daf03a0247a78d9450001282efddb0128438e4c6f",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ab6eb2a5772bb39656517a0daf03a0247a78d9450001282efddb0128438e4c6f",
+      "path": "src/tasks/velocity/v10/geometry.py"
+    },
+    {
+      "baseline_sha256": "7c997056590795f3bb96617a003f0f3fc7f24625741c0e986ad7957c2c34c197",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "7c997056590795f3bb96617a003f0f3fc7f24625741c0e986ad7957c2c34c197",
+      "path": "src/tasks/velocity/v10/gpu_lock.py"
+    },
+    {
+      "baseline_sha256": "303f064a3fc34f41a639bfdc4caf078275d5ac1915909b25f97ad36e79f1a9c1",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "303f064a3fc34f41a639bfdc4caf078275d5ac1915909b25f97ad36e79f1a9c1",
+      "path": "src/tasks/velocity/v10/identity.py"
+    },
+    {
+      "baseline_sha256": "9b04f5c617d4c6a41497fa3dc6cbacdb5a42ff5b7c2f3eed09870ff5b0335317",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "9b04f5c617d4c6a41497fa3dc6cbacdb5a42ff5b7c2f3eed09870ff5b0335317",
+      "path": "src/tasks/velocity/v10/model.py"
+    },
+    {
+      "baseline_sha256": "aec4c37bd2ce88304b07eb9443745ef5ccdc11fc495da193c1552fd72356cd3f",
+      "change": "A1_modified",
+      "current_sha256": "46140904046a59567a5d2e36074efc9f7467b6806f03bddeb857dd9b2072a229",
+      "path": "src/tasks/velocity/v10/orchestration.py"
+    },
+    {
+      "baseline_sha256": "47f0497c94d2c5cab438e4267fdd63e41d7d893e4a070a065442e7b6f043b16a",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "47f0497c94d2c5cab438e4267fdd63e41d7d893e4a070a065442e7b6f043b16a",
+      "path": "src/tasks/velocity/v10/ppo.py"
+    },
+    {
+      "baseline_sha256": "d08a84d45b9731799eea3f899020622ab7cd1ded60f2a78a7b992195fe1c3e94",
+      "change": "A1_modified",
+      "current_sha256": "1a9f6dc24035b5f3244c7e5b9f08812b72c138b0e7032c3e4ac0b916acb70a73",
+      "path": "src/tasks/velocity/v10/probe_budget.py"
+    },
+    {
+      "baseline_sha256": "eb61a61a370912297c044a902b11a057cab7a45079b5b68e5357fbdfd651d637",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "eb61a61a370912297c044a902b11a057cab7a45079b5b68e5357fbdfd651d637",
+      "path": "src/tasks/velocity/v10/replay.py"
+    },
+    {
+      "baseline_sha256": null,
+      "change": "A1_new",
+      "current_sha256": "fa4ea1a992a9bae7d8ce40c403b29bc4c8a737dff8f24892735c18e8ecc473c2",
+      "path": "src/tasks/velocity/v10/resource_a1.py"
+    },
+    {
+      "baseline_sha256": "e39436bb71ebda929367f8a817f9a9cf583b25dbe86ce530527a5abef392b0aa",
+      "change": "A1_modified",
+      "current_sha256": "045e2f5915e84670541b27358e696d97872e1845fff9dc1b850b73d7ac6b3f6f",
+      "path": "src/tasks/velocity/v10/resources.py"
+    },
+    {
+      "baseline_sha256": "ab685a49b3e4dc2b028921ae135557926a4fac8000fb33d232f3ef054a148805",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "ab685a49b3e4dc2b028921ae135557926a4fac8000fb33d232f3ef054a148805",
+      "path": "src/tasks/velocity/v10/rewards.py"
+    },
+    {
+      "baseline_sha256": "a344c90ff7321e0f0a2c13541f0636819b8c24a7defc323341e418e2e22840b6",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "a344c90ff7321e0f0a2c13541f0636819b8c24a7defc323341e418e2e22840b6",
+      "path": "src/tasks/velocity/v10/runtime.py"
+    },
+    {
+      "baseline_sha256": "8c0691b8aa053d3318059b05bdab1c68fb1df1195b3a1a7709e88f6d1fb0a841",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "8c0691b8aa053d3318059b05bdab1c68fb1df1195b3a1a7709e88f6d1fb0a841",
+      "path": "src/tasks/velocity/v10/spec.py"
+    },
+    {
+      "baseline_sha256": "eaecaf8be44299244978542038944fd98db4e57e9bd02d6c4aca93592bceab14",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "eaecaf8be44299244978542038944fd98db4e57e9bd02d6c4aca93592bceab14",
+      "path": "src/tasks/velocity/v10/tasks.py"
+    },
+    {
+      "baseline_sha256": "68b8482e6cce6f1def706702171ce31bc71824bd9a8c96afab571e70b55db4ca",
+      "change": "A1_modified",
+      "current_sha256": "0bc5c57b9b535a6472a4fcc38133e42f289a169c2946877e2214d84456de9950",
+      "path": "src/tasks/velocity/v10/teachers.py"
+    },
+    {
+      "baseline_sha256": null,
+      "change": "A1_new",
+      "current_sha256": "43155bcca7445ad9d84ef1f48b691e5c3d3b417e4504aec0c653d036c7e99882",
+      "path": "src/tasks/velocity/v10/trace.py"
+    },
+    {
+      "baseline_sha256": "87a58574713e66c406ee5defd33240c30646092be495480249c84646799e8bc3",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "87a58574713e66c406ee5defd33240c30646092be495480249c84646799e8bc3",
+      "path": "src/tasks/velocity/velocity_env_cfg.py"
+    },
+    {
+      "baseline_sha256": "9d750a857c8db9d1db61665d77e1616f272081550965d0b45ca1332e636739d3",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "9d750a857c8db9d1db61665d77e1616f272081550965d0b45ca1332e636739d3",
+      "path": "src/terrains/__init__.py"
+    },
+    {
+      "baseline_sha256": "7853300f62dad52628e7cb9948cd23e6e5ae613d0392afe46bd05652e4952107",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "7853300f62dad52628e7cb9948cd23e6e5ae613d0392afe46bd05652e4952107",
+      "path": "src/terrains/ideal_stairs_atlas.py"
+    },
+    {
+      "baseline_sha256": "d886c9fa1d9b5342c0b0292c92383396d7c927bdffd10270e8b26ab2b6ef5a81",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d886c9fa1d9b5342c0b0292c92383396d7c927bdffd10270e8b26ab2b6ef5a81",
+      "path": "src/terrains/open_stairs.py"
+    },
+    {
+      "baseline_sha256": null,
+      "change": "A1_new",
+      "current_sha256": "3ee3cfcaf791da1aca29d39836d04a8ab1ed2d50d30b5f1d5bfb242a924cfdb3",
+      "path": "tests/test_v10_a1_diagnostic.py"
+    },
+    {
+      "baseline_sha256": null,
+      "change": "A1_new",
+      "current_sha256": "743b584514bd05bda87332fc14137a7c924634e58392c2454e4484dbea12f0b1",
+      "path": "tests/test_v10_a1_identity.py"
+    },
+    {
+      "baseline_sha256": "6dd9fa6b7255f333c06ed542d7958ccb4111d47d3a3d30d4ac04d3a291ed1f6b",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "6dd9fa6b7255f333c06ed542d7958ccb4111d47d3a3d30d4ac04d3a291ed1f6b",
+      "path": "tests/test_v10_env_contract.py"
+    },
+    {
+      "baseline_sha256": "3eeb3d274df00a581c39c9ee1c72d8574ca5599778ab2448242df78d62ca4849",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "3eeb3d274df00a581c39c9ee1c72d8574ca5599778ab2448242df78d62ca4849",
+      "path": "tests/test_v10_env_gpu.py"
+    },
+    {
+      "baseline_sha256": null,
+      "change": "A1_new",
+      "current_sha256": "8a2b975a36705be786deaceea630f6fa8d895d2a46b9fd6e63985d407c66c336",
+      "path": "tests/test_v10_env_recording.py"
+    },
+    {
+      "baseline_sha256": "072c48d29a2f849c848499a3cb2de7e979cbcb3ad735e86a738777cb894b0a51",
+      "change": "A1_modified",
+      "current_sha256": "bd16462bbe94b1714857a821c527079dca2d8309f2ceede01bc4954b4224d418",
+      "path": "tests/test_v10_learning_core.py"
+    },
+    {
+      "baseline_sha256": "3c13035dec96216a933e3f1f49a5621d1e8b1b95099d0b09a71be3e0d74acdd2",
+      "change": "A1_modified",
+      "current_sha256": "b597cd3d15ddee5475b36f59b1973d77837f1de5b693d9689112dc6ac04131ee",
+      "path": "tests/test_v10_orchestration.py"
+    },
+    {
+      "baseline_sha256": "ecfeafd0214dbea074b2986a616ee7d9cffc872cb2a73e3d33f388eb92587e83",
+      "change": "A1_modified",
+      "current_sha256": "206a43e78b956c35fa94860176c746415c83f73c193e4cf413953bcfe504cfac",
+      "path": "tests/test_v10_probe_budget.py"
+    },
+    {
+      "baseline_sha256": "d998ea75db6a71d5a3eb12fc285e69c5992c41916d6c6eb8d20fa904af659274",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "d998ea75db6a71d5a3eb12fc285e69c5992c41916d6c6eb8d20fa904af659274",
+      "path": "tests/test_v10_protocol.py"
+    },
+    {
+      "baseline_sha256": null,
+      "change": "A1_new",
+      "current_sha256": "9b68f858dda41dc9495a86083e02b4570b888539e51903e3f3332610109586d3",
+      "path": "tests/test_v10_resource_a1.py"
+    },
+    {
+      "baseline_sha256": "70337f8fe7e85be3e03ad3a02924cb6035f62f2c5319a998c66cfad2326c4b82",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "70337f8fe7e85be3e03ad3a02924cb6035f62f2c5319a998c66cfad2326c4b82",
+      "path": "tests/test_v10_runtime_core.py"
+    },
+    {
+      "baseline_sha256": "18bdb93240ff110262beb5b229419b8f920b982006e536f95bdae76c8eb0f45d",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "18bdb93240ff110262beb5b229419b8f920b982006e536f95bdae76c8eb0f45d",
+      "path": "tests/test_v10_runtime_memory.py"
+    },
+    {
+      "baseline_sha256": "c96977fe7d0cbe71c42303a95251270f4443403e9ee3348f8063ce75cb1ce5e2",
+      "change": "preserved_actual_baseline_bytes",
+      "current_sha256": "c96977fe7d0cbe71c42303a95251270f4443403e9ee3348f8063ce75cb1ce5e2",
+      "path": "tests/test_v10_runtime_task_logging.py"
+    },
+    {
+      "baseline_sha256": null,
+      "change": "A1_new",
+      "current_sha256": "3fa29c1cc3a762bf2b1a4eb79864bbcd6aa546b0b60bea0fc1b1c4d60a586003",
+      "path": "tests/test_v10_teacher_yaw.py"
+    },
+    {
+      "baseline_sha256": null,
+      "change": "A1_new",
+      "current_sha256": "23dd22bbcc7adf97733eb774d11e53e5085d3bb436fd86073b3ec133bd893b83",
+      "path": "tests/test_v10_trace.py"
+    }
+  ],
+  "new_code_sha256": "8daf0658fb0e2dd62ce96c33fff56d51711c0279230ecc6ce35f3ff58d68afa5",
+  "preexisting_dirty_preserved": [
+    "scripts/play.py",
+    "scripts/train.py",
+    "src/tasks/velocity/v09/s2_train.py",
+    "tests/test_v09_s2_1_train.py"
+  ],
+  "replaced": [
+    "scripts/run_a2_v10.py",
+    "scripts/train_a2_v10.py",
+    "src/tasks/velocity/v10/checkpoint.py",
+    "src/tasks/velocity/v10/env.py",
+    "src/tasks/velocity/v10/eval_worker.py",
+    "src/tasks/velocity/v10/orchestration.py",
+    "src/tasks/velocity/v10/probe_budget.py",
+    "src/tasks/velocity/v10/resources.py",
+    "src/tasks/velocity/v10/teachers.py",
+    "tests/test_v10_learning_core.py",
+    "tests/test_v10_orchestration.py",
+    "tests/test_v10_probe_budget.py"
+  ],
+  "schema": "A1-actual-baseline-reconstruction-v1"
+}

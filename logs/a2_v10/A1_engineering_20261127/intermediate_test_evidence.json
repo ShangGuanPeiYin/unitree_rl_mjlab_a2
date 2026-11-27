@@ -1,0 +1,42 @@
+[
+  {
+    "file": "logs/a2_v10/A1_engineering_20261127/a1_diagnostic_red.log",
+    "sha256": "4728fc1b0a019b5c7c3c0c10d124087af1d5c65792b781d196e9b1d5fd001702",
+    "scope": "intermediate RED or scoped GREEN; final regression separate"
+  },
+  {
+    "file": "logs/a2_v10/A1_engineering_20261127/a1_identity_red.log",
+    "sha256": "2ff9b71c8e92ecdc35b95b96967fbd8e47836862fdad82c16a4132d5dd6f03e0",
+    "scope": "intermediate RED or scoped GREEN; final regression separate"
+  },
+  {
+    "file": "logs/a2_v10/A1_engineering_20261127/a1_once_red.log",
+    "sha256": "d137850ac8373c6028cb7f8110d5e747b7ffe24a1ca7317e5846fe8a7712103b",
+    "scope": "intermediate RED or scoped GREEN; final regression separate"
+  },
+  {
+    "file": "logs/a2_v10/A1_engineering_20261127/a1_diag_gate_red.log",
+    "sha256": "d371436d4dff479b7d5b8f83e7f91d3dc0fe3041277064a3476a62ba0bd8103f",
+    "scope": "intermediate RED or scoped GREEN; final regression separate"
+  },
+  {
+    "file": "logs/a2_v10/A1_engineering_20261127/a1_root_trace_review.log",
+    "sha256": "e836d7331814e23ec2cba5e8da0d49a1d433060ddca2cfab7f065071f65b1e9a",
+    "scope": "intermediate RED or scoped GREEN; final regression separate"
+  },
+  {
+    "file": "logs/a2_v10/A1_engineering_20261127/a1_recording_review.log",
+    "sha256": "372ddac3b9965d903438efaf7d03d9695f38e31cf82248bc5897b9b73233e469",
+    "scope": "intermediate RED or scoped GREEN; final regression separate"
+  },
+  {
+    "file": "logs/a2_v10/A1_engineering_20261127/v10_A1_red.log",
+    "sha256": "6adb4c10287fdc38da0dad4831b8371a8133a153b7212709193e9993f296ee32",
+    "scope": "intermediate RED or scoped GREEN; final regression separate"
+  },
+  {
+    "file": "logs/a2_v10/A1_engineering_20261127/v10_A1_complete.log",
+    "sha256": "6e97d69db6ae7a4c1ca882b2e6c4abfb9b21ed7f38804b4e08d4752fae8b5594",
+    "scope": "intermediate RED or scoped GREEN; final regression separate"
+  }
+]

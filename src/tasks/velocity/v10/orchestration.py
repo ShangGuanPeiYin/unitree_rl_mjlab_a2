@@ -120,8 +120,9 @@ class EventJournal:
 
 
 class Orchestrator:
-    def __init__(self,run_dir,engineering_admission,resource_selection=None,device='cuda:0',resume_reason=None,runner=None,global_probe_ledger=None,probe_budget_authorization=None,probe_sequence_id=None):
+    def __init__(self,run_dir,engineering_admission,resource_selection=None,device='cuda:0',resume_reason=None,runner=None,global_probe_ledger=None,probe_budget_authorization=None,probe_sequence_id=None,evaluation_ledger=None):
         self.root=Path(run_dir).resolve();self.root.mkdir(parents=True,exist_ok=True)
+        self.evaluation_ledger=Path(evaluation_ledger).resolve() if evaluation_ledger else self.root/'evaluation_costs.jsonl'
         self.state_path=self.root/'controller_state.json';self.approval=Path(engineering_admission).resolve()
         self.selection=Path(resource_selection).resolve() if resource_selection else None
         self.device=device;self.resume_reason=resume_reason;self.runner=runner or subprocess.run
@@ -158,7 +159,7 @@ class Orchestrator:
                 if patch['retention'][field]<self.state['retention'][field]:raise StopTraining('rollback_counters_went_backwards')
         if 'ppo_checked' in patch and not set(self.state.get('ppo_checked',[]))<=set(patch['ppo_checked']):raise StopTraining('processed_gate_went_backwards')
         for key,value in patch.items():
-            if key in ('finals','certificates','gates'):
+            if key in ('finals','certificates','gates','courses','promotion_cancellations'):
                 for name,row in value.items():
                     prior=self.state.setdefault(key,{}).get(name)
                     if key=='finals' and prior and prior['candidate_sha256']!=row['candidate_sha256']:raise StopTraining('final_cross_candidate_merge')
@@ -170,7 +171,7 @@ class Orchestrator:
         events=self.events.read()
         if not events:return
         # Snapshots/checkpoint.extra are caches, not authorities for these monotonic facts.
-        for key in ('finals','certificates'):self.state[key]={}
+        for key in ('finals','certificates','courses','promotion_cancellations'):self.state[key]={}
         self.state.update(retention=asdict(RetentionState()),rollback_history=[],ppo_checked=[],last_passed_ppo=None,
                           accepted_dagger=None,accepted_ppo=None)
         for key in ('dagger_certificate','ppo_certificate','ppo_resume'):self.state.pop(key,None)
@@ -192,6 +193,8 @@ class Orchestrator:
         if file_sha(spec.SDS_PATH)!=spec.SDS_SHA256:raise StopTraining('SDS_file_changed')
         if self.state.get('rulings_sha256')!=file_sha(RULINGS_PATH):raise StopTraining('frozen_rulings_changed')
         validate_engineering(self.approval,self.state['code_sha256'])
+        if self.state.get('evaluation_ledger') and self.state['evaluation_ledger']!=str(self.evaluation_ledger):raise StopTraining('evaluation_ledger_changed')
+        self.state['evaluation_ledger']=str(self.evaluation_ledger)
 
     def _validate_receipt(self,key,result):
         if key.startswith(('teacher_admission_','gate_','final_')):
@@ -290,13 +293,20 @@ class Orchestrator:
             or selection.get('sds_sha256')!=spec.SDS_SHA256 or selection.get('code_sha256')!=self.state['code_sha256']):raise StopTraining('resource_selection_invalid')
         if (selection.get('global_probe_ledger')!=str(self.global_probe_ledger) or selection.get('probe_sequence_id')!=sequence
             or selection.get('probe_budget_authorization_sha256')!=authorization['sha256']):raise StopTraining('resource_selection_global_budget_identity_invalid')
+        targeted=selection.get('resource_protocol')=='A1-targeted-resource-v1'
+        if targeted:
+            from .resource_a1 import verify_linkage_selection
+            try:verify_linkage_selection(selection)
+            except (ValueError,OSError,KeyError) as error:raise StopTraining('A1_resource_linkage_invalid') from error
+            if selection['num_envs']!=1024:raise StopTraining('A1_resource_N_changed')
+        expected_warmup,expected_measurement=(2,2) if targeted else (5,20)
         n=selection['num_envs'];runs=[r for r in selection['runs'] if r.get('num_envs')==n]
         if len(runs)!=2 or {r.get('stack') for r in runs}!={'dagger','ppo'}:raise StopTraining('both_complete_resource_stacks_required')
         for row in runs:
             if (row.get('passed') is not True or row.get('restore_checked') is not True or row.get('sds_sha256')!=spec.SDS_SHA256
                 or row.get('code_sha256')!=self.state['code_sha256'] or row.get('gpu_total_peak_mib',1e9)>7680
                 or row.get('gpu_task_peak_mib',1e9)>7168 or row.get('host_available_min_bytes',0)<4*1024**3
-                or row.get('warmup_rounds')!=5 or row.get('measurement_rounds')!=20
+                or row.get('warmup_rounds')!=expected_warmup or row.get('measurement_rounds')!=expected_measurement
                 or any(row.get('replay_counts',{}).get(role,0)<32768 for role in spec.ROLES)):
                 raise StopTraining('resource_stack_incomplete')
         physics={r['physical_sha256'] for r in runs}
@@ -312,25 +322,15 @@ class Orchestrator:
         replicas=100 if suite.endswith('FINAL') else 20
         out=self.root/'evaluation'/key
         command=[sys.executable,'-m','src.tasks.velocity.v10.eval_worker','--course',course,'--suite',suite,'--replicas',str(replicas),
-                 '--reference',reference,'--output-dir',out,'--ledger',self.root/'evaluation_costs.jsonl',
+                 '--reference',reference,'--output-dir',out,'--ledger',self.evaluation_ledger,
                  '--eval-limit',str(self.state['evaluation_max_samples']),'--device',self.device]
         if model_path is not None:command+=['--model-path',model_path]
         if key.startswith('teacher_admission_'):command+=['--stop-on-failed-group']
         result=self._launch(key,command,out/'result.json')
         self._validate_receipt(key,result)
-        expected=self.frozen['suites'][f'{course}_{suite}']
-        if (result.get('suite_sha256')!=expected['sha256'] or result.get('physical_sha256')!=self.state['physical_sha256']
-            or result.get('sds_sha256')!=spec.SDS_SHA256 or result.get('code_sha256')!=self.state['code_sha256']
-            or result.get('rulings_sha256')!=self.state['rulings_sha256'] or result.get('replicas')!=replicas):raise StopTraining('evaluation_worker_receipt_mismatch:'+key)
-        expected_model=(cases.digest(dict(blind=spec.BLIND_SHA256,stairs=spec.STAIRS_SHA256)) if reference=='teachers' else file_sha(model_path))
-        if result.get('model_sha256')!=expected_model:raise StopTraining('evaluation_model_changed:'+key)
-        aborted=result.get('aborted_for_teacher_failure') is True
-        if aborted:
-            if not key.startswith('teacher_admission_'):raise StopTraining('unexpected_partial_evaluation')
-        else:
-            expected_groups={r['group_id'] for r in cases.groups(course)}
-            if result.get('complete') is not True or set(result.get('groups',{}))!=expected_groups:
-                raise StopTraining('incomplete_evaluation_suite:'+key)
+        if not self._evaluation_identity_matches(result,course,suite,reference,model_path,
+                allow_aborted=key.startswith('teacher_admission_')):
+            raise StopTraining('evaluation_worker_receipt_mismatch:'+key)
         return result
 
     def worker(self,key,course,target,resume=None,acceptance=None):
@@ -353,21 +353,93 @@ class Orchestrator:
         self.state['learning_checkpoint']=result['checkpoint'];self.persist();return result['checkpoint']
 
     def teacher_admission(self):
+        from .evaluation_capacity import evaluation_capacity
+        from .teachers import teacher_identity
         for course in ('D1','D2','D3'):
-            for suite in ('A','B'):
-                key=f'teacher_admission_{course}_{suite}'
-                if self.state['teacher_admission'].get(key,{}).get('passed'):continue
-                result=self.evaluate(key,course,suite,None,'teachers')
-                if result.get('aborted_for_teacher_failure'):
-                    self.state['teacher_admission'][key]=dict(passed=False,reason='teacher_capability_gap',
-                        tested_case_count=result.get('tested_case_count'),planned_case_count=result.get('planned_case_count'),groups=result['groups'])
-                    self.persist();raise StopTraining('teacher_capability_gap:'+key)
-                comparison=compare_results(result,result)
-                self.state['teacher_admission'][key]=comparison;self.persist()
-                if not comparison['passed']:raise StopTraining('teacher_capability_gap:'+key)
+            pending=[suite for suite in ('A','B') if not self.state['teacher_admission'].get(f'teacher_admission_{course}_{suite}',{}).get('passed')]
+            if not pending:continue
+            required=sum(sum(cases.max_steps(row)*20 for row in cases.groups(course)) for _ in pending)
+            stage='teachers:'+course+':'+cases.digest(teacher_identity())
+            with evaluation_capacity(self.evaluation_ledger,stage,required,self.state['evaluation_max_samples']):
+                for suite in pending:
+                    key=f'teacher_admission_{course}_{suite}'
+                    result=self.evaluate(key,course,suite,None,'teachers')
+                    if result.get('aborted_for_teacher_failure'):
+                        self.state['teacher_admission'][key]=dict(passed=False,reason='teacher_capability_gap',
+                            tested_case_count=result.get('tested_case_count'),planned_case_count=result.get('planned_case_count'),groups=result['groups'])
+                        self.persist();raise StopTraining('teacher_capability_gap:'+key)
+                    comparison=compare_results(result,result)
+                    self.state['teacher_admission'][key]=comparison;self.persist()
+                    if not comparison['passed']:raise StopTraining('teacher_capability_gap:'+key)
         self.state['teacher_admitted']=True;self.persist()
 
+    def _evaluation_identity_matches(self,row,course,suite,reference,model_path,allow_aborted=False):
+        """Shared identity predicate for result consumption and capacity savings.
+
+        This proves correspondence/completeness, never behavioral acceptance.
+        A teacher early-stop can be consumed only in its original admission path;
+        it remains incomplete and can never justify saved future capacity.
+        """
+        try:
+            replicas=100 if suite.endswith('FINAL') else 20
+            frozen=self.frozen['suites'][f'{course}_{suite}']
+            document=read_json(frozen['path']);manifest=document['cases']
+            if document.get('sds_sha256')!=spec.SDS_SHA256 or document.get('sha256')!=frozen['sha256'] or cases.digest(manifest)!=frozen['sha256']:return False
+            from .teachers import teacher_identity
+            model_sha=cases.digest(teacher_identity()) if reference=='teachers' else file_sha(model_path)
+            identity=dict(course=course,suite=suite,reference=reference,replicas=replicas,suite_sha256=frozen['sha256'],
+                          model_sha256=model_sha,code_sha256=self.state['code_sha256'],sds_sha256=spec.SDS_SHA256,
+                          rulings_sha256=self.state['rulings_sha256'],physical_sha256=self.state['physical_sha256'])
+            if any(row.get(k)!=v for k,v in identity.items()):return False
+            aborted=row.get('aborted_for_teacher_failure') is True
+            if aborted:
+                if not allow_aborted or reference!='teachers' or row.get('complete') is not False:return False
+            elif row.get('complete') is not True:return False
+            expected={}
+            for case in manifest:
+                if case.get('course')!=course or case.get('suite')!=suite:return False
+                expected.setdefault(case['group_id'],[]).append(case['case_sha256'])
+            groups=row['groups']
+            if not groups or (not aborted and set(groups)!=set(expected)) or (aborted and not set(groups)<=set(expected)):return False
+            for group,actual in groups.items():
+                case_ids=expected[group]
+                if len(case_ids)!=replicas or len(set(case_ids))!=replicas or len(actual)!=replicas:return False
+                if any(r.get('group_id')!=group for r in actual):return False
+                ids=[r['case_sha256'] for r in actual]
+                if len(set(ids))!=replicas or set(ids)!=set(case_ids):return False
+            return True
+        except (AttributeError,KeyError,TypeError,ValueError,OSError):return False
+
+    def _capacity_receipt_matches(self,key,course,suite,reference,model_path):
+        """A durable, resource-qualified exact complete result saves capacity."""
+        try:
+            operation=self.state['operations'].get(key,{})
+            path=self.root/'operations'/key/'result.json'
+            if operation.get('status')!='succeeded' or not path.is_file() or operation.get('result_sha256')!=file_sha(path):return False
+            row=read_json(path);self._validate_receipt(key,row)
+            return self._evaluation_identity_matches(row,course,suite,reference,model_path)
+        except (StopTraining,KeyError,TypeError,ValueError,OSError):return False
+
+    def _stage_capacity(self,stage_id,course,suites,model_paths,operation_prefix):
+        from contextlib import nullcontext
+        from .evaluation_capacity import evaluation_capacity
+        required=0
+        for suite in suites:
+            replicas=100 if suite.endswith('FINAL') else 20
+            cost=sum(cases.max_steps(row)*replicas for row in cases.groups(course))
+            for model,model_path in model_paths.items():
+                key=(f'{operation_prefix}_{model}' if suite.endswith('FINAL') else f'{operation_prefix}_{suite}_{model}')
+                if not self._capacity_receipt_matches(key,course,suite,model,model_path):required+=cost
+        return evaluation_capacity(self.evaluation_ledger,stage_id,required,self.state['evaluation_max_samples']) if required else nullcontext()
+
     def gate(self,course,target,checkpoint,references):
+        key=f'{course}_{target}'
+        if key in self.state['gates']:return self._gate_unleased(course,target,checkpoint,references)
+        digest=file_sha(checkpoint)
+        with self._stage_capacity('gate:'+key+':'+digest,course,('A','B'),{'candidate':checkpoint,**references},f'gate_{key}'):
+            return self._gate_unleased(course,target,checkpoint,references)
+
+    def _gate_unleased(self,course,target,checkpoint,references):
         key=f'{course}_{target}';checkpoint_sha=file_sha(checkpoint)
         prior=self.state['gates'].get(key)
         if prior:
@@ -394,6 +466,14 @@ class Orchestrator:
         self.commit_event('final-open:'+name,patch,refs)
 
     def final(self,name,course,checkpoint,references):
+        existing=self.state['finals'].get(name)
+        if existing and existing['status'] in ('passed','failed'):
+            return self._final_unleased(name,course,checkpoint,references)
+        # Reject insufficient capacity before the irreversible final-open event.
+        with self._stage_capacity('final:'+name+':'+file_sha(checkpoint),course,(name,),{'candidate':checkpoint,**references},f'final_{name}'):
+            return self._final_unleased(name,course,checkpoint,references)
+
+    def _final_unleased(self,name,course,checkpoint,references):
         digest=file_sha(checkpoint)
         existing=self.state['finals'].get(name)
         if existing and existing['status']=='passed':
@@ -446,6 +526,46 @@ class Orchestrator:
         self.commit_event('acceptance:'+name,patch,refs,certificate,path)
         return str(path)
 
+    def _promote_course(self,course,target,checkpoint,grade):
+        """Journal promotion and cancellation facts together, with no budget effect."""
+        digest=file_sha(checkpoint)
+        if (grade.get('passed') is not True or grade.get('candidate_sha256')!=digest
+            or set(grade.get('suites',{}))!={'A','B'}
+            or any(set(checks)!={'teachers'} for checks in grade['suites'].values())
+            or any(check.get('passed') is not True or check.get('candidate_model_sha256')!=digest
+                   for checks in grade['suites'].values() for check in checks.values())):
+            raise StopTraining('course_promotion_requires_same_candidate_A_B_pass')
+        event_id=f'course-promotion:{course}:{target}'
+        grade_path=self.root/'promotion_evidence'/f'{course}_{target}_passed_gate.json'
+        if grade_path.exists():
+            if read_json(grade_path)!=grade:raise StopTraining('immutable_promotion_grade_changed')
+        else:atomic_json(grade_path,grade)
+        grade_sha=file_sha(grade_path)
+        references={str(checkpoint):digest,str(grade_path):grade_sha}
+        operations=[]
+        for future in self.state['schedule']['gates'][course]:
+            if future<=target:continue
+            for suite in ('A','B'):
+                frozen=self.frozen['suites'][f'{course}_{suite}']
+                bound=int(frozen['max_samples'])
+                if frozen.get('path'):references[frozen['path']]=file_sha(frozen['path'])
+                for model in ('candidate','teachers'):
+                    operation=f'gate_{course}_{future}_{suite}_{model}'
+                    if operation in self.state['operations']:continue
+                    operations.append(dict(operation_id=operation,target=future,suite=suite,model=model,
+                        case_max_samples=bound,suite_sha256=frozen['sha256'],reference_scope='this_gate_invocation_only'))
+        completed=dict(passed=True,passed_target=target,checkpoint=str(checkpoint),sha256=digest,promotion_event_id=event_id,
+                       passed_grade_path=str(grade_path),passed_grade_sha256=grade_sha)
+        patch=dict(courses={course:completed})
+        if operations:
+            patch['promotion_cancellations']={f'{course}:{target}':dict(course=course,passed_target=target,
+                checkpoint=str(checkpoint),candidate_sha256=digest,trigger_event_id=event_id,
+                trigger_grade_path=str(grade_path),trigger_grade_sha256=grade_sha,reason='early_promotion',
+                cancelled_operations=operations,original_case_max_samples=sum(r['case_max_samples'] for r in operations),
+                charged_samples=0,refunded_samples=0,transferred_samples=0,shared_reference_cache='preserved',
+                resolution='cancelled_before_start_not_cache_hit')}
+        self.commit_event(event_id,patch,references)
+
     def _train_dagger(self):
         if self.state.get('accepted_dagger'):return self.state['accepted_dagger']
         checkpoint=self.state['learning_checkpoint']
@@ -460,9 +580,9 @@ class Orchestrator:
                 checkpoint=self.worker(f'learning_{course}_{target}',course,target,checkpoint)
                 grade=self.gate(course,target,checkpoint,{'teachers':None})
                 if grade['passed']:
+                    self._promote_course(course,target,checkpoint,grade)
                     promoted=True;break
             if not promoted:raise StopTraining('course_budget_exhausted:'+course)
-            self.state.setdefault('courses',{})[course]=dict(passed=True,checkpoint=checkpoint,sha256=file_sha(checkpoint));self.persist()
         final=self.final('DAGGER_FINAL','D3',checkpoint,{'teachers':None})
         certificate=self.certificate('V10_DAGGER_ACCEPTED',checkpoint,final)
         self.state['accepted_dagger']=checkpoint;self.state['dagger_certificate']=certificate;self.persist()

@@ -1,0 +1,10 @@
+{
+  "source_sha256": "d90f857d6b28907c2c560dfa2b30d8bdc3e16660df91fe518c8cf92046286065",
+  "passed": 156,
+  "skipped": 5,
+  "failed": 0,
+  "duration_seconds": 84.65,
+  "final": false,
+  "reason": "required promotion cancellation events still to add",
+  "log_sha256": "6899a5538fab377ed4a8ec63ca54b4bae2546948c8804325c291d9398d5eb6ee"
+}

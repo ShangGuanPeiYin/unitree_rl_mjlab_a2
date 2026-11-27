@@ -62,7 +62,12 @@ def test_real_actor_identity_and_ppo_initialization():
  net=mlp([45,512,256,128,12]); norm=FrozenETHNormalizer()
  net.load_state_dict({k[4:]:v for k,v in state.items() if k.startswith('mlp.')})
  norm.load_state_dict({k[15:]:v for k,v in state.items() if k.startswith('obs_normalizer.')})
- assert torch.equal(blind(x),net(norm(x['proprio'])))
+ from src.tasks.velocity.v10.teachers import blind_yaw_command
+ private=x['proprio'].clone();private[:,6:9]=blind_yaw_command(x['proprio'],x['route_error'])
+ assert torch.equal(blind(x),net(norm(private)))
+ neutral={k:v.clone() for k,v in x.items()}
+ neutral['proprio'][:,6:9]=torch.tensor([.6,0.,0.]);neutral['route_error'][:]=torch.tensor([0.,0.,1.])
+ assert torch.equal(blind(neutral),net(norm(neutral['proprio'])))
 
 def test_dagger_microbatch_gradient_equivalence():
  from src.tasks.velocity.v10.dagger import DAggerLearner

@@ -13,6 +13,7 @@ import numpy as np
 import torch
 from . import spec
 from .identity import code_fingerprint
+from .teachers import teacher_identity
 SCHEMA='a2-v10-state-v1'
 
 def sha256(path):
@@ -77,7 +78,7 @@ def atomic_json(path,data):
 def checkpoint_save(path,state,memory_trace=None):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
     state=dict(state,schema=SCHEMA,sds_sha256=spec.SDS_SHA256,recipe=spec.RECIPE,code_sha256=code_fingerprint(),rng=rng_state(),
-               teachers={'blind':spec.BLIND_SHA256,'stairs':spec.STAIRS_SHA256})
+               teachers=teacher_identity())
     trace_memory(memory_trace,'save_begin')
     fd,temp=tempfile.mkstemp(dir=path.parent);os.close(fd)
     try:
@@ -94,7 +95,7 @@ def checkpoint_save(path,state,memory_trace=None):
 def checkpoint_validate(state,*,num_envs,physical_sha256):
     if (state.get('schema')!=SCHEMA or state.get('sds_sha256')!=spec.SDS_SHA256 or state.get('recipe')!=spec.RECIPE
         or state.get('code_sha256')!=code_fingerprint()
-        or state.get('teachers')!={'blind':spec.BLIND_SHA256,'stairs':spec.STAIRS_SHA256}):raise ValueError('checkpoint identity mismatch')
+        or state.get('teachers')!=teacher_identity()):raise ValueError('checkpoint identity mismatch')
     if state.get('num_envs')!=num_envs or state.get('physical_sha256')!=physical_sha256:raise ValueError('checkpoint N/physics mismatch')
     return state
 
