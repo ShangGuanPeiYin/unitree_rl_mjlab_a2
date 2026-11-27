@@ -1,0 +1,23 @@
+{
+  "status": "stopped",
+  "reason": "startup_headroom_below_12GiB_continuous_60s",
+  "user_instruction": "继续，重试",
+  "source_sha256": "d54265108c298d5920ae8ea9316fd3d48be4b75ce989ac0507bdbf9a2b91498e",
+  "startup_report_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/resource_probe_v2_retry_20261127_123234.startup_headroom.json",
+  "startup_report_sha256": "59666b9b8d98020899fecaf41898b34e7b672e3722ec2c3dc135427e0aa4386d",
+  "available_bytes": 11699712000,
+  "required_bytes": 12884901888,
+  "shortfall_bytes": 1185189888,
+  "successful_60s_window": false,
+  "pre_torch_import": true,
+  "protocol_claimed": false,
+  "physical_samples_added": 0,
+  "learning_samples": 0,
+  "probe_charged": 3391488,
+  "probe_remaining": 442368,
+  "global_journal_sha256": "0fa1f0cc885cfde7b7c237e4c754d3ab7736a78687741927fa5645d6661583f6",
+  "teacher_admitted": false,
+  "accepted": null,
+  "diagnostic_started": false,
+  "trial_started": false
+}

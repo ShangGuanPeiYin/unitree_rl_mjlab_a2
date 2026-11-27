@@ -5325,3 +5325,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 实际执行probe-a1-v2的stdlib启动门禁：首点MemAvailable10845011968B=10.100204GiB<12GiB，缺2039889920B≈1.899796GiB，立即非零退出；observed32us，不冒称成功连续60s。报告pre_torch_import=true，physical_samples0、protocol_claimed=false；未导src/Torch、无child/selection、无新授权注册/claim、无trial guard，没有实际仿真/学习。
 - 新文件doc/sds/reviews/v10_A1_v2_headroom_stop_20261127.md、原始resource_probe_v2.startup_headroom.json/父probe_v2_parent.log与stage_status_v2.json；前后全局journal末SHA相同0fa1f0cc885cfde7b7c237e4c754d3ab7736a78687741927fa5645d6661583f6。费用仍3391488/余442368，learning0。新37e3元数据未注册，2f失败费用不退。
 - 保持停止：当前真实阻断是RAM余量，不再问常规许可/预算；不降低12GiB/9.5GiB/运行4GiB，不动他进程。112/50轮/AB/PPO未启动，不能宣称新纠偏有效或策略验收通过。最新允许顺序及50轮硬帽已就绪，实际后续仍须先满足已批资源条件。
+
+## 2026-11-27 12:32 用户要求继续重试：启动门禁再次零样本停止
+
+- 目的/授权：用户新指令“继续，重试”，实际调用原批准probe-a1-v2 CLI，使用全新证据输出路径保留上次记录；源码d542、SDS、合同、cap和所有门槛不改。读取项目AGENTS并核对任务源码无未提交变化、实际指纹匹配；没有新资源claim，非重复已执行的栈。
+- 结果：首次MemAvailable11699712000B=10.896206GiB，低于12GiB=12884901888B，差1185189888B≈1.103794GiB，未进入成功连续60秒窗口；pre_torch_import=true，立即非零退出。无src/Torch/资源child、无新authority注册、无v2 claim、0新增物理与费用，学习0。仍不启动112/50/AB/PPO，不动其他进程、不降N或门槛。
+- 文件：保留原失败证据；新增logs/a2_v10/formal_A1_20261127_approved/resource_probe_v2_retry_20261127_123234.startup_headroom.json（SHA59666b9b8d98020899fecaf41898b34e7b672e3722ec2c3dc135427e0aa4386d）、probe_v2_retry_20261127_123234_parent.log及stage_status_v2_retry_20261127_123234.json。
+- 验证：真实CLI启动检查；global journal尾SHA仍0fa1f0cc885cfde7b7c237e4c754d3ab7736a78687741927fa5645d6661583f6，预算仍3391488/余442368，唯一v2机会未消耗。无源码修改，未重复CPU测试；纠偏行为与学习效果仍未验证。

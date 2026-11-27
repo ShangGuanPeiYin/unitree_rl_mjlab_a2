@@ -1,0 +1,1 @@
+{"passed": false, "reason": "startup_headroom_below_12GiB_continuous_60s", "headroom_report": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/formal_A1_20261127_approved/resource_probe_v2_retry_20261127_123234.startup_headroom.json", "physical_samples": 0, "protocol_claimed": false}
