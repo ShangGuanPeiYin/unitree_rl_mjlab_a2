@@ -5411,3 +5411,33 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 文件：scripts/run_sds_manual.sh。
 - 修改：shell入口新增显示层，将本次新增的子进程attempt日志、逐轮updates和评估progress持续输出到终端；原文件继续保存，既有历史不重复打印。Ctrl+C保留前台进程组传播。只修改显示包装，不变更科学Python源码及其指纹、课程、预算、奖励或损失，既有续训证据身份不变。
 - 验证：仅bash -n语法检查通过；按用户要求未执行验收、训练或物理测试。实时运行效果待用户启动。
+
+## 2026-11-27 — 用户授权可配置并行环境入口
+- 目的：用户允许样本预算随环境数增加，并要求保留原模型/优化器/replay切换N继续。
+- 文件：scripts/run_a2_v10_formal.py、scripts/run_sds_manual.sh、tests/test_v10_manual_launcher.py、docs/superpowers/plans/2026-11-27-configurable-training-envs.md、doc/sds/reviews/v10_configurable_envs_user_override_20261127.md。
+- 修改：CLI解除仅1024限制，N>=10覆盖六任务，接独立动态执行配置；shell实时显示新增dynamic_N目录的训练/评估日志。原配方不因入口调整；底层实现与必要验证结果由后续本轮条目补齐。
+- 验证边界：尚未完成集成，不启动物理或训练；新N资源和行为效果未验证。
+
+## 2026-11-27：按用户授权支持可配置N及显式跨N状态续训（仅代码交付）
+
+- 文件：runtime.py、checkpoint.py、env.py、dagger.py、scripts/run_a2_v10.py；新增execution_restore.py和tests/test_v10_dynamic_runtime.py。dynamic_execution/调度及主入口由集成代理负责，不在本条冒领。
+- 修改：worker/loader新增显式execution_profile；loader按真实路径重验profile/SHA，严格限定原CP SHA/old N/source或同profile新source后继，默认无凭据仍拒错N/source。保留model/Adam/replay/RNG/历史trial标记；仅物理环境新回合按新N重建episode槽，role cursor和环境RNG保留。controller snapshot需匹配profile/operation并重验六AB。
+- 计数与预算：从CP保留的50轮继续，每次完整update后轮数+1、每50轮保存，不将旧样本除以新N重写轮次。动态课程总轮数500/1000/1500/1000、P0=100；cap=历史charged+(阶段总轮数−origin轮数)×新N×48，历史不退款；样例D1从1024的50轮切2048，cap=2457600+450×2048×48=46694400，不为补满名义49,152,000多跑轮数。成功保存后写同profile/N/CP SHA/轮数/operation及共享latest恢复registry。
+- 配方：新N DAgger固定20次优化，512保留原10次，未随N改40次；奖励/损失/LR/微批/PPO/六任务replay容量与FP32不改，spec静态旧流程不改。新N资源明确unverified，不追加probe；OOM自然失败，采集前/后及更新后MemAvailable低于4GiB即停止。
+- TDD与验证：先观察2048 DAgger拒绝与默认env错长度不拒两项RED、三项缺迁移接口RED；实现后tests/test_v10_dynamic_runtime.py最终6 passed、1上游warning、11.11秒。包括小CPU模型/Adam/replay完整恢复50→51、严格profile与默认拒N、环境角色RNG/槽位、教师准入缺失拒绝、20/10实际optimizer.step计数、低内存0采样。测试使用6条小payload和虚拟样本账，不能当作真实2048物理/满库资源或行为证据；未跑大验收、GPU、物理训练，无Git操作，由主代理统一提交。
+
+
+## 2026-11-27 — 用户授权的动态并行环境编排（不启动训练）
+
+- 新增 `src/tasks/velocity/v10/dynamic_execution.py` 与 `tests/test_v10_dynamic_execution.py`。旧静态 orchestration、spec 及旧资源准入规则未在本条改动；底层 checkpoint/runtime/env 与 CLI/shell 分别由其他代理负责。
+- `--num-envs N` 对应精确当前源码/原checkpoint SHA/用户授权文档/原学习账前缀绑定的独立 profile，动态工作目录为原root/dynamic_N{N}。`--check` 在没有 profile 时只读计算，不建profile、controller或账本。运行阶段持有原root/controller.lock，构建profile时短暂取得GPU排他锁确认无旧child，随后原六套教师 A/B 与行为门禁保持。
+- 保留原模型/Adam/replay/RNG的精确原50轮CP供底层显式迁移；D1不再执行0轮入口，第一门禁绝对200，后400/500，D2/D3/PPO上限1000/1500/1000，P0前100轮，每轮48步，每50轮保存。DAgger512每轮10次更新，其余N每轮20次，未调整奖励/损失/学习率/速度/教师参数。
+- 历史费用原样保留，未来额度=原charged+(阶段固定总轮-保留轮)*新N*48。例D1保留50轮，N2048累计cap46,694,400，N512为13,516,800；另列名义全程N比例预算，不能将旧样本除以新N假造轮数，receipt按保留的完整更新轮数核实。样本不足整轮即停且不退款。
+- 新N资源明确标记 `unverified_for_requested_N`，不新probe、不借旧1024证书伪称通过、不自动降N；实际启动资源失败由底层停止。支持首次原50→请求N和同一profile恢复；已有动态费用/进展后第二次换N明确拒绝，包括第一次崩溃未写registry的情况，不回退原50丢失成果。
+- 验证：最小CPU8 passed/1上游warning12.62s，`/tmp/v10_dynamic_controller_final_cpu.log`，覆盖三种N的预算/更新数、50→200入口、混合N费用与保留轮数、只读check、篡改拒绝、无registry的第二N拒绝；py_compile和diff-check通过。曾发生一次prefix补丁替换过宽导致IndentationError，已修复并重新完整运行这8项，未将此前结果当作最新验证。
+- 未执行：任何物理、资源probe、教师评估、学习或大容量验收；实际2048 CLI只读检查由主代理在最终冻结后执行。此条无Git操作。
+
+## 2026-11-27 — 可配置N续训最终接线
+- 本轮17项定向CPU检查通过（dynamic execution/runtime/manual launcher），bash语法与py_compile通过；未跑全套验收或新物理训练。
+- 实际手动入口仅执行 --mode check --num-envs 2048：exit0、executed=false、profile_exists=false；从原50轮保留D1剩450轮，额度D1=46694400、D2=98304000、D3=147456000、PPO=98304000，DAgger每轮20更新。该检查未创建动态profile或启动worker。
+- docs使用说明同步可变N和恢复边界；新N资源/行为未验证，首次切N可用，同N继续恢复，产生动态学习后再次换N明确拒绝。实时终端日志保留。既有四个dirty文件SHA未变，原模型文件不提交。

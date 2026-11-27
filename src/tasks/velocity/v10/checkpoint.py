@@ -99,7 +99,11 @@ def checkpoint_validate(state,*,num_envs,physical_sha256):
     if state.get('num_envs')!=num_envs or state.get('physical_sha256')!=physical_sha256:raise ValueError('checkpoint N/physics mismatch')
     return state
 
-def checkpoint_load(path,*,num_envs,physical_sha256,restore_random=True,memory_trace=None,formal_handoff=None):
+def checkpoint_load(path,*,num_envs,physical_sha256,restore_random=True,memory_trace=None,formal_handoff=None,execution_profile=None):
+    if execution_profile is not None:
+        if formal_handoff is not None:raise ValueError('execution profile and formal handoff are distinct contracts')
+        from .execution_restore import checked_profile
+        execution_profile=checked_profile(execution_profile,num_envs=num_envs,physical_sha256=physical_sha256)
     if formal_handoff is not None:
         from .handoff import validate_handoff
         reference=formal_handoff.get('path') if isinstance(formal_handoff,dict) else formal_handoff
@@ -109,11 +113,15 @@ def checkpoint_load(path,*,num_envs,physical_sha256,restore_random=True,memory_t
         formal_handoff=checked
     trace_memory(memory_trace,'load_begin')
     state=torch.load(path,map_location='cpu',weights_only=False)
-    try:checkpoint_validate(state,num_envs=num_envs,physical_sha256=physical_sha256)
-    except ValueError:
-        if formal_handoff is None:raise
-        from .handoff import authorize_origin_checkpoint
-        authorize_origin_checkpoint(state,formal_handoff,checkpoint_path=path,num_envs=num_envs,physical_sha256=physical_sha256)
+    if execution_profile is not None:
+        from .execution_restore import authorize_checkpoint
+        authorize_checkpoint(state,path,execution_profile,num_envs=num_envs,physical_sha256=physical_sha256)
+    else:
+        try:checkpoint_validate(state,num_envs=num_envs,physical_sha256=physical_sha256)
+        except ValueError:
+            if formal_handoff is None:raise
+            from .handoff import authorize_origin_checkpoint
+            authorize_origin_checkpoint(state,formal_handoff,checkpoint_path=path,num_envs=num_envs,physical_sha256=physical_sha256)
     if restore_random:restore_rng(state['rng'])
     trace_memory(memory_trace,'load_complete')
     return state

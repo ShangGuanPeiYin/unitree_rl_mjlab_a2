@@ -183,8 +183,10 @@ class V10Env:
                     episode=list(self.episode_ids),control_step=[s.step for s in self.states])
     def state_dict(self):
         return dict(rng=self.rng.getstate(),role_cursors=dict(self.role_cursors),episode_ids=list(self.episode_ids),control_steps=self.control_steps)
-    def load_state_dict(self,state):
-        self.rng.setstate(state['rng']);self.role_cursors=dict(state['role_cursors']);self.episode_ids=list(state['episode_ids']);self.control_steps=state['control_steps']
+    def load_state_dict(self,state,allow_num_env_change=False):
+        changed=len(state['episode_ids'])!=self.num_envs
+        if changed and not allow_num_env_change:raise ValueError('environment count migration must be explicit')
+        self.rng.setstate(state['rng']);self.role_cursors=dict(state['role_cursors']);self.episode_ids=([-1]*self.num_envs if changed else list(state['episode_ids']));self.control_steps=state['control_steps']
         return self.reset()
     def close(self):self.physics.close()
 

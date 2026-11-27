@@ -26,8 +26,9 @@ positions = {}
 progress = {}
 
 def files():
-    for folder, pattern in [('operations', 'attempt_*.log'), ('learning', 'updates.jsonl'), ('evaluation', 'progress.json')]:
-        yield from (run / folder).rglob(pattern)
+    for base in [run, *run.glob('dynamic_N*')]:
+        for folder, pattern in [('operations', 'attempt_*.log'), ('learning', 'updates.jsonl'), ('evaluation', 'progress.json')]:
+            yield from (base / folder).rglob(pattern)
 
 # Existing output is history; print only activity from this invocation.
 for path in files():

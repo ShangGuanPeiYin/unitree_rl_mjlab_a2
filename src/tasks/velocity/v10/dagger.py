@@ -12,9 +12,9 @@ class DAggerLearner:
     def __init__(self,model):
         self.model=model; self.optimizer=adam(p for p in model.parameters() if p.requires_grad)
     def update(self,current,reservoir,num_envs):
-        if num_envs not in (512,1024): raise ValueError('formal N must be 512 or 1024')
+        if type(num_envs) is not int or num_envs<=0:raise ValueError('positive integer environment count required')
         device=next(self.model.parameters()).device; total=0.
-        for _ in range(20 if num_envs==1024 else 10):
+        for _ in range(10 if num_envs==512 else 20):
             batch=reservoir.sample_logical(current); size=len(batch['actions'])
             self.optimizer.zero_grad(set_to_none=True)
             for start in range(0,size,spec.MICROBATCH):
@@ -25,4 +25,4 @@ class DAggerLearner:
             norm=torch.nn.utils.clip_grad_norm_(self.model.parameters(),1.,error_if_nonfinite=True)
             self.optimizer.step()
         reservoir.add(current)
-        return {'loss':total/(20 if num_envs==1024 else 10),'grad_norm':float(norm)}
+        return {'loss':total/(10 if num_envs==512 else 20),'grad_norm':float(norm)}

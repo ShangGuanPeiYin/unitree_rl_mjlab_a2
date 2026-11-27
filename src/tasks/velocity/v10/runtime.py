@@ -145,7 +145,7 @@ def verify_acceptance(path,checkpoint,physical_sha):
     return c
 
 def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,device='cuda:0',ledger_path=None,controller_state=None,
-           trial_charged_cap=None,trial_id=None,trial_guard=None,formal_handoff=None):
+           trial_charged_cap=None,trial_id=None,trial_guard=None,formal_handoff=None,execution_profile=None):
     trial=None
     if any(v is not None for v in (trial_charged_cap,trial_id,trial_guard)):
         from .trial_guard import TrialGuard
@@ -156,6 +156,13 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
         if trial is not None or not resume or not ledger_path:raise ValueError('formal handoff requires explicit resume/ledger and no trial flags')
         from .handoff import validate_handoff,bind_handoff
         handoff=validate_handoff(formal_handoff,ledger_path=ledger_path,num_envs=num_envs)
+    dynamic=None
+    if execution_profile is not None:
+        if trial is not None or handoff is not None or not ledger_path:raise ValueError('dynamic execution requires its own explicit ledger/profile')
+        from .execution_restore import checked_profile,bind_profile,validate_admission
+        dynamic=checked_profile(execution_profile,ledger_path=ledger_path,num_envs=num_envs)
+        snapshot=(json.loads(Path(controller_state).read_text()) if isinstance(controller_state,(str,Path)) else controller_state) or {}
+        validate_admission(dynamic,snapshot)
     from .env import V10Env
     output=Path(output_dir);output.mkdir(parents=True,exist_ok=True);seed_all(spec.SEED)
     physical_session_id=uuid.uuid4().hex
@@ -165,30 +172,36 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
     try:
         physical=physical_contract(env);atomic_json(output/'physical_contract.json',physical)
         if handoff and physical['sha256']!=handoff['plan_document']['physical_sha256']:raise ValueError('formal handoff physics differs')
+        if dynamic and physical['sha256']!=dynamic['document']['physical_sha256']:raise ValueError('execution physics differs')
         ledger=BudgetLedger(ledger_path or output/'costs.jsonl');ledger.reconcile_uncertain();model=V10ActorCritic.from_stairs(device=device)
         reservoir=TaskReservoir();rounds={};keep=None;state=None;extra={}
         if resume:
-            load_options=dict(formal_handoff=handoff) if handoff else {}
+            load_options=dict(execution_profile=dynamic) if dynamic else dict(formal_handoff=handoff) if handoff else {}
             state=checkpoint_load(resume,num_envs=num_envs,physical_sha256=physical['sha256'],restore_random=False,memory_trace=memory_trace,**load_options)
-            extra=bind_handoff(state,handoff,checkpoint_path=resume,course=course) if handoff else state.get('extra',{})
+            extra=bind_profile(state,dynamic) if dynamic else bind_handoff(state,handoff,checkpoint_path=resume,course=course) if handoff else state.get('extra',{})
             ledger.assert_checkpoint_not_ahead(state['budgets']);model.load_state_dict(state['model']);reservoir.take_state_dict(state.pop('reservoir'));rounds=dict(state['rounds'])
         if trial:
             if state:trial.restore(extra)
             extra=dict(extra,trial=trial.checkpoint_state())
-        elif 'trial' in extra and handoff is None:
+        elif 'trial' in extra and handoff is None and dynamic is None:
             raise ValueError('trial checkpoint requires explicit trial charged guard')
         if controller_state is not None:
             extra=dict(extra,controller_state=json.loads(Path(controller_state).read_text()) if isinstance(controller_state,(str,Path)) else copy.deepcopy(controller_state))
         operation_id=extra.get('controller_state',{}).get('worker_operation_id')
         if handoff and (not isinstance(operation_id,str) or not operation_id):raise ValueError('formal worker operation identity required')
         def record_saved_checkpoint(path,digest,confirmed):
-            if handoff is None:return
+            if handoff is None and dynamic is None:return
             from .identity import code_fingerprint
-            atomic_json(output/'worker_checkpoint_manifest.json',dict(schema='a2-v10-worker-recovery-v1',
+            manifest=dict(schema='a2-v10-worker-recovery-v1',
                 checkpoint=dict(path=str(Path(path).resolve()),sha256=digest),course=course,num_envs=num_envs,
                 physical_sha256=physical['sha256'],code_sha256=code_fingerprint(),learning_ledger_path=str(Path(ledger_path).resolve()),
                 operation_id=operation_id,target_round=stop_round,confirmed_samples=confirmed,round=confirmed//(num_envs*spec.ROLLOUT),
-                formal_handoff_sha256=handoff['sha256']))
+                formal_handoff_sha256=handoff['sha256'] if handoff else None)
+            if dynamic:
+                manifest.update(round=rounds.get('PPO' if course.startswith('P') else course,0),rounds=dict(rounds),
+                    execution_profile_path=dynamic['path'],execution_profile_sha256=dynamic['sha256'])
+            atomic_json(output/'worker_checkpoint_manifest.json',manifest)
+            if dynamic:atomic_json(dynamic['document']['recovery_registry_path'],manifest)
         if course.startswith('D'):
             if state and state['course'] not in ('D1','D2','D3'):raise ValueError('cannot resume DAgger from PPO')
             model.set_phase(course);learner=DAggerLearner(model);teachers=frozen_teachers(device)
@@ -207,44 +220,55 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
             teachers=None
         if state:
             # New episodes; preserve role rotation and training RNG, never stale physical trajectories.
-            env.load_state_dict(state['env']);restore_rng(state['rng'])
+            if dynamic and state['num_envs']!=num_envs:env.load_state_dict(state['env'],allow_num_env_change=True)
+            else:env.load_state_dict(state['env'])
+            restore_rng(state['rng'])
         budget_key='PPO' if course.startswith('P') else course;cap=spec.BUDGETS[budget_key]
         # External consumed samples determine progress even after interrupted rollouts / old-state rollback.
         charged=ledger.totals().get('learning:'+budget_key,0)
         consumed=ledger.report()['executed'].get('learning:'+budget_key,0);nstep=num_envs*spec.ROLLOUT
         if course=='P0':cap=spec.P0_BUDGET
         if trial:cap=min(cap,trial.cap)
-        max_round=cap//nstep
+        if dynamic:
+            cap=(dynamic['document'].get('p0_sample_cap',dynamic['sample_caps'].get('P0')) if course=='P0' else dynamic['sample_caps'][budget_key])
+        max_round=(100 if course=='P0' else dynamic['round_budgets'][budget_key]) if dynamic else cap//nstep
+        retained_round=rounds.get(budget_key,0)
         if stop_round<0 or stop_round>max_round:raise ValueError('stop-round beyond phase budget')
-        if course=='P1' and consumed<spec.P0_BUDGET:raise ValueError('P0 budget incomplete')
-        if consumed>stop_round*nstep:raise ValueError('stop-round precedes already consumed budget')
+        if course=='P1' and (retained_round<100 if dynamic else consumed<spec.P0_BUDGET):raise ValueError('P0 budget incomplete')
+        if (retained_round>stop_round if dynamic else consumed>stop_round*nstep):raise ValueError('stop-round precedes already consumed budget')
         last_path=None
         last_saved_confirmed=(state.get('accounting',{}).get('executed',state['budgets']).get('learning:'+budget_key,0) if state else 0)
         if state is not None:
             state.clear();del state;state=None
             release_host_memory();trace_memory(memory_trace,'worker_restore_transferred')
-        last_saved_path=None;last_saved_consumed=None
+        last_saved_path=None;last_saved_consumed=None;last_saved_round=retained_round
         if trial and not resume:
             # Durable zero-update entry permits explicit crash recovery without a quota reset.
             save_worker(output/'trial_initial.pt',model,learner,reservoir,env,ledger,rounds,physical['sha256'],keep,extra,memory_trace)
-        while (trial.can_collect(charged) if trial else consumed<stop_round*nstep and charged+nstep<=cap):
+        while (retained_round<stop_round and charged+nstep<=cap if dynamic else trial.can_collect(charged) if trial else consumed<stop_round*nstep and charged+nstep<=cap):
+            if dynamic and memory_observation('dynamic_guard')['host_available_bytes']<4*1024**3:raise RuntimeError('dynamic training MemAvailable below 4GiB')
             trace_memory(memory_trace,'sampling_begin')
             rollout,metrics=collect_rollout(env,model,teachers,phase=course,ledger=ledger,budget_limit=cap)
             trace_memory(memory_trace,'sampling_complete')
+            if dynamic and memory_observation('dynamic_guard')['host_available_bytes']<4*1024**3:raise RuntimeError('dynamic training MemAvailable below 4GiB')
             update=(learner.update(rollout,reservoir,num_envs) if course.startswith('D') else learner.update(rollout,keep,reservoir,course))
             trace_memory(memory_trace,'update_complete')
             if trial:
                 trial.retained+=1
                 extra=dict(extra,trial=trial.checkpoint_state())
             ledger.record_update(metrics['rollout_id']+':update',budget_key,nstep)
+            if dynamic and memory_observation('dynamic_guard')['host_available_bytes']<4*1024**3:raise RuntimeError('dynamic training MemAvailable below 4GiB')
             charged=ledger.totals().get('learning:'+budget_key,0)
-            consumed=ledger.report()['executed'].get('learning:'+budget_key,0);rounds[budget_key]=consumed//nstep
+            consumed=ledger.report()['executed'].get('learning:'+budget_key,0)
+            retained_round+=1
+            rounds[budget_key]=retained_round if dynamic else consumed//nstep
             append_json(output/'updates.jsonl',dict(phase=course,round=rounds[budget_key],consumed=consumed,metrics=update,
                 updated_samples=nstep,rollout_id=metrics['rollout_id'],physical_session_id=physical_session_id,
                 collection_statistics_scope='training_rollout',per_task=metrics['per_task'],completed_episodes=len(metrics['episodes']),failures=sum(not e['success'] for e in metrics['episodes'])))
             del rollout,metrics
             release_host_memory();trace_memory(memory_trace,'rollout_released')
-            if save_due(last_saved_confirmed,consumed):
+            if (retained_round//dynamic['save_rounds']>last_saved_round//dynamic['save_rounds'] if dynamic else save_due(last_saved_confirmed,consumed)):
+                last_saved_round=retained_round
                 last_saved_confirmed=consumed
                 last_path=output/f'{course}_{rounds[budget_key]:06d}.pt'
                 saved_digest=save_worker(last_path,model,learner,reservoir,env,ledger,rounds,physical['sha256'],keep,extra,memory_trace)
@@ -252,7 +276,8 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
                 last_saved_path=last_path;last_saved_consumed=consumed
                 retain_latest(output,course)
         # Gate pause always follows complete rollout/update/bootstrap. Entry/exit saves also cover zero-round workers.
-        last_path=output/f'{course}_{consumed//nstep:06d}_boundary.pt'
+        final_round=retained_round if dynamic else consumed//nstep
+        last_path=output/f'{course}_{final_round:06d}_boundary.pt'
         if last_saved_consumed==consumed:
             # Same immutable learning state: mark the boundary via an on-disk hard link,
             # never serialize a second 3GB reservoir for an overlapping save event.
@@ -264,6 +289,10 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
         record_saved_checkpoint(last_path,digest,consumed)
         result=dict(checkpoint=str(last_path),checkpoint_sha256=digest,course=course,round=consumed//nstep,
             consumed=consumed,updated_samples=ledger.report()['updated'].get('learning:'+budget_key,0),physical_sha256=physical['sha256'],budget=ledger.report(),gate_reached=consumed>=stop_round*nstep,training_accepted=False)
+        if dynamic:
+            result.update(round=retained_round,retained_rounds=dict(rounds),gate_reached=retained_round>=stop_round,
+                execution_profile_sha256=dynamic['sha256'],resource_status='unverified_for_requested_N',
+                stop_reason='round_target' if retained_round>=stop_round else 'execution_budget_exhausted')
         if trial:
             result.update(trial.status(),stop_reason=trial.stop_reason,round=trial.retained,confirmed_sample_round=consumed//nstep,updated_samples=trial.retained*nstep,
                 historical_updated_samples=ledger.report()['updated'].get('learning:'+budget_key,0))

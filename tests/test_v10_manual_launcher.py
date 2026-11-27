@@ -1,56 +1,34 @@
-"""Manual launcher wiring, without importing a simulator or running physics."""
+"""Manual dynamic-N entry wiring; no simulation or physical samples."""
 import importlib.util
 from pathlib import Path
 import sys
 import types
-
 import pytest
-
-ROOT = Path(__file__).resolve().parents[1]
-
+ROOT=Path(__file__).resolve().parents[1]
 
 def launcher(monkeypatch):
-    calls = []
-    class Controller:
-        def __init__(self, *args, **kwargs):
-            calls.append(('init', args, kwargs))
-        def run(self, **kwargs):
-            calls.append(('run', kwargs))
-            return {'passed': True}
-    fake = types.ModuleType('src.tasks.velocity.v10.orchestration')
-    fake.Orchestrator = Controller
-    fake.preflight_formal_handoff = lambda *a: calls.append(('check', a)) or {'passed': True}
-    monkeypatch.setitem(sys.modules, fake.__name__, fake)
-    spec = importlib.util.spec_from_file_location('manual_launcher', ROOT/'scripts/run_a2_v10_formal.py')
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module, calls
+    calls=[]
+    fake=types.ModuleType('src.tasks.velocity.v10.dynamic_execution')
+    def run(**kwargs):calls.append(kwargs);return {'passed':True,'executed':False}
+    fake.run_dynamic_execution=run
+    monkeypatch.setitem(sys.modules,fake.__name__,fake)
+    spec=importlib.util.spec_from_file_location('manual_launcher',ROOT/'scripts/run_a2_v10_formal.py')
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    return module,calls
 
+def test_check_is_explicit_no_training(monkeypatch):
+    module,calls=launcher(monkeypatch)
+    assert module.main(['--mode','check','--num-envs','2048'])==0
+    assert calls[0]['check_only'] is True and calls[0]['num_envs']==2048
 
-def test_check_does_not_construct_controller_or_run(monkeypatch):
-    module, calls = launcher(monkeypatch)
-    assert module.main(['--mode','check','--device','cuda:0','--num-envs','1024','--rollout','48','--seed','42']) == 0
-    assert [c[0] for c in calls] == ['check']
+def test_all_passes_configurable_env_count_and_original_root(monkeypatch):
+    module,calls=launcher(monkeypatch)
+    assert module.main(['--mode','all','--num-envs','2048'])==0
+    assert calls[0]['run_dir']==ROOT/'logs/a2_v10/formal_A1_20261127_approved'
+    assert calls[0]['profile_path'].name=='execution_profile_N2048.json'
+    assert calls[0]['teachers_only'] is False
 
-
-def test_all_runs_full_flow_with_original_shared_ledgers(monkeypatch, tmp_path):
-    module, calls = launcher(monkeypatch)
-    module.ROOT = tmp_path
-    run = tmp_path/'logs/a2_v10/formal_A1_20261127_approved'
-    selection = run/'resource_probe_v2_sds_resume_20261127_183400/selection.json'
-    selection.parent.mkdir(parents=True)
-    selection.write_text('{"probe_sequence_id":"existing-sequence"}')
-    assert module.main(['--mode','all']) == 0
-    assert calls[-1] == ('run', {'teachers_only':False})
-    kwargs = calls[-2][2]
-    assert kwargs['learning_ledger'] == run/'learning_costs.jsonl'
-    assert kwargs['evaluation_ledger'] == tmp_path/'logs/a2_v10/formal_A_20261127_approved/evaluation_costs.jsonl'
-    assert kwargs['probe_sequence_id'] == 'existing-sequence'
-    assert kwargs['formal_handoff_plan'].name == 'formal_handoff_plan_20261127.json'
-
-
-def test_recipe_changes_rejected_before_preflight(monkeypatch):
-    module, calls = launcher(monkeypatch)
-    with pytest.raises(SystemExit):
-        module.main(['--num-envs','512'])
+def test_too_small_env_count_rejected(monkeypatch):
+    module,calls=launcher(monkeypatch)
+    with pytest.raises(SystemExit):module.main(['--num-envs','0'])
     assert not calls
