@@ -1,0 +1,107 @@
+/home/xxs/anaconda3/envs/a2/lib/python3.11/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+Setting seed: 42
+Warp 1.12.0 initialized:
+   CUDA Toolkit 12.9, Driver 13.0
+   Devices:
+     "cpu"      : "x86_64"
+     "cuda:0"   : "NVIDIA GeForce RTX 3070 Ti" (8 GiB, sm_86, mempool enabled)
+   Kernel cache:
+     /home/xxs/.cache/warp/1.12.0
+Terrain generation took 0.0150 seconds.
+Warp DeprecationWarning: The symbol `warp.context.runtime` will soon be removed from the public API. It can still be accessed from `warp._src.context.runtime` but might be changed or removed without notice.
+Module mujoco_warp._src.smooth 12773d5 load on device 'cuda:0' took 2.46 ms  (cached)
+Module mujoco_warp._src.collision_driver 4d8b905 load on device 'cuda:0' took 0.61 ms  (cached)
+Module _nxn_broadphase__locals__kernel_551438e6 551438e load on device 'cuda:0' took 0.27 ms  (cached)
+Module ccd_kernel_builder__locals__ccd_kernel_67e250a9 67e250a load on device 'cuda:0' took 1.00 ms  (cached)
+Module ccd_kernel_builder__locals__ccd_kernel_44d4762a 44d4762 load on device 'cuda:0' took 1.27 ms  (cached)
+Module _primitive_narrowphase__locals__primitive_narrowphase_14e18dca 14e18dc load on device 'cuda:0' took 0.46 ms  (cached)
+Module mujoco_warp._src.constraint abf7b17 load on device 'cuda:0' took 2.15 ms  (cached)
+Module _actuator_velocity__locals__actuator_velocity_9d476fc0 fac4890 load on device 'cuda:0' took 0.28 ms  (cached)
+Module mujoco_warp._src.passive f6d4bb4 load on device 'cuda:0' took 0.59 ms  (cached)
+Module mujoco_warp._src.sensor a122b42 load on device 'cuda:0' took 1.55 ms  (cached)
+Module mujoco_warp._src.forward 6f039ed load on device 'cuda:0' took 0.63 ms  (cached)
+Module mujoco_warp._src.support 343d1ae load on device 'cuda:0' took 0.29 ms  (cached)
+Module _tile_cholesky_factorize_solve__locals__cholesky_factorize_solve_886404d2 159512a load on device 'cuda:0' took 22.66 ms  (cached)
+Module mujoco_warp._src.solver f11a68d load on device 'cuda:0' took 0.89 ms  (cached)
+Module solve_init_jaref__locals__kernel_6e624303 6e62430 load on device 'cuda:0' took 0.32 ms  (cached)
+Module mul_m_dense__locals___mul_m_dense_c372b8a5 c372b8a load on device 'cuda:0' took 0.25 ms  (cached)
+Module update_constraint_gauss_cost__locals__kernel_ef360293 ef36029 load on device 'cuda:0' took 0.26 ms  (cached)
+Module update_gradient_JTDAJ_dense_tiled__locals__kernel_a47e300f 462c38d load on device 'cuda:0' took 20.91 ms  (cached)
+Module update_gradient_cholesky__locals__kernel_10e97a41 ebdd544 load on device 'cuda:0' took 25.74 ms  (cached)
+Module linesearch_jv_fused__locals__kernel_25c90185 25c9018 load on device 'cuda:0' took 0.31 ms  (cached)
+Module linesearch_prepare_gauss__locals__kernel_7bbb5979 7bbb597 load on device 'cuda:0' took 0.30 ms  (cached)
+Module _contact_sort__locals__contact_sort_c2bd81ce 47863e6 load on device 'cuda:0' took 0.31 ms  (cached)
+Module mujoco_warp._src.derivative ed5cf13 load on device 'cuda:0' took 0.37 ms  (cached)
+Module _qderiv_actuator_passive_actuation_dense__locals__kernel_7e415bf2 3a95e7f load on device 'cuda:0' took 21.59 ms  (cached)
+Module reset_data__locals__reset_xfrc_applied_f86f0829 f86f082 load on device 'cuda:0' took 0.36 ms  (cached)
+Module reset_data__locals__reset_qM_1511185b 1511185 load on device 'cuda:0' took 0.29 ms  (cached)
+Module reset_data__locals__reset_mocap_11135362 1113536 load on device 'cuda:0' took 0.28 ms  (cached)
+Module reset_data__locals__reset_contact_76c1c25e 76c1c25 load on device 'cuda:0' took 0.27 ms  (cached)
+Module reset_data__locals__reset_nworld_d108b6ac d108b6a load on device 'cuda:0' took 0.29 ms  (cached)
+
++---------------------------------+
+|         Base Environment        |
++------------------------+--------+
+| Property               | Value  |
++------------------------+--------+
+| Number of environments | 1024   |
+| Environment device     | cuda:0 |
+| Environment seed       | 42     |
+| Physics step-size      | 0.005  |
+| Environment step-size  | 0.02   |
++------------------------+--------+
+
+[INFO] <EventManager> contains 0 active terms.
+
+[INFO] <CommandManager> contains 1 active terms.
++----------------------------------------+
+|          Active Command Terms          |
++-------+-------+------------------------+
+| Index | Name  |          Type          |
++-------+-------+------------------------+
+|   0   | twist | UniformVelocityCommand |
++-------+-------+------------------------+
+
+[INFO] <ActionManager> contains 1 active terms.
++---------------------------------+
+| Active Action Terms (shape: 12) |
++-------+-----------+-------------+
+| Index | Name      |   Dimension |
++-------+-----------+-------------+
+|   0   | joint_pos |          12 |
++-------+-----------+-------------+
+
+[INFO] <ObservationManager> contains 1 groups.
++-----------------------------------------------------------+
+| Active Observation Terms in Group: 'actor' (shape: (45,)) |
++--------+------------------------+-------------------------+
+| Index  | Name                   |          Shape          |
++--------+------------------------+-------------------------+
+|   0    | base_ang_vel           |      (3,)  ← 1×(3,)     |
+|   1    | projected_gravity      |      (3,)  ← 1×(3,)     |
+|   2    | command                |      (3,)  ← 1×(3,)     |
+|   3    | joint_pos              |     (12,)  ← 1×(12,)    |
+|   4    | joint_vel              |     (12,)  ← 1×(12,)    |
+|   5    | actions                |     (12,)  ← 1×(12,)    |
++--------+------------------------+-------------------------+
+
+[INFO] <TerminationManager> contains 0 active terms.
++--------------------------+
+| Active Termination Terms |
++-------+------+-----------+
+| Index | Name |  Time Out |
++-------+------+-----------+
++-------+------+-----------+
+
+[INFO] <RewardManager> contains 0 active terms.
++-----------------------+
+|  Active Reward Terms  |
++-------+------+--------+
+| Index | Name | Weight |
++-------+------+--------+
++-------+------+--------+
+
+[INFO] <NullCurriculumManager> (inactive)
+[INFO] <NullMetricsManager> (inactive)
+{"code_sha256": "2f82589e805b2579843a4381089467d40931300aff8a80f466becf90dcc4fbcb", "cost": {"charged": {"probe:D3": 98304}, "executed": {"probe:D3": 98304}, "global_ledger": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/global_probe_costs.jsonl", "global_totals": {"charged": 3391488, "executed": 3391488, "uncertain": 0, "updated": 3170304}, "pending": [], "uncertain": {"probe:D3": 0}, "updated": {"probe:D3": 49152}}, "error": "RuntimeError('resource ceiling exceeded during full update')", "fill_rollouts": 1, "global_probe_ledger": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/global_probe_costs.jsonl", "global_probe_totals": {"charged": 3391488, "executed": 3391488, "uncertain": 0, "updated": 3170304}, "linkage_contract_path": "/home/xxs/dog/unitree_rl_mjlab_a2/logs/a2_v10/resource_linkage_contract_A1_20261127.json", "linkage_contract_sha256": "03c43e5e624e4c817714f6e7349bcbb2cbd2ddc4ae7873d5120ba3ff17de7a78", "measurement_rounds": 2, "memory_stages": [{"host_available_bytes": 8231247872, "process_peak_rss_bytes": 2291826688, "process_rss_bytes": 2293178368, "stage": "sampling_initial_begin", "time": 1795748961.7413394}, {"host_available_bytes": 4965212160, "process_peak_rss_bytes": 6900121600, "process_rss_bytes": 5800316928, "stage": "replay_full_initial_released", "time": 1795748976.872955}, {"host_available_bytes": 4965212160, "process_peak_rss_bytes": 6900121600, "process_rss_bytes": 5800542208, "stage": "sampling_0_begin", "time": 1795748976.8750489}, {"host_available_bytes": 4106727424, "process_peak_rss_bytes": 6900121600, "process_rss_bytes": 6589276160, "stage": "sampling_0_complete", "time": 1795748983.3634994}, {"host_available_bytes": 3762843648, "process_peak_rss_bytes": 7224512512, "process_rss_bytes": 6898249728, "stage": "update_0_complete", "time": 1795748985.7421005}, {"host_available_bytes": 4597637120, "process_peak_rss_bytes": 7224512512, "process_rss_bytes": 6051823616, "stage": "rollout_0_released", "time": 1795748985.890205}], "num_envs": 1024, "passed": false, "probe_budget_authorization_sha256": "49760a42facac7017b88db514b3beb09f8c7fb9b75458ac932a3a7bcc86d2d6c", "probe_sequence_id": "A1_yaw_20261127_approved_once", "resource_protocol": "A1-targeted-resource-v1", "sampled_resource_peak": {"gpu_task_mib": 1120, "gpu_total_mib": 2568, "host_available_bytes": 3353313280}, "sds_sha256": "eb95905ed24bf0674f94a1b02dab02256ee11e40a20ed1cd96eb24daeb1b49a0", "stack": "dagger", "warmup_rounds": 2}

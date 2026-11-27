@@ -1,0 +1,13 @@
+# A1资源失败与当前停止状态（2026-11-27）
+
+2f源码/c6a76db已推送，CPU工程159passed/5skipped；真实资源补证失败，因此不是总体通过。实际N1024 DAgger只完成1fill+1update，PPO未测，112教师诊断、完整A/B及限额D1试训均未开始，学习0。
+
+最低MemAvailable3353313280B（3.123GiB）在2026-11-27 11:09:44.856651+08首update内部；原门槛4294967296B。初始fill与首sampling亦已越限，49/219周期样本低于4GiB。GPU整卡峰2568MiB/任务1120MiB未触GPU门槛。全局charged=executed3391488，updated3170304，uncertain0；本次98304不可退，cap3833856余442368。
+
+旧已过1024同阶段：采样开始host10129899520B vs新8231247872B；旧首update RSS7026778112/HWM7352033280，新6898249728/7224512512。worker当前峰略低，机器初始余量却少约1.77GiB，不能把背景差额归到新实现。probe没有TraceBatchV2实例；私有proprio clone即使全1024也仅184320B；49k-row rollout约735MiB、满replay约2940MiB、逻辑batch约45.94MiB均为原形状。现有生命周期没有证实新增GB级重复对象，不擅改核心内存实现。
+
+原记录无同期父/子PSS/USS及旧进程历史，因此无法精准归因到某个进程；退出后当前RSS表只作环境快照，不代表峰值责任。未打印命令行参数/敏感命令，未kill或改变其他进程。原始result/resources.jsonl、旧报告和失败保留。独立失败报告v10_A1_resource_failure_independent_20261127.md SHA31b45c3b4fe74a3adee029e52812caddc230c6ed66cb63b70a0c0a7e54cb7126。
+
+之后60s只读13样本的MemAvailable min/median/max为10.056/10.088/10.114GiB，仍低于新批准启动条件12GiB；此为工程期间环境观察，不是空闲负载保证。原始host_stability_readonly_60s.json SHA b94aff1d147854b8565fcf0d2f2ab98c9c950fcc4953335ed1d64de8e34df951。没有新增物理。
+
+最新顺序独立记录于v10_A1_trial50_resource_v2_ruling_20261127.md：先完成trial charged guard CPU/独审及新source冻结；条件满足后唯一v2两栈393216→112诊断→原D1预算内试训50轮硬帽2457600并保存停止。完整教师A/B后移，不能伪造teacher_admitted/accepted。当前只做已批最小工程和只读余量检查，未因试训许可绕过失败资源门禁。

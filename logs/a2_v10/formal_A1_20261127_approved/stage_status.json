@@ -1,0 +1,13 @@
+{
+  "status": "stopped",
+  "stop_reason": "resource_host_memory_failure",
+  "source_sha256": "2f82589e805b2579843a4381089467d40931300aff8a80f466becf90dcc4fbcb",
+  "probe_charged": 3391488,
+  "probe_remaining": 442368,
+  "learning_samples": 0,
+  "diagnostic_started": false,
+  "teacher_admitted": false,
+  "accepted": null,
+  "trial50_started": false,
+  "new_resource_v2_permission": "conditional; engineering and 60s >=12GiB required; not started"
+}

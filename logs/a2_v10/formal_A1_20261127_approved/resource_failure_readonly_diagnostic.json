@@ -1,0 +1,126 @@
+{
+  "scope": "read-only after failed A1 resource admission; no retry/diagnosis/learning",
+  "old_result_sha256": "37d422907bd3305ab10ac3da78223b49404b1b96e9446f6415055d8d27d0383e",
+  "new_result_sha256": "25dcaf003c752e2de5d5fffee74087ea74413a586d33d991328f06094c3583e3",
+  "stage_comparison": [
+    {
+      "stage": "sampling_initial_begin",
+      "old": {
+        "host_available_bytes": 10129899520,
+        "process_peak_rss_bytes": 2278203392,
+        "process_rss_bytes": 2280017920,
+        "stage": "sampling_initial_begin",
+        "time": 1795739382.9993105
+      },
+      "new": {
+        "host_available_bytes": 8231247872,
+        "process_peak_rss_bytes": 2291826688,
+        "process_rss_bytes": 2293178368,
+        "stage": "sampling_initial_begin",
+        "time": 1795748961.7413394
+      },
+      "host_new_minus_old": -1898651648,
+      "worker_rss_new_minus_old": 13160448
+    },
+    {
+      "stage": "replay_full_initial_released",
+      "old": {
+        "host_available_bytes": 6721605632,
+        "process_peak_rss_bytes": 6999052288,
+        "process_rss_bytes": 5899792384,
+        "stage": "replay_full_initial_released",
+        "time": 1795739397.5033393
+      },
+      "new": {
+        "host_available_bytes": 4965212160,
+        "process_peak_rss_bytes": 6900121600,
+        "process_rss_bytes": 5800316928,
+        "stage": "replay_full_initial_released",
+        "time": 1795748976.872955
+      },
+      "host_new_minus_old": -1756393472,
+      "worker_rss_new_minus_old": -99475456
+    },
+    {
+      "stage": "sampling_0_complete",
+      "old": {
+        "host_available_bytes": 5960708096,
+        "process_peak_rss_bytes": 6999052288,
+        "process_rss_bytes": 6685491200,
+        "stage": "sampling_0_complete",
+        "time": 1795739403.4290197
+      },
+      "new": {
+        "host_available_bytes": 4106727424,
+        "process_peak_rss_bytes": 6900121600,
+        "process_rss_bytes": 6589276160,
+        "stage": "sampling_0_complete",
+        "time": 1795748983.3634994
+      },
+      "host_new_minus_old": -1853980672,
+      "worker_rss_new_minus_old": -96215040
+    },
+    {
+      "stage": "update_0_complete",
+      "old": {
+        "host_available_bytes": 5764304896,
+        "process_peak_rss_bytes": 7352033280,
+        "process_rss_bytes": 7026778112,
+        "stage": "update_0_complete",
+        "time": 1795739405.6530693
+      },
+      "new": {
+        "host_available_bytes": 3762843648,
+        "process_peak_rss_bytes": 7224512512,
+        "process_rss_bytes": 6898249728,
+        "stage": "update_0_complete",
+        "time": 1795748985.7421005
+      },
+      "host_new_minus_old": -2001461248,
+      "worker_rss_new_minus_old": -128528384
+    },
+    {
+      "stage": "rollout_0_released",
+      "old": {
+        "host_available_bytes": 6427103232,
+        "process_peak_rss_bytes": 7352033280,
+        "process_rss_bytes": 6178529280,
+        "stage": "rollout_0_released",
+        "time": 1795739405.7984126
+      },
+      "new": {
+        "host_available_bytes": 4597637120,
+        "process_peak_rss_bytes": 7224512512,
+        "process_rss_bytes": 6051823616,
+        "stage": "rollout_0_released",
+        "time": 1795748985.890205
+      },
+      "host_new_minus_old": -1829466112,
+      "worker_rss_new_minus_old": -126705664
+    }
+  ],
+  "current_meminfo": "MemTotal:       32683224 kB\nMemFree:         7328236 kB\nMemAvailable:   10593988 kB\nBuffers:           44524 kB\nCached:          7486428 kB\nSwapCached:            0 kB\nActive:         12282784 kB\nInactive:       11035816 kB\nActive(anon):   10838968 kB\nInactive(anon):  9240464 kB\nActive(file):    1443816 kB\nInactive(file):  1795352 kB\nUnevictable:       49440 kB\nMlocked:           49440 kB\nSwapTotal:             0 kB\nSwapFree:              0 kB\nZswap:                 0 kB\nZswapped:              0 kB\nDirty:              1140 kB\nWriteback:             0 kB\nAnonPages:      15837168 kB\nMapped:          1757820 kB\nShmem:           4291784 kB\nKReclaimable:     493600 kB\nSlab:             967312 kB\nSReclaimable:     493600 kB\nSUnreclaim:       473712 kB\nKernelStack:       43676 kB\nPageTables:       191788 kB\nSecPageTables:         0 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:    16341612 kB\nCommitted_AS:   60291352 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:      264636 kB\nVmallocChunk:          0 kB\nPercpu:            22336 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nUnaccepted:            0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:    25405544 kB\nDirectMap2M:     7972864 kB\nDirectMap1G:           0 kB\n",
+  "current_top_rss_processes": [
+    "    PID    PPID   RSS COMMAND",
+    "2731099 3227282 1024100 node",
+    "   3229    2512 1019744 gnome-shell",
+    "3914981    2512 854324 crosspaste",
+    "   2674    2672 751868 Xorg",
+    "3502546    7502 710464 msedge",
+    "   1775       1 687940 ToDesk_Service",
+    "   9607    9460 679660 WebKitWebProces",
+    "1533312    2512 652668 gnome-keyring-d",
+    "2838102    7502 650228 msedge",
+    "3859767    7502 636036 msedge",
+    "3853888    7502 619960 msedge",
+    "   3246    3229 602364 mutter-x11-fram",
+    "  95660    7502 581364 msedge",
+    "2295248    7502 552032 msedge",
+    "2719445    7502 549484 msedge"
+  ],
+  "warning": "post-failure process snapshot cannot identify the process responsible at peak; no processes changed",
+  "resource_admitted": false,
+  "diagnostic_started": false,
+  "trial50_started": false,
+  "formal_learning_samples": 0
+}

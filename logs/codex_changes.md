@@ -5292,3 +5292,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 正常审批并原子落同cap承继授权logs/a2_v10/probe_authorization_A1_inherited_20261127.json SHA49760a42facac7017b88db514b3beb09f8c7fb9b75458ac932a3a7bcc86d2d6c；父原授权ID/SHA、同全局ledger/cap3833856、当前rulings绑定均独立核验，无rulings通配例外。签最终engineering_admission_A1_20261127.json及resource_linkage_contract_A1_20261127.json，仅批准限额工程验证链，不代表资源或教师通过。
 - 启动前生产账本只读核对：probe charged/executed3293184、uncertain0、updated3121152、余540672，无pending/active sequence；eval旧304100不退，正式学习0。本次CPU/审核新增物理0。后续按两栈491520→112例251288→全新教师A/B→SDS课程执行；真实物理结果另追加，任门禁或预算失败停止，不搜索新增益/扩额。原始失败证据保持。
 - 提交打包核对：原始pytest RED stdout包含框架打印的行尾空格，原样保留证据及SHA，不为样式改写日志；暂存的源码、文档和JSON执行diff --check（仅排除原始*.log）通过。此项不改源码/身份/测试结论。
+
+## 2026-11-27 A1真实资源失败、停止及最新50轮/v2裁定
+
+- 实际已推c6a76db8583f452cdf73022687ba323c8c09e9f5且HEAD/origin一致；其2f源码工程通过不代表资源通过。A1 v1 1024 DAgger实际1fill+1update即host门槛失败：全程min3353313280B<4GiB，在首update内部；fill及sampling也低于门槛（49/219周期样本）。GPU2568/1120MiB未越限。PPO、112、教师A/B及学习均未启动，未重试/降N/改阈值或动其他进程。
+- 费用如实保留：新增charged=executed98304、updated49152、uncertain0；global3391488、updated3170304、余442368。原cap3833856不变，原始失败result/resources/parent logs和stage_status保留；不把resource fill计作正式学习。
+- 新文件doc/sds/reviews/v10_A1_resource_failure_status_20261127.md、独立v10_A1_resource_failure_independent_20261127.md；派生logs/a2_v10/formal_A1_20261127_approved/resource_failure_readonly_diagnostic.json及host_stability_readonly_60s.json。只读比较同阶段新worker RSS/HWM反略低、初始host少约1.77GiB，未证实新GB级重复驻留；缺历史父子PSS，不能归因具体进程，不输出敏感命令行。tracebuffer在probe未实例化，teacher clone/rollout/replay逻辑batch尺寸逐源核对。60s可用RAM min10.056GiB，未达新前置12GiB，0新增物理。
+- 新独立裁定文件v10_A1_trial50_resource_v2_ruling_20261127.md关联旧SDS/2f/规划授权，不改旧已签rulings/证据。用户授权调整为资源→112均通过后原D1最多50轮×1024×48=2457600试训并停报，完整A/B后移、不自动课程/PPO、不伪造accepted。后续批准worker自身trial charged硬帽含uncertain、同guard/ledger恢复，不赠50；已委派最小CPU TDD/独审，未称工程已完成。
+- 新v2资源已获规划批准：各1fill+1warm+2measure共393216，原cap内预期3784704余49152；新source/contract独审并冻结后，prelaunch连续60s>=12GiB及child填库前>=9.5GiB才启动，原运行4GiB硬门槛不变。任栈失败停止、不余量重试；当前v2未启动。新guard/runtime与v2接线仍工程中，不能拿旧2f验收当新source通过。

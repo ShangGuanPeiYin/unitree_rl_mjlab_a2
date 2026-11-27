@@ -1,0 +1,101 @@
+{
+  "scope": "read-only 60-second host check during engineering; not physical admission and not an idle-load guarantee",
+  "samples": [
+    {
+      "epoch": 1795749470.0197403,
+      "available_bytes": 10851762176,
+      "memfree_bytes": 7246295040,
+      "cached_bytes": 7911542784,
+      "shmem_bytes": 4383395840
+    },
+    {
+      "epoch": 1795749475.0199254,
+      "available_bytes": 10855546880,
+      "memfree_bytes": 7249518592,
+      "cached_bytes": 7911723008,
+      "shmem_bytes": 4383395840
+    },
+    {
+      "epoch": 1795749480.020125,
+      "available_bytes": 10859671552,
+      "memfree_bytes": 7253618688,
+      "cached_bytes": 7911727104,
+      "shmem_bytes": 4383395840
+    },
+    {
+      "epoch": 1795749485.020308,
+      "available_bytes": 10850672640,
+      "memfree_bytes": 7244484608,
+      "cached_bytes": 7911837696,
+      "shmem_bytes": 4383395840
+    },
+    {
+      "epoch": 1795749490.0204904,
+      "available_bytes": 10852843520,
+      "memfree_bytes": 7246630912,
+      "cached_bytes": 7911849984,
+      "shmem_bytes": 4383395840
+    },
+    {
+      "epoch": 1795749495.0207353,
+      "available_bytes": 10797350912,
+      "memfree_bytes": 7190011904,
+      "cached_bytes": 7912919040,
+      "shmem_bytes": 4383399936
+    },
+    {
+      "epoch": 1795749500.0209086,
+      "available_bytes": 10824867840,
+      "memfree_bytes": 7217504256,
+      "cached_bytes": 7912935424,
+      "shmem_bytes": 4383399936
+    },
+    {
+      "epoch": 1795749505.0210807,
+      "available_bytes": 10831667200,
+      "memfree_bytes": 7224254464,
+      "cached_bytes": 7912964096,
+      "shmem_bytes": 4383399936
+    },
+    {
+      "epoch": 1795749510.0213244,
+      "available_bytes": 10837270528,
+      "memfree_bytes": 7229849600,
+      "cached_bytes": 7913488384,
+      "shmem_bytes": 4383924224
+    },
+    {
+      "epoch": 1795749515.021499,
+      "available_bytes": 10826559488,
+      "memfree_bytes": 7219101696,
+      "cached_bytes": 7913504768,
+      "shmem_bytes": 4383924224
+    },
+    {
+      "epoch": 1795749520.0216763,
+      "available_bytes": 10828570624,
+      "memfree_bytes": 7221084160,
+      "cached_bytes": 7913119744,
+      "shmem_bytes": 4383531008
+    },
+    {
+      "epoch": 1795749525.0218494,
+      "available_bytes": 10830872576,
+      "memfree_bytes": 7223259136,
+      "cached_bytes": 7913611264,
+      "shmem_bytes": 4383928320
+    },
+    {
+      "epoch": 1795749530.0220225,
+      "available_bytes": 10830237696,
+      "memfree_bytes": 7222599680,
+      "cached_bytes": 7913623552,
+      "shmem_bytes": 4383928320
+    }
+  ],
+  "min_available_bytes": 10797350912,
+  "max_available_bytes": 10859671552,
+  "median_available_bytes": 10831667200,
+  "physics_added": 0,
+  "processes_changed": 0
+}
