@@ -5482,3 +5482,10 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 新训练预算：明确独立重训任务，旧日志/台账不清除不退款。D1/D2/D3最大500/1000/1500轮，PPO最大1000（P0前100），每50轮保存、48步rollout、seed42。N2048的各阶段样本上限49152000/98304000/147456000/98304000。教师A/B和课程门禁、奖励/损失/学习率/A1纠偏不变。
 - 物理协议JSON原样来自此前真实D1环境contract，仅校验环境参数一致性，不继承资源通过结论；启动前校验其内部canonical SHA及教师实际文件SHA。
 - 验证：21项CPU测试通过（包含旧续训兼容、新fresh配置、check只读、不依赖旧CP、零轮保存、单轮更新后完整恢复、重复调度不重建配置、已有费用拒绝新建fresh、原门禁拒绝和内存保护）。真实shell --mode check --num-envs 2048返回passed=true/executed=false及剩余500/1000/1500/1000轮；bash语法与git diff --check通过。未启动物理评估或正式学习，服务器实际GPU运行未验证。
+
+## 2026-11-28 上传 S1 latest 权重
+- 用户明确要求将s1-latest push到GitHub，本次授权覆盖默认不上传训练权重的项目约定。
+- 文件：logs/good/s1_latest.pt、logs/codex_changes.md。
+- 修改：将现有约15MiB的S1权重原字节直接纳入Git（该文件原被logs忽略规则排除，精确force-add此单文件），不使用Release/LFS，服务器git pull即可取得。
+- 校验SHA256：efa9caa8ce99e2cdff967212063e198b7ae68a6415727083b1db027f615ead24。未更改权重内容、训练入口、S2/ETH教师选择、初始化、奖励或损失。
+- 验证：文件存在、大小与SHA读取完成；仅分发文件，未执行训练或行为测试。
