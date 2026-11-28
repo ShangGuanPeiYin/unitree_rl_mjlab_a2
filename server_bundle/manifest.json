@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "origin_rounds": {
+    "D1": 50,
+    "D2": 0,
+    "D3": 0,
+    "PPO": 0
+  },
+  "files": [
+    {
+      "target": "logs/good/s2_1_latest.pt",
+      "sha256": "b3f31d1e7197654984a513ec6d9c38030a92852a09061aa748c9615670684831",
+      "size": 8891463,
+      "compression": "none",
+      "parts": [
+        {
+          "file": "stairs.pt.part000",
+          "sha256": "b3f31d1e7197654984a513ec6d9c38030a92852a09061aa748c9615670684831"
+        }
+      ]
+    },
+    {
+      "target": "logs/a2_v10/formal_A1_20261127_approved/learning/D1_direct_user/D1_000050_boundary.pt",
+      "sha256": "74d9d2de82860fcd806521e4eef20ef74add7899582c987844e80350557010e7",
+      "size": 3092638967,
+      "compression": "none",
+      "parts": [
+        {
+          "file": "resume50.pt.part000",
+          "sha256": "3172110d523fd806354d3ec9863862533c422aeee032503e83e4b0bb86f59231"
+        },
+        {
+          "file": "resume50.pt.part001",
+          "sha256": "7e9439e9755c57a447cf62f6c08fb68a053717a3d51a9473fa9c3d37d3666cbf"
+        },
+        {
+          "file": "resume50.pt.part002",
+          "sha256": "e889673e535f09eb5b0c49548a92883266f4439c042a91f2d82b822c589cfc84"
+        }
+      ]
+    },
+    {
+      "target": "logs/a2_v10/formal_A1_20261127_approved/learning_costs.jsonl",
+      "sha256": "98c52d93bef3d53a0ff706e6a6abb22bfe9c9b6d98730632a199a391cbf25276",
+      "size": 692143,
+      "compression": "gzip",
+      "parts": [
+        {
+          "file": "learning_costs.jsonl.gz",
+          "sha256": "d0d777ca1c2cfb249f0de8d66b0a1feaff7a2d8808122f9cf4f849098bd479d6"
+        }
+      ]
+    },
+    {
+      "target": "logs/a2_v10/formal_A_20261127_approved/evaluation_costs.jsonl",
+      "sha256": "419fa12e412da86c0a2b3f005aa467d62c44ad98ae27adc8ca13aedef0295a3c",
+      "size": 204622802,
+      "compression": "gzip",
+      "parts": [
+        {
+          "file": "evaluation_costs.jsonl.gz",
+          "sha256": "4fd0fecb3d2399a8b085900079c22f00ba625a9d6738c8d736c9748e5aeb47fe"
+        }
+      ]
+    },
+    {
+      "target": "weights/a2_v10/model_2000.pt",
+      "sha256": "8ee1ee1d3513e57c4348eb3b23977d21f380701fd17ac08c073f8a311a4d6722",
+      "size": 4717301,
+      "compression": "none",
+      "parts": [
+        {
+          "file": "model_2000.pt",
+          "sha256": "8ee1ee1d3513e57c4348eb3b23977d21f380701fd17ac08c073f8a311a4d6722"
+        }
+      ]
+    }
+  ],
+  "release_tag": "a2-v10-server-20261128"
+}

@@ -15,3 +15,9 @@ simulate/build
 !/logs/codex_changes.md
 __pycache__/
 *.py[cod]
+
+# Server release assets: only their SHA manifest is versioned.
+/weights/a2_v10/*.pt
+/server_bundle/*.part*
+/server_bundle/*.gz
+/server_bundle/model_2000.pt

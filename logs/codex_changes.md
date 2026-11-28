@@ -5456,3 +5456,14 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 参数/核心逻辑：评估20/100环境分组、病例/种子/物理/教师纠偏、4GiB主机阈值、训练N/48步rollout、课程轮数/50轮保存、奖励与损失全部未改。
 - 验证：修复前CPU真实run_suite循环替身回归3项失败（连续组旧对象驻留、提前停止循环引用、异常）；修复后test_v10_trace.py与test_v10_runtime_core.py合计19 passed；test_v10_runtime_memory.py为9 passed、1 skipped。轨迹/首终止冻结/padding计费结果保持；异常展开后确认可回收。跳过全196608容量测试，未新增物理样本、未重跑完整GPU评估/训练，真实RSS降幅及4GiB门禁是否通过尚未验证。
 - 身份限制：源码指纹会改变，旧dynamic_N2048 execution_profile/controller绑定旧源码，未改写旧凭据或结果、未放宽缓存校验；恢复旧run仍需要显式源码身份迁移。本修复不证明既有S_ROUTE教师16/20行为失败已改善。
+
+## 2026-11-28 服务器完整训练迁移包（用户明确授权上传所需权重）
+- 目的：GitHub新克隆后可在服务器保留D1第50轮完整状态续训；本次用户“包括用到的权重”覆盖项目AGENTS默认不上传权重规则。
+- 文件：.gitattributes、weights/a2_v10/model_2000.pt、server_bundle/*、requirements-server.txt、docs/server_training.md、scripts/restore_server_bundle.py、scripts/run_sds_manual.sh、src/tasks/velocity/v10/{spec,teachers}.py、tests/test_server_bundle.py及本日志。
+- 内容：ETH教师4.5MiB、S2教师8.5MiB、完整3092638967字节D1_000050_boundary.pt（三个≤1GiB分片）、原学习与评估台账gzip快照，均经Git LFS存储。manifest列明逐片及还原整体SHA，保留原模型/Adam/replay/RNG与费用。原checkpoint SHA 74d9d2de82860fcd806521e4eef20ef74add7899582c987844e80350557010e7 不变。
+- 路径适配：盲走教师默认从仓库weights读取，替换开发机绝对路径；shell解释器从当前环境python读取，允许A2_PYTHON显式指定。固定当前环境直接依赖版本与Python3.11安装步骤。恢复脚本流式校验/拼接/解压，拒绝覆盖不同内容的已有文件，重复同内容恢复幂等。
+- 不迁移旧controller/profile和通过证书；服务器生成当前源码/当地路径的配置，教师准入重新执行，原计费历史保留。训练仍为D1/D2/D3上限500/1000/1500、PPO1000、48步rollout、每50轮保存，保留D1已完成50轮；训练N由参数指定，奖励/损失/教师A1配方未改。已有教师16/20失败未被改写。
+- 验证：教师/手动入口23 tests passed；分片及gzip还原、重复还原、不同台账拒覆盖、损坏分片拒绝1 test passed；bash语法通过。使用仅Git暂存文件导出的干净目录（不包含本机旧dirty/untracked）成功还原全部文件并验证整体SHA；该目录真实manual --mode check --num-envs 2048返回passed=true，保留D1剩450/D2剩1000/D3剩1500/PPO剩1000轮。未启动物理评估或训练；服务器GPU/驱动适配未验证。
+- 旧内存修复提交ea31ad1已通过gh凭据辅助器成功push；本次迁移包按同一方式推送，不修改全局Git认证配置，不包含凭据、其他实验视频/日志或无关旧修改。
+
+- 上传方式调整：GitHub明确拒绝公开fork上传LFS对象（can not upload new objects to public fork）。改为同仓库Release a2-v10-server-20261128附件；main保留逐片SHA manifest、恢复脚本、依赖和文档，权重通过gh release download取得。未更换仓库、不包含认证信息。干净目录已成功实际加载两教师并验证身份。

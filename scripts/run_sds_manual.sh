@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 export MUJOCO_GL=egl PYTHONUNBUFFERED=1
-PYTHON=/home/xxs/anaconda3/envs/a2/bin/python
+PYTHON="${A2_PYTHON:-python}"
 # Keep older shorthand usable; all other flags are explicit Python CLI arguments.
 case "${1:-}" in
   --check) shift; set -- --mode check "$@" ;;

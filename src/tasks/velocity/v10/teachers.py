@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import torch
 from torch import nn
+from .spec import BLIND_PATH
 from src.tasks.velocity.rl.ideal_heightmap_actor_critic import FrozenETHNormalizer,mlp
 BLIND_SHA='8ee1ee1d3513e57c4348eb3b23977d21f380701fd17ac08c073f8a311a4d6722'
 
@@ -52,7 +53,7 @@ def blind_yaw_command(proprio,route_error):
     return torch.where((vx>0)[:,None],command,torch.zeros_like(command))
 
 class BlindTeacher(nn.Module):
-    def __init__(self,path='/home/xxs/dog/eth_a2_locomotion_controller/models/model_2000.pt',expected_sha=BLIND_SHA):
+    def __init__(self,path=BLIND_PATH,expected_sha=BLIND_SHA):
         super().__init__()
         if expected_sha!=BLIND_SHA or hashlib.sha256(Path(path).read_bytes()).hexdigest()!=expected_sha: raise ValueError('blind identity mismatch')
         state=torch.load(path,map_location='cpu',weights_only=False)['actor_state_dict']
@@ -67,7 +68,7 @@ class BlindTeacher(nn.Module):
         return self.mlp(self.normalizer(proprio))
 
 class DualTeacher(nn.Module):
-    def __init__(self,stairs,blind_path='/home/xxs/dog/eth_a2_locomotion_controller/models/model_2000.pt',blind_sha=BLIND_SHA):
+    def __init__(self,stairs,blind_path=BLIND_PATH,blind_sha=BLIND_SHA):
         super().__init__(); self.stairs=copy.deepcopy(stairs); self.blind=BlindTeacher(blind_path,blind_sha)
         self.eval(); self.requires_grad_(False)
     @torch.no_grad()
