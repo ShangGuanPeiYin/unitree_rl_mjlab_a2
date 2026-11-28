@@ -5473,3 +5473,12 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 已从本地删除D1_000050_boundary.pt及其同inode的D1_000050.pt，删除server_bundle三个分片、对应本次Git LFS对象缓存，以及/tmp/a2-server-check.WwBPuR中的checkpoint和三个验证副本。未删除其他模型或实验目录。
 - 更新server_bundle/manifest.json移除学生checkpoint/原50轮恢复说明；更新docs/server_training.md只描述剩余文件及安装步骤，明确原manual是50轮续训入口，从头训练入口本次未改。没有启动训练或改配方。
 - 原迁移Release曾上传成功且7附件大小/SHA已核对，随后按本次指令撤下三个resume50分片；其余两份教师与台账保留。原提交历史记录保留，不伪称该大文件从未上传。
+
+## 2026-11-28 补齐服务器从第0轮训练及关联入口
+- 用户授权：删除旧50轮状态后要求修改启动脚本、检查关联遗漏、push并提供服务器pull命令。
+- 文件：scripts/run_a2_v10_formal.py、scripts/run_sds_manual.sh、src/tasks/velocity/v10/dynamic_execution.py、execution_restore.py、runtime.py、doc/sds/reviews/v10_server_physical_contract.json、docs/server_training.md、tests/test_v10_{manual_launcher,dynamic_execution,dynamic_runtime}.py及本日志。
+- 起点变更：原默认从D1第50轮完整状态恢复，改为新logs/a2_v10/server_fresh目录从第0轮开始；S2权重初始化学生，冻结教师不变，优化器/replay/随机状态重新初始化。fresh配置不读取已删除checkpoint，绑定两教师SHA及物理协议。旧迁移路径保留供既有调用，不作为手动入口默认。
+- 关联遗漏修复：首个D1 worker先保存零轮初始状态；无resume的worker也写入execution_profile来源，使后续checkpoint可正确校验恢复；fresh允许origin_checkpoint为空但仍严格校验同配置/源码/物理；进度条监控新目录。第二次运行恢复同一新run，拒绝用已消耗学习账本创建新的fresh配置，避免重复赠予预算。
+- 新训练预算：明确独立重训任务，旧日志/台账不清除不退款。D1/D2/D3最大500/1000/1500轮，PPO最大1000（P0前100），每50轮保存、48步rollout、seed42。N2048的各阶段样本上限49152000/98304000/147456000/98304000。教师A/B和课程门禁、奖励/损失/学习率/A1纠偏不变。
+- 物理协议JSON原样来自此前真实D1环境contract，仅校验环境参数一致性，不继承资源通过结论；启动前校验其内部canonical SHA及教师实际文件SHA。
+- 验证：21项CPU测试通过（包含旧续训兼容、新fresh配置、check只读、不依赖旧CP、零轮保存、单轮更新后完整恢复、重复调度不重建配置、已有费用拒绝新建fresh、原门禁拒绝和内存保护）。真实shell --mode check --num-envs 2048返回passed=true/executed=false及剩余500/1000/1500/1000轮；bash语法与git diff --check通过。未启动物理评估或正式学习，服务器实际GPU运行未验证。

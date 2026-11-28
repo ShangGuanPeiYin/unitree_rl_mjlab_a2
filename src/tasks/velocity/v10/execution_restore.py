@@ -24,7 +24,7 @@ def authorize_checkpoint(state,path,profile,*,num_envs,physical_sha256):
         or state.get('sds_sha256')!=spec.SDS_SHA256 or state.get('recipe')!=spec.RECIPE or state.get('teachers')!=teacher_identity()
         or state.get('physical_sha256')!=physical_sha256):raise ValueError('execution migration checkpoint identity differs')
     origin=profile['origin_checkpoint']
-    if Path(path).resolve()==Path(origin['path']).resolve():
+    if origin is not None and Path(path).resolve()==Path(origin['path']).resolve():
         if (sha256(path)!=origin['sha256'] or state.get('num_envs')!=origin['from_num_envs']
             or state.get('code_sha256')!=origin['from_code_sha256']):raise ValueError('exact execution origin checkpoint required')
         if any(state.get('rounds',{}).get(k,0)!=r for k,r in profile['document']['origin_rounds'].items()):raise ValueError('origin retained rounds differ')

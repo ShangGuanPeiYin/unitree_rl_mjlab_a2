@@ -89,3 +89,47 @@ def test_dynamic_worker_validates_retained_round_not_mixed_N_sample_quotient(ori
     assert '--execution-profile' in commands[0] and '--formal-handoff' not in commands[0] and 'probe' not in commands[0]
     result['budget']['charged']['learning:D1']=row['sample_caps']['D1']+1
     with pytest.raises(d.StopTraining,match='charged_cap'):o.worker('learning_D1_200','D1',200,str(origin[1]))
+
+
+def test_fresh_check_has_no_checkpoint_dependency_and_no_writes(tmp_path):
+    root=tmp_path/'fresh'
+    result=d.run_dynamic_execution(run_dir=root,profile_path=root/'execution_profile_N2048.json',num_envs=2048,check_only=True,fresh=True)
+    assert result['remaining_rounds']==d.ROUND_BUDGETS
+    assert result['sample_caps']['D1']==500*2048*48
+    assert not root.exists()
+
+
+def test_fresh_profile_round_zero_and_continuation_identity(tmp_path):
+    root=tmp_path/'fresh';root.mkdir();ledger=root/'learning_costs.jsonl';ledger.touch()
+    path=root/'execution_profile_N2048.json'
+    row=d.build_execution_profile(path,num_envs=2048,learning_ledger_path=ledger,evaluation_ledger_path=root/'evaluation_costs.jsonl',fresh=True)
+    checked=d.validate_execution_profile(path)
+    assert row['origin_checkpoint'] is None and not any(row['origin_rounds'].values())
+    o=d.DynamicOrchestrator(root/'dynamic_N2048',checked)
+    o.state.update(schedule={'gates':d.GATES})
+    calls=[]
+    def worker(key,course,target,resume=None,acceptance=None):
+        calls.append((key,course,target,resume));raise d.StopTraining('CPU boundary')
+    o.worker=worker
+    with pytest.raises(d.StopTraining,match='CPU boundary'):o._train_dagger()
+    assert calls==[('entry_D1','D1',0,None)]
+    BudgetLedger(ledger).charge('D1',2048,limit=row['sample_caps']['D1'],kind='learning')
+    assert d.validate_execution_profile(path)['sample_caps']==row['sample_caps']
+    with pytest.raises(ValueError,match='unused learning ledger'):
+        d.build_execution_profile(root/'other.json',num_envs=2048,learning_ledger_path=ledger,fresh=True)
+    assert not (root/'other.json').exists()
+
+
+def test_fresh_dispatch_creates_once_and_second_launch_resumes(tmp_path,monkeypatch):
+    root=tmp_path/'fresh';path=root/'execution_profile_N2048.json';calls=[]
+    def run(o,teachers_only=False):
+        o.prepare();calls.append(o.state['learning_checkpoint'])
+        return dict(passed=True,executed=False)
+    monkeypatch.setattr(d.DynamicOrchestrator,'run',run)
+    kwargs=dict(run_dir=root,profile_path=path,num_envs=2048,fresh=True)
+    assert d.run_dynamic_execution(**kwargs)['passed']
+    before=path.read_bytes()
+    assert d.run_dynamic_execution(**kwargs)['passed']
+    assert path.read_bytes()==before and calls==[None,None]
+    assert (root/'dynamic_N2048/controller_state.json').exists()
+    assert not (root/'evaluation_costs.jsonl').exists()  # No physical evaluation in this seam.

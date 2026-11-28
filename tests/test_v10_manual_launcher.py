@@ -21,12 +21,13 @@ def test_check_is_explicit_no_training(monkeypatch):
     assert module.main(['--mode','check','--num-envs','2048'])==0
     assert calls[0]['check_only'] is True and calls[0]['num_envs']==2048
 
-def test_all_passes_configurable_env_count_and_original_root(monkeypatch):
+def test_all_passes_configurable_env_count_and_fresh_root(monkeypatch):
     module,calls=launcher(monkeypatch)
     assert module.main(['--mode','all','--num-envs','2048'])==0
-    assert calls[0]['run_dir']==ROOT/'logs/a2_v10/formal_A1_20261127_approved'
+    assert calls[0]['run_dir']==ROOT/'logs/a2_v10/server_fresh'
     assert calls[0]['profile_path'].name=='execution_profile_N2048.json'
     assert calls[0]['teachers_only'] is False
+    assert calls[0]['fresh'] is True
 
 def test_too_small_env_count_rejected(monkeypatch):
     module,calls=launcher(monkeypatch)

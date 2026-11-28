@@ -180,6 +180,7 @@ def worker(*,course,num_envs,output_dir,stop_round,resume=None,acceptance=None,d
             state=checkpoint_load(resume,num_envs=num_envs,physical_sha256=physical['sha256'],restore_random=False,memory_trace=memory_trace,**load_options)
             extra=bind_profile(state,dynamic) if dynamic else bind_handoff(state,handoff,checkpoint_path=resume,course=course) if handoff else state.get('extra',{})
             ledger.assert_checkpoint_not_ahead(state['budgets']);model.load_state_dict(state['model']);reservoir.take_state_dict(state.pop('reservoir'));rounds=dict(state['rounds'])
+        if dynamic and not resume:extra=bind_profile({},dynamic)
         if trial:
             if state:trial.restore(extra)
             extra=dict(extra,trial=trial.checkpoint_state())

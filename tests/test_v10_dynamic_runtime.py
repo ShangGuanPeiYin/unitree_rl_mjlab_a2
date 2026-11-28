@@ -114,3 +114,33 @@ def test_dynamic_low_host_memory_stops_without_new_sampling(seam,monkeypatch):
  monkeypatch.setattr(rt,'memory_observation',lambda stage:{'host_available_bytes':4*1024**3-1})
  with pytest.raises(RuntimeError,match='below 4GiB'):rt.worker(**args)
  assert calls['collect']==0
+
+
+def test_fresh_worker_initial_save_then_one_round_and_reload(seam,monkeypatch):
+ er,rt,p,args,calls=seam
+ from src.tasks.velocity.v10 import env as em
+ p['origin_checkpoint']=None;p['document']['origin_rounds']={k:0 for k in p['round_budgets']}
+ # The fixture validator checks its existing path, so reset only that fixture's
+ # ledger bytes for this CPU fresh-path test (no real/project ledger involved).
+ Path(args['ledger_path']).write_text('')
+ args.update(resume=None,stop_round=0)
+ monkeypatch.setattr(rt,'memory_observation',lambda stage:{'host_available_bytes':16*1024**3})
+ first=rt.worker(**args)
+ assert first['round']==0 and calls['collect']==0
+ state=cp.checkpoint_load(first['checkpoint'],num_envs=2048,physical_sha256=PHYS,restore_random=False,execution_profile=p)
+ assert state['extra']['execution_profile']==er.provenance(p)
+ assert 'trial' not in state['extra']
+ monkeypatch.setattr(em.V10Env,'load_state_dict',lambda self,state,**kw:None)
+ class Learner:
+  def __init__(self,m):self.optimizer=torch.optim.Adam(m.parameters(),lr=3e-5)
+  def update(self,b,r,n):return {'loss':0.}
+ monkeypatch.setattr(rt,'DAggerLearner',Learner)
+ def collect(env,model,teachers,phase,ledger,budget_limit):
+  ledger.charge('D1',2048*48,limit=budget_limit,kind='learning')
+  return {},dict(rollout_id='fresh-one',episodes=[],per_task={})
+ monkeypatch.setattr(rt,'collect_rollout',collect)
+ args.update(resume=first['checkpoint'],stop_round=1)
+ result=rt.worker(**args)
+ assert result['round']==1 and result['consumed']==2048*48
+ restored=cp.checkpoint_load(result['checkpoint'],num_envs=2048,physical_sha256=PHYS,restore_random=False,execution_profile=p)
+ assert restored['rounds']['D1']==1

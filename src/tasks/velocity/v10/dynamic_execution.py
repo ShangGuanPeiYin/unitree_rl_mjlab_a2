@@ -60,12 +60,36 @@ def _checkpoint_metadata(path):
                 rounds={k:int(row.get('rounds',{}).get(k,0)) for k in ROUND_BUDGETS},accounting=row.get('accounting',{}))
 
 
+def fresh_sources():
+    """Initial teacher files and expected physics, without a student checkpoint."""
+    import hashlib
+    physics=spec.ROOT/'doc/sds/reviews/v10_server_physical_contract.json'
+    row=read_json(physics)
+    digest=hashlib.sha256(json.dumps(row['contract'],sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    if digest!=row['sha256']:raise ValueError('server physical contract damaged')
+    refs={}
+    for key,path,expected in (('blind',spec.BLIND_PATH,spec.BLIND_SHA256),('stairs',spec.STAIRS_PATH,spec.STAIRS_SHA256)):
+        if file_sha(path)!=expected:raise ValueError('fresh teacher identity differs: '+key)
+        refs[key]=dict(path=str(path.resolve()),sha256=expected)
+    refs['physics']=dict(path=str(physics.resolve()),sha256=file_sha(physics))
+    return refs,digest
+
+
 def build_execution_profile(path,*,num_envs,origin_checkpoint=ORIGINAL_CP,learning_ledger_path=ORIGINAL_RUN/'learning_costs.jsonl',
                             evaluation_ledger_path=spec.ROOT/'logs/a2_v10/formal_A_20261127_approved/evaluation_costs.jsonl',
-                            authorization_path=AUTHORIZATION,physical_sha256=None,write=True):
-    n=_n(num_envs);origin=Path(origin_checkpoint).resolve();metadata=_checkpoint_metadata(origin)
+                            authorization_path=AUTHORIZATION,physical_sha256=None,write=True,fresh=False):
+    n=_n(num_envs)
+    if fresh:
+        sources,physics=fresh_sources();origin=None
+        metadata=dict(physical_sha256=physics,rounds={k:0 for k in ROUND_BUDGETS},accounting={})
+    else:
+        origin=Path(origin_checkpoint).resolve();metadata=_checkpoint_metadata(origin)
     if physical_sha256 is not None and metadata['physical_sha256']!=physical_sha256:raise ValueError('migration physical contract differs')
-    accounting=_ledger(learning_ledger_path)
+    if fresh and not Path(learning_ledger_path).exists():
+        accounting=dict(charged={},executed={},uncertain={},updated={},pending=[])
+    else:accounting=_ledger(learning_ledger_path)
+    if fresh and any(accounting[k] for k in ('charged','executed','updated','pending')):
+        raise ValueError('fresh profile requires an unused learning ledger')
     if accounting['pending']:raise ValueError('learning pending step requires explicit recovery before creating migration profile')
     checkpoint_accounting=metadata.pop('accounting',{})
     if any(accounting['updated'].get(k,0)>checkpoint_accounting.get('updated',{}).get(k,0) for k in accounting['updated']):
@@ -75,8 +99,8 @@ def build_execution_profile(path,*,num_envs,origin_checkpoint=ORIGINAL_CP,learni
     sample_caps={k:costs['charged'].get('learning:'+k,0)+(r-rounds[k])*n*48 for k,r in ROUND_BUDGETS.items()}
     document=dict(schema=SCHEMA,num_envs=n,rollout=48,seed=42,code_sha256=code_fingerprint(),sds_sha256=spec.SDS_SHA256,
         rulings_sha256=file_sha(RULINGS),authorization=dict(path=str(Path(authorization_path).resolve()),sha256=file_sha(authorization_path)),
-        origin_checkpoint=dict(path=str(origin),sha256=file_sha(origin),**metadata),physical_sha256=metadata['physical_sha256'],
-        origin_rounds=rounds,accounting_origin=costs,learning_ledger_prefix=_ledger_prefix(learning_ledger_path),learning_ledger_path=str(Path(learning_ledger_path).resolve()),
+        origin_checkpoint=None if fresh else dict(path=str(origin),sha256=file_sha(origin),**metadata),physical_sha256=metadata['physical_sha256'],
+        origin_rounds=rounds,accounting_origin=costs,learning_ledger_prefix=({'bytes':0,'sha256':__import__('hashlib').sha256(b'').hexdigest()} if fresh else _ledger_prefix(learning_ledger_path)),learning_ledger_path=str(Path(learning_ledger_path).resolve()),
         evaluation_ledger_path=str(Path(evaluation_ledger_path).resolve()),round_budgets=dict(ROUND_BUDGETS),save_rounds=50,gates=copy.deepcopy(GATES),
         p0_rounds=100,dagger_updates_per_round=10 if n==512 else 20,sample_caps=sample_caps,
         nominal_scaled_budgets={k:r*n*48 for k,r in ROUND_BUDGETS.items()},
@@ -84,6 +108,8 @@ def build_execution_profile(path,*,num_envs,origin_checkpoint=ORIGINAL_CP,learni
         resource_status='unverified_for_requested_N',resource_probe_requested=False,automatic_N_fallback=False,
         recovery_registry_path=str(Path(learning_ledger_path).resolve())+'.dynamic_latest.json',
         supported_migration='original50_to_requested_N_then_same_profile_recovery',historical_costs_refunded=0)
+    if fresh:
+        document.update(start_mode='fresh',initial_sources=sources,supported_migration='fresh_from_S2_then_same_profile_recovery')
     if write:
         path=Path(path)
         if path.exists() and read_json(path)!=document:raise ValueError('existing execution profile cannot be overwritten')
@@ -100,8 +126,15 @@ def validate_execution_profile(path,*,ledger_path=None,num_envs=None,physical_sh
         or d.get('resource_status')!='unverified_for_requested_N' or d.get('resource_probe_requested') is not False
         or d.get('automatic_N_fallback') is not False or d.get('historical_costs_refunded')!=0):raise ValueError('execution profile identity/recipe mismatch')
     if _bound(d['authorization']).resolve()!=AUTHORIZATION.resolve():raise ValueError('explicit dynamic-N user authorization required')
-    _bound(d['origin_checkpoint'])
-    if d['origin_checkpoint'].get('physical_sha256')!=d['physical_sha256']:raise ValueError('origin physical identity mismatch')
+    if d.get('start_mode')=='fresh':
+        sources,physics=fresh_sources()
+        if (d.get('initial_sources')!=sources or d['origin_checkpoint'] is not None or d['physical_sha256']!=physics
+            or d['origin_rounds']!={k:0 for k in ROUND_BUDGETS}
+            or any(d['accounting_origin'].get(k) for k in ('charged','executed','uncertain','updated'))):
+            raise ValueError('fresh initialization identity mismatch')
+    else:
+        _bound(d['origin_checkpoint'])
+        if d['origin_checkpoint'].get('physical_sha256')!=d['physical_sha256']:raise ValueError('origin physical identity mismatch')
     if num_envs is not None and n!=num_envs:raise ValueError('execution profile requested N differs')
     if physical_sha256 is not None and d['physical_sha256']!=physical_sha256:raise ValueError('execution profile physical identity differs')
     learning=Path(d['learning_ledger_path']).resolve()
@@ -155,7 +188,7 @@ class DynamicOrchestrator(Orchestrator):
         self.state.update(num_envs=d['num_envs'],physical_sha256=d['physical_sha256'],frozen_sha256=file_sha(path),
             evaluation_max_samples=cases.evaluation_plan()['max_samples'],status='running',
             schedule=dict(num_envs=d['num_envs'],rollout=48,p0_rounds=100,gates=d['gates'],save_every_rounds=50,learning_budgets=d['sample_caps']))
-        if not self.state.get('learning_checkpoint'):self.state['learning_checkpoint']=d['origin_checkpoint']['path']
+        if not self.state.get('learning_checkpoint') and d['origin_checkpoint'] is not None:self.state['learning_checkpoint']=d['origin_checkpoint']['path']
         self.persist()
         print(json.dumps(dict(phase='prepare',num_envs=d['num_envs'],remaining_rounds={k:r-d['origin_rounds'][k] for k,r in ROUND_BUDGETS.items()},
             sample_caps=d['sample_caps'],historical_charged=d['accounting_origin']['charged'],resource_status=self.state['resource_status']),sort_keys=True),flush=True)
@@ -223,7 +256,7 @@ class DynamicOrchestrator(Orchestrator):
         for course in ('D1','D2','D3'):
             self.state['phase']=course;self.persist();completed=self.state.get('courses',{}).get(course)
             if completed:checkpoint=completed['checkpoint'];continue
-            if course!='D1':checkpoint=self.worker(f'entry_{course}',course,0,checkpoint)
+            if course!='D1' or checkpoint is None:checkpoint=self.worker(f'entry_{course}',course,0,checkpoint)
             for target in self.state['schedule']['gates'][course]:
                 checkpoint=self.worker(f'learning_{course}_{target}',course,target,checkpoint)
                 grade=self.gate(course,target,checkpoint,{'teachers':None})
@@ -244,7 +277,7 @@ def _guard_other_dynamic_progress(root,learning,n):
         if any(v>baseline.get(k,0) for k,v in current['charged'].items()):
             raise StopTraining('second_dynamic_N_switch_not_supported; existing dynamic costs/progress have no refund')
 
-def run_dynamic_execution(*,run_dir,profile_path,num_envs,device='cuda:0',teachers_only=False,check_only=False,resume_reason=None):
+def run_dynamic_execution(*,run_dir,profile_path,num_envs,device='cuda:0',teachers_only=False,check_only=False,resume_reason=None,fresh=False):
     """One original-run parent lease prevents old/new N controllers interleaving."""
     import fcntl
     root=Path(run_dir).resolve();path=Path(profile_path).resolve();n=_n(num_envs)
@@ -253,20 +286,22 @@ def run_dynamic_execution(*,run_dir,profile_path,num_envs,device='cuda:0',teache
         latest=read_json(registry)
         if latest.get('num_envs')!=n:
             raise StopTraining('second_dynamic_N_switch_not_supported; retain latest checkpoint and resume its existing N profile')
-    _guard_other_dynamic_progress(root,learning,n)
+    if learning.exists():_guard_other_dynamic_progress(root,learning,n)
     if check_only:
         if path.exists():profile=validate_execution_profile(path,ledger_path=learning,num_envs=n);document=profile['document']
-        else:document=build_execution_profile(path,num_envs=n,learning_ledger_path=learning,write=False)
+        else:document=build_execution_profile(path,num_envs=n,learning_ledger_path=learning,write=False,**(dict(fresh=True,evaluation_ledger_path=root/'evaluation_costs.jsonl') if fresh else {}))
         return dict(passed=True,executed=False,profile_exists=path.exists(),num_envs=n,resource_status=document['resource_status'],
             remaining_rounds={k:r-document['origin_rounds'][k] for k,r in ROUND_BUDGETS.items()},sample_caps=document['sample_caps'],
             dagger_updates_per_round=document['dagger_updates_per_round'],supported_migration=document['supported_migration'])
+    root.mkdir(parents=True,exist_ok=True)
     with (root/'controller.lock').open('a+') as lock:
         try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         except BlockingIOError:raise StopTraining('another_original_or_dynamic_controller_is_running') from None
         from .gpu_lock import gpu_execution_lock
         with gpu_execution_lock(blocking=False):
+            if fresh and not learning.exists():learning.touch(exist_ok=False)
             _guard_other_dynamic_progress(root,learning,n)
-            if not path.exists():build_execution_profile(path,num_envs=n,learning_ledger_path=learning)
+            if not path.exists():build_execution_profile(path,num_envs=n,learning_ledger_path=learning,**(dict(fresh=True,evaluation_ledger_path=root/'evaluation_costs.jsonl') if fresh else {}))
             profile=validate_execution_profile(path,ledger_path=learning,num_envs=n)
         # Once any profile has consumed new samples, a second fresh profile must
         # not silently reload original50, even if a crash preceded a save/registry.

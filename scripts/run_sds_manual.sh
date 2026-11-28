@@ -21,7 +21,7 @@ import threading
 import time
 from pathlib import Path
 
-run = Path('logs/a2_v10/formal_A1_20261127_approved')
+run = Path('logs/a2_v10/server_fresh')
 positions = {}
 progress = {}
 partials = {}
