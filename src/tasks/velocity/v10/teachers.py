@@ -6,6 +6,7 @@ from pathlib import Path
 import torch
 from torch import nn
 from .spec import BLIND_PATH
+from . import spec
 from src.tasks.velocity.rl.ideal_heightmap_actor_critic import FrozenETHNormalizer,mlp
 BLIND_SHA='8ee1ee1d3513e57c4348eb3b23977d21f380701fd17ac08c073f8a311a4d6722'
 
@@ -69,7 +70,16 @@ class BlindTeacher(nn.Module):
 
 class DualTeacher(nn.Module):
     def __init__(self,stairs,blind_path=BLIND_PATH,blind_sha=BLIND_SHA):
-        super().__init__(); self.stairs=copy.deepcopy(stairs); self.blind=BlindTeacher(blind_path,blind_sha)
+        super().__init__()
+        # The supplied student provides the architecture, not the teacher weights.
+        # All callers (learning/evaluation/probe) load the same frozen S1 source.
+        if hashlib.sha256(spec.STAIRS_PATH.read_bytes()).hexdigest()!=spec.STAIRS_SHA256:
+            raise ValueError('stairs teacher identity mismatch')
+        self.stairs=copy.deepcopy(stairs)
+        checkpoint=torch.load(spec.STAIRS_PATH,map_location='cpu',weights_only=False)
+        self.stairs.load_state_dict(checkpoint['model'],strict=True)
+        del checkpoint
+        self.blind=BlindTeacher(blind_path,blind_sha)
         self.eval(); self.requires_grad_(False)
     @torch.no_grad()
     def label(self,obs,stairs_mask):

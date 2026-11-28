@@ -6,15 +6,16 @@ import torch
 from torch import nn
 from torch.distributions import Normal
 from src.tasks.velocity.v09.model import V09ActorCritic
+from .spec import INITIAL_PATH,INITIAL_SHA256
 
-STAIRS_SHA='b3f31d1e7197654984a513ec6d9c38030a92852a09061aa748c9615670684831'
+STAIRS_SHA=INITIAL_SHA256  # Legacy name: student initialization remains S2.
 
 class V10ActorCritic(V09ActorCritic):
     architecture_version='a2-v10-native40x30'
     def __init__(self):
         super().__init__(); self.set_phase('D1')
     @classmethod
-    def from_stairs(cls,path='logs/good/s2_1_latest.pt',expected_sha=STAIRS_SHA,device='cpu'):
+    def from_stairs(cls,path=INITIAL_PATH,expected_sha=STAIRS_SHA,device='cpu'):
         if expected_sha!=STAIRS_SHA or hashlib.sha256(Path(path).read_bytes()).hexdigest()!=expected_sha:
             raise ValueError('S2 teacher identity mismatch')
         checkpoint=torch.load(path,map_location='cpu',weights_only=False)

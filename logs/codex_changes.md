@@ -5489,3 +5489,11 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 修改：将现有约15MiB的S1权重原字节直接纳入Git（该文件原被logs忽略规则排除，精确force-add此单文件），不使用Release/LFS，服务器git pull即可取得。
 - 校验SHA256：efa9caa8ce99e2cdff967212063e198b7ae68a6415727083b1db027f615ead24。未更改权重内容、训练入口、S2/ETH教师选择、初始化、奖励或损失。
 - 验证：文件存在、大小与SHA读取完成；仅分发文件，未执行训练或行为测试。
+
+## 2026-11-28 楼梯教师由S2切换为S1（用户明确要求）
+- 文件：src/tasks/velocity/v10/{spec,teachers,model,dynamic_execution}.py、tests/test_v10_s1_teacher.py、tests/test_v10_teacher_yaw.py、docs/server_training.md及本日志。
+- 核心变化：楼梯教师由logs/good/s2_1_latest.pt（b3f31d1e…）改为logs/good/s1_latest.pt，SHA256 efa9caa8ce99e2cdff967212063e198b7ae68a6415727083b1db027f615ead24。DualTeacher统一校验并严格加载S1模型参数，随后eval/requires_grad=False，因此训练、教师评估和资源探测走同一权重来源，不再将传入的学生模型参数直接当楼梯教师。
+- 范围控制：用户只指定更换教师，学生初始化仍为S2（独立INITIAL_PATH/INITIAL_SHA256），ETH盲走权重与A1纠偏不变；当前课程路由、奖励、损失、学习率、轮数预算、48步rollout、50轮保存均不变。fresh配置同时绑定S1教师和S2学生初始化文件。原冻结SDS不覆盖，本条记录用户对楼梯教师来源的覆盖。
+- 分发：S1原字节已经以a689656提交并推送，git pull直接获取，不新增Release下载要求。文档同步区分教师与初始化权重。
+- 验证：S1/S2共53个state_dict字段名称及形状完全一致；实际S1加载测试逐tensor相等、教师全部冻结、学生仍逐tensor等于S2且不被污染、错误SHA拒绝。路由测试替身适配了新的严格加载接口，保留原输入隔离断言。57项相关测试全部通过；实际shell check(N2048/rollout48/seed42)返回passed=true/executed=false，D1从0轮开始。未新增物理采样或正式训练，未声称行为优于S2。
+- 已有旧S2执行配置/评估/训练状态不自动迁移或清除，源码与教师身份变化按原规则拒绝混用；询问服务器是否已运行旧S2，以便区分新启动与需要保留进度的迁移。

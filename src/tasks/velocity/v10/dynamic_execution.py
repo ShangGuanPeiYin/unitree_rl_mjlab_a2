@@ -68,7 +68,7 @@ def fresh_sources():
     digest=hashlib.sha256(json.dumps(row['contract'],sort_keys=True,separators=(',',':')).encode()).hexdigest()
     if digest!=row['sha256']:raise ValueError('server physical contract damaged')
     refs={}
-    for key,path,expected in (('blind',spec.BLIND_PATH,spec.BLIND_SHA256),('stairs',spec.STAIRS_PATH,spec.STAIRS_SHA256)):
+    for key,path,expected in (('blind',spec.BLIND_PATH,spec.BLIND_SHA256),('stairs',spec.STAIRS_PATH,spec.STAIRS_SHA256),('student_initial',spec.INITIAL_PATH,spec.INITIAL_SHA256)):
         if file_sha(path)!=expected:raise ValueError('fresh teacher identity differs: '+key)
         refs[key]=dict(path=str(path.resolve()),sha256=expected)
     refs['physics']=dict(path=str(physics.resolve()),sha256=file_sha(physics))

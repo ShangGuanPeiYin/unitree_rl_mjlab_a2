@@ -80,6 +80,9 @@ def test_real_eth_weights_agree_on_hand_checked_command_and_zero_correction_iden
 
 def test_mixed_routing_stairs_original_input_and_blind_hidden_metadata_invariance():
  class Stairs(torch.nn.Module):
+  def load_state_dict(self,state,strict=True):
+   # Routing-only stub; actual S1 tensor loading is checked in test_v10_s1_teacher.
+   assert strict and 'actor.mlp.0.weight' in state
   def forward(self,o):return o['proprio'][:,:12].clone()
  stairs=Stairs();teacher=module.DualTeacher(stairs);o=observation(y=.8,yaw=.2,n=4)
  o['proprio'][:,7]=.123;o['proprio'][:,8]=.456
