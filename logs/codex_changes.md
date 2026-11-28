@@ -5467,3 +5467,9 @@ H00_A上行三速各5共15例，valid15/invalid0/error0、success0/failure15（t
 - 旧内存修复提交ea31ad1已通过gh凭据辅助器成功push；本次迁移包按同一方式推送，不修改全局Git认证配置，不包含凭据、其他实验视频/日志或无关旧修改。
 
 - 上传方式调整：GitHub明确拒绝公开fork上传LFS对象（can not upload new objects to public fork）。改为同仓库Release a2-v10-server-20261128附件；main保留逐片SHA manifest、恢复脚本、依赖和文档，权重通过gh release download取得。未更换仓库、不包含认证信息。干净目录已成功实际加载两教师并验证身份。
+
+## 2026-11-28 用户放弃第50轮checkpoint并要求删除本地数据
+- 用户明确要求“不push这个，把这些数据也从本地删了”“不要了”，范围为正在讨论的D1第50轮完整checkpoint/replay；保留教师、代码和历史费用台账。
+- 已从本地删除D1_000050_boundary.pt及其同inode的D1_000050.pt，删除server_bundle三个分片、对应本次Git LFS对象缓存，以及/tmp/a2-server-check.WwBPuR中的checkpoint和三个验证副本。未删除其他模型或实验目录。
+- 更新server_bundle/manifest.json移除学生checkpoint/原50轮恢复说明；更新docs/server_training.md只描述剩余文件及安装步骤，明确原manual是50轮续训入口，从头训练入口本次未改。没有启动训练或改配方。
+- 原迁移Release曾上传成功且7附件大小/SHA已核对，随后按本次指令撤下三个resume50分片；其余两份教师与台账保留。原提交历史记录保留，不伪称该大文件从未上传。
