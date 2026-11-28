@@ -8,7 +8,7 @@ import uuid
 import numpy as np
 import torch
 from . import cases,spec
-from .checkpoint import BudgetLedger,atomic_json,sha256,checkpoint_validate
+from .checkpoint import BudgetLedger,atomic_json,sha256,checkpoint_validate,release_host_memory,memory_observation
 from .evaluation import EpisodeMetrics,grade_group
 from .identity import code_fingerprint
 from .trace import TraceBatchV2,action_snapshot
@@ -77,10 +77,19 @@ def run_suite(*,course,suite_name,replicas,model_path,reference,output_dir,ledge
     before=ledger.report();physical_sha=None;new_caches=[];aborted=False
     # Group manifests are contiguous and each contains precisely 20/100 actual cases.
     group_results={};start=time.monotonic()
+    def memory_stage(stage,offset):
+        # Persist group boundaries, not an unbounded in-memory history.
+        row=dict(memory_observation(stage),group_offset=offset)
+        with (out/'memory_groups.jsonl').open('a') as log:
+            log.write(json.dumps(row)+'\n')
+
     for offset in range(0,len(manifest),replicas):
         batch=manifest[offset:offset+replicas];account=BatchAccounting([c['max_steps'] for c in batch])
-        env=V10Env(num_envs=len(batch),course=course,seed=spec.SEED,device=device,cases=batch,auto_reset=False)
+        env=metrics=traces=obs=info=rows=action=trace_action=done=None
+        memory_stage('before_environment',offset)
         try:
+            env=V10Env(num_envs=len(batch),course=course,seed=spec.SEED,device=device,cases=batch,auto_reset=False)
+            memory_stage('environment_ready',offset)
             contract=physical_contract(env)
             if physical_sha is None:
                 physical_sha=contract['sha256'];atomic_json(out/'physical_contract.json',contract)
@@ -137,7 +146,17 @@ def run_suite(*,course,suite_name,replicas,model_path,reference,output_dir,ledge
             atomic_json(out/'progress.json',dict(completed_groups=len(group_results),physical_samples=executed,effective_samples=effective,padding_samples=padding))
             if stop_on_failed_group and ((not all(r['passed'] for r in ordered)) if diagnostic else teacher_group_failed(ordered)):
                 aborted=True;break
-        finally:env.close()
+        finally:
+            try:
+                if env is not None:env.close()
+            finally:
+                # close() only closes the renderer. Drop ALL group-owned storage
+                # before collecting bound-method/manager cycles and creating the
+                # next simulator. Keep summary results and the cost ledger intact.
+                env=metrics=traces=obs=info=rows=action=trace_action=done=None
+                memory_stage('before_collection',offset)
+                release_host_memory()
+                memory_stage('after_collection',offset)
     result=dict(sds_sha256=spec.SDS_SHA256,code_sha256=code_sha,rulings_sha256=rulings_sha,suite_sha256=suite_sha,model_sha256=model_sha,
                 physical_sha256=physical_sha,course=course,suite=suite_name,replicas=replicas,reference=reference,
                 results=results,groups=group_results,aborted_for_teacher_failure=aborted,complete=not aborted,diagnostic_only=diagnostic,

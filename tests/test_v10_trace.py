@@ -96,10 +96,13 @@ def test_action_snapshot_uses_same_adapter_and_never_mutates_student():
     assert not candidate['teacher_command_valid'].any()
 
 
-def test_diagnostic_real_loop_freezes_each_case_and_charges_padding(monkeypatch,tmp_path):
+@pytest.mark.parametrize("mode", ["early_stop", "complete", "step_error"])
+def test_diagnostic_real_loop_freezes_each_case_and_charges_padding(monkeypatch,tmp_path,mode):
     import torch
+    import weakref
     from src.tasks.velocity.v10 import eval_worker,env,model,teachers,runtime
-    batch=[dict(case_sha256=str(i),group_id='g'+str(i//4),max_steps=4,passed=(i!=3)) for i in range(8)]
+    refs=[];closed=[]
+    batch=[dict(case_sha256=str(i),group_id='g'+str(i//4),max_steps=4,passed=(mode!='early_stop' or i!=3)) for i in range(8)]
     class FakeModel:
         @classmethod
         def from_stairs(cls,**kwargs):return cls()
@@ -114,13 +117,18 @@ def test_diagnostic_real_loop_freezes_each_case_and_charges_padding(monkeypatch,
         def update(self,row):self.rows[self.count,1]=row['command'];self.count+=1
         def finish(self,**kwargs):return dict(case_sha256=self.case['case_sha256'],passed=self.case['passed'])
     class FakeEnv:
-        def __init__(self,**kwargs):self.n=kwargs['num_envs'];self.tick=0;self.closed=False
+        def __init__(self,**kwargs):
+            assert all(r() is None for r in refs), 'previous group still resident'
+            self.n=kwargs['num_envs'];self.tick=0;self.closed=False
+            self.callback=self.observe  # Same bound-method cycle as HeightMap.
+            refs.append(weakref.ref(self))
         def observe(self):
             prop=torch.zeros((self.n,45));prop[:,6]=.3
             route=torch.tensor([[0.,np.sin(self.tick*.1),np.cos(self.tick*.1)]]*self.n)
             return dict(proprio=prop,route_error=route)
         def metadata(self):return dict(teacher=['blind']*self.n)
         def step(self,action):
+            if mode=='step_error':raise RuntimeError('injected step failure')
             self.tick+=1;n=self.n
             f={k:torch.as_tensor(v) if k!='failure_masks' else {kk:torch.as_tensor(vv) for kk,vv in v.items()} for k,v in frame(n).items()}
             f.update(yaw=torch.full((n,),self.tick*.1),command=torch.full((n,),.3),position=torch.zeros((n,3)),
@@ -128,17 +136,35 @@ def test_diagnostic_real_loop_freezes_each_case_and_charges_padding(monkeypatch,
                      clearance=torch.full((n,),.4),safe_support=torch.ones((n,4),dtype=torch.bool),stable=torch.zeros(n,dtype=torch.bool),
                      top_event=torch.zeros(n,dtype=torch.bool),failure=torch.zeros(n,dtype=torch.bool),timeout=torch.zeros(n,dtype=torch.bool),phase=['WALK']*n)
             return self.observe(),None,None,dict(frame=f,episodes=[dict(env_id=self.tick-1)])
-        def close(self):self.closed=True
+        def close(self):self.closed=True;closed.append(True)
     monkeypatch.setattr(env,'V10Env',FakeEnv);monkeypatch.setattr(model,'V10ActorCritic',FakeModel)
     monkeypatch.setattr(teachers,'DualTeacher',FakeTeacher)
     monkeypatch.setattr(teachers,'blind_yaw_command',lambda p,r: p[:,6:9]+torch.tensor([0.,0.,-.05]),raising=False)
     monkeypatch.setattr(runtime,'physical_contract',lambda e:dict(sha256='cpu-fake'))
     monkeypatch.setattr(eval_worker,'EpisodeMetrics',FakeMetrics)
-    result=eval_worker.run_suite(course='D1',suite_name='A',replicas=4,model_path=None,reference='teachers',
+    def run():return eval_worker.run_suite(course='D1',suite_name='A',replicas=4,model_path=None,reference='teachers',
          output_dir=tmp_path/'diag',ledger_path=tmp_path/'cost.jsonl',eval_limit=32,device='cpu',
          stop_on_failed_group=True,diagnostic_manifest=batch)
-    assert result['diagnostic_only'] and not result['complete'] and result['tested_case_count']==4
-    assert result['physical_samples']==16 and result['effective_samples']==10 and result['padding_samples']==6
+    if mode=='step_error':
+        with pytest.raises(RuntimeError,match='injected step failure'):run()
+        # Exception traceback retains step(self) until unwound; the worker exits.
+        import gc
+        gc.collect()
+        assert closed==[True] and all(r() is None for r in refs)
+        return
+    result=run()
+    assert all(r() is None for r in refs), 'finished group still resident'
+    import json
+    stages=[json.loads(line) for line in (tmp_path/'diag'/'memory_groups.jsonl').read_text().splitlines()]
+    assert len(stages)==4*len(refs)
+    assert [r['stage'] for r in stages[:4]]==['before_environment','environment_ready','before_collection','after_collection']
+    assert all(r['process_rss_bytes']>0 and r['host_available_bytes']>0 for r in stages)
+    if mode=='complete':
+        assert result['complete'] and result['tested_case_count']==8
+        assert result['physical_samples']==32
+    else:
+        assert result['diagnostic_only'] and not result['complete'] and result['tested_case_count']==4
+        assert result['physical_samples']==16 and result['effective_samples']==10 and result['padding_samples']==6
     assert not (tmp_path/'cache').exists()
     for i in range(4):
         with np.load(tmp_path/'diag'/f'trace_{i}.npz') as a:
